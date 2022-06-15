@@ -6,6 +6,8 @@ from datetime import date, timedelta, datetime
 from decimal import Decimal
 from typing import Any, Iterable, Optional
 
+from gym_manager.core import attr_constraints
+
 ONE_MONTH_TD = timedelta(days=30)
 
 
@@ -111,6 +113,9 @@ class Date(Validatable):
             except ValueError:
                 pass
         raise ValidationError(f"None of the formats in '{kwargs['format']}' could be used to format the value '{value}'.")
+
+    def __str__(self) -> str:
+        return datetime.strftime(self._value, attr_constraints.DATE_FORMATS[0])
 
 
 class Currency:  # ToDo extend from Validatable.
