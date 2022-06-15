@@ -42,11 +42,12 @@ class Validatable(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def __str__(self) -> str:
+        raise NotImplementedError
+
     def as_primitive(self) -> Any:
         return self._value
-
-    def __str__(self) -> str:
-        return str(self._value)
 
 
 class Number(Validatable):
@@ -71,6 +72,9 @@ class Number(Validatable):
             raise ValidationError(f"The value '{value}' must be in the range [{kwargs['min_value']}, {kwargs['max_value']})")
         return int_value
 
+    def __str__(self) -> str:
+        return str(self._value)
+
 
 class String(Validatable):
 
@@ -90,6 +94,9 @@ class String(Validatable):
         if len(value) > kwargs['max_len']:
             raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
         return value
+
+    def __str__(self) -> str:
+        return self._value
 
 
 class Date(Validatable):
