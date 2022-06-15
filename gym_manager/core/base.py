@@ -202,7 +202,6 @@ class Payment:
 class Registration:
     """Stores information about an specific activity done by an specific client.
     """
-    id: int
     client: Client
     activity: Activity
     payment: Optional[Payment] = None
