@@ -2,7 +2,7 @@ import abc
 from datetime import date
 from typing import Iterable, Generator
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Date, Registration
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Date, Registration, Payment
 
 
 class ClientRepo(abc.ABC):
@@ -73,5 +73,23 @@ class RegistrationRepo(abc.ABC):
     @abc.abstractmethod
     def expired(self, today: date, **kwargs) -> Iterable[Registration]:
         """Retrieves all entries whose pay day has passed if today date were *today*.
+        """
+        raise NotImplementedError
+
+
+class PaymentRepo(abc.ABC):
+    """Payments repository interface.
+    """
+    @abc.abstractmethod
+    def register(
+            self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
+    ) -> Payment:
+        """Register a new payment with the given information. This method must return the created payment.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def all(self, client: Client, **kwargs) -> Iterable[Payment]:
+        """Retrieves the payments of the given *client*
         """
         raise NotImplementedError
