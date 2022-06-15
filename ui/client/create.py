@@ -1,3 +1,5 @@
+from datetime import datetime, date
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
@@ -99,7 +101,8 @@ class CreateUI(QDialog):
 
         self.admission_field = Field(Date, format=attr_constraints.DATE_FORMATS)
         self.admission_layout.addWidget(self.admission_field)
-        config_line(self.admission_field, font_size=16, height=30)
+        config_line(self.admission_field, text=datetime.strftime(date.today(), attr_constraints.DATE_FORMATS[0]),
+                    place_holder="DD-MM-AAAA", font_size=16, height=30)
 
         # Telephone.
         self.tel_layout = QHBoxLayout()
