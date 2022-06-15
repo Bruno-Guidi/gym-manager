@@ -29,7 +29,7 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def remove(self, client: Client):
-        """Removes the given *client* from the repository.
+        """Marks the given *client* as inactive.
         """
         raise NotImplementedError
 
@@ -40,8 +40,11 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, **kwargs) -> Generator[Client, None, None]:
+    def all(self, only_actives: bool = True, **kwargs) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
+
+        Args:
+            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
         """
         raise NotImplementedError
 

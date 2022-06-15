@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Type, Generator
 
-from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField
+from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField
 
 from gym_manager.core import attr_constraints as constraints
 from gym_manager.core.base import Client, Number, String, Date
@@ -23,6 +23,7 @@ class ClientTable(Model):
     admission = DateField()
     telephone = CharField()
     direction = CharField()
+    is_active = BooleanField()
 
     class Meta:
         database = _DATABASE
@@ -75,13 +76,18 @@ class SqliteClientRepo(ClientRepo):
                                         name=name.as_primitive(),
                                         admission=admission.as_primitive(),
                                         telephone=telephone.as_primitive(),
-                                        direction=direction.as_primitive())
+                                        direction=direction.as_primitive(),
+                                        is_active=True)
         return raw_client.dni
 
     def remove(self, client: Client):
-        """Removes the given *client* from the repository.
+        """Marks the given *client* as inactive.
         """
-        ClientTable.delete_by_id(client.dni.as_primitive())
+        raw_client = ClientTable.get_by_id(client.dni.as_primitive())
+        raw_client.is_active = False
+        raw_client.save()
+
+        # ToDo. Delete registrations.
 
     def update(self, client: Client):
         """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
@@ -93,8 +99,11 @@ class SqliteClientRepo(ClientRepo):
         raw_client.direction = client.direction.as_primitive()
         raw_client.save()
 
-    def all(self, **kwargs) -> Generator[Client, None, None]:
+    def all(self, only_actives: bool = True, **kwargs) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
+
+        Args:
+            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
 
         Keyword Args:
             page_number: number of page of the table to return.
@@ -102,7 +111,7 @@ class SqliteClientRepo(ClientRepo):
         """
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
 
-        for raw_client in ClientTable.select().paginate(page_number, items_per_page):
+        for raw_client in ClientTable.select().where(ClientTable.is_active).paginate(page_number, items_per_page):
             yield Client(
                 Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
                 String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
