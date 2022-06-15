@@ -138,18 +138,18 @@ class Activity:
     """Stores general information about an activity.
     """
     id: int
-    name: str
+    name: String
     price: Currency
     pay_once: bool
 
 
 @dataclass
 class Client:
-    dni: int
-    name: str = field(compare=False)
-    admission: date = field(compare=False)
-    telephone: str = field(compare=False)
-    direction: str = field(compare=False)
+    dni: Number
+    name: String = field(compare=False)
+    admission: Date = field(compare=False)
+    telephone: String = field(compare=False)
+    direction: String = field(compare=False)
     _registrations: dict[int, Registration] = field(default_factory=dict, compare=False)
 
     @property
@@ -191,11 +191,11 @@ class Client:
 class Payment:
     id: int
     client: Client
-    day: date
+    when: Date
     amount: Currency
-    method: str
-    responsible: str
-    description: str
+    method: String
+    responsible: String
+    description: String
 
 
 @dataclass
@@ -211,7 +211,7 @@ class Registration:
         return self.payment is None
 
     def pay_day_passed(self, today: date) -> bool:
-        return pay_day_passed(self.payment.day, today)
+        return pay_day_passed(self.payment.when.as_primitive(), today)
 
     def record_payment(self, payment: Payment):
         """Records the payment of the activity.
