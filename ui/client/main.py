@@ -262,7 +262,7 @@ class Controller:
         self.load_clients()
 
     def load_clients(self):
-        self.client_list.clear()  # ToDo Delete when ToDo below is done.
+        self.client_list.clear()
 
         for client in self.client_repo.all(page_number=self.current_page, items_per_page=15):
             item = QListWidgetItem(self.client_list)
@@ -275,7 +275,6 @@ class Controller:
     def add_client(self):
         self.add_ui = CreateUI(self.client_repo)
         self.add_ui.exec_()
-        self.load_clients()  # ToDo Instead of this, put the new client in the top of the page.
 
 
 class ClientMainUI(QMainWindow):
