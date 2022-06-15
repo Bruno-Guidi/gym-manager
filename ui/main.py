@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
-# from ui.client.main import ClientMainUI
+from ui.client.main import ClientMainUI
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_btn
 
@@ -11,10 +11,9 @@ class Controller:
         self.client_repo = client_repo
 
     def show_main_client_ui(self):
-        pass
-        # self.main_client_ui = ClientMainUI(self.client_repo)
-        # self.main_client_ui.setWindowModality(Qt.ApplicationModal)
-        # self.main_client_ui.show()
+        self.main_client_ui = ClientMainUI(self.client_repo)
+        self.main_client_ui.setWindowModality(Qt.ApplicationModal)
+        self.main_client_ui.show()
 
 
 class MainUI(QMainWindow):
