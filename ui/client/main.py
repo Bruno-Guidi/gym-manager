@@ -218,7 +218,6 @@ class ClientRow(QWidget):
         self.previous_height, self.current_height = self.current_height, self.previous_height
         self.detail_hidden = not self.detail_hidden
 
-    # noinspection PyTypeChecker
     def save_changes(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
                      self.tel_field.valid_value(), self.dir_field.valid_value()])
