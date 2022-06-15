@@ -2,7 +2,7 @@ from typing import Type
 
 from PyQt5.QtWidgets import QLineEdit, QWidget
 
-from gym_manager.core.base import Validatable
+from gym_manager.core.base import Validatable, ValidationError
 
 
 class Field(QLineEdit):
@@ -17,7 +17,7 @@ class Field(QLineEdit):
             self.validatable(self.text(), **self.validate_args)
             self.setStyleSheet(self.base_style_sheet)
             return True
-        except (ValueError, TypeError):
+        except ValidationError:
             self.setStyleSheet("border: 1px solid red")
             return False
 
