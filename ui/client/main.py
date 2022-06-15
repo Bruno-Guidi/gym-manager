@@ -226,6 +226,7 @@ class ClientRow(QWidget):
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         else:
             self.client_repo.update(self.client)
+
             # Updates client object.
             self.client.name = self.name_field.value().as_primitive()
             self.client.admission = self.admission_field.value().as_primitive()
@@ -233,10 +234,10 @@ class ClientRow(QWidget):
             self.client.direction = self.dir_field.value().as_primitive()
 
             # Updates ui.
-            self.name_lbl.setText(self.client.name)
-            self.admission_lbl.setText(str(self.client.admission))
-            self.tel_lbl.setText(self.client.telephone)
-            self.dir_lbl.setText(self.client.direction)
+            self.name_summary.setText(self.client.name)
+            self.admission_summary.setText(str(self.client.admission))
+            self.tel_summary.setText(self.client.telephone)
+            self.dir_summary.setText(self.client.direction)
 
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
