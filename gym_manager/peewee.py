@@ -62,8 +62,8 @@ class SqliteClientRepo(ClientRepo):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
         if not isinstance(name, String):
             raise TypeError(f"The argument 'name' should be a 'String', not a '{type(name)}'")
-        if not isinstance(date, Date):
-            raise TypeError(f"The argument 'date' should be a 'String', not a '{type(date)}'")
+        if not isinstance(admission, Date):
+            raise TypeError(f"The argument 'admission' should be a 'Date', not a '{type(admission)}'")
         if not isinstance(telephone, String):
             raise TypeError(f"The argument 'telephone' should be a 'String', not a '{type(telephone)}'")
         if not isinstance(direction, String):
@@ -73,7 +73,7 @@ class SqliteClientRepo(ClientRepo):
             raise KeyError(f"There is an existing client with the 'dni'={dni.as_primitive()}")
         raw_client = ClientTable.create(dni=dni.as_primitive(),
                                         name=name.as_primitive(),
-                                        admission=str(admission),
+                                        admission=admission.as_primitive(),
                                         telephone=telephone.as_primitive(),
                                         direction=direction.as_primitive())
         return raw_client.dni
