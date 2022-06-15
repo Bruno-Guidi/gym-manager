@@ -11,10 +11,10 @@ _DATABASE_NAME = r"test.db"  # ToDo. See how to set this str at program startup.
 _DATABASE = SqliteDatabase(_DATABASE_NAME)
 
 
-def create_table(tables: Type[Model], drop_before: bool = False):
+def create_table(table: Type[Model], drop_before: bool = False):
     if drop_before:
-        _DATABASE.drop_tables([tables])
-    _DATABASE.create_tables([tables])
+        _DATABASE.drop_tables([table])
+    _DATABASE.create_tables([table])
 
 
 class ClientTable(Model):
@@ -31,6 +31,9 @@ class ClientTable(Model):
 class SqliteClientRepo(ClientRepo):
     """Clients repository implementation based on Sqlite and peewee ORM.
     """
+
+    def __init__(self) -> None:
+        create_table(ClientTable)
 
     def contains(self, dni: Number) -> bool:
         """Returns True if there is a client with the given *dni*, False otherwise.
