@@ -16,7 +16,7 @@ from ui.widgets import Field
 class ClientRow(QWidget):
     def __init__(
             self, client: Client, client_repo: ClientRepo,
-            item: QListWidgetItem, change_selected_item: Callable[[QListWidgetItem], None],
+            item: QListWidgetItem, item_row: int, change_selected_item: Callable[[QListWidgetItem], None],
             total_width: int, height: int,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
@@ -24,6 +24,7 @@ class ClientRow(QWidget):
         self.client = client
         self.client_repo = client_repo
         self.item = item
+        self.item_row = item_row
         self.change_selected_item = change_selected_item
 
         self._setup_ui(client, total_width, height, name_width, dni_width, admission_width, tel_width, dir_width)
@@ -34,6 +35,7 @@ class ClientRow(QWidget):
         self.detail_hidden = True
         self.detail_btn.clicked.connect(self.hide_detail)
         self.save_btn.clicked.connect(self.save_changes)
+        self.remove_client_btn.clicked.connect(self.remove)
         self.hide_detail()
 
     def _setup_ui(
@@ -241,6 +243,14 @@ class ClientRow(QWidget):
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
+    def remove(self):
+        self.client_repo.remove(self.client)
+        client_list = self.item.listWidget()
+        client_list.takeItem(self.item_row)
+
+        QMessageBox.about(self.name_field.window(), "Éxito",
+                          f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
+
     # def load_activities(self):
     #     self.activities_table.setRowCount(self.client.n_activities())
     #
@@ -263,17 +273,18 @@ class Controller:
     def load_clients(self):
         self.client_list.clear()
 
-        for client in self.client_repo.all(page_number=self.current_page, items_per_page=15):
+        for row, client in enumerate(self.client_repo.all(page_number=self.current_page, items_per_page=15)):
             item = QListWidgetItem(self.client_list)
             self.client_list.addItem(item)
             row = ClientRow(
-                client, self.client_repo, item, change_selected_item=self.client_list.setCurrentItem, total_width=800,
-                height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
+                client, self.client_repo, item, row, change_selected_item=self.client_list.setCurrentItem,
+                total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
             self.client_list.setItemWidget(item, row)
 
     def add_client(self):
         self.add_ui = CreateUI(self.client_repo)
         self.add_ui.exec_()
+        self.load_clients()
 
 
 class ClientMainUI(QMainWindow):
