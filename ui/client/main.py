@@ -234,10 +234,10 @@ class ClientRow(QWidget):
             self.client_repo.update(self.client)
 
             # Updates ui.
-            self.name_summary.setText(self.client.name)
+            self.name_summary.setText(str(self.client.name))
             self.admission_summary.setText(str(self.client.admission))
-            self.tel_summary.setText(self.client.telephone)
-            self.dir_summary.setText(self.client.direction)
+            self.tel_summary.setText(self.client.telephone.as_primitive())
+            self.dir_summary.setText(self.client.direction.as_primitive())
 
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
