@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QMessageBox
 
 from gym_manager.core.persistence import ClientRepo
+from ui.client.create import CreateUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
 from ui.widgets import Field
 
@@ -261,6 +262,7 @@ class Controller:
 
         for client in self.client_repo.all(page_number=self.current_page, items_per_page=15):
             item = QListWidgetItem(self.client_list)
+            item.setText(f"{client.name.as_primitive()} {client.dni.as_primitive()} {str(client.admission)}")
             self.client_list.addItem(item)
             # row = ClientRow(client, self.client_repo, item, change_selected_item=self.client_list.setCurrentItem,
             #                 height=50, total_width=800, name_width=175, dni_width=90, admission_width=100, tel_width=110,
@@ -268,10 +270,9 @@ class Controller:
             # self.client_list.setItemWidget(item, row)
 
     def add_client(self):
-        pass
-        # self.add_ui = AddUI(self.client_repo, name_max_chars=30, tel_max_chars=15, dir_max_chars=30)
-        # self.add_ui.exec_()
-        # self.load_clients()  # ToDo Instead of this, put the new client in the top of the page.
+        self.add_ui = CreateUI(self.client_repo)
+        self.add_ui.exec_()
+        self.load_clients()  # ToDo Instead of this, put the new client in the top of the page.
 
 
 class ClientMainUI(QMainWindow):
@@ -313,9 +314,9 @@ class ClientMainUI(QMainWindow):
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
-        self.add_client_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.add_client_btn)
-        config_btn(self.add_client_btn, "Nuevo cliente", font_size=16)
+        self.create_client_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.create_client_btn)
+        config_btn(self.create_client_btn, "Nuevo cliente", font_size=16)
 
         self.main_layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
@@ -366,5 +367,5 @@ class ClientMainUI(QMainWindow):
         config_btn(self.next_btn, ">", font_size=18, width=30)
 
     def _setup_callbacks(self):
-        self.add_client_btn.clicked.connect(self.controller.add_client)
+        self.create_client_btn.clicked.connect(self.controller.add_client)
 
