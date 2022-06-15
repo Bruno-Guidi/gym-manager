@@ -88,7 +88,7 @@ class SqliteClientRepo(ClientRepo):
         """
         raw_client = ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive())
         raw_client.name = client.name.as_primitive()
-        raw_client.admission = str(client.admission)
+        raw_client.admission = client.admission.as_primitive()
         raw_client.telephone = client.telephone.as_primitive()
         raw_client.direction = client.direction.as_primitive()
         raw_client.save()
