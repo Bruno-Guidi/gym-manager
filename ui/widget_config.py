@@ -4,18 +4,6 @@ from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem, \
     QTextEdit, QCheckBox
 
-from gui.widgets import DateField
-
-
-def config_date_field(
-        target: DateField, font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0, height: int = 0
-):
-    target.setFont(QFont(font, font_size))
-    if width > 0:
-        target.setFixedWidth(width)
-    if height > 0:
-        target.setFixedHeight(height)
-
 
 def config_line(
         target: QLineEdit | QTextEdit, text: str = "", place_holder: str = "", font: str = "MS Shell Dlg 2",
