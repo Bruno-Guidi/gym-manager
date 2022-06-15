@@ -92,7 +92,7 @@ class String(Validatable):
 
 class Date(Validatable):
 
-    def validate(self, value: str, **kwargs) -> date:
+    def validate(self, value: str | date, **kwargs) -> date:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
         implementation stores.
 
@@ -102,6 +102,9 @@ class Date(Validatable):
         Raises:
             ValidationError if the validation failed.
         """
+        if isinstance(value, date):
+            return value
+
         for format_ in kwargs['format']:
             try:
                 return datetime.strptime(value, format_).date()
