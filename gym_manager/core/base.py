@@ -157,10 +157,11 @@ class NotRegistered(KeyError):
 class Activity:
     """Stores general information about an activity.
     """
-    id: int
+    id: Number
     name: String
     price: Currency
     pay_once: bool
+    description: String
 
 
 @dataclass
