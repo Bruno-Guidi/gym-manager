@@ -234,10 +234,7 @@ class ClientRow(QWidget):
     def hide_detail(self):
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
-            self.hidden_ui_loaded, self.hide_next = True, True
-            self.previous_height = 300
-            self.update_height()
-            return
+            self.hidden_ui_loaded, self.previous_height = True, 300
 
         # if self.main_ui_controller.opened_now is not None and not self.main_ui_controller.opened_now.is_hidden:
         #     print(self.client.dni, "hidding", self.main_ui_controller.opened_now.client.dni)
