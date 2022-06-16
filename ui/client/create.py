@@ -27,7 +27,7 @@ class Controller:
         self.client_repo = client_repo
 
     # noinspection PyTypeChecker
-    def validate_fields(self):
+    def create_client(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
                      self.tel_field.valid_value(), self.dir_field.valid_value()])
         if not valid:
@@ -139,5 +139,5 @@ class CreateUI(QDialog):
         self.button_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
 
     def _setup_callbacks(self):
-        self.button_box.accepted.connect(self.controller.validate_fields)
+        self.button_box.accepted.connect(self.controller.create_client)
         self.button_box.rejected.connect(self.reject)
