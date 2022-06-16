@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import Callable, Iterable, Optional
+from typing import Callable, Optional
 
-from PyQt5 import QtGui
 from PyQt5.QtCore import QRect, Qt, QSize
-from PyQt5.QtGui import QFocusEvent
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QTableWidgetItem, \
-    QMessageBox
+    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.base import Client, String, Number, Date
