@@ -220,7 +220,7 @@ class ActivityRow(QWidget):
 
     def remove(self):
         self.main_ui_controller.opened_now = None
-        self.activity_repo.remove(self.activity)  # ToDo implement method on repo
+        self.activity_repo.remove(self.activity)
         self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
         QMessageBox.about(self.name_field.window(), "Éxito",
@@ -243,7 +243,7 @@ class Controller:
         for row, activity in enumerate(self.activity_repo.all(page_number=self.current_page, items_per_page=15)):
             item = QListWidgetItem(self.activity_list)
             self.activity_list.addItem(item)
-            row = ActivityRow(
+            row = ActivityRow(  # ToDo. Adjust columns width.
                 activity, self.activity_repo, item, self, change_selected_item=self.activity_list.setCurrentItem,
                 total_width=800, height=50, name_width=175, price_width=90, pay_once_width=100)
             self.activity_list.setItemWidget(item, row)
