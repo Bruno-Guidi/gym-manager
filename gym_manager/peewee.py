@@ -165,6 +165,16 @@ class SqliteActivityRepo(ActivityRepo):
         # ToDo. To remove activity and its registrations, set on_delete=True in RegistrationTable.
         ActivityTable.delete_by_id(activity.id.as_primitive())
 
+    def update(self, activity: Activity):
+        """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
+        """
+        raw_activity = ActivityTable.get_or_none(ActivityTable.id == activity.id.as_primitive())
+        raw_activity.name = activity.name.as_primitive()
+        raw_activity.price = str(activity.price)
+        raw_activity.pay_once = activity.pay_once
+        raw_activity.description = activity.description.as_primitive()
+        raw_activity.save()
+
     def all(self, **kwargs) -> Generator[Activity, None, None]:
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
         for raw_activity in ActivityTable.select().paginate(page_number, items_per_page):

@@ -128,7 +128,7 @@ class ActivityRow(QWidget):
         config_lbl(self.pay_once_summary, pay_once_text, width=pay_once_width, height=30, alignment=Qt.AlignVCenter)
 
         self.pay_once_lbl: Optional[QLabel] = None
-        self.pay_once_checkbox: Optional[Field] = None
+        self.pay_once_checkbox: Optional[QCheckBox] = None
 
         # Detail button.
         self.top_buttons_layout = QVBoxLayout()
@@ -204,14 +204,14 @@ class ActivityRow(QWidget):
             # Updates client object.
             self.activity.name = self.name_field.value()
             self.activity.price = self.price_field.value()
-            self.activity.pay_once = self.pay_once_checkbox.value()
+            self.activity.pay_once = self.pay_once_checkbox.isChecked()
             self.activity.description = descr
 
-            # self.activity_repo.update(self.activity)  # ToDo implement method on repo
+            self.activity_repo.update(self.activity)
 
             # Updates ui.
             self.name_summary.setText(str(self.activity.name))
-            self.price_field.setText(str(self.activity.price))
+            self.price_summary.setText(str(self.activity.price))
             self.pay_once_summary.setText("Si" if self.activity.pay_once else "No")
             self.description_text.setText(str(self.activity.description))
 

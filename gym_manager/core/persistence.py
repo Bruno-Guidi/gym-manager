@@ -73,6 +73,12 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def update(self, activity: Activity):
+        """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def all(self, **kwargs) -> Generator[Activity, None, None]:
         raise NotImplementedError
 
