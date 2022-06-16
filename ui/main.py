@@ -1,26 +1,33 @@
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
+from ui.activity.main import ActivityMainUI
 from ui.client.main import ClientMainUI
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.persistence import ClientRepo, ActivityRepo
 from ui.widget_config import config_layout, config_lbl, config_btn
 
 
 class Controller:
-    def __init__(self, client_repo: ClientRepo):
+    def __init__(self, client_repo: ClientRepo, activity_repo: ActivityRepo):
         self.client_repo = client_repo
+        self.activity_repo = activity_repo
 
-    def show_main_client_ui(self):
-        self.main_client_ui = ClientMainUI(self.client_repo)
-        self.main_client_ui.setWindowModality(Qt.ApplicationModal)
-        self.main_client_ui.show()
+    def show_client_main_ui(self):
+        self.client_main_ui = ClientMainUI(self.client_repo)
+        self.client_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.client_main_ui.show()
+
+    def show_activity_main_ui(self):
+        self.activity_main_ui = ActivityMainUI(self.activity_repo)
+        self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.activity_main_ui.show()
 
 
 class MainUI(QMainWindow):
-    def __init__(self, client_repo: ClientRepo):
+    def __init__(self, client_repo: ClientRepo, activity_repo: ActivityRepo):
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo)
+        self.controller = Controller(client_repo, activity_repo)
         self._setup_callbacks(self.controller)
 
     def _setup_ui(self):
@@ -62,4 +69,5 @@ class MainUI(QMainWindow):
         config_btn(self.accounting_ui_btn, "Cont", width=80, height=80)
 
     def _setup_callbacks(self, controller: Controller):
-        self.client_ui_btn.clicked.connect(controller.show_main_client_ui)
+        self.client_ui_btn.clicked.connect(controller.show_client_main_ui)
+        self.activity_ui_btn.clicked.connect(controller.show_activity_main_ui)

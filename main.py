@@ -9,8 +9,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     client_repo = peewee.SqliteClientRepo()
+    activity_repo = peewee.SqliteActivityRepo()
 
-    window = MainUI(client_repo)
+    window = MainUI(client_repo, activity_repo)
     window.show()
 
     app.exec()
