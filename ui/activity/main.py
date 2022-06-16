@@ -5,13 +5,13 @@ from typing import Callable, Optional
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
     QListWidgetItem, QVBoxLayout, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
-    QTextEdit
+    QTextEdit, QCheckBox
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.base import String, Number, Date, Activity
+from gym_manager.core.base import String, Number, Date, Activity, Currency
 from gym_manager.core.persistence import ActivityRepo
 from ui.activity.create import CreateUI
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_checkbox
 from ui.widgets import Field, valid_text_value
 
 
@@ -47,21 +47,20 @@ class ActivityRow(QWidget):
             # Price.
             self.price_lbl = QLabel(self.widget)
             self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.price_lbl, "DNI", font_size=12, width=price_width)
+            config_lbl(self.price_lbl, "Precio", font_size=12, width=price_width)
 
-            self.price_field = Field(Number, self.widget, min_value=attr_constraints.CLIENT_MIN_DNI,
-                                     max_value=attr_constraints.CLIENT_MAX_DNI)
+            self.price_field = Field(Currency, self.widget, positive=True, max_currency=attr_constraints.MAX_CURRENCY)
             self.price_layout.addWidget(self.price_field)
-            config_line(self.price_field, str(activity.price), width=price_width, enabled=False)
+            config_line(self.price_field, str(activity.price), width=price_width)
 
             # Pay once.
             self.pay_once_lbl = QLabel(self.widget)
             self.pay_once_layout.addWidget(self.pay_once_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.pay_once_lbl, "Ingreso", font_size=12, width=pay_once_width)
+            config_lbl(self.pay_once_lbl, "Pago único", font_size=12, width=pay_once_width)
 
-            self.pay_once_field = Field(Date, self.widget, format=attr_constraints.DATE_FORMATS)
-            self.pay_once_layout.addWidget(self.pay_once_field)
-            config_line(self.pay_once_field, str(activity.pay_once), width=pay_once_width, enabled=False)
+            self.pay_once_checkbox = QCheckBox()
+            self.pay_once_layout.addWidget(self.pay_once_checkbox)
+            config_checkbox(self.pay_once_checkbox, checked=activity.pay_once, width=pay_once_width)
 
             # Save and delete buttons.
             self.save_btn = QPushButton(self.widget)
@@ -78,6 +77,7 @@ class ActivityRow(QWidget):
             config_lbl(self.description_lbl, "Descripción", font_size=12)
 
             self.description_text = QTextEdit(self.widget)
+            self.row_layout.addWidget(self.description_text)
             config_line(self.description_text, str(activity.description))
 
         self._setup_hidden_ui = _setup_hidden_ui
@@ -128,7 +128,7 @@ class ActivityRow(QWidget):
         config_lbl(self.pay_once_summary, pay_once_text, width=pay_once_width, height=30, alignment=Qt.AlignVCenter)
 
         self.pay_once_lbl: Optional[QLabel] = None
-        self.pay_once_field: Optional[Field] = None
+        self.pay_once_checkbox: Optional[Field] = None
 
         # Detail button.
         self.top_buttons_layout = QVBoxLayout()
@@ -156,9 +156,10 @@ class ActivityRow(QWidget):
         self.price_lbl.setHidden(hidden)
         self.price_field.setHidden(hidden)
         self.pay_once_lbl.setHidden(hidden)
-        self.pay_once_field.setHidden(hidden)
+        self.pay_once_checkbox.setHidden(hidden)
 
         self.description_lbl.setHidden(hidden)
+        self.description_text.setHidden(hidden)
 
         self.save_btn.setHidden(hidden)
         self.remove_btn.setHidden(hidden)
@@ -195,14 +196,15 @@ class ActivityRow(QWidget):
         self.set_hidden(self.is_hidden)
 
     def save_changes(self):
-        valid_descr, descr = valid_text_value(self.description_text, max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
+        valid_descr, descr = valid_text_value(self.description_text, optional=True,
+                                              max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
         if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         else:
             # Updates client object.
             self.activity.name = self.name_field.value()
             self.activity.price = self.price_field.value()
-            self.activity.pay_once = self.pay_once_field.value()
+            self.activity.pay_once = self.pay_once_checkbox.value()
             self.activity.description = descr
 
             # self.activity_repo.update(self.activity)  # ToDo implement method on repo
