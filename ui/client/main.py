@@ -4,7 +4,8 @@ from typing import Callable, Optional
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox
+    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
+    QTableWidgetItem
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.base import Client, String, Number, Date
@@ -102,9 +103,9 @@ class ClientRow(QWidget):
             self.row_layout.addLayout(self.bottom_layout)
             config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
 
-            self.activities_table = QTableWidget(self.widget)
-            self.bottom_layout.addWidget(self.activities_table)
-            config_table(self.activities_table,
+            self.registration_table = QTableWidget(self.widget)
+            self.bottom_layout.addWidget(self.registration_table)
+            config_table(self.registration_table,
                          columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
                          allow_resizing=True)  # ToDo. Set min width.
 
@@ -220,7 +221,7 @@ class ClientRow(QWidget):
         # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
         self.bottom_layout: Optional[QHBoxLayout] = None
 
-        self.activities_table: Optional[QTableWidget] = None
+        self.registration_table: Optional[QTableWidget] = None
 
         # Buttons.
         self.bottom_buttons_layout: Optional[QVBoxLayout] = None
@@ -247,7 +248,7 @@ class ClientRow(QWidget):
         self.dir_field.setHidden(hidden)
 
         self.activities_lbl.setHidden(hidden)
-        self.activities_table.setHidden(hidden)
+        self.registration_table.setHidden(hidden)
 
         self.save_btn.setHidden(hidden)
         self.remove_client_btn.setHidden(hidden)
@@ -318,13 +319,13 @@ class ClientRow(QWidget):
         QMessageBox.about(self.name_field.window(), "Éxito",
                           f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
-    # def load_activities(self):
-    #     self.activities_table.setRowCount(self.client.n_activities())
-    #
-    #     for row, entry in enumerate(self.client.activities):
-    #         self.activities_table.setItem(row, 0, QTableWidgetItem(entry.activity.name))
-    #         self.activities_table.setItem(row, 1, QTableWidgetItem(entry.last_paid_on))
-    #         self.activities_table.setItem(row, 2, QTableWidgetItem(entry.payment_id))
+    def load_registrations(self):
+        self.registration_table.setRowCount(self.client.n_registrations())
+
+        for row, registration in enumerate(self.client.registrations):
+            self.registration_table.setItem(row, 0, QTableWidgetItem(registration.activity.name))
+            self.registration_table.setItem(row, 1, QTableWidgetItem(registration.payment.when))
+            self.registration_table.setItem(row, 2, QTableWidgetItem(registration.payment.id))
 
 
 class Controller:
