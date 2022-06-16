@@ -7,7 +7,7 @@ from gym_manager.core import attr_constraints as constraints
 from gym_manager.core.base import Client, Number, String, Date, Currency, Activity
 from gym_manager.core.persistence import ClientRepo, ActivityRepo
 
-_DATABASE_NAME = r"test.db"  # ToDo. See how to set this str at program startup.
+_DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
 
 

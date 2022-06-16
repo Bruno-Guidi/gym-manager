@@ -56,7 +56,7 @@ class CreateUI(QDialog):
         self._setup_callbacks()
 
     def _setup_ui(self):
-        self.resize(400, 300)  # ToDo Check why when the border is set to red the QLineEdit shrinks.
+        self.resize(400, 300)
 
         self.layout = QVBoxLayout(self)
 
