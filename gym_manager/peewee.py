@@ -8,7 +8,7 @@ from gym_manager.core.base import Client, Number, String, Date, Currency, Activi
 from gym_manager.core.persistence import ClientRepo, ActivityRepo
 
 _DATABASE_NAME = r"test.db"  # ToDo. See how to set this str at program startup.
-_DATABASE = SqliteDatabase(_DATABASE_NAME)
+_DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
 
 
 def create_table(table: Type[Model], drop_before: bool = False):
