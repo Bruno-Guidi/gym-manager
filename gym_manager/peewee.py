@@ -147,6 +147,24 @@ class SqliteActivityRepo(ActivityRepo):
         )
         return raw_activity.id
 
+    def remove(self, activity: Activity, cascade_removing: bool = False):
+        """Tries to remove the given *activity*.
+
+        If *cascade_removing* is False, and there is at least one client registered in the activity, the removing will
+        fail. If *cascade_removing* is True, the *activity* and all registrations for it will be removed.
+
+        Args:
+            activity: activity to remove.
+            cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
+                only if it has zero registrations.
+        """
+        registered_clients = self.registered_clients(activity)
+        if not cascade_removing and registered_clients > 0:
+            raise Exception(f"The activity '{activity.name}' can not be removed because it has {registered_clients} "
+                            f"registered clients and 'cascade_removing' was set to False.")
+        # ToDo. To remove activity and its registrations, set on_delete=True in RegistrationTable.
+        ActivityTable.delete_by_id(activity.id.as_primitive())
+
     def all(self, **kwargs) -> Generator[Activity, None, None]:
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
         for raw_activity in ActivityTable.select().paginate(page_number, items_per_page):
@@ -155,3 +173,8 @@ class SqliteActivityRepo(ActivityRepo):
                            Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
+
+    def registered_clients(self, activity: Activity) -> int:
+        """Returns the number of clients registered in the given *activity*.
+        """
+        return 0  # ToDo This requires RegistrationTable.

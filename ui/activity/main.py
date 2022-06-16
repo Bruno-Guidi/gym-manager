@@ -220,7 +220,7 @@ class ActivityRow(QWidget):
 
     def remove(self):
         self.main_ui_controller.opened_now = None
-        # self.activity_repo.remove(self.activity)  # ToDo implement method on repo
+        self.activity_repo.remove(self.activity)  # ToDo implement method on repo
         self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
         QMessageBox.about(self.name_field.window(), "Éxito",
