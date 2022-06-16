@@ -222,15 +222,6 @@ class ClientRow(QWidget):
         # self.save_btn.clicked.connect(self.save_changes)
         # self.remove_client_btn.clicked.connect(self.remove)
 
-    def update_height(self):
-        self.previous_height, self.current_height = self.current_height, self.previous_height
-
-        print("curr", self.current_height, "prev", self.previous_height)
-        new_width = self.widget.sizeHint().width() - 3
-        self.item.setSizeHint(QSize(new_width, self.current_height))
-        self.resize(new_width, self.current_height)
-        self.widget.resize(new_width, self.current_height)
-
     def hide_detail(self):
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
@@ -263,7 +254,15 @@ class ClientRow(QWidget):
         # self.charge_activity_btn.setHidden(self.detail_hidden)
         # self.payments_btn.setHidden(self.detail_hidden)
 
-        self.update_height()
+        # Updates the height of the widget.
+        self.previous_height, self.current_height = self.current_height, self.previous_height
+
+        new_width = self.widget.sizeHint().width() - 3
+        self.item.setSizeHint(QSize(new_width, self.current_height))
+        self.resize(new_width, self.current_height)
+        self.widget.resize(new_width, self.current_height)
+
+        # Inverts the state of the widget.
         self.hide_next = not self.hide_next
 
     def save_changes(self):
