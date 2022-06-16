@@ -271,6 +271,7 @@ class ClientRow(QWidget):
         # Creates the hidden widgets in case it is the first time the detail button is clicked.
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
+            self._setup_callbacks()
             self.hidden_ui_loaded, self.previous_height = True, 350
 
         # Hides previously opened detail.
