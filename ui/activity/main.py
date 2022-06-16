@@ -19,8 +19,7 @@ class ActivityRow(QWidget):
     def __init__(
             self, activity: Activity, activity_repo: ActivityRepo,
             item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
-            total_width: int, height: int,
-            name_width: int, price_width: int, pay_once_width: int, tel_width: int, dir_width: int
+            total_width: int, height: int, name_width: int, price_width: int, pay_once_width: int
     ):
         super().__init__()
         self.activity = activity
@@ -208,7 +207,7 @@ class ActivityRow(QWidget):
             self.activity.pay_once = self.pay_once_field.value()
             self.activity.description = descr
 
-            # self.activity_repo.update(self.activity)
+            # self.activity_repo.update(self.activity)  # ToDo implement method on repo
 
             # Updates ui.
             self.name_summary.setText(str(self.activity.name))
@@ -221,7 +220,7 @@ class ActivityRow(QWidget):
 
     def remove(self):
         self.main_ui_controller.opened_now = None
-        # self.activity_repo.remove(self.activity)
+        # self.activity_repo.remove(self.activity)  # ToDo implement method on repo
         self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
         QMessageBox.about(self.name_field.window(), "Éxito",
@@ -249,8 +248,8 @@ class Controller:
                 total_width=800, height=50, name_width=175, price_width=90, pay_once_width=100)
             self.activity_list.setItemWidget(item, row)
 
-    def add_client(self):
-        pass
+    def add_activity(self):
+        pass  # ToDo implement.
         # self.add_ui = CreateUI(self.activity_repo)
         # self.add_ui.exec_()
         # self.load_activities()
@@ -340,5 +339,5 @@ class ActivityMainUI(QMainWindow):
         config_btn(self.next_btn, ">", font_size=18, width=30)
 
     def _setup_callbacks(self):
-        self.create_client_btn.clicked.connect(self.controller.add_client)
+        self.create_client_btn.clicked.connect(self.controller.add_activity)
 
