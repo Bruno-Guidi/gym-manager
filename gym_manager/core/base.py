@@ -123,15 +123,18 @@ class Date(Validatable):
         return datetime.strftime(self._value, attr_constraints.DATE_FORMATS[0])
 
 
-class Currency:  # ToDo extend from Validatable.
-    def __init__(self, raw_amount: str) -> None:
-        self.amount = Decimal(raw_amount)
+class Currency(Validatable):
+    def __init__(self, value: str, **validate_args) -> None:
+        super().__init__(value, **validate_args)
 
-    def __str__(self) -> str:
-        return str(self.amount)
-
-    def __eq__(self, o: Currency) -> bool:
-        return self.amount == o.amount
+    def validate(self, value: str, **kwargs) -> Any:
+        value = Decimal(value)
+        if kwargs['positive'] and value <= 0:
+            raise ValidationError(f"The currency '{value}' is not valid. It should be greater than zero.")
+        if value >= kwargs['max_currency']:
+            raise ValidationError(
+                f"The currency '{value}' is not valid. It should be less than '{kwargs['max_currency']}'.")
+        return value
 
 
 class NotRegistered(KeyError):
