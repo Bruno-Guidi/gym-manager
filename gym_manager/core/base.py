@@ -29,6 +29,12 @@ class Validatable(abc.ABC):
     def __init__(self, value: Any, **validate_args):
         self._value = self.validate(value, **validate_args)
 
+    def __str__(self) -> str:
+        return str(self._value)
+
+    def __eq__(self, o: Validatable) -> bool:
+        return self._value == o._value
+
     @abc.abstractmethod
     def validate(self, value: Any, **kwargs) -> Any:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
@@ -40,10 +46,6 @@ class Validatable(abc.ABC):
         Raises:
             ValidationError if the validation failed.
         """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def __str__(self) -> str:
         raise NotImplementedError
 
     def as_primitive(self) -> Any:
@@ -74,12 +76,6 @@ class Number(Validatable):
             raise ValidationError(f"The value '{value}' must be in the range [{min_value}, {max_value})")
         return int_value
 
-    def __str__(self) -> str:
-        return str(self._value)
-
-    def __eq__(self, o: Number) -> bool:
-        return self._value == o._value
-
 
 class String(Validatable):
 
@@ -99,9 +95,6 @@ class String(Validatable):
         if len(value) > kwargs['max_len']:
             raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
         return value
-
-    def __str__(self) -> str:
-        return self._value
 
 
 class Date(Validatable):
