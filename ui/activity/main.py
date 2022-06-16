@@ -1,0 +1,344 @@
+from __future__ import annotations
+
+from typing import Callable, Optional
+
+from PyQt5.QtCore import QRect, Qt, QSize
+from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
+    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
+    QTableWidgetItem, QTextEdit
+
+from gym_manager.core import attr_constraints
+from gym_manager.core.base import Client, String, Number, Date, Activity
+from gym_manager.core.persistence import ClientRepo, ActivityRepo
+from ui.client.create import CreateUI
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
+from ui.widgets import Field, valid_text_value
+
+
+class ActivityRow(QWidget):
+    def __init__(
+            self, activity: Activity, activity_repo: ActivityRepo,
+            item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
+            total_width: int, height: int,
+            name_width: int, price_width: int, pay_once_width: int, tel_width: int, dir_width: int
+    ):
+        super().__init__()
+        self.activity = activity
+        self.activity_repo = activity_repo
+        self.item = item
+        self.main_ui_controller = main_ui_controller
+        self.change_selected_item = change_selected_item
+
+        self._setup_ui(total_width, height, name_width, price_width, pay_once_width)
+
+        # Because the widgets are yet to be hided, the hint has the 'extended' height.
+        self.current_height, self.previous_height = height, None
+        self.item.setSizeHint(QSize(total_width, self.current_height))
+
+        def _setup_hidden_ui():
+            # Name.
+            self.name_lbl = QLabel(self.widget)
+            self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
+            config_lbl(self.name_lbl, "Nombre", font_size=12, width=name_width)
+
+            self.name_field = Field(String, self.widget, optional=False, max_len=attr_constraints.CLIENT_NAME_CHARS)
+            self.name_layout.addWidget(self.name_field)
+            config_line(self.name_field, str(activity.name), width=name_width)
+
+            # Price.
+            self.price_lbl = QLabel(self.widget)
+            self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
+            config_lbl(self.price_lbl, "DNI", font_size=12, width=price_width)
+
+            self.price_field = Field(Number, self.widget, min_value=attr_constraints.CLIENT_MIN_DNI,
+                                     max_value=attr_constraints.CLIENT_MAX_DNI)
+            self.price_layout.addWidget(self.price_field)
+            config_line(self.price_field, str(activity.price), width=price_width, enabled=False)
+
+            # Pay once.
+            self.pay_once_lbl = QLabel(self.widget)
+            self.pay_once_layout.addWidget(self.pay_once_lbl, alignment=Qt.AlignBottom)
+            config_lbl(self.pay_once_lbl, "Ingreso", font_size=12, width=pay_once_width)
+
+            self.pay_once_field = Field(Date, self.widget, format=attr_constraints.DATE_FORMATS)
+            self.pay_once_layout.addWidget(self.pay_once_field)
+            config_line(self.pay_once_field, str(activity.pay_once), width=pay_once_width, enabled=False)
+
+            # Save and delete buttons.
+            self.save_btn = QPushButton(self.widget)
+            self.top_buttons_layout.addWidget(self.save_btn)
+            config_btn(self.save_btn, text="Guardar", width=100)
+
+            self.remove_btn = QPushButton(self.widget)
+            self.top_buttons_layout.addWidget(self.remove_btn)
+            config_btn(self.remove_btn, text="Eliminar", width=100)
+
+            # Description.
+            self.description_lbl = QLabel(self.widget)
+            self.row_layout.addWidget(self.description_lbl)
+            config_lbl(self.description_lbl, "Descripción", font_size=12)
+
+            self.description_text = QTextEdit(self.widget)
+            config_line(self.description_text, str(activity.description))
+
+        self._setup_hidden_ui = _setup_hidden_ui
+        self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
+
+        self.detail_btn.clicked.connect(self.hide_detail)
+        self.is_hidden = False
+
+    def _setup_ui(self, total_width: int, height: int, name_width: int, price_width: int, pay_once_width: int):
+        self.widget = QWidget(self)
+        self.widget.setGeometry(QRect(0, 0, total_width, height))
+
+        self.row_layout = QVBoxLayout(self.widget)
+
+        self.top_layout = QHBoxLayout()
+        self.row_layout.addLayout(self.top_layout)
+        config_layout(self.top_layout, alignment=Qt.AlignCenter)
+
+        # Name layout.
+        self.name_layout = QVBoxLayout()
+        self.top_layout.addLayout(self.name_layout)
+
+        self.name_summary = QLabel(self.widget)
+        self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
+        config_lbl(self.name_summary, str(self.activity.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
+
+        self.name_lbl: Optional[QLabel] = None
+        self.name_field: Optional[Field] = None
+
+        # Price layout.
+        self.price_layout = QVBoxLayout()
+        self.top_layout.addLayout(self.price_layout)
+
+        self.price_summary = QLabel(self.widget)
+        self.price_layout.addWidget(self.price_summary, alignment=Qt.AlignTop)
+        config_lbl(self.price_summary, str(self.activity.price), width=price_width, height=30, alignment=Qt.AlignVCenter)
+
+        self.price_lbl: Optional[QLabel] = None
+        self.price_field: Optional[Field] = None
+
+        # Admission layout.
+        self.pay_once_layout = QVBoxLayout()
+        self.top_layout.addLayout(self.pay_once_layout)
+
+        self.pay_once_summary = QLabel(self.widget)
+        self.pay_once_layout.addWidget(self.pay_once_summary, alignment=Qt.AlignTop)
+        pay_once_text = "Si" if self.activity.pay_once else "No"
+        config_lbl(self.pay_once_summary, pay_once_text, width=pay_once_width, height=30, alignment=Qt.AlignVCenter)
+
+        self.pay_once_lbl: Optional[QLabel] = None
+        self.pay_once_field: Optional[Field] = None
+
+        # Detail button.
+        self.top_buttons_layout = QVBoxLayout()
+        self.top_layout.addLayout(self.top_buttons_layout)
+
+        self.detail_btn = QPushButton(self.widget)
+        self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
+        config_btn(self.detail_btn, text="Detalle", width=100)
+
+        self.save_btn: Optional[QPushButton] = None
+        self.remove_btn: Optional[QPushButton] = None
+
+        # Description.
+        self.description_lbl: Optional[QLabel] = None
+        self.description_text: Optional[QTextEdit] = None
+
+    def _setup_callbacks(self):
+        self.save_btn.clicked.connect(self.save_changes)
+        self.remove_btn.clicked.connect(self.remove)
+
+    def set_hidden(self, hidden: bool):
+        # Hides widgets.
+        self.name_lbl.setHidden(hidden)
+        self.name_field.setHidden(hidden)
+        self.price_lbl.setHidden(hidden)
+        self.price_field.setHidden(hidden)
+        self.pay_once_lbl.setHidden(hidden)
+        self.pay_once_field.setHidden(hidden)
+
+        self.description_lbl.setHidden(hidden)
+
+        self.save_btn.setHidden(hidden)
+        self.remove_btn.setHidden(hidden)
+
+        # Updates the height of the widget.
+        self.previous_height, self.current_height = self.current_height, self.previous_height
+
+        new_width = self.widget.sizeHint().width() - 3
+        self.item.setSizeHint(QSize(new_width, self.current_height))
+        self.resize(new_width, self.current_height)
+        self.widget.resize(new_width, self.current_height)
+
+        # Inverts the state of the widget.
+        self.is_hidden = not hidden
+
+    def hide_detail(self):
+        # Creates the hidden widgets in case it is the first time the detail button is clicked.
+        if not self.hidden_ui_loaded:
+            self._setup_hidden_ui()
+            self._setup_callbacks()
+            self.hidden_ui_loaded, self.previous_height = True, 350
+
+        # Hides previously opened detail.
+        if self.main_ui_controller.opened_now is None:
+            self.main_ui_controller.opened_now = self
+        elif self.main_ui_controller.opened_now.activity != self.activity:
+            self.main_ui_controller.opened_now.set_hidden(True)
+            self.main_ui_controller.opened_now = self
+        else:
+            self.main_ui_controller.opened_now = None
+
+        # Hide or show the widgets.
+        self.change_selected_item(self.item)
+        self.set_hidden(self.is_hidden)
+
+    def save_changes(self):
+        valid_descr, descr = valid_text_value(self.description_text, max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
+        valid = all([self.name_field.valid_value(), self.price_field.valid_value(), self.pay_once_field.valid_value(),
+                     valid_descr])
+        if not valid:
+            QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
+        else:
+            # Updates client object.
+            self.activity.name = self.name_field.value()
+            self.activity.price = self.price_field.value()
+            self.activity.pay_once = self.pay_once_field.value()
+            self.activity.description = descr
+
+            # self.activity_repo.update(self.activity)
+
+            # Updates ui.
+            self.name_summary.setText(str(self.activity.name))
+            self.price_field.setText(str(self.activity.price))
+            self.pay_once_summary.setText("Si" if self.activity.pay_once else "No")
+            self.description_text.setText(str(self.activity.description))
+
+            QMessageBox.about(self.name_field.window(), "Éxito",
+                              f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
+
+    def remove(self):
+        self.main_ui_controller.opened_now = None
+        # self.activity_repo.remove(self.activity)
+        self.item.listWidget().takeItem(self.item.listWidget().currentRow())
+
+        QMessageBox.about(self.name_field.window(), "Éxito",
+                          f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
+
+
+class Controller:
+    def __init__(self, activity_repo: ActivityRepo, activity_list: QListWidget):
+        self.activity_repo = activity_repo
+        self.current_page = 1
+        self.opened_now: Optional[ActivityRow] = None
+
+        self.activity_list = activity_list
+
+        self.load_activities()
+
+    def load_activities(self):
+        self.activity_list.clear()
+
+        for row, activity in enumerate(self.activity_repo.all(page_number=self.current_page, items_per_page=15)):
+            item = QListWidgetItem(self.activity_list)
+            self.activity_list.addItem(item)
+            row = ActivityRow(
+                activity, self.activity_repo, item, self, change_selected_item=self.activity_list.setCurrentItem,
+                total_width=800, height=50, name_width=175, price_width=90, pay_once_width=100)
+            self.activity_list.setItemWidget(item, row)
+
+    def add_client(self):
+        pass
+        # self.add_ui = CreateUI(self.activity_repo)
+        # self.add_ui.exec_()
+        # self.load_activities()
+
+
+class ActivityMainUI(QMainWindow):
+
+    def __init__(self, activity_repo: ActivityRepo, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        name_width, price_width, pay_once_width = 175, 90, 100
+        self._setup_ui(name_width, price_width, pay_once_width)
+        self.controller = Controller(activity_repo, self.activity_list)
+        self._setup_callbacks()
+
+    def _setup_ui(self, name_width: int, price_width: int, pay_once_width: int):
+        self.resize(800, 600)
+
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+
+        self.widget = QWidget(self.central_widget)
+        self.widget.setGeometry(QRect(0, 0, 800, 600))
+
+        self.main_layout = QVBoxLayout(self.widget)
+
+        # Utilities.
+        self.utils_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.utils_layout)
+        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
+
+        self.filter_combobox = QComboBox(self.widget)
+        self.utils_layout.addWidget(self.filter_combobox)
+        config_combobox(self.filter_combobox, font_size=16)
+
+        self.search_box = QLineEdit(self.widget)
+        self.utils_layout.addWidget(self.search_box)
+        config_line(self.search_box, place_holder="Búsqueda", font_size=16)
+
+        self.search_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.search_btn)
+        config_btn(self.search_btn, "Busq", font_size=16)
+
+        self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        self.create_client_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.create_client_btn)
+        config_btn(self.create_client_btn, "Nueva actividad", font_size=16)
+
+        self.main_layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        # Header.
+        self.header_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.header_layout)
+        config_layout(self.header_layout, alignment=Qt.AlignLeft, left_margin=11, spacing=0)
+
+        self.name_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.name_lbl)
+        config_lbl(self.name_lbl, "Nombre", width=name_width + 6)  # 6 is the spacing.
+
+        self.price_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.price_lbl)
+        config_lbl(self.price_lbl, "Precio", width=price_width + 6)  # 6 is the spacing.
+
+        self.pay_once_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.pay_once_lbl)
+        config_lbl(self.pay_once_lbl, "Pago único", width=pay_once_width + 6)  # 6 is the spacing.
+
+        # Activities.
+        self.activity_list = QListWidget(self.widget)
+        self.main_layout.addWidget(self.activity_list)
+
+        # Index.
+        self.index_layout = QHBoxLayout()
+        self.main_layout.addLayout(self.index_layout)
+        config_layout(self.index_layout, left_margin=100, right_margin=100)
+
+        self.prev_btn = QPushButton(self.widget)
+        self.index_layout.addWidget(self.prev_btn)
+        config_btn(self.prev_btn, "<", font_size=18, width=30)
+
+        self.index_lbl = QLabel(self.widget)
+        self.index_layout.addWidget(self.index_lbl)
+        config_lbl(self.index_lbl, "#", font_size=18)
+
+        self.next_btn = QPushButton(self.widget)
+        self.index_layout.addWidget(self.next_btn)
+        config_btn(self.next_btn, ">", font_size=18, width=30)
+
+    def _setup_callbacks(self):
+        self.create_client_btn.clicked.connect(self.controller.add_client)
+
