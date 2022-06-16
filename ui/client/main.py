@@ -287,8 +287,6 @@ class ClientRow(QWidget):
         self.change_selected_item(self.item)
         self.set_hidden(self.is_hidden)
 
-        print("The selected item is ", self.main_ui_controller.client_list.itemWidget(self.item).client.dni)
-
     def save_changes(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
                      self.tel_field.valid_value(), self.dir_field.valid_value()])
