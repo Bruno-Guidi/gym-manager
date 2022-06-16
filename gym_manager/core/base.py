@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from dataclasses import dataclass, field
 from datetime import date, timedelta, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Optional
 
 from gym_manager.core import attr_constraints
@@ -126,7 +126,10 @@ class Date(Validatable):
 class Currency(Validatable):
 
     def validate(self, value: str, **kwargs) -> Any:
-        value = Decimal(value)
+        try:
+            value = Decimal(value)
+        except InvalidOperation:
+            raise ValidationError(f"The value '{value}' is not a valid currency.")
         if kwargs['positive'] and value <= 0:
             raise ValidationError(f"The currency '{value}' is not valid. It should be greater than zero.")
         if value >= kwargs['max_currency']:
