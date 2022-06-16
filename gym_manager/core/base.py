@@ -75,6 +75,9 @@ class Number(Validatable):
     def __str__(self) -> str:
         return str(self._value)
 
+    def __eq__(self, o: Number) -> bool:
+        return self._value == o._value
+
 
 class String(Validatable):
 
