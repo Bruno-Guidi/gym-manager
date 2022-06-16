@@ -218,9 +218,8 @@ class ClientRow(QWidget):
         # config_btn(self.payments_btn, text="Ver pagos", width=100)
 
     def _setup_callbacks(self):
-        pass
-        # self.save_btn.clicked.connect(self.save_changes)
-        # self.remove_client_btn.clicked.connect(self.remove)
+        self.save_btn.clicked.connect(self.save_changes)
+        self.remove_client_btn.clicked.connect(self.remove)
 
     def set_hidden(self, hidden: bool):
         # Hides widgets.
