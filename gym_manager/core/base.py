@@ -57,8 +57,8 @@ class Number(Validatable):
         implementation stores.
 
         Keyword Args:
-            min_value: minimum valid value.
-            max_value: maximum valid value.
+            min_value: minimum valid value. If None, min_value will be -inf.
+            max_value: maximum valid value. If None, max_value will be inf.
 
         Raises:
             ValidationError if the validation failed.
@@ -68,8 +68,10 @@ class Number(Validatable):
         if isinstance(value, str) and not value.isnumeric():
             raise ValidationError(f"The str '{value}' is not numeric.")
         int_value = int(value)
-        if int_value < kwargs['min_value'] or int_value >= kwargs['max_value']:
-            raise ValidationError(f"The value '{value}' must be in the range [{kwargs['min_value']}, {kwargs['max_value']})")
+        min_value = kwargs['min_value'] if 'min_value' in kwargs else float('-inf')
+        max_value = kwargs['max_value'] if 'max_value' in kwargs else float('inf')
+        if int_value < min_value or int_value >= max_value:
+            raise ValidationError(f"The value '{value}' must be in the range [{min_value}, {max_value})")
         return int_value
 
     def __str__(self) -> str:
