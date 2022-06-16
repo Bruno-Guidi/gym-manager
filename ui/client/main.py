@@ -95,6 +95,43 @@ class ClientRow(QWidget):
             self.top_buttons_layout.addWidget(self.remove_client_btn)
             config_btn(self.remove_client_btn, text="Eliminar", width=100)
 
+            # Activities.
+            self.activities_lbl = QLabel(self.widget)
+            self.row_layout.addWidget(self.activities_lbl)
+            config_lbl(self.activities_lbl, "Actividades", font_size=12)
+
+            # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
+            self.bottom_layout = QHBoxLayout()
+            self.row_layout.addLayout(self.bottom_layout)
+            config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
+
+            self.activities_table = QTableWidget(self.widget)
+            self.bottom_layout.addWidget(self.activities_table)
+            config_table(self.activities_table,
+                         columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
+                         allow_resizing=True)  # ToDo. Set min width.
+
+            # Buttons.
+            self.bottom_buttons_layout = QVBoxLayout()
+            self.bottom_layout.addLayout(self.bottom_buttons_layout)
+            config_layout(self.bottom_buttons_layout, alignment=Qt.AlignTop)
+
+            self.add_activity_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.add_activity_btn)
+            config_btn(self.add_activity_btn, text="Nueva\nactividad", width=100)
+
+            self.remove_activity_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.remove_activity_btn)
+            config_btn(self.remove_activity_btn, text="Eliminar\nactividad", width=100)
+
+            self.charge_activity_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.charge_activity_btn)
+            config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=100)
+
+            self.payments_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.payments_btn)
+            config_btn(self.payments_btn, text="Ver pagos", width=100)
+
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
@@ -181,41 +218,19 @@ class ClientRow(QWidget):
         self.remove_client_btn: Optional[QPushButton] = None
 
         # Activities.
-        # self.activities_lbl = QLabel(self.widget)
-        # self.row_layout.addWidget(self.activities_lbl)
-        # config_lbl(self.activities_lbl, "Actividades", font_size=12)
+        self.activities_lbl: Optional[QLabel] = None
 
         # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
-        # self.bottom_layout = QHBoxLayout()
-        # self.row_layout.addLayout(self.bottom_layout)
-        # config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
-        #
-        # self.activities_table = QTableWidget(self.widget)
-        # self.bottom_layout.addWidget(self.activities_table)
-        # config_table(self.activities_table,
-        #              columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
-        #              allow_resizing=True)  # ToDo. Set min width.
+        self.bottom_layout: Optional[QHBoxLayout] = None
+
+        self.activities_table: Optional[QTableWidget] = None
 
         # Buttons.
-        # self.bottom_buttons_layout = QVBoxLayout()
-        # self.bottom_layout.addLayout(self.bottom_buttons_layout)
-        # config_layout(self.bottom_buttons_layout, alignment=Qt.AlignTop)
-        #
-        # self.add_activity_btn = QPushButton(self.widget)
-        # self.bottom_buttons_layout.addWidget(self.add_activity_btn)
-        # config_btn(self.add_activity_btn, text="Nueva\nactividad", width=100)
-        #
-        # self.remove_activity_btn = QPushButton(self.widget)
-        # self.bottom_buttons_layout.addWidget(self.remove_activity_btn)
-        # config_btn(self.remove_activity_btn, text="Eliminar\nactividad", width=100)
-        #
-        # self.charge_activity_btn = QPushButton(self.widget)
-        # self.bottom_buttons_layout.addWidget(self.charge_activity_btn)
-        # config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=100)
-        #
-        # self.payments_btn = QPushButton(self.widget)
-        # self.bottom_buttons_layout.addWidget(self.payments_btn)
-        # config_btn(self.payments_btn, text="Ver pagos", width=100)
+        self.bottom_buttons_layout: Optional[QVBoxLayout] = None
+        self.add_activity_btn: Optional[QPushButton] = None
+        self.remove_activity_btn: Optional[QPushButton] = None
+        self.charge_activity_btn: Optional[QPushButton] = None
+        self.payments_btn: Optional[QPushButton] = None
 
     def _setup_callbacks(self):
         self.save_btn.clicked.connect(self.save_changes)
@@ -234,15 +249,15 @@ class ClientRow(QWidget):
         self.dir_lbl.setHidden(hidden)
         self.dir_field.setHidden(hidden)
 
-        # self.activities_lbl.setHidden(self.detail_hidden)
-        # self.activities_table.setHidden(self.detail_hidden)
+        self.activities_lbl.setHidden(hidden)
+        self.activities_table.setHidden(hidden)
 
         self.save_btn.setHidden(hidden)
         self.remove_client_btn.setHidden(hidden)
-        # self.add_activity_btn.setHidden(self.detail_hidden)
-        # self.remove_activity_btn.setHidden(self.detail_hidden)
-        # self.charge_activity_btn.setHidden(self.detail_hidden)
-        # self.payments_btn.setHidden(self.detail_hidden)
+        self.add_activity_btn.setHidden(hidden)
+        self.remove_activity_btn.setHidden(hidden)
+        self.charge_activity_btn.setHidden(hidden)
+        self.payments_btn.setHidden(hidden)
 
         # Updates the height of the widget.
         self.previous_height, self.current_height = self.current_height, self.previous_height
@@ -259,7 +274,7 @@ class ClientRow(QWidget):
         # Creates the hidden widgets in case it is the first time the detail button is clicked.
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
-            self.hidden_ui_loaded, self.previous_height = True, 150
+            self.hidden_ui_loaded, self.previous_height = True, 350
 
         # Hides previously opened detail.
         if self.main_ui_controller.opened_now is None:
