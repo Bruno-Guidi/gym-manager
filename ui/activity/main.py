@@ -4,14 +4,14 @@ from typing import Callable, Optional
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
-    QTableWidgetItem, QTextEdit
+    QListWidgetItem, QVBoxLayout, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
+    QTextEdit
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.base import Client, String, Number, Date, Activity
-from gym_manager.core.persistence import ClientRepo, ActivityRepo
-from ui.client.create import CreateUI
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
+from gym_manager.core.base import String, Number, Date, Activity
+from gym_manager.core.persistence import ActivityRepo
+from ui.activity.create import CreateUI
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox
 from ui.widgets import Field, valid_text_value
 
 
@@ -196,9 +196,7 @@ class ActivityRow(QWidget):
 
     def save_changes(self):
         valid_descr, descr = valid_text_value(self.description_text, max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
-        valid = all([self.name_field.valid_value(), self.price_field.valid_value(), self.pay_once_field.valid_value(),
-                     valid_descr])
-        if not valid:
+        if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         else:
             # Updates client object.
@@ -249,10 +247,9 @@ class Controller:
             self.activity_list.setItemWidget(item, row)
 
     def add_activity(self):
-        pass  # ToDo implement.
-        # self.add_ui = CreateUI(self.activity_repo)
-        # self.add_ui.exec_()
-        # self.load_activities()
+        self.add_ui = CreateUI(self.activity_repo)
+        self.add_ui.exec_()
+        self.load_activities()
 
 
 class ActivityMainUI(QMainWindow):
