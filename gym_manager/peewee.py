@@ -1,11 +1,11 @@
 from datetime import date
 from typing import Type, Generator
 
-from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField
+from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField
 
 from gym_manager.core import attr_constraints as constraints
-from gym_manager.core.base import Client, Number, String, Date
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.base import Client, Number, String, Date, Currency, Activity
+from gym_manager.core.persistence import ClientRepo, ActivityRepo
 
 _DATABASE_NAME = r"test.db"  # ToDo. See how to set this str at program startup.
 _DATABASE = SqliteDatabase(_DATABASE_NAME)
@@ -119,3 +119,39 @@ class SqliteClientRepo(ClientRepo):
                 String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL, max_len=constraints.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL, max_len=constraints.CLIENT_DIR_CHARS)
             )
+
+
+class ActivityTable(Model):
+    id = IntegerField(primary_key=True)
+    name = CharField()
+    price = CharField()
+    pay_once = BooleanField()
+    description = TextField()
+
+    class Meta:
+        database = _DATABASE
+
+
+class SqliteActivityRepo(ActivityRepo):
+    """Activities repository implementation based on Sqlite and peewee ORM.
+    """
+
+    def __init__(self) -> None:
+        create_table(ActivityTable)
+
+    def add(self, name: String, price: Currency, pay_once: bool, description: String) -> int:
+        """Creates an activity with the given data, and returns its id in the repository.
+        """
+        raw_activity = ActivityTable.create(
+            name=str(name), price=str(price), pay_once=pay_once, description=str(description)
+        )
+        return raw_activity.id
+
+    def all(self, **kwargs) -> Generator[Activity, None, None]:
+        page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
+        for raw_activity in ActivityTable.select().paginate(page_number, items_per_page):
+            yield Activity(Number(raw_activity.id),
+                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price),
+                           raw_activity.pay_once,
+                           String(raw_activity.description, max_len=constraints.ACTIVITY_DESCR_CHARS))
