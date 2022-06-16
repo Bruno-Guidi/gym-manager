@@ -99,7 +99,7 @@ class ClientRow(QWidget):
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
         self.detail_btn.clicked.connect(self.hide_detail)
-        self.hide_next = False
+        self.is_hidden = False
 
     def _setup_ui(
             self, client: Client, total_width: int, height: int,
@@ -222,33 +222,24 @@ class ClientRow(QWidget):
         # self.save_btn.clicked.connect(self.save_changes)
         # self.remove_client_btn.clicked.connect(self.remove)
 
-    def hide_detail(self):
-        if not self.hidden_ui_loaded:
-            self._setup_hidden_ui()
-            self.hidden_ui_loaded, self.previous_height = True, 300
-
-        # if self.main_ui_controller.opened_now is not None and not self.main_ui_controller.opened_now.is_hidden:
-        #     print(self.client.dni, "hidding", self.main_ui_controller.opened_now.client.dni)
-        #     # self.main_ui_controller.opened_now.hide_detail()
-        # self.main_ui_controller.opened_now = self
-
+    def set_hidden(self, hidden: bool):
         # Hides widgets.
-        self.name_lbl.setHidden(self.hide_next)
-        self.name_field.setHidden(self.hide_next)
-        self.dni_lbl.setHidden(self.hide_next)
-        self.dni_field.setHidden(self.hide_next)
-        self.admission_lbl.setHidden(self.hide_next)
-        self.admission_field.setHidden(self.hide_next)
-        self.tel_lbl.setHidden(self.hide_next)
-        self.tel_field.setHidden(self.hide_next)
-        self.dir_lbl.setHidden(self.hide_next)
-        self.dir_field.setHidden(self.hide_next)
+        self.name_lbl.setHidden(hidden)
+        self.name_field.setHidden(hidden)
+        self.dni_lbl.setHidden(hidden)
+        self.dni_field.setHidden(hidden)
+        self.admission_lbl.setHidden(hidden)
+        self.admission_field.setHidden(hidden)
+        self.tel_lbl.setHidden(hidden)
+        self.tel_field.setHidden(hidden)
+        self.dir_lbl.setHidden(hidden)
+        self.dir_field.setHidden(hidden)
 
         # self.activities_lbl.setHidden(self.detail_hidden)
         # self.activities_table.setHidden(self.detail_hidden)
 
-        self.save_btn.setHidden(self.hide_next)
-        self.remove_client_btn.setHidden(self.hide_next)
+        self.save_btn.setHidden(hidden)
+        self.remove_client_btn.setHidden(hidden)
         # self.add_activity_btn.setHidden(self.detail_hidden)
         # self.remove_activity_btn.setHidden(self.detail_hidden)
         # self.charge_activity_btn.setHidden(self.detail_hidden)
@@ -263,7 +254,25 @@ class ClientRow(QWidget):
         self.widget.resize(new_width, self.current_height)
 
         # Inverts the state of the widget.
-        self.hide_next = not self.hide_next
+        self.is_hidden = not hidden
+
+    def hide_detail(self):
+        # Creates the hidden widgets in case it is the first time the detail button is clicked.
+        if not self.hidden_ui_loaded:
+            self._setup_hidden_ui()
+            self.hidden_ui_loaded, self.previous_height = True, 150
+
+        # Hides previously opened detail.
+        if self.main_ui_controller.opened_now is None:
+            self.main_ui_controller.opened_now = self
+        elif self.main_ui_controller.opened_now.client != self.client:
+            self.main_ui_controller.opened_now.set_hidden(True)
+            self.main_ui_controller.opened_now = self
+        else:
+            self.main_ui_controller.opened_now = None
+
+        # Hide or show the widgets.
+        self.set_hidden(self.is_hidden)
 
     def save_changes(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
