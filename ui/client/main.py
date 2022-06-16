@@ -29,7 +29,7 @@ class ClientRow(QWidget):
         self.main_ui_controller = main_ui_controller
         self.change_selected_item = change_selected_item
 
-        self._setup_ui(client, total_width, height, name_width, dni_width, admission_width, tel_width, dir_width)
+        self._setup_ui(total_width, height, name_width, dni_width, admission_width, tel_width, dir_width)
 
         # Because the widgets are yet to be hided, the hint has the 'extended' height.
         self.current_height, self.previous_height = height, None
@@ -137,7 +137,7 @@ class ClientRow(QWidget):
         self.is_hidden = False
 
     def _setup_ui(
-            self, client: Client, total_width: int, height: int,
+            self, total_width: int, height: int,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.widget = QWidget(self)
@@ -155,7 +155,7 @@ class ClientRow(QWidget):
 
         self.name_summary = QLabel(self.widget)
         self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
-        config_lbl(self.name_summary, str(client.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.name_summary, str(self.client.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
 
         self.name_lbl: Optional[QLabel] = None
         self.name_field: Optional[Field] = None
@@ -166,7 +166,7 @@ class ClientRow(QWidget):
 
         self.dni_summary = QLabel(self.widget)
         self.dni_layout.addWidget(self.dni_summary, alignment=Qt.AlignTop)
-        config_lbl(self.dni_summary, str(client.dni), width=dni_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.dni_summary, str(self.client.dni), width=dni_width, height=30, alignment=Qt.AlignVCenter)
 
         self.dni_lbl: Optional[QLabel] = None
         self.dni_field: Optional[Field] = None
@@ -177,7 +177,7 @@ class ClientRow(QWidget):
 
         self.admission_summary = QLabel(self.widget)
         self.admission_layout.addWidget(self.admission_summary, alignment=Qt.AlignTop)
-        config_lbl(self.admission_summary, str(client.admission), width=admission_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.admission_summary, str(self.client.admission), width=admission_width, height=30, alignment=Qt.AlignVCenter)
 
         self.admission_lbl: Optional[QLabel] = None
         self.admission_field: Optional[Field] = None
@@ -188,7 +188,7 @@ class ClientRow(QWidget):
 
         self.tel_summary = QLabel(self.widget)
         self.tel_layout.addWidget(self.tel_summary, alignment=Qt.AlignTop)
-        config_lbl(self.tel_summary, str(client.telephone), width=tel_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.tel_summary, str(self.client.telephone), width=tel_width, height=30, alignment=Qt.AlignVCenter)
 
         self.tel_lbl: Optional[QLabel] = None
         self.tel_field: Optional[Field] = None
@@ -199,7 +199,7 @@ class ClientRow(QWidget):
 
         self.dir_summary = QLabel(self.widget)
         self.dir_layout.addWidget(self.dir_summary, alignment=Qt.AlignTop)
-        config_lbl(self.dir_summary, str(client.direction), width=dir_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.dir_summary, str(self.client.direction), width=dir_width, height=30, alignment=Qt.AlignVCenter)
 
         self.dir_lbl: Optional[QLabel] = None
         self.dir_field: Optional[Field] = None
