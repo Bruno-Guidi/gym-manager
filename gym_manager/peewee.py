@@ -139,7 +139,7 @@ class SqliteActivityRepo(ActivityRepo):
     def __init__(self) -> None:
         create_table(ActivityTable)
 
-    def add(self, name: String, price: Currency, pay_once: bool, description: String) -> int:
+    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> int:
         """Creates an activity with the given data, and returns its id in the repository.
         """
         raw_activity = ActivityTable.create(

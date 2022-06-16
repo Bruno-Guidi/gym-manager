@@ -53,7 +53,7 @@ class ActivityRepo(abc.ABC):
     """Activities repository interface.
     """
     @abc.abstractmethod
-    def add(self, name: String, price: Currency, pay_once: bool, description: String) -> int:
+    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> int:
         """Creates an activity with the given data, and returns its id in the repository.
         """
         raise NotImplementedError
