@@ -151,7 +151,7 @@ class SqliteActivityRepo(ActivityRepo):
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
         for raw_activity in ActivityTable.select().paginate(page_number, items_per_page):
             yield Activity(Number(raw_activity.id),
-                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price),
+                           String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
                            raw_activity.pay_once,
-                           String(raw_activity.description, max_len=constraints.ACTIVITY_DESCR_CHARS))
+                           String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
