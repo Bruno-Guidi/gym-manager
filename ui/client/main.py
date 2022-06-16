@@ -284,7 +284,10 @@ class ClientRow(QWidget):
             self.main_ui_controller.opened_now = None
 
         # Hide or show the widgets.
+        self.change_selected_item(self.item)
         self.set_hidden(self.is_hidden)
+
+        print("The selected item is ", self.main_ui_controller.client_list.itemWidget(self.item).client.dni)
 
     def save_changes(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
@@ -310,9 +313,9 @@ class ClientRow(QWidget):
                               f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
     def remove(self):
+        self.main_ui_controller.opened_now = None
         self.client_repo.remove(self.client)
-        client_list = self.item.listWidget()
-        # client_list.takeItem(self.main_ui_controller)
+        self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
         QMessageBox.about(self.name_field.window(), "Éxito",
                           f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
