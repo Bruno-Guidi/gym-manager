@@ -124,8 +124,6 @@ class Date(Validatable):
 
 
 class Currency(Validatable):
-    def __init__(self, value: str, **validate_args) -> None:
-        super().__init__(value, **validate_args)
 
     def validate(self, value: str, **kwargs) -> Any:
         value = Decimal(value)
