@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from datetime import date
 from typing import Type, Generator
 
 from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField, \
-    CompositeKey
+    CompositeKey, prefetch
 
 from gym_manager.core import attr_constraints as constraints
 from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment, Inscription
@@ -100,11 +102,25 @@ class SqliteClientRepo(ClientRepo):
         raw_client.direction = client.direction.as_primitive()
         raw_client.save()
 
-    def all(self, only_actives: bool = True, **kwargs) -> Generator[Client, None, None]:
+    def _get_activity(self, raw_activity, cache: dict[int, Activity]) -> Activity:
+        if raw_activity.id in cache:
+            return cache[raw_activity.id]
+        else:
+            new = Activity(raw_activity.id,
+                           String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
+                           raw_activity.pay_once,
+                           String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
+            cache[raw_activity.id] = new
+            return new
+
+    def all(self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
+            ) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
             only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
+            cache: cached activities.
 
         Keyword Args:
             page_number: number of page of the table to return.
@@ -112,14 +128,31 @@ class SqliteClientRepo(ClientRepo):
         """
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
 
-        for raw_client in ClientTable.select().where(ClientTable.is_active).paginate(page_number, items_per_page):
-            yield Client(
+        cache = {} if cache is None else cache
+
+        clients_q = ClientTable.select().where(ClientTable.is_active).paginate(page_number, items_per_page)
+        inscription_q = InscriptionTable.select()
+        payments_q = PaymentTable.select()
+
+        for raw_client in prefetch(clients_q, inscription_q, payments_q):
+            client = Client(
                 Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
                 String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
                 Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
                 String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL, max_len=constraints.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL, max_len=constraints.CLIENT_DIR_CHARS)
             )
+
+            for raw_inscription in raw_client.inscriptions:
+                activity = self._get_activity(raw_inscription.activity, cache)
+                raw_payment = raw_inscription.payment
+                payment = None
+                if raw_payment is not None:
+                    payment = Payment(raw_payment.id, client, raw_payment.when, Currency(raw_payment.amount),
+                                      raw_payment.method, raw_payment.responsible, raw_payment.description)
+                client.sign_on(Inscription(client, activity, payment))
+
+            yield client
 
 
 class ActivityTable(Model):
@@ -245,7 +278,7 @@ class SqlitePaymentRepo(PaymentRepo):
 
 
 class InscriptionTable(Model):
-    client = ForeignKeyField(ClientTable, backref="activities")
+    client = ForeignKeyField(ClientTable, backref="inscriptions")
     activity = ForeignKeyField(ActivityTable, backref="entries")
     payment = ForeignKeyField(PaymentTable, backref="payments", null=True)
 

@@ -278,6 +278,7 @@ class ClientRow(QWidget):
             self._setup_hidden_ui()
             self._setup_callbacks()
             self.hidden_ui_loaded, self.previous_height = True, 350
+            self.load_inscriptions()
 
         # Hides previously opened detail.
         if self.main_ui_controller.opened_now is None:
@@ -353,15 +354,15 @@ class Controller:
     def load_clients(self):
         self.client_list.clear()
 
-        for row, client in enumerate(self.client_repo.all(page_number=self.current_page, items_per_page=15)):
-            self.activity_manager.load_inscriptions(client)
+        activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
+        for client in self.client_repo.all(activity_cache, page_number=self.current_page, items_per_page=15):
             item = QListWidgetItem(self.client_list)
             self.client_list.addItem(item)
-            row = ClientRow(
+            client_row = ClientRow(
                 client, self.client_repo, self.activity_manager,
                 item, self, change_selected_item=self.client_list.setCurrentItem,
                 total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
-            self.client_list.setItemWidget(item, row)
+            self.client_list.setItemWidget(item, client_row)
 
     def add_client(self):
         self.add_ui = CreateUI(self.client_repo)
