@@ -21,7 +21,7 @@ class ClientRow(QWidget):
     def __init__(
             self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
             item: QListWidgetItem, main_ui_controller: Controller,
-            height: int, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int, height: int
     ):
         super().__init__()
         self.client = client
@@ -379,22 +379,28 @@ class Controller:
 
         self.load_clients()
 
+    def _add_client(self, client: Client, set_to_current: bool = False):
+        item = QListWidgetItem(self.client_list)
+        self.client_list.addItem(item)
+        client_row = ClientRow(
+            client, self.client_repo, self.activity_manager, item, self,
+            self.name_width, self.dni_width, self.admission_width, self.tel_width, self.dir_width, height=50)
+        self.client_list.setItemWidget(item, client_row)
+
+        if set_to_current:
+            self.client_list.setCurrentItem(item)
+
     def load_clients(self):
         self.client_list.clear()
 
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
         for client in self.client_repo.all(activity_cache, page_number=self.current_page, items_per_page=15):
-            item = QListWidgetItem(self.client_list)
-            self.client_list.addItem(item)
-            client_row = ClientRow(
-                client, self.client_repo, self.activity_manager,
-                item, self, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
-            self.client_list.setItemWidget(item, client_row)
+            self._add_client(client)
 
     def add_client(self):
         self.add_ui = CreateUI(self.client_repo)
         self.add_ui.exec_()
-        self.load_clients()
+        self._add_client(self.add_ui.controller.client, set_to_current=True)
 
 
 class ClientMainUI(QMainWindow):

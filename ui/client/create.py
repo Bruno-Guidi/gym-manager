@@ -2,11 +2,10 @@ from datetime import datetime, date
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
-    QMessageBox
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.base import String, Number, Date
+from gym_manager.core.base import String, Number, Date, Client
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line
 from ui.widgets import Field
@@ -24,6 +23,7 @@ class Controller:
         self.tel_field = tel_field
         self.dir_field = dir_field
 
+        self.client: Client | None = None
         self.client_repo = client_repo
 
     # noinspection PyTypeChecker
@@ -36,11 +36,9 @@ class Controller:
             QMessageBox.about(self.name_field.window(), "Error",
                               f"Ya existe un cliente con el dni '{self.dni_field.value().as_primitive()}'.")
         else:
-            self.client_repo.create(self.dni_field.value(),
-                                    self.name_field.value(),
-                                    self.admission_field.value(),
-                                    self.tel_field.value(),
-                                    self.dir_field.value())
+            self.client = Client(self.dni_field.value(), self.name_field.value(), self.admission_field.value(),
+                                 self.tel_field.value(), self.dir_field.value())
+            self.client_repo.add(self.client)
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue creado correctamente.")
             self.dni_field.window().close()
