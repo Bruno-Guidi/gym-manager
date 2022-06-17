@@ -139,10 +139,7 @@ class ActivityRow(QWidget):
         self.description_lbl: QLabel | None = None
         self.description_text: QTextEdit | None = None
 
-        self.resize(self.widget.sizeHint().width(), height)
         self.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
-        self.widget.resize(self.widget.sizeHint().width(), height)
-        self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
 
     def _set_hidden(self, hidden: bool):
         # Hides widgets.
