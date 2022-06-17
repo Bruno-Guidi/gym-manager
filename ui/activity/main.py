@@ -240,7 +240,7 @@ class Controller:
     def load_activities(self):
         self.activity_list.clear()
 
-        for row, activity in enumerate(self.activity_repo.all(page_number=self.current_page, items_per_page=15)):
+        for row, activity in enumerate(self.activity_repo.all()):
             item = QListWidgetItem(self.activity_list)
             self.activity_list.addItem(item)
             row = ActivityRow(  # ToDo. Adjust columns width.
