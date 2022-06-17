@@ -10,6 +10,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     client_repo = peewee.SqliteClientRepo()
+    payment_repo = peewee.SqlitePaymentRepo()
     activity_repo = peewee.SqliteActivityRepo()
     inscription_repo = peewee.SqliteInscriptionRepo()
 
