@@ -51,7 +51,9 @@ class CreateUI(QDialog):
         self.controller = Controller(
             self.name_field, self.dni_field, self.admission_field, self.tel_field, self.dir_field, client_repo
         )
-        self._setup_callbacks()
+
+        self.button_box.accepted.connect(self.controller.create_client)
+        self.button_box.rejected.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -135,7 +137,3 @@ class CreateUI(QDialog):
         self.layout.addWidget(self.button_box)
         self.button_box.setOrientation(QtCore.Qt.Horizontal)
         self.button_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
-
-    def _setup_callbacks(self):
-        self.button_box.accepted.connect(self.controller.create_client)
-        self.button_box.rejected.connect(self.reject)
