@@ -17,9 +17,8 @@ from ui.widgets import Field, valid_text_value
 
 class ActivityRow(QWidget):
     def __init__(
-            self, activity: Activity, activity_manager: ActivityManager,
-            item: QListWidgetItem, main_ui_controller: Controller,
-            total_width: int, name_width: int, price_width: int, pay_once_width: int, height: int
+            self, activity: Activity, activity_manager: ActivityManager, item: QListWidgetItem,
+            main_ui_controller: Controller, name_width: int, price_width: int, pay_once_width: int, height: int
     ):
         super().__init__()
         self.activity = activity
@@ -27,11 +26,12 @@ class ActivityRow(QWidget):
         self.item = item
         self.main_ui_controller = main_ui_controller
 
-        self._setup_ui(total_width, height, name_width, price_width, pay_once_width)
+        self._setup_ui(height, name_width, price_width, pay_once_width)
 
         # Because the widgets are yet to be hided, the hint has the 'extended' height.
         self.current_height, self.previous_height = height, None
-        self.item.setSizeHint(QSize(total_width, self.current_height))
+        self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
+        print(self.width(), self.widget.width(), self.item.listWidget().width())
 
         def _setup_hidden_ui():
             # Name.
@@ -85,9 +85,8 @@ class ActivityRow(QWidget):
         self.detail_btn.clicked.connect(self.hide_detail)
         self.is_hidden = False
 
-    def _setup_ui(self, total_width: int, height: int, name_width: int, price_width: int, pay_once_width: int):
+    def _setup_ui(self, height: int, name_width: int, price_width: int, pay_once_width: int):
         self.widget = QWidget(self)
-        self.widget.setGeometry(QRect(0, 0, total_width, height))
 
         self.row_layout = QVBoxLayout(self.widget)
 
@@ -144,6 +143,11 @@ class ActivityRow(QWidget):
         self.description_lbl: Optional[QLabel] = None
         self.description_text: Optional[QTextEdit] = None
 
+        self.resize(self.widget.sizeHint().width(), height)
+        self.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
+        self.widget.resize(self.widget.sizeHint().width(), height)
+        self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
+
     def _setup_callbacks(self):
         self.save_btn.clicked.connect(self.save_changes)
         self.remove_btn.clicked.connect(self.remove)
@@ -166,7 +170,7 @@ class ActivityRow(QWidget):
         # Updates the height of the widget.
         self.previous_height, self.current_height = self.current_height, self.previous_height
 
-        new_width = self.widget.sizeHint().width() - 3
+        new_width = self.widget.width()
         self.item.setSizeHint(QSize(new_width, self.current_height))
         self.resize(new_width, self.current_height)
         self.widget.resize(new_width, self.current_height)
@@ -180,6 +184,7 @@ class ActivityRow(QWidget):
             self._setup_hidden_ui()
             self._setup_callbacks()
             self.hidden_ui_loaded, self.previous_height = True, 350
+        print(self.width(), self.widget.width(), self.item.listWidget().width())
 
         # Hides previously opened detail.
         if self.main_ui_controller.opened_now is None:
@@ -250,7 +255,7 @@ class Controller:
     def _add_activity(self, activity: Activity):
         item = QListWidgetItem(self.activity_list)
         self.activity_list.addItem(item)
-        row = ActivityRow(activity, self.activity_manager, item, self, 800, self.name_width, self.price_width,
+        row = ActivityRow(activity, self.activity_manager, item, self, self.name_width, self.price_width,
                           self.pay_once_width, height=50)
         self.activity_list.setItemWidget(item, row)
 
