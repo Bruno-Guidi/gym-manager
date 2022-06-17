@@ -8,8 +8,9 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTableWidgetItem
 
 from gym_manager.core import attr_constraints
+from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import Client, String, Number, Date
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, InscriptionRepo
+from gym_manager.core.persistence import ClientRepo
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
@@ -18,7 +19,7 @@ from ui.widgets import Field
 
 class ClientRow(QWidget):
     def __init__(
-            self, client: Client, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: InscriptionRepo,
+            self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
             item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
             total_width: int, height: int,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
@@ -26,8 +27,7 @@ class ClientRow(QWidget):
         super().__init__()
         self.client = client
         self.client_repo = client_repo
-        self.activity_repo = activity_repo
-        self.reg_repo = reg_repo
+        self.activity_manager = activity_manager
         self.item = item
         self.main_ui_controller = main_ui_controller
         self.change_selected_item = change_selected_item
@@ -106,9 +106,9 @@ class ClientRow(QWidget):
             self.row_layout.addLayout(self.bottom_layout)
             config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
 
-            self.registration_table = QTableWidget(self.widget)
-            self.bottom_layout.addWidget(self.registration_table)
-            config_table(self.registration_table,
+            self.inscription_table = QTableWidget(self.widget)
+            self.bottom_layout.addWidget(self.inscription_table)
+            config_table(self.inscription_table,
                          columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
                          allow_resizing=True)  # ToDo. Set min width.
 
@@ -224,7 +224,7 @@ class ClientRow(QWidget):
         # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
         self.bottom_layout: Optional[QHBoxLayout] = None
 
-        self.registration_table: Optional[QTableWidget] = None
+        self.inscription_table: Optional[QTableWidget] = None
 
         # Buttons.
         self.bottom_buttons_layout: Optional[QVBoxLayout] = None
@@ -252,7 +252,7 @@ class ClientRow(QWidget):
         self.dir_field.setHidden(hidden)
 
         self.activities_lbl.setHidden(hidden)
-        self.registration_table.setHidden(hidden)
+        self.inscription_table.setHidden(hidden)
 
         self.save_btn.setHidden(hidden)
         self.remove_client_btn.setHidden(hidden)
@@ -324,27 +324,25 @@ class ClientRow(QWidget):
                           f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
     def sign_on(self):
-        self.sign_on_ui = SignOn(self.activity_repo, self.reg_repo, self.client)
+        self.sign_on_ui = SignOn(self.activity_manager, self.client)
         self.sign_on_ui.exec_()
-        self.load_registrations()
+        self.load_inscriptions()
 
-    def load_registrations(self):
-        self.registration_table.setRowCount(self.client.n_registrations())
+    def load_inscriptions(self):
+        self.inscription_table.setRowCount(self.client.n_inscriptions())
 
-        for row, registration in enumerate(self.client.registrations):
-            self.registration_table.setItem(row, 0, QTableWidgetItem(registration.activity.name))
-            self.registration_table.setItem(row, 1, QTableWidgetItem(registration.payment.when))
-            self.registration_table.setItem(row, 2, QTableWidgetItem(registration.payment.id))
+        for row, inscription in enumerate(self.client.inscriptions()):
+            self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
+            self.inscription_table.setItem(row, 1, QTableWidgetItem("inscription.payment.when"))
+            self.inscription_table.setItem(row, 2, QTableWidgetItem("inscription.payment.id"))
 
 
 class Controller:
     def __init__(
-            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: InscriptionRepo,
-            client_list: QListWidget
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, client_list: QListWidget
     ):
         self.client_repo = client_repo
-        self.activity_repo = activity_repo
-        self.reg_repo = reg_repo
+        self.activity_manager = activity_manager
         self.current_page = 1
         self.opened_now: Optional[ClientRow] = None
 
@@ -359,7 +357,7 @@ class Controller:
             item = QListWidgetItem(self.client_list)
             self.client_list.addItem(item)
             row = ClientRow(
-                client, self.client_repo, self.activity_repo, self.reg_repo,
+                client, self.client_repo, self.activity_manager,
                 item, self, change_selected_item=self.client_list.setCurrentItem,
                 total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
             self.client_list.setItemWidget(item, row)
@@ -373,12 +371,12 @@ class Controller:
 class ClientMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: InscriptionRepo
+            self, client_repo: ClientRepo, activity_manager: ActivityManager
     ) -> None:
         super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(client_repo, activity_repo, reg_repo, self.client_list)
+        self.controller = Controller(client_repo, activity_manager, self.client_list)
         self._setup_callbacks()
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):

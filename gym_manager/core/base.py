@@ -178,6 +178,15 @@ class Client:
         """
         self._inscriptions[inscription.activity.id] = inscription
 
+    def is_signed_up(self, activity: Activity) -> bool:
+        return activity.id in self._inscriptions
+
+    def n_inscriptions(self) -> int:
+        return len(self._inscriptions)
+
+    def inscriptions(self) -> Iterable[Inscription]:
+        return self._inscriptions.values()
+
 
 @dataclass
 class Payment:

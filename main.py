@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 
 from gym_manager import peewee
+from gym_manager.core.activity_manager import ActivityManager
 from ui.main import MainUI
 
 if __name__ == "__main__":
@@ -10,9 +11,11 @@ if __name__ == "__main__":
 
     client_repo = peewee.SqliteClientRepo()
     activity_repo = peewee.SqliteActivityRepo()
-    reg_repo = peewee.SqliteInscriptionRepo()
+    inscription_repo = peewee.SqliteInscriptionRepo()
 
-    window = MainUI(client_repo, activity_repo, reg_repo)
+    activity_manager = ActivityManager(activity_repo, inscription_repo)
+
+    window = MainUI(client_repo, activity_manager)
     window.show()
 
     app.exec()
