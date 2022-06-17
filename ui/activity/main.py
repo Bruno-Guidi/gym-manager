@@ -28,7 +28,6 @@ class ActivityRow(QWidget):
 
         self._setup_ui(height, name_width, price_width, pay_once_width)
 
-        # Because the widgets are yet to be hided, the hint has the 'extended' height.
         self.current_height, self.previous_height = height, None
         self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
 
