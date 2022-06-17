@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QDialog, QWidget, QDialogButtonBox, QHBoxLayout, QVB
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import String, Currency
+from gym_manager.core.base import String, Currency, Activity
 from gym_manager.core.persistence import ActivityRepo
 from ui.widget_config import config_layout, config_lbl, config_line
 from ui.widgets import Field, valid_text_value
@@ -22,6 +22,7 @@ class Controller:
         self.pay_once_checkbox = pay_once_checkbox
         self.description_text = description_text
 
+        self.activity: Activity | None = None
         self.activity_manager = activity_manager
 
     # noinspection PyTypeChecker
@@ -29,8 +30,8 @@ class Controller:
         valid_descr, descr = valid_text_value(self.description_text, optional=True,
                                               max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
         if all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
-            self.activity_manager.create(self.name_field.value(), self.price_field.value(),
-                                         self.pay_once_checkbox.isChecked(), descr)
+            self.activity = self.activity_manager.create(self.name_field.value(), self.price_field.value(),
+                                                         self.pay_once_checkbox.isChecked(), descr)
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"La categoría '{self.name_field.value()}' fue creada correctamente.")
             self.price_field.window().close()

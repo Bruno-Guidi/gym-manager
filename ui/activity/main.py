@@ -19,7 +19,7 @@ class ActivityRow(QWidget):
     def __init__(
             self, activity: Activity, activity_manager: ActivityManager,
             item: QListWidgetItem, main_ui_controller: Controller,
-            total_width: int, height: int, name_width: int, price_width: int, pay_once_width: int
+            total_width: int, name_width: int, price_width: int, pay_once_width: int, height: int
     ):
         super().__init__()
         self.activity = activity
@@ -234,29 +234,31 @@ class ActivityRow(QWidget):
 
 
 class Controller:
-    def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget):
+    def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget,
+                 name_width: int, price_width: int, pay_once_width: int):
         self.activity_manager = activity_manager
-        self.current_page = 1
         self.opened_now: Optional[ActivityRow] = None
 
         self.activity_list = activity_list
+        self.name_width = name_width
+        self.price_width = price_width
+        self.pay_once_width = pay_once_width
 
-        self.load_activities()
+        for activity in self.activity_manager.activities():
+            self._add_activity(activity)
 
-    def load_activities(self):
-        self.activity_list.clear()
+    def _add_activity(self, activity: Activity):
+        item = QListWidgetItem(self.activity_list)
+        self.activity_list.addItem(item)
+        row = ActivityRow(activity, self.activity_manager, item, self, 800, self.name_width, self.price_width,
+                          self.pay_once_width, height=50)
+        self.activity_list.setItemWidget(item, row)
 
-        for row, activity in enumerate(self.activity_manager.activities()):
-            item = QListWidgetItem(self.activity_list)
-            self.activity_list.addItem(item)
-            row = ActivityRow(activity, self.activity_manager, item, self, total_width=800, height=50, name_width=175,
-                              price_width=90, pay_once_width=100)
-            self.activity_list.setItemWidget(item, row)
-
-    def add_activity(self):
+    def create_activity(self):
         self.add_ui = CreateUI(self.activity_manager)
         self.add_ui.exec_()
-        self.load_activities()
+        if self.add_ui.controller.activity is not None:
+            self._add_activity(self.add_ui.controller.activity)
 
 
 class ActivityMainUI(QMainWindow):
@@ -265,9 +267,9 @@ class ActivityMainUI(QMainWindow):
         super().__init__(parent=None)
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
-        self.controller = Controller(activity_manager, self.activity_list)
+        self.controller = Controller(activity_manager, self.activity_list, name_width, price_width, pay_once_width)
 
-        self.create_client_btn.clicked.connect(self.controller.add_activity)
+        self.create_client_btn.clicked.connect(self.controller.create_activity)
 
     def _setup_ui(self, name_width: int, price_width: int, pay_once_width: int):
         self.resize(800, 600)
@@ -327,5 +329,5 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addWidget(self.activity_list)
 
     def _setup_callbacks(self):
-        self.create_client_btn.clicked.connect(self.controller.add_activity)
+        self.create_client_btn.clicked.connect(self.controller.create_activity)
 
