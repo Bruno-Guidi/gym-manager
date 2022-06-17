@@ -1,7 +1,7 @@
 import logging
 from typing import Generator
 
-from gym_manager.core.base import Client, Activity, Payment, Inscription
+from gym_manager.core.base import Client, Activity, Payment, Inscription, String, Currency
 from gym_manager.core.persistence import ActivityRepo, InscriptionRepo
 
 
@@ -9,6 +9,9 @@ class ActivityManager:
     def __init__(self, activity_repo: ActivityRepo, inscription_repo: InscriptionRepo):
         self.activity_repo = activity_repo
         self.inscription_repo = inscription_repo
+
+    def create(self, name: String, price: Currency, pay_once: bool, description: String):
+        self.activity_repo.create(name, price, pay_once, description)
 
     def activities(self) -> Generator[Activity, None, None]:
         """Yields all existing activities.

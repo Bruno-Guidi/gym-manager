@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QDialog, QWidget, QDialogButtonBox, QHBoxLayout, QVB
     QCheckBox, QTextEdit, QMessageBox
 
 from gym_manager.core import attr_constraints
+from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import String, Currency
 from gym_manager.core.persistence import ActivityRepo
 from ui.widget_config import config_layout, config_lbl, config_line
@@ -14,22 +15,22 @@ class Controller:
 
     def __init__(
             self, name_field: Field, price_field: Field, pay_once_checkbox: QCheckBox, description_text: QTextEdit,
-            activity_repo: ActivityRepo
+            activity_manager: ActivityManager
     ) -> None:
         self.name_field = name_field
         self.price_field = price_field
         self.pay_once_checkbox = pay_once_checkbox
         self.description_text = description_text
 
-        self.activity_repo = activity_repo
+        self.activity_manager = activity_manager
 
     # noinspection PyTypeChecker
     def create_activity(self):
         valid_descr, descr = valid_text_value(self.description_text, optional=True,
                                               max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
         if all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
-            self.activity_repo.create(self.name_field.value(), self.price_field.value(),
-                                      self.pay_once_checkbox.isChecked(), descr)
+            self.activity_manager.create(self.name_field.value(), self.price_field.value(),
+                                         self.pay_once_checkbox.isChecked(), descr)
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"La categoría '{self.name_field.value()}' fue creada correctamente.")
             self.price_field.window().close()
@@ -38,11 +39,11 @@ class Controller:
 
 
 class CreateUI(QDialog):
-    def __init__(self, activity_repo: ActivityRepo, parent: QWidget | None = None) -> None:
+    def __init__(self, activity_manager: ActivityManager, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._setup_ui()
         self.controller = Controller(self.name_field, self.price_field, self.pay_once_checkbox, self.description_text,
-                                     activity_repo)
+                                     activity_manager)
         self._setup_callbacks()
 
     def _setup_ui(self):

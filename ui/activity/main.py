@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTextEdit, QCheckBox
 
 from gym_manager.core import attr_constraints
+from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import String, Number, Date, Activity, Currency
 from gym_manager.core.persistence import ActivityRepo
 from ui.activity.create import CreateUI
@@ -17,13 +18,13 @@ from ui.widgets import Field, valid_text_value
 
 class ActivityRow(QWidget):
     def __init__(
-            self, activity: Activity, activity_repo: ActivityRepo,
+            self, activity: Activity, activity_manager: ActivityManager,
             item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
             total_width: int, height: int, name_width: int, price_width: int, pay_once_width: int
     ):
         super().__init__()
         self.activity = activity
-        self.activity_repo = activity_repo
+        self.activity_manager = activity_manager
         self.item = item
         self.main_ui_controller = main_ui_controller
         self.change_selected_item = change_selected_item
@@ -207,7 +208,7 @@ class ActivityRow(QWidget):
             self.activity.pay_once = self.pay_once_checkbox.isChecked()
             self.activity.description = descr
 
-            self.activity_repo.update(self.activity)
+            self.activity_manager.update(self.activity)
 
             # Updates ui.
             self.name_summary.setText(str(self.activity.name))
@@ -220,7 +221,7 @@ class ActivityRow(QWidget):
 
     def remove(self):
         self.main_ui_controller.opened_now = None
-        self.activity_repo.remove(self.activity)
+        self.activity_manager.remove(self.activity)
         self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
         QMessageBox.about(self.name_field.window(), "Éxito",
@@ -228,8 +229,8 @@ class ActivityRow(QWidget):
 
 
 class Controller:
-    def __init__(self, activity_repo: ActivityRepo, activity_list: QListWidget):
-        self.activity_repo = activity_repo
+    def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget):
+        self.activity_manager = activity_manager
         self.current_page = 1
         self.opened_now: Optional[ActivityRow] = None
 
@@ -240,27 +241,27 @@ class Controller:
     def load_activities(self):
         self.activity_list.clear()
 
-        for row, activity in enumerate(self.activity_repo.all()):
+        for row, activity in enumerate(self.activity_manager.activities()):
             item = QListWidgetItem(self.activity_list)
             self.activity_list.addItem(item)
             row = ActivityRow(  # ToDo. Adjust columns width.
-                activity, self.activity_repo, item, self, change_selected_item=self.activity_list.setCurrentItem,
+                activity, self.activity_manager, item, self, change_selected_item=self.activity_list.setCurrentItem,
                 total_width=800, height=50, name_width=175, price_width=90, pay_once_width=100)
             self.activity_list.setItemWidget(item, row)
 
     def add_activity(self):
-        self.add_ui = CreateUI(self.activity_repo)
+        self.add_ui = CreateUI(self.activity_manager)
         self.add_ui.exec_()
         self.load_activities()
 
 
 class ActivityMainUI(QMainWindow):
 
-    def __init__(self, activity_repo: ActivityRepo, parent: QWidget | None = None) -> None:
+    def __init__(self, activity_manager: ActivityManager, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
-        self.controller = Controller(activity_repo, self.activity_list)
+        self.controller = Controller(activity_manager, self.activity_list)
         self._setup_callbacks()
 
     def _setup_ui(self, name_width: int, price_width: int, pay_once_width: int):
