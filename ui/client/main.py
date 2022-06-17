@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Callable, Optional
 
 from PyQt5.QtCore import QRect, Qt, QSize
@@ -334,8 +335,16 @@ class ClientRow(QWidget):
 
         for row, inscription in enumerate(self.client.inscriptions()):
             self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
-            self.inscription_table.setItem(row, 1, QTableWidgetItem("inscription.payment.when"))
-            self.inscription_table.setItem(row, 2, QTableWidgetItem("inscription.payment.id"))
+            print(inscription)
+
+            when = "Sin pagar" if inscription.payment is None else str(inscription.payment.when)
+            self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
+
+            payment_id = "-" if inscription.payment is None else str(inscription.payment.id)
+            self.inscription_table.setItem(row, 2, QTableWidgetItem(payment_id))
+
+            expired = "Si" if inscription.pay_day_passed(date.today()) else "No"
+            self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
 
 
 class Controller:
