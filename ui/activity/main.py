@@ -261,8 +261,8 @@ class Controller:
 
 class ActivityMainUI(QMainWindow):
 
-    def __init__(self, activity_manager: ActivityManager, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    def __init__(self, activity_manager: ActivityManager) -> None:
+        super().__init__(parent=None)
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
         self.controller = Controller(activity_manager, self.activity_list)
