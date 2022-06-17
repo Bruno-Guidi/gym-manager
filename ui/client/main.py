@@ -92,11 +92,11 @@ class ClientRow(QWidget):
             # Save and delete buttons.
             self.save_btn = QPushButton(self.widget)
             self.top_buttons_layout.addWidget(self.save_btn)
-            config_btn(self.save_btn, text="Guardar", width=100)
+            config_btn(self.save_btn, text="Guardar", width=110)
 
-            self.remove_client_btn = QPushButton(self.widget)
-            self.top_buttons_layout.addWidget(self.remove_client_btn)
-            config_btn(self.remove_client_btn, text="Eliminar", width=100)
+            self.remove_btn = QPushButton(self.widget)
+            self.top_buttons_layout.addWidget(self.remove_btn)
+            config_btn(self.remove_btn, text="Eliminar", width=110)
 
             # Activities.
             self.activities_lbl = QLabel(self.widget)
@@ -119,21 +119,21 @@ class ClientRow(QWidget):
             self.bottom_layout.addLayout(self.bottom_buttons_layout)
             config_layout(self.bottom_buttons_layout, alignment=Qt.AlignTop)
 
-            self.add_activity_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.add_activity_btn)
-            config_btn(self.add_activity_btn, text="Nueva\nactividad", width=100)
+            self.sign_on_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.sign_on_btn)
+            config_btn(self.sign_on_btn, text="Inscribir en\nactividad", width=110)
 
-            self.remove_activity_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.remove_activity_btn)
-            config_btn(self.remove_activity_btn, text="Eliminar\nactividad", width=100)
+            self.unsubscribe_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.unsubscribe_btn)
+            config_btn(self.unsubscribe_btn, text="Dar de baja", width=110)
 
             self.charge_activity_btn = QPushButton(self.widget)
             self.bottom_buttons_layout.addWidget(self.charge_activity_btn)
-            config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=100)
+            config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=110)
 
             self.payments_btn = QPushButton(self.widget)
             self.bottom_buttons_layout.addWidget(self.payments_btn)
-            config_btn(self.payments_btn, text="Ver pagos", width=100)
+            config_btn(self.payments_btn, text="Ver pagos", width=110)
 
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
@@ -215,10 +215,10 @@ class ClientRow(QWidget):
 
         self.detail_btn = QPushButton(self.widget)
         self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, text="Detalle", width=100)
+        config_btn(self.detail_btn, text="Detalle", width=110)
 
         self.save_btn: Optional[QPushButton] = None
-        self.remove_client_btn: Optional[QPushButton] = None
+        self.remove_btn: Optional[QPushButton] = None
 
         # Activities.
         self.activities_lbl: Optional[QLabel] = None
@@ -230,16 +230,16 @@ class ClientRow(QWidget):
 
         # Buttons.
         self.bottom_buttons_layout: Optional[QVBoxLayout] = None
-        self.add_activity_btn: Optional[QPushButton] = None
-        self.remove_activity_btn: Optional[QPushButton] = None
+        self.sign_on_btn: Optional[QPushButton] = None
+        self.unsubscribe_btn: Optional[QPushButton] = None
         self.charge_activity_btn: Optional[QPushButton] = None
         self.payments_btn: Optional[QPushButton] = None
 
     def _setup_callbacks(self):
         self.save_btn.clicked.connect(self.save_changes)
-        self.remove_client_btn.clicked.connect(self.remove)
-        self.add_activity_btn.clicked.connect(self.sign_on)
-        self.remove_activity_btn.clicked.connect(self.unsubscribe)
+        self.remove_btn.clicked.connect(self.remove)
+        self.sign_on_btn.clicked.connect(self.sign_on)
+        self.unsubscribe_btn.clicked.connect(self.unsubscribe)
 
     def set_hidden(self, hidden: bool):
         # Hides widgets.
@@ -258,9 +258,9 @@ class ClientRow(QWidget):
         self.inscription_table.setHidden(hidden)
 
         self.save_btn.setHidden(hidden)
-        self.remove_client_btn.setHidden(hidden)
-        self.add_activity_btn.setHidden(hidden)
-        self.remove_activity_btn.setHidden(hidden)
+        self.remove_btn.setHidden(hidden)
+        self.sign_on_btn.setHidden(hidden)
+        self.unsubscribe_btn.setHidden(hidden)
         self.charge_activity_btn.setHidden(hidden)
         self.payments_btn.setHidden(hidden)
 
@@ -489,4 +489,3 @@ class ClientMainUI(QMainWindow):
 
     def _setup_callbacks(self):
         self.create_client_btn.clicked.connect(self.controller.add_client)
-
