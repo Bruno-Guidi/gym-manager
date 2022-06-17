@@ -367,7 +367,7 @@ class Controller:
     ):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
-        self.current_page = 1
+        self.current_page, self.items_per_page = 1, 10
         self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
@@ -379,7 +379,10 @@ class Controller:
 
         self.load_clients()
 
-    def _add_client(self, client: Client, set_to_current: bool = False):
+    def _add_client(self, client: Client, set_to_current: bool = False, check_limit: bool = False):
+        if check_limit and len(self.client_list) == self.items_per_page:
+            self.client_list.takeItem(len(self.client_list) - 1)
+
         item = QListWidgetItem(self.client_list)
         self.client_list.addItem(item)
         client_row = ClientRow(
@@ -394,13 +397,14 @@ class Controller:
         self.client_list.clear()
 
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
-        for client in self.client_repo.all(activity_cache, page_number=self.current_page, items_per_page=15):
+        for client in self.client_repo.all(activity_cache, page_number=self.current_page,
+                                           items_per_page=self.items_per_page):
             self._add_client(client)
 
     def add_client(self):
         self.add_ui = CreateUI(self.client_repo)
         self.add_ui.exec_()
-        self._add_client(self.add_ui.controller.client, set_to_current=True)
+        self._add_client(self.add_ui.controller.client, set_to_current=True, check_limit=True)
 
 
 class ClientMainUI(QMainWindow):
