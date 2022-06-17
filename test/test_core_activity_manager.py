@@ -21,7 +21,7 @@ class MockActivityRepo(ActivityRepo):
     def all(self) -> Generator[Activity, None, None]:
         pass
 
-    def registered_clients(self, activity: Activity) -> int:
+    def inscriptions(self, activity: Activity) -> int:
         pass
 
 

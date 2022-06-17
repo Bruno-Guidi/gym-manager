@@ -13,10 +13,19 @@ class ActivityManager:
     def create(self, name: String, price: Currency, pay_once: bool, description: String):
         self.activity_repo.create(name, price, pay_once, description)
 
+    def update(self, activity: Activity):
+        self.activity_repo.update(activity)
+
+    def remove(self, activity: Activity):
+        self.activity_repo.remove(activity, cascade_removing=True)
+
     def activities(self) -> Generator[Activity, None, None]:
         """Yields all existing activities.
         """
         yield from self.activity_repo.all()
+
+    def inscriptions(self, activity: Activity) -> int:
+        return self.activity_repo.inscriptions(activity)
 
     def load_inscriptions(self, client: Client):
         for inscription in self.inscription_repo.all(client):

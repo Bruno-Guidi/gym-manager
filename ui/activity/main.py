@@ -9,8 +9,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import String, Number, Date, Activity, Currency
-from gym_manager.core.persistence import ActivityRepo
+from gym_manager.core.base import String, Activity, Currency
 from ui.activity.create import CreateUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_checkbox
 from ui.widgets import Field, valid_text_value
@@ -220,12 +219,19 @@ class ActivityRow(QWidget):
                               f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
 
     def remove(self):
-        self.main_ui_controller.opened_now = None
-        self.activity_manager.remove(self.activity)
-        self.item.listWidget().takeItem(self.item.listWidget().currentRow())
+        inscriptions, delete = self.activity_manager.inscriptions(self.activity), True
+        if inscriptions > 0:
+            delete = QMessageBox.question(self.name_field.window(), "Confirmar",
+                                          f"La actividad '{self.activity.name}' tiene {inscriptions} clientes "
+                                          f"inscriptos. ¿Desea eliminarla igual?")
 
-        QMessageBox.about(self.name_field.window(), "Éxito",
-                          f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
+        if delete:
+            self.main_ui_controller.opened_now = None
+            self.activity_manager.remove(self.activity)
+            self.item.listWidget().takeItem(self.item.listWidget().currentRow())
+
+            QMessageBox.about(self.name_field.window(), "Éxito",
+                              f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
 
 
 class Controller:

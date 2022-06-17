@@ -192,9 +192,9 @@ class SqliteActivityRepo(ActivityRepo):
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
         """
-        registered_clients = self.registered_clients(activity)
-        if not cascade_removing and registered_clients > 0:
-            raise Exception(f"The activity '{activity.name}' can not be removed because it has {registered_clients} "
+        inscriptions = self.inscriptions(activity)
+        if not cascade_removing and inscriptions > 0:
+            raise Exception(f"The activity '{activity.name}' can not be removed because it has {inscriptions} "
                             f"registered clients and 'cascade_removing' was set to False.")
         # ToDo. To remove activity and its registrations, set on_delete=True in RegistrationTable.
         ActivityTable.delete_by_id(activity.id)
@@ -217,10 +217,10 @@ class SqliteActivityRepo(ActivityRepo):
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
 
-    def registered_clients(self, activity: Activity) -> int:
+    def inscriptions(self, activity: Activity) -> int:
         """Returns the number of clients registered in the given *activity*.
         """
-        return 0  # ToDo This requires RegistrationTable.
+        return InscriptionTable.select().where(InscriptionTable.activity == activity.id).count()
 
 
 class PaymentTable(Model):
@@ -279,7 +279,7 @@ class SqlitePaymentRepo(PaymentRepo):
 
 class InscriptionTable(Model):
     client = ForeignKeyField(ClientTable, backref="inscriptions")
-    activity = ForeignKeyField(ActivityTable, backref="entries")
+    activity = ForeignKeyField(ActivityTable, backref="entries", on_delete="CASCADE")
     payment = ForeignKeyField(PaymentTable, backref="payments", null=True)
 
     class Meta:

@@ -89,7 +89,7 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def registered_clients(self, activity: Activity) -> int:
+    def inscriptions(self, activity: Activity) -> int:
         """Returns the number of clients registered in the given *activity*.
         """
         raise NotImplementedError
