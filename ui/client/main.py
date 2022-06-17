@@ -32,11 +32,11 @@ class ClientRow(QWidget):
         self.item = item
         self.main_ui_controller = main_ui_controller
 
-        self._setup_ui(total_width, height, name_width, dni_width, admission_width, tel_width, dir_width)
+        self._setup_ui(height, name_width, dni_width, admission_width, tel_width, dir_width)
 
         # Because the widgets are yet to be hided, the hint has the 'extended' height.
         self.current_height, self.previous_height = height, None
-        self.item.setSizeHint(QSize(total_width, self.current_height))
+        self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
 
         def _setup_hidden_ui():
             # Name.
@@ -144,7 +144,6 @@ class ClientRow(QWidget):
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.widget = QWidget(self)
-        self.widget.setGeometry(QRect(0, 0, total_width, height))
 
         self.row_layout = QVBoxLayout(self.widget)
 
@@ -233,6 +232,8 @@ class ClientRow(QWidget):
         self.charge_activity_btn: Optional[QPushButton] = None
         self.payments_btn: Optional[QPushButton] = None
 
+        self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
+
     def _setup_callbacks(self):
         self.save_btn.clicked.connect(self.save_changes)
         self.remove_btn.clicked.connect(self.remove)
@@ -265,7 +266,7 @@ class ClientRow(QWidget):
         # Updates the height of the widget.
         self.previous_height, self.current_height = self.current_height, self.previous_height
 
-        new_width = self.widget.sizeHint().width() - 3
+        new_width = self.widget.width()
         self.item.setSizeHint(QSize(new_width, self.current_height))
         self.resize(new_width, self.current_height)
         self.widget.resize(new_width, self.current_height)
