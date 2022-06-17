@@ -10,7 +10,7 @@ class ActivityManager:
         self.activity_repo = activity_repo
         self.inscription_repo = inscription_repo
 
-    def all(self) -> Generator[Activity, None, None]:
+    def activities(self) -> Generator[Activity, None, None]:
         """Yields all existing activities.
         """
         yield from self.activity_repo.all()

@@ -19,7 +19,7 @@ class Controller:
         self.client = client
 
         self.combobox = combobox
-        it = itertools.filterfalse(lambda activity: self.client.is_signed_up(activity), activity_manager.all())
+        it = itertools.filterfalse(lambda activity: self.client.is_signed_up(activity), activity_manager.activities())
         fill_combobox(combobox, it, lambda activity: str(activity.name))
 
     def sign_on(self):
