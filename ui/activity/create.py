@@ -1,12 +1,11 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QWidget, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
     QCheckBox, QTextEdit, QMessageBox
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import String, Currency, Activity
-from gym_manager.core.persistence import ActivityRepo
 from ui.widget_config import config_layout, config_lbl, config_line
 from ui.widgets import Field, valid_text_value
 
@@ -40,12 +39,14 @@ class Controller:
 
 
 class CreateUI(QDialog):
-    def __init__(self, activity_manager: ActivityManager, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    def __init__(self, activity_manager: ActivityManager) -> None:
+        super().__init__(parent=None)
         self._setup_ui()
         self.controller = Controller(self.name_field, self.price_field, self.pay_once_checkbox, self.description_text,
                                      activity_manager)
-        self._setup_callbacks()
+
+        self.button_box.accepted.connect(self.controller.create_activity)
+        self.button_box.rejected.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -112,7 +113,3 @@ class CreateUI(QDialog):
         self.button_box.setGeometry(QtCore.QRect(30, 240, 341, 32))
         self.button_box.setOrientation(QtCore.Qt.Horizontal)
         self.button_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
-
-    def _setup_callbacks(self):
-        self.button_box.accepted.connect(self.controller.create_activity)
-        self.button_box.rejected.connect(self.reject)
