@@ -10,8 +10,9 @@ if __name__ == "__main__":
 
     client_repo = peewee.SqliteClientRepo()
     activity_repo = peewee.SqliteActivityRepo()
+    reg_repo = peewee.SqliteRegistrationRepo()
 
-    window = MainUI(client_repo, activity_repo)
+    window = MainUI(client_repo, activity_repo, reg_repo)
     window.show()
 
     app.exec()

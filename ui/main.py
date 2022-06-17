@@ -3,17 +3,18 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayo
 
 from ui.activity.main import ActivityMainUI
 from ui.client.main import ClientMainUI
-from gym_manager.core.persistence import ClientRepo, ActivityRepo
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, RegistrationRepo
 from ui.widget_config import config_layout, config_lbl, config_btn
 
 
 class Controller:
-    def __init__(self, client_repo: ClientRepo, activity_repo: ActivityRepo):
+    def __init__(self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo):
         self.client_repo = client_repo
         self.activity_repo = activity_repo
+        self.reg_repo = reg_repo
 
     def show_client_main_ui(self):
-        self.client_main_ui = ClientMainUI(self.client_repo)
+        self.client_main_ui = ClientMainUI(self.client_repo, self.activity_repo, self.reg_repo)
         self.client_main_ui.setWindowModality(Qt.ApplicationModal)
         self.client_main_ui.show()
 
@@ -24,10 +25,10 @@ class Controller:
 
 
 class MainUI(QMainWindow):
-    def __init__(self, client_repo: ClientRepo, activity_repo: ActivityRepo):
+    def __init__(self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo):
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, activity_repo)
+        self.controller = Controller(client_repo, activity_repo, reg_repo)
         self._setup_callbacks(self.controller)
 
     def _setup_ui(self):

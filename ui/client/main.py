@@ -9,15 +9,16 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.base import Client, String, Number, Date
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, RegistrationRepo
 from ui.client.create import CreateUI
+from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
 from ui.widgets import Field
 
 
 class ClientRow(QWidget):
     def __init__(
-            self, client: Client, client_repo: ClientRepo,
+            self, client: Client, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo,
             item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
             total_width: int, height: int,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
@@ -25,6 +26,8 @@ class ClientRow(QWidget):
         super().__init__()
         self.client = client
         self.client_repo = client_repo
+        self.activity_repo = activity_repo
+        self.reg_repo = reg_repo
         self.item = item
         self.main_ui_controller = main_ui_controller
         self.change_selected_item = change_selected_item
@@ -233,6 +236,7 @@ class ClientRow(QWidget):
     def _setup_callbacks(self):
         self.save_btn.clicked.connect(self.save_changes)
         self.remove_client_btn.clicked.connect(self.remove)
+        self.add_activity_btn.clicked.connect(self.sign_on)
 
     def set_hidden(self, hidden: bool):
         # Hides widgets.
@@ -319,6 +323,11 @@ class ClientRow(QWidget):
         QMessageBox.about(self.name_field.window(), "Éxito",
                           f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
+    def sign_on(self):
+        self.sign_on_ui = SignOn(self.activity_repo, self.reg_repo, self.client)
+        self.sign_on_ui.exec_()
+        self.load_registrations()
+
     def load_registrations(self):
         self.registration_table.setRowCount(self.client.n_registrations())
 
@@ -329,8 +338,13 @@ class ClientRow(QWidget):
 
 
 class Controller:
-    def __init__(self, client_repo: ClientRepo, client_list: QListWidget):
+    def __init__(
+            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo,
+            client_list: QListWidget
+    ):
         self.client_repo = client_repo
+        self.activity_repo = activity_repo
+        self.reg_repo = reg_repo
         self.current_page = 1
         self.opened_now: Optional[ClientRow] = None
 
@@ -345,7 +359,8 @@ class Controller:
             item = QListWidgetItem(self.client_list)
             self.client_list.addItem(item)
             row = ClientRow(
-                client, self.client_repo, item, self, change_selected_item=self.client_list.setCurrentItem,
+                client, self.client_repo, self.activity_repo, self.reg_repo,
+                item, self, change_selected_item=self.client_list.setCurrentItem,
                 total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
             self.client_list.setItemWidget(item, row)
 
@@ -357,11 +372,13 @@ class Controller:
 
 class ClientMainUI(QMainWindow):
 
-    def __init__(self, client_repo: ClientRepo, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    def __init__(
+            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo
+    ) -> None:
+        super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(client_repo, self.client_list)
+        self.controller = Controller(client_repo, activity_repo, reg_repo, self.client_list)
         self._setup_callbacks()
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
