@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Callable, Optional
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
@@ -21,8 +20,8 @@ from ui.widgets import Field
 class ClientRow(QWidget):
     def __init__(
             self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
-            item: QListWidgetItem, main_ui_controller: Controller, total_width: int, height: int,
-            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            item: QListWidgetItem, main_ui_controller: Controller,
+            height: int, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         super().__init__()
         self.client = client
@@ -140,8 +139,7 @@ class ClientRow(QWidget):
         self.is_hidden = False
 
     def _setup_ui(
-            self, total_width: int, height: int,
-            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            self, height: int, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.widget = QWidget(self)
 
@@ -159,8 +157,8 @@ class ClientRow(QWidget):
         self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
         config_lbl(self.name_summary, str(self.client.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.name_lbl: Optional[QLabel] = None
-        self.name_field: Optional[Field] = None
+        self.name_lbl: QLabel | None = None
+        self.name_field: Field | None = None
 
         # DNI layout.
         self.dni_layout = QVBoxLayout()
@@ -170,8 +168,8 @@ class ClientRow(QWidget):
         self.dni_layout.addWidget(self.dni_summary, alignment=Qt.AlignTop)
         config_lbl(self.dni_summary, str(self.client.dni), width=dni_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.dni_lbl: Optional[QLabel] = None
-        self.dni_field: Optional[Field] = None
+        self.dni_lbl: QLabel | None = None
+        self.dni_field: Field | None = None
 
         # Admission layout.
         self.admission_layout = QVBoxLayout()
@@ -179,10 +177,11 @@ class ClientRow(QWidget):
 
         self.admission_summary = QLabel(self.widget)
         self.admission_layout.addWidget(self.admission_summary, alignment=Qt.AlignTop)
-        config_lbl(self.admission_summary, str(self.client.admission), width=admission_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.admission_summary, str(self.client.admission), width=admission_width, height=30,
+                   alignment=Qt.AlignVCenter)
 
-        self.admission_lbl: Optional[QLabel] = None
-        self.admission_field: Optional[Field] = None
+        self.admission_lbl: QLabel | None = None
+        self.admission_field: Field | None = None
 
         # Telephone layout.
         self.tel_layout = QVBoxLayout()
@@ -192,8 +191,8 @@ class ClientRow(QWidget):
         self.tel_layout.addWidget(self.tel_summary, alignment=Qt.AlignTop)
         config_lbl(self.tel_summary, str(self.client.telephone), width=tel_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.tel_lbl: Optional[QLabel] = None
-        self.tel_field: Optional[Field] = None
+        self.tel_lbl: QLabel | None = None
+        self.tel_field: Field | None = None
 
         # Direction layout.
         self.dir_layout = QVBoxLayout()
@@ -203,8 +202,8 @@ class ClientRow(QWidget):
         self.dir_layout.addWidget(self.dir_summary, alignment=Qt.AlignTop)
         config_lbl(self.dir_summary, str(self.client.direction), width=dir_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.dir_lbl: Optional[QLabel] = None
-        self.dir_field: Optional[Field] = None
+        self.dir_lbl: QLabel | None = None
+        self.dir_field: Field | None = None
 
         # Detail button.
         self.top_buttons_layout = QVBoxLayout()
@@ -214,23 +213,23 @@ class ClientRow(QWidget):
         self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
         config_btn(self.detail_btn, text="Detalle", width=110)
 
-        self.save_btn: Optional[QPushButton] = None
-        self.remove_btn: Optional[QPushButton] = None
+        self.save_btn: QPushButton | None = None
+        self.remove_btn: QPushButton | None = None
 
         # Activities.
-        self.activities_lbl: Optional[QLabel] = None
+        self.activities_lbl: QLabel | None = None
 
         # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
-        self.bottom_layout: Optional[QHBoxLayout] = None
+        self.bottom_layout: QHBoxLayout | None = None
 
-        self.inscription_table: Optional[QTableWidget] = None
+        self.inscription_table: QTableWidget | None = None
 
         # Buttons.
-        self.bottom_buttons_layout: Optional[QVBoxLayout] = None
-        self.sign_on_btn: Optional[QPushButton] = None
-        self.unsubscribe_btn: Optional[QPushButton] = None
-        self.charge_activity_btn: Optional[QPushButton] = None
-        self.payments_btn: Optional[QPushButton] = None
+        self.bottom_buttons_layout: QVBoxLayout | None = None
+        self.sign_on_btn: QPushButton | None = None
+        self.unsubscribe_btn: QPushButton | None = None
+        self.charge_activity_btn: QPushButton | None = None
+        self.payments_btn: QPushButton | None = None
 
         self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
 
@@ -240,7 +239,7 @@ class ClientRow(QWidget):
         self.sign_on_btn.clicked.connect(self.sign_on)
         self.unsubscribe_btn.clicked.connect(self.unsubscribe)
 
-    def set_hidden(self, hidden: bool):
+    def _set_hidden(self, hidden: bool):
         # Hides widgets.
         self.name_lbl.setHidden(hidden)
         self.name_field.setHidden(hidden)
@@ -286,14 +285,14 @@ class ClientRow(QWidget):
         if self.main_ui_controller.opened_now is None:
             self.main_ui_controller.opened_now = self
         elif self.main_ui_controller.opened_now.client != self.client:
-            self.main_ui_controller.opened_now.set_hidden(True)
+            self.main_ui_controller.opened_now._set_hidden(True)
             self.main_ui_controller.opened_now = self
         else:
             self.main_ui_controller.opened_now = None
 
         # Hide or show the widgets.
         self.item.listWidget().setCurrentItem(self.item)
-        self.set_hidden(self.is_hidden)
+        self._set_hidden(self.is_hidden)
 
     def save_changes(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
@@ -363,14 +362,20 @@ class ClientRow(QWidget):
 
 class Controller:
     def __init__(
-            self, client_repo: ClientRepo, activity_manager: ActivityManager, client_list: QListWidget
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, client_list: QListWidget,
+            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.current_page = 1
-        self.opened_now: Optional[ClientRow] = None
+        self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
+        self.name_width = name_width
+        self.dni_width = dni_width
+        self.admission_width = admission_width
+        self.tel_width = tel_width
+        self.dir_width = dir_width
 
         self.load_clients()
 
@@ -383,7 +388,7 @@ class Controller:
             self.client_list.addItem(item)
             client_row = ClientRow(
                 client, self.client_repo, self.activity_manager,
-                item, self, total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
+                item, self, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
             self.client_list.setItemWidget(item, client_row)
 
     def add_client(self):
@@ -400,7 +405,8 @@ class ClientMainUI(QMainWindow):
         super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(client_repo, activity_manager, self.client_list)
+        self.controller = Controller(client_repo, activity_manager, self.client_list,
+                                     name_width, dni_width, admission_width, tel_width, dir_width)
 
         self.create_client_btn.clicked.connect(self.controller.add_client)
 
