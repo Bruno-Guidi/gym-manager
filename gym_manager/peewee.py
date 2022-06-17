@@ -60,29 +60,18 @@ class SqliteClientRepo(ClientRepo):
             String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL, max_len=constraints.CLIENT_DIR_CHARS)
         )
 
-    def create(self, dni: Number, name: String, admission: Date, telephone: String, direction: String) -> Number:
-        """Creates a client with the given data, and return its dni.
+    def add(self, client: Client):
+        """Adds the *client* to the repository.
         """
-        if not isinstance(dni, Number):
-            raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
-        if not isinstance(name, String):
-            raise TypeError(f"The argument 'name' should be a 'String', not a '{type(name)}'")
-        if not isinstance(admission, Date):
-            raise TypeError(f"The argument 'admission' should be a 'Date', not a '{type(admission)}'")
-        if not isinstance(telephone, String):
-            raise TypeError(f"The argument 'telephone' should be a 'String', not a '{type(telephone)}'")
-        if not isinstance(direction, String):
-            raise TypeError(f"The argument 'direction' should be a 'String', not a '{type(direction)}'")
+        if self.contains(client.dni):
+            raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
 
-        if self.contains(dni):
-            raise KeyError(f"There is an existing client with the 'dni'={dni.as_primitive()}")
-        raw_client = ClientTable.create(dni=dni.as_primitive(),
-                                        name=name.as_primitive(),
-                                        admission=admission.as_primitive(),
-                                        telephone=telephone.as_primitive(),
-                                        direction=direction.as_primitive(),
-                                        is_active=True)
-        return raw_client.dni
+        ClientTable.create(dni=client.dni.as_primitive(),
+                           name=client.name.as_primitive(),
+                           admission=client.admission.as_primitive(),
+                           telephone=client.telephone.as_primitive(),
+                           direction=client.direction.as_primitive(),
+                           is_active=True)
 
     def remove(self, client: Client):
         """Marks the given *client* as inactive.
