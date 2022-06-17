@@ -1,11 +1,11 @@
 from datetime import date
 from typing import Type, Generator
 
-from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField
+from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField
 
 from gym_manager.core import attr_constraints as constraints
-from gym_manager.core.base import Client, Number, String, Date, Currency, Activity
-from gym_manager.core.persistence import ClientRepo, ActivityRepo
+from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo
 
 _DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
@@ -188,3 +188,54 @@ class SqliteActivityRepo(ActivityRepo):
         """Returns the number of clients registered in the given *activity*.
         """
         return 0  # ToDo This requires RegistrationTable.
+
+
+class PaymentTable(Model):
+    id = IntegerField(primary_key=True)
+    client = ForeignKeyField(ClientTable, backref="payments")
+    when = DateField()
+    amount = CharField()
+    method = CharField()
+    responsible = CharField()
+    description = CharField()
+
+    class Meta:
+        database = _DATABASE
+
+
+class SqlitePaymentRepo(PaymentRepo):
+    """Payments repository implementation based on Sqlite and peewee ORM.
+    """
+
+    def register(
+            self, client: Client, when: Date, amount: Currency, method: String, responsible: String, description: String
+    ) -> Payment:
+        """Register a new payment with the given information. This method must return the created payment.
+        """
+        payment = PaymentTable.create(
+            client=ClientTable.get_by_id(client.dni),
+            when=when,
+            amount=amount,
+            method=method,
+            responsible=responsible,
+            description=description
+        )
+
+        return Payment(payment.id, client, when, amount, method, responsible, description)
+
+    def all(self, client: Client, **kwargs) -> Generator[Payment, None, None]:
+        """Retrieves the payments of the given *client*
+
+        Args:
+            client: client whose payments are wanted.
+
+        Keyword Args:
+            page_number: number of page of the table to return.
+            items_per_page: number of items per page.
+        """
+        page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
+        query = PaymentTable.select().join(ClientTable).where(ClientTable.dni == client.dni)
+        query = query.paginate(page_number, items_per_page)
+
+        for row in query:
+            yield Payment(row.id, client, row.day, Currency(row.amount), row.method, row.responsible, row.description)
