@@ -171,11 +171,7 @@ class SqliteActivityRepo(ActivityRepo):
         raw_activity = ActivityTable.create(
             name=str(name), price=str(price), pay_once=pay_once, description=str(description)
         )
-        return Activity(raw_activity.id,
-                        String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
-                        Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
-                        raw_activity.pay_once,
-                        String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
+        return Activity(raw_activity.id, name, price, pay_once, description)
 
     def remove(self, activity: Activity, cascade_removing: bool = False):
         """Tries to remove the given *activity*.
@@ -192,7 +188,7 @@ class SqliteActivityRepo(ActivityRepo):
         if not cascade_removing and inscriptions > 0:
             raise Exception(f"The activity '{activity.name}' can not be removed because it has {inscriptions} "
                             f"registered clients and 'cascade_removing' was set to False.")
-        # ToDo. To remove activity and its registrations, set on_delete=True in RegistrationTable.
+
         ActivityTable.delete_by_id(activity.id)
 
     def update(self, activity: Activity):
