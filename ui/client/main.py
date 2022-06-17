@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Optional
+from datetime import date
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
@@ -8,32 +8,34 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTableWidgetItem
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.base import Client, String, Number, Date
+from gym_manager.core.activity_manager import ActivityManager
+from gym_manager.core.base import Client, String, Number, Date, Inscription
 from gym_manager.core.persistence import ClientRepo
 from ui.client.create import CreateUI
+from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
 from ui.widgets import Field
 
 
 class ClientRow(QWidget):
     def __init__(
-            self, client: Client, client_repo: ClientRepo,
-            item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
-            total_width: int, height: int,
-            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
+            item: QListWidgetItem, main_ui_controller: Controller,
+            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int, height: int
     ):
         super().__init__()
         self.client = client
+        self.inscriptions: dict[int, Inscription] = {}
         self.client_repo = client_repo
+        self.activity_manager = activity_manager
         self.item = item
         self.main_ui_controller = main_ui_controller
-        self.change_selected_item = change_selected_item
 
-        self._setup_ui(client, total_width, height, name_width, dni_width, admission_width, tel_width, dir_width)
+        self._setup_ui(height, name_width, dni_width, admission_width, tel_width, dir_width)
 
         # Because the widgets are yet to be hided, the hint has the 'extended' height.
         self.current_height, self.previous_height = height, None
-        self.item.setSizeHint(QSize(total_width, self.current_height))
+        self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
 
         def _setup_hidden_ui():
             # Name.
@@ -87,11 +89,11 @@ class ClientRow(QWidget):
             # Save and delete buttons.
             self.save_btn = QPushButton(self.widget)
             self.top_buttons_layout.addWidget(self.save_btn)
-            config_btn(self.save_btn, text="Guardar", width=100)
+            config_btn(self.save_btn, text="Guardar", width=110)
 
-            self.remove_client_btn = QPushButton(self.widget)
-            self.top_buttons_layout.addWidget(self.remove_client_btn)
-            config_btn(self.remove_client_btn, text="Eliminar", width=100)
+            self.remove_btn = QPushButton(self.widget)
+            self.top_buttons_layout.addWidget(self.remove_btn)
+            config_btn(self.remove_btn, text="Eliminar", width=110)
 
             # Activities.
             self.activities_lbl = QLabel(self.widget)
@@ -103,9 +105,9 @@ class ClientRow(QWidget):
             self.row_layout.addLayout(self.bottom_layout)
             config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
 
-            self.registration_table = QTableWidget(self.widget)
-            self.bottom_layout.addWidget(self.registration_table)
-            config_table(self.registration_table,
+            self.inscription_table = QTableWidget(self.widget)
+            self.bottom_layout.addWidget(self.inscription_table)
+            config_table(self.inscription_table,
                          columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
                          allow_resizing=True)  # ToDo. Set min width.
 
@@ -114,21 +116,21 @@ class ClientRow(QWidget):
             self.bottom_layout.addLayout(self.bottom_buttons_layout)
             config_layout(self.bottom_buttons_layout, alignment=Qt.AlignTop)
 
-            self.add_activity_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.add_activity_btn)
-            config_btn(self.add_activity_btn, text="Nueva\nactividad", width=100)
+            self.sign_on_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.sign_on_btn)
+            config_btn(self.sign_on_btn, text="Inscribir en\nactividad", width=110)
 
-            self.remove_activity_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.remove_activity_btn)
-            config_btn(self.remove_activity_btn, text="Eliminar\nactividad", width=100)
+            self.unsubscribe_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.unsubscribe_btn)
+            config_btn(self.unsubscribe_btn, text="Dar de baja", width=110)
 
             self.charge_activity_btn = QPushButton(self.widget)
             self.bottom_buttons_layout.addWidget(self.charge_activity_btn)
-            config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=100)
+            config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=110)
 
             self.payments_btn = QPushButton(self.widget)
             self.bottom_buttons_layout.addWidget(self.payments_btn)
-            config_btn(self.payments_btn, text="Ver pagos", width=100)
+            config_btn(self.payments_btn, text="Ver pagos", width=110)
 
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
@@ -137,11 +139,9 @@ class ClientRow(QWidget):
         self.is_hidden = False
 
     def _setup_ui(
-            self, client: Client, total_width: int, height: int,
-            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            self, height: int, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.widget = QWidget(self)
-        self.widget.setGeometry(QRect(0, 0, total_width, height))
 
         self.row_layout = QVBoxLayout(self.widget)
 
@@ -155,10 +155,10 @@ class ClientRow(QWidget):
 
         self.name_summary = QLabel(self.widget)
         self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
-        config_lbl(self.name_summary, str(client.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.name_summary, str(self.client.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.name_lbl: Optional[QLabel] = None
-        self.name_field: Optional[Field] = None
+        self.name_lbl: QLabel | None = None
+        self.name_field: Field | None = None
 
         # DNI layout.
         self.dni_layout = QVBoxLayout()
@@ -166,10 +166,10 @@ class ClientRow(QWidget):
 
         self.dni_summary = QLabel(self.widget)
         self.dni_layout.addWidget(self.dni_summary, alignment=Qt.AlignTop)
-        config_lbl(self.dni_summary, str(client.dni), width=dni_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.dni_summary, str(self.client.dni), width=dni_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.dni_lbl: Optional[QLabel] = None
-        self.dni_field: Optional[Field] = None
+        self.dni_lbl: QLabel | None = None
+        self.dni_field: Field | None = None
 
         # Admission layout.
         self.admission_layout = QVBoxLayout()
@@ -177,10 +177,11 @@ class ClientRow(QWidget):
 
         self.admission_summary = QLabel(self.widget)
         self.admission_layout.addWidget(self.admission_summary, alignment=Qt.AlignTop)
-        config_lbl(self.admission_summary, str(client.admission), width=admission_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.admission_summary, str(self.client.admission), width=admission_width, height=30,
+                   alignment=Qt.AlignVCenter)
 
-        self.admission_lbl: Optional[QLabel] = None
-        self.admission_field: Optional[Field] = None
+        self.admission_lbl: QLabel | None = None
+        self.admission_field: Field | None = None
 
         # Telephone layout.
         self.tel_layout = QVBoxLayout()
@@ -188,10 +189,10 @@ class ClientRow(QWidget):
 
         self.tel_summary = QLabel(self.widget)
         self.tel_layout.addWidget(self.tel_summary, alignment=Qt.AlignTop)
-        config_lbl(self.tel_summary, str(client.telephone), width=tel_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.tel_summary, str(self.client.telephone), width=tel_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.tel_lbl: Optional[QLabel] = None
-        self.tel_field: Optional[Field] = None
+        self.tel_lbl: QLabel | None = None
+        self.tel_field: Field | None = None
 
         # Direction layout.
         self.dir_layout = QVBoxLayout()
@@ -199,10 +200,10 @@ class ClientRow(QWidget):
 
         self.dir_summary = QLabel(self.widget)
         self.dir_layout.addWidget(self.dir_summary, alignment=Qt.AlignTop)
-        config_lbl(self.dir_summary, str(client.direction), width=dir_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.dir_summary, str(self.client.direction), width=dir_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.dir_lbl: Optional[QLabel] = None
-        self.dir_field: Optional[Field] = None
+        self.dir_lbl: QLabel | None = None
+        self.dir_field: Field | None = None
 
         # Detail button.
         self.top_buttons_layout = QVBoxLayout()
@@ -210,31 +211,35 @@ class ClientRow(QWidget):
 
         self.detail_btn = QPushButton(self.widget)
         self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, text="Detalle", width=100)
+        config_btn(self.detail_btn, text="Detalle", width=110)
 
-        self.save_btn: Optional[QPushButton] = None
-        self.remove_client_btn: Optional[QPushButton] = None
+        self.save_btn: QPushButton | None = None
+        self.remove_btn: QPushButton | None = None
 
         # Activities.
-        self.activities_lbl: Optional[QLabel] = None
+        self.activities_lbl: QLabel | None = None
 
         # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
-        self.bottom_layout: Optional[QHBoxLayout] = None
+        self.bottom_layout: QHBoxLayout | None = None
 
-        self.registration_table: Optional[QTableWidget] = None
+        self.inscription_table: QTableWidget | None = None
 
         # Buttons.
-        self.bottom_buttons_layout: Optional[QVBoxLayout] = None
-        self.add_activity_btn: Optional[QPushButton] = None
-        self.remove_activity_btn: Optional[QPushButton] = None
-        self.charge_activity_btn: Optional[QPushButton] = None
-        self.payments_btn: Optional[QPushButton] = None
+        self.bottom_buttons_layout: QVBoxLayout | None = None
+        self.sign_on_btn: QPushButton | None = None
+        self.unsubscribe_btn: QPushButton | None = None
+        self.charge_activity_btn: QPushButton | None = None
+        self.payments_btn: QPushButton | None = None
+
+        self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
 
     def _setup_callbacks(self):
         self.save_btn.clicked.connect(self.save_changes)
-        self.remove_client_btn.clicked.connect(self.remove)
+        self.remove_btn.clicked.connect(self.remove)
+        self.sign_on_btn.clicked.connect(self.sign_on)
+        self.unsubscribe_btn.clicked.connect(self.unsubscribe)
 
-    def set_hidden(self, hidden: bool):
+    def _set_hidden(self, hidden: bool):
         # Hides widgets.
         self.name_lbl.setHidden(hidden)
         self.name_field.setHidden(hidden)
@@ -248,19 +253,19 @@ class ClientRow(QWidget):
         self.dir_field.setHidden(hidden)
 
         self.activities_lbl.setHidden(hidden)
-        self.registration_table.setHidden(hidden)
+        self.inscription_table.setHidden(hidden)
 
         self.save_btn.setHidden(hidden)
-        self.remove_client_btn.setHidden(hidden)
-        self.add_activity_btn.setHidden(hidden)
-        self.remove_activity_btn.setHidden(hidden)
+        self.remove_btn.setHidden(hidden)
+        self.sign_on_btn.setHidden(hidden)
+        self.unsubscribe_btn.setHidden(hidden)
         self.charge_activity_btn.setHidden(hidden)
         self.payments_btn.setHidden(hidden)
 
         # Updates the height of the widget.
         self.previous_height, self.current_height = self.current_height, self.previous_height
 
-        new_width = self.widget.sizeHint().width() - 3
+        new_width = self.widget.width()
         self.item.setSizeHint(QSize(new_width, self.current_height))
         self.resize(new_width, self.current_height)
         self.widget.resize(new_width, self.current_height)
@@ -274,19 +279,20 @@ class ClientRow(QWidget):
             self._setup_hidden_ui()
             self._setup_callbacks()
             self.hidden_ui_loaded, self.previous_height = True, 350
+            self.load_inscriptions()
 
         # Hides previously opened detail.
         if self.main_ui_controller.opened_now is None:
             self.main_ui_controller.opened_now = self
         elif self.main_ui_controller.opened_now.client != self.client:
-            self.main_ui_controller.opened_now.set_hidden(True)
+            self.main_ui_controller.opened_now._set_hidden(True)
             self.main_ui_controller.opened_now = self
         else:
             self.main_ui_controller.opened_now = None
 
         # Hide or show the widgets.
-        self.change_selected_item(self.item)
-        self.set_hidden(self.is_hidden)
+        self.item.listWidget().setCurrentItem(self.item)
+        self._set_hidden(self.is_hidden)
 
     def save_changes(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
@@ -312,57 +318,117 @@ class ClientRow(QWidget):
                               f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
     def remove(self):
-        self.main_ui_controller.opened_now = None
-        self.client_repo.remove(self.client)
-        self.item.listWidget().takeItem(self.item.listWidget().currentRow())
+        delete = QMessageBox.question(self.name_field.window(), "Confirmar",
+                                      f"¿Desea eliminar el cliente {self.client.name}?")
 
-        QMessageBox.about(self.name_field.window(), "Éxito",
-                          f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
+        if delete:
+            self.main_ui_controller.opened_now = None
+            self.client_repo.remove(self.client)
+            self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
-    def load_registrations(self):
-        self.registration_table.setRowCount(self.client.n_registrations())
+            # ToDo. Move the cache to ActivityManager.
+            clients = [client for client in self.client_repo.all(cache=None, page_number=2, items_per_page=1)]
+            if len(clients) > 0:
+                self.main_ui_controller._add_client(clients[0])
 
-        for row, registration in enumerate(self.client.registrations):
-            self.registration_table.setItem(row, 0, QTableWidgetItem(registration.activity.name))
-            self.registration_table.setItem(row, 1, QTableWidgetItem(registration.payment.when))
-            self.registration_table.setItem(row, 2, QTableWidgetItem(registration.payment.id))
+            QMessageBox.about(self.name_field.window(), "Éxito",
+                              f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
+
+    def sign_on(self):
+        self.sign_on_ui = SignOn(self.activity_manager, self.client)
+        self.sign_on_ui.exec_()
+        self.load_inscriptions()
+
+    def unsubscribe(self):
+        if self.inscription_table.currentRow() == -1:
+            QMessageBox.about(self.name_field.window(), "Error", "Seleccione una actividad")
+        else:
+            inscription = self.inscriptions[self.inscription_table.currentRow()]
+            unsubscribe = QMessageBox.question(self.name_field.window(), "Confirmar",
+                                               f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
+                                               f"actividad {inscription.activity.name}?")
+            if unsubscribe:
+                self.activity_manager.unsubscribe(inscription)
+                self.inscription_table.removeRow(self.inscription_table.currentRow())
+
+    # noinspection PyUnresolvedReferences
+    def load_inscriptions(self):
+        self.inscription_table.setRowCount(self.client.n_inscriptions())
+
+        for row, inscription in enumerate(self.client.inscriptions()):
+            self.inscriptions[row] = inscription
+            self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
+
+            when = "Sin pagar" if inscription.payment is None else str(inscription.payment.when)
+            self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
+
+            payment_id = "-" if inscription.payment is None else str(inscription.payment.id)
+            self.inscription_table.setItem(row, 2, QTableWidgetItem(payment_id))
+
+            expired = "Si" if inscription.pay_day_passed(date.today()) else "No"
+            self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
 
 
 class Controller:
-    def __init__(self, client_repo: ClientRepo, client_list: QListWidget):
+    def __init__(
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, client_list: QListWidget,
+            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+    ):
         self.client_repo = client_repo
-        self.current_page = 1
-        self.opened_now: Optional[ClientRow] = None
+        self.activity_manager = activity_manager
+        self.current_page, self.items_per_page = 1, 10
+        self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
+        self.name_width = name_width
+        self.dni_width = dni_width
+        self.admission_width = admission_width
+        self.tel_width = tel_width
+        self.dir_width = dir_width
 
         self.load_clients()
+
+    def _add_client(self, client: Client, set_to_current: bool = False, check_limit: bool = False):
+        if check_limit and len(self.client_list) == self.items_per_page:
+            self.client_list.takeItem(len(self.client_list) - 1)
+
+        item = QListWidgetItem(self.client_list)
+        self.client_list.addItem(item)
+        client_row = ClientRow(
+            client, self.client_repo, self.activity_manager, item, self,
+            self.name_width, self.dni_width, self.admission_width, self.tel_width, self.dir_width, height=50)
+        self.client_list.setItemWidget(item, client_row)
+
+        if set_to_current:
+            self.client_list.setCurrentItem(item)
 
     def load_clients(self):
         self.client_list.clear()
 
-        for row, client in enumerate(self.client_repo.all(page_number=self.current_page, items_per_page=15)):
-            item = QListWidgetItem(self.client_list)
-            self.client_list.addItem(item)
-            row = ClientRow(
-                client, self.client_repo, item, self, change_selected_item=self.client_list.setCurrentItem,
-                total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
-            self.client_list.setItemWidget(item, row)
+        activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
+        for client in self.client_repo.all(activity_cache, page_number=self.current_page,
+                                           items_per_page=self.items_per_page):
+            self._add_client(client)
 
     def add_client(self):
         self.add_ui = CreateUI(self.client_repo)
         self.add_ui.exec_()
-        self.load_clients()
+        if self.add_ui.controller.client is not None:
+            self._add_client(self.add_ui.controller.client, set_to_current=True, check_limit=True)
 
 
 class ClientMainUI(QMainWindow):
 
-    def __init__(self, client_repo: ClientRepo, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    def __init__(
+            self, client_repo: ClientRepo, activity_manager: ActivityManager
+    ) -> None:
+        super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(client_repo, self.client_list)
-        self._setup_callbacks()
+        self.controller = Controller(client_repo, activity_manager, self.client_list,
+                                     name_width, dni_width, admission_width, tel_width, dir_width)
+
+        self.create_client_btn.clicked.connect(self.controller.add_client)
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
         self.resize(800, 600)
@@ -445,7 +511,3 @@ class ClientMainUI(QMainWindow):
         self.next_btn = QPushButton(self.widget)
         self.index_layout.addWidget(self.next_btn)
         config_btn(self.next_btn, ">", font_size=18, width=30)
-
-    def _setup_callbacks(self):
-        self.create_client_btn.clicked.connect(self.controller.add_client)
-

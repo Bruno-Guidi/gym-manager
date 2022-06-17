@@ -1,5 +1,7 @@
+from typing import Iterable, Callable, Any
+
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem, \
     QTextEdit, QCheckBox
@@ -91,3 +93,13 @@ def config_table(
     for i, (column_name, column_width) in enumerate(columns.items()):
         target.setHorizontalHeaderItem(i, QTableWidgetItem(column_name))
         target.setColumnWidth(i, column_width)
+
+
+def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], str]):
+    model = QStandardItemModel()
+    for item in items:
+        std_item = QStandardItem()
+        std_item.setData(display(item), Qt.DisplayRole)
+        std_item.setData(item, Qt.UserRole)
+        model.appendRow(std_item)
+    target.setModel(model)

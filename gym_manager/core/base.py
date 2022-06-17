@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from dataclasses import dataclass, field
 from datetime import date, timedelta, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Optional
 
 from gym_manager.core import attr_constraints
@@ -29,6 +29,15 @@ class Validatable(abc.ABC):
     def __init__(self, value: Any, **validate_args):
         self._value = self.validate(value, **validate_args)
 
+    def __str__(self) -> str:
+        return str(self._value)
+
+    def __eq__(self, o: Validatable) -> bool:
+        return self._value == o._value
+
+    def __hash__(self) -> int:
+        return hash(self._value)
+
     @abc.abstractmethod
     def validate(self, value: Any, **kwargs) -> Any:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
@@ -42,10 +51,6 @@ class Validatable(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def __str__(self) -> str:
-        raise NotImplementedError
-
     def as_primitive(self) -> Any:
         return self._value
 
@@ -57,8 +62,8 @@ class Number(Validatable):
         implementation stores.
 
         Keyword Args:
-            min_value: minimum valid value.
-            max_value: maximum valid value.
+            min_value: minimum valid value. If None, min_value will be -inf.
+            max_value: maximum valid value. If None, max_value will be inf.
 
         Raises:
             ValidationError if the validation failed.
@@ -68,15 +73,11 @@ class Number(Validatable):
         if isinstance(value, str) and not value.isnumeric():
             raise ValidationError(f"The str '{value}' is not numeric.")
         int_value = int(value)
-        if int_value < kwargs['min_value'] or int_value >= kwargs['max_value']:
-            raise ValidationError(f"The value '{value}' must be in the range [{kwargs['min_value']}, {kwargs['max_value']})")
+        min_value = kwargs['min_value'] if 'min_value' in kwargs else float('-inf')
+        max_value = kwargs['max_value'] if 'max_value' in kwargs else float('inf')
+        if int_value < min_value or int_value >= max_value:
+            raise ValidationError(f"The value '{value}' must be in the range [{min_value}, {max_value})")
         return int_value
-
-    def __str__(self) -> str:
-        return str(self._value)
-
-    def __eq__(self, o: Number) -> bool:
-        return self._value == o._value
 
 
 class String(Validatable):
@@ -97,9 +98,6 @@ class String(Validatable):
         if len(value) > kwargs['max_len']:
             raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
         return value
-
-    def __str__(self) -> str:
-        return self._value
 
 
 class Date(Validatable):
@@ -128,15 +126,19 @@ class Date(Validatable):
         return datetime.strftime(self._value, attr_constraints.DATE_FORMATS[0])
 
 
-class Currency:  # ToDo extend from Validatable.
-    def __init__(self, raw_amount: str) -> None:
-        self.amount = Decimal(raw_amount)
+class Currency(Validatable):
 
-    def __str__(self) -> str:
-        return str(self.amount)
-
-    def __eq__(self, o: Currency) -> bool:
-        return self.amount == o.amount
+    def validate(self, value: str, **kwargs) -> Any:
+        try:
+            value = Decimal(value)
+        except InvalidOperation:
+            raise ValidationError(f"The value '{value}' is not a valid currency.")
+        if kwargs['positive'] and value <= 0:
+            raise ValidationError(f"The currency '{value}' is not valid. It should be greater than zero.")
+        if value >= kwargs['max_currency']:
+            raise ValidationError(
+                f"The currency '{value}' is not valid. It should be less than '{kwargs['max_currency']}'.")
+        return value
 
 
 class NotRegistered(KeyError):
@@ -159,6 +161,7 @@ class Activity:
     name: String
     price: Currency
     pay_once: bool
+    description: String
 
 
 @dataclass
@@ -168,41 +171,24 @@ class Client:
     admission: Date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
-    _registrations: dict[int, Registration] = field(default_factory=dict, compare=False)
+    _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)
 
-    @property
-    def registrations(self) -> Iterable[Registration]:
-        return self._registrations.values()
-
-    def n_registrations(self) -> int:
-        return len(self._registrations)
-
-    def add_registration(self, registration: Registration):
-        self._registrations[registration.activity.id] = registration
-
-    def record_payment(self, activity: Activity, payment: Payment):
-        """Records the payment of the given *activity*.
-
-        Raises:
-            ValueError if *payment.client* is different from *self.client*.
-            NotRegistered if *self* isn't registered in the *activity*.
+    def sign_on(self, inscription: Inscription):
+        """Registers the given *inscription*.
         """
-        if self != payment.client:
-            raise ValueError(f"The client '{payment.client.name}' is paying the activity '{activity.name}' for "
-                             f"the client '{self.name}'.")
+        self._inscriptions[inscription.activity.id] = inscription
 
-        try:
-            entry = self._registrations[activity.id]
-            entry.record_payment(payment)
-            return entry
-        except KeyError as err:
-            raise NotRegistered(self, activity.id) from err
+    def cancel(self, inscription: Inscription):
+        self._inscriptions.pop(inscription.activity.id)
 
-    def registration(self, reg_id: int) -> Registration:
-        try:
-            return self._registrations[reg_id]
-        except KeyError as err:
-            raise NotRegistered(self, reg_id) from err
+    def is_signed_up(self, activity: Activity) -> bool:
+        return activity.id in self._inscriptions
+
+    def n_inscriptions(self) -> int:
+        return len(self._inscriptions)
+
+    def inscriptions(self) -> Iterable[Inscription]:
+        return self._inscriptions.values()
 
 
 @dataclass
@@ -217,8 +203,8 @@ class Payment:
 
 
 @dataclass
-class Registration:
-    """Stores information about an specific activity done by an specific client.
+class Inscription:
+    """Stores information about an activity inscription of a client.
     """
     client: Client
     activity: Activity
@@ -228,6 +214,8 @@ class Registration:
         return self.payment is None
 
     def pay_day_passed(self, today: date) -> bool:
+        if self.payment is None:
+            return True  # ToDo add inscription date and compare to it.
         return pay_day_passed(self.payment.when.as_primitive(), today)
 
     def record_payment(self, payment: Payment):

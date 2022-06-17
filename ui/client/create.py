@@ -2,11 +2,10 @@ from datetime import datetime, date
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
-    QMessageBox
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.base import String, Number, Date
+from gym_manager.core.base import String, Number, Date, Client
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line
 from ui.widgets import Field
@@ -24,10 +23,11 @@ class Controller:
         self.tel_field = tel_field
         self.dir_field = dir_field
 
+        self.client: Client | None = None
         self.client_repo = client_repo
 
     # noinspection PyTypeChecker
-    def validate_fields(self):
+    def create_client(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
                      self.tel_field.valid_value(), self.dir_field.valid_value()])
         if not valid:
@@ -36,11 +36,9 @@ class Controller:
             QMessageBox.about(self.name_field.window(), "Error",
                               f"Ya existe un cliente con el dni '{self.dni_field.value().as_primitive()}'.")
         else:
-            self.client_repo.create(self.dni_field.value(),
-                                    self.name_field.value(),
-                                    self.admission_field.value(),
-                                    self.tel_field.value(),
-                                    self.dir_field.value())
+            self.client = Client(self.dni_field.value(), self.name_field.value(), self.admission_field.value(),
+                                 self.tel_field.value(), self.dir_field.value())
+            self.client_repo.add(self.client)
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue creado correctamente.")
             self.dni_field.window().close()
@@ -53,10 +51,12 @@ class CreateUI(QDialog):
         self.controller = Controller(
             self.name_field, self.dni_field, self.admission_field, self.tel_field, self.dir_field, client_repo
         )
-        self._setup_callbacks()
+
+        self.button_box.accepted.connect(self.controller.create_client)
+        self.button_box.rejected.connect(self.reject)
 
     def _setup_ui(self):
-        self.resize(400, 300)  # ToDo Check why when the border is set to red the QLineEdit shrinks.
+        self.resize(400, 300)
 
         self.layout = QVBoxLayout(self)
 
@@ -137,7 +137,3 @@ class CreateUI(QDialog):
         self.layout.addWidget(self.button_box)
         self.button_box.setOrientation(QtCore.Qt.Horizontal)
         self.button_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
-
-    def _setup_callbacks(self):
-        self.button_box.accepted.connect(self.controller.validate_fields)
-        self.button_box.rejected.connect(self.reject)

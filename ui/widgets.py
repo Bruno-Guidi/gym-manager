@@ -1,8 +1,18 @@
-from typing import Type
+from typing import Type, Any
 
-from PyQt5.QtWidgets import QLineEdit, QWidget
+from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit
 
-from gym_manager.core.base import Validatable, ValidationError
+from gym_manager.core.base import Validatable, ValidationError, String
+
+
+def valid_text_value(text: QTextEdit, optional: bool, max_len: int) -> tuple[bool, Any]:
+    valid, value = False, None
+    try:
+        value = String(text.toPlainText(), optional=optional, max_len=max_len)
+        valid = True
+    except ValidationError:
+        pass
+    return valid, value
 
 
 class Field(QLineEdit):
