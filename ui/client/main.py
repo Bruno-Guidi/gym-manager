@@ -335,7 +335,6 @@ class ClientRow(QWidget):
 
         for row, inscription in enumerate(self.client.inscriptions()):
             self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
-            print(inscription)
 
             when = "Sin pagar" if inscription.payment is None else str(inscription.payment.when)
             self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
