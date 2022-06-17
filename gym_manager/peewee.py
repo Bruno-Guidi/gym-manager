@@ -175,9 +175,8 @@ class SqliteActivityRepo(ActivityRepo):
         raw_activity.description = activity.description.as_primitive()
         raw_activity.save()
 
-    def all(self, **kwargs) -> Generator[Activity, None, None]:
-        page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
-        for raw_activity in ActivityTable.select().paginate(page_number, items_per_page):
+    def all(self) -> Generator[Activity, None, None]:
+        for raw_activity in ActivityTable.select():
             yield Activity(Number(raw_activity.id),
                            String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
                            Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),

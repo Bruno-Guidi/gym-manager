@@ -79,7 +79,7 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, **kwargs) -> Generator[Activity, None, None]:
+    def all(self) -> Generator[Activity, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod
