@@ -261,6 +261,15 @@ class SqliteInscriptionRepo(InscriptionRepo):
     def __init__(self) -> None:
         create_table(InscriptionTable)
 
+    def add(self, inscription: Inscription):
+        """Adds the given *inscription* to the repository.
+        """
+        InscriptionTable.create(
+            client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
+            activity=ActivityTable.get_by_id(inscription.activity.id.as_primitive()),
+            payment=None if inscription.payment is None else PaymentTable.get_by_id(inscription.payment.id)
+        )
+
     def update_or_create(self, registration: Inscription):
         """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
         new one.

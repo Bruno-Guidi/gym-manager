@@ -93,6 +93,12 @@ class InscriptionRepo(abc.ABC):
     """Repository interface for client's activities inscriptions.
     """
     @abc.abstractmethod
+    def add(self, inscription: Inscription):
+        """Adds the given *inscription* to the repository.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def update_or_create(self, registration: Inscription):
         """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
         new one.

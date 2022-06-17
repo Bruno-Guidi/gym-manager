@@ -157,7 +157,7 @@ class NotRegistered(KeyError):
 class Activity:
     """Stores general information about an activity.
     """
-    id: Number
+    id: int
     name: String
     price: Currency
     pay_once: bool
@@ -171,6 +171,12 @@ class Client:
     admission: Date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
+    _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)
+
+    def sign_on(self, inscription: Inscription):
+        """Registers the given *inscription*.
+        """
+        self._inscriptions[inscription.activity.id] = inscription
 
 
 @dataclass
