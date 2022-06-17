@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Optional
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
@@ -18,7 +18,7 @@ from ui.widgets import Field, valid_text_value
 class ActivityRow(QWidget):
     def __init__(
             self, activity: Activity, activity_manager: ActivityManager,
-            item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
+            item: QListWidgetItem, main_ui_controller: Controller,
             total_width: int, height: int, name_width: int, price_width: int, pay_once_width: int
     ):
         super().__init__()
@@ -26,7 +26,6 @@ class ActivityRow(QWidget):
         self.activity_manager = activity_manager
         self.item = item
         self.main_ui_controller = main_ui_controller
-        self.change_selected_item = change_selected_item
 
         self._setup_ui(total_width, height, name_width, price_width, pay_once_width)
 
@@ -191,9 +190,9 @@ class ActivityRow(QWidget):
         else:
             self.main_ui_controller.opened_now = None
 
-        # Hide or show the widgets.
-        self.change_selected_item(self.item)
-        self.set_hidden(self.is_hidden)
+        self.item.listWidget().setCurrentItem(self.item)
+
+        self.set_hidden(self.is_hidden)  # Hide or show the widgets.
 
     def save_changes(self):
         valid_descr, descr = valid_text_value(self.description_text, optional=True,
@@ -250,9 +249,8 @@ class Controller:
         for row, activity in enumerate(self.activity_manager.activities()):
             item = QListWidgetItem(self.activity_list)
             self.activity_list.addItem(item)
-            row = ActivityRow(  # ToDo. Adjust columns width.
-                activity, self.activity_manager, item, self, change_selected_item=self.activity_list.setCurrentItem,
-                total_width=800, height=50, name_width=175, price_width=90, pay_once_width=100)
+            row = ActivityRow(activity, self.activity_manager, item, self, total_width=800, height=50, name_width=175,
+                              price_width=90, pay_once_width=100)
             self.activity_list.setItemWidget(item, row)
 
     def add_activity(self):
