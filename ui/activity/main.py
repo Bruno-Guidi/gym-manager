@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
     QListWidgetItem, QVBoxLayout, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
@@ -100,8 +98,8 @@ class ActivityRow(QWidget):
         self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
         config_lbl(self.name_summary, str(self.activity.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.name_lbl: Optional[QLabel] = None
-        self.name_field: Optional[Field] = None
+        self.name_lbl: QLabel | None = None
+        self.name_field: Field | None = None
 
         # Price layout.
         self.price_layout = QVBoxLayout()
@@ -111,8 +109,8 @@ class ActivityRow(QWidget):
         self.price_layout.addWidget(self.price_summary, alignment=Qt.AlignTop)
         config_lbl(self.price_summary, str(self.activity.price), width=price_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.price_lbl: Optional[QLabel] = None
-        self.price_field: Optional[Field] = None
+        self.price_lbl: QLabel | None = None
+        self.price_field: Field | None = None
 
         # Admission layout.
         self.pay_once_layout = QVBoxLayout()
@@ -123,8 +121,8 @@ class ActivityRow(QWidget):
         pay_once_text = "Si" if self.activity.pay_once else "No"
         config_lbl(self.pay_once_summary, pay_once_text, width=pay_once_width, height=30, alignment=Qt.AlignVCenter)
 
-        self.pay_once_lbl: Optional[QLabel] = None
-        self.pay_once_checkbox: Optional[QCheckBox] = None
+        self.pay_once_lbl: QLabel | None = None
+        self.pay_once_checkbox: QCheckBox | None = None
 
         # Detail button.
         self.top_buttons_layout = QVBoxLayout()
@@ -134,23 +132,19 @@ class ActivityRow(QWidget):
         self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
         config_btn(self.detail_btn, text="Detalle", width=100)
 
-        self.save_btn: Optional[QPushButton] = None
-        self.remove_btn: Optional[QPushButton] = None
+        self.save_btn: QPushButton | None = None
+        self.remove_btn: QPushButton | None = None
 
         # Description.
-        self.description_lbl: Optional[QLabel] = None
-        self.description_text: Optional[QTextEdit] = None
+        self.description_lbl: QLabel | None = None
+        self.description_text: QTextEdit | None = None
 
         self.resize(self.widget.sizeHint().width(), height)
         self.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
         self.widget.resize(self.widget.sizeHint().width(), height)
         self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
 
-    def _setup_callbacks(self):
-        self.save_btn.clicked.connect(self.save_changes)
-        self.remove_btn.clicked.connect(self.remove)
-
-    def set_hidden(self, hidden: bool):
+    def _set_hidden(self, hidden: bool):
         # Hides widgets.
         self.name_lbl.setHidden(hidden)
         self.name_field.setHidden(hidden)
@@ -180,21 +174,22 @@ class ActivityRow(QWidget):
         # Creates the hidden widgets in case it is the first time the detail button is clicked.
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
-            self._setup_callbacks()
+            self.save_btn.clicked.connect(self.save_changes)
+            self.remove_btn.clicked.connect(self.remove)
             self.hidden_ui_loaded, self.previous_height = True, 350
 
         # Hides previously opened detail.
         if self.main_ui_controller.opened_now is None:
             self.main_ui_controller.opened_now = self
         elif self.main_ui_controller.opened_now.activity != self.activity:
-            self.main_ui_controller.opened_now.set_hidden(True)
+            self.main_ui_controller.opened_now._set_hidden(True)
             self.main_ui_controller.opened_now = self
         else:
             self.main_ui_controller.opened_now = None
 
         self.item.listWidget().setCurrentItem(self.item)
 
-        self.set_hidden(self.is_hidden)  # Hide or show the widgets.
+        self._set_hidden(self.is_hidden)  # Hide or show the widgets.
 
     def save_changes(self):
         valid_descr, descr = valid_text_value(self.description_text, optional=True,
@@ -202,7 +197,7 @@ class ActivityRow(QWidget):
         if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         else:
-            # Updates client object.
+            # Updates activity object.
             self.activity.name = self.name_field.value()
             self.activity.price = self.price_field.value()
             self.activity.pay_once = self.pay_once_checkbox.isChecked()
@@ -239,7 +234,7 @@ class Controller:
     def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget,
                  name_width: int, price_width: int, pay_once_width: int):
         self.activity_manager = activity_manager
-        self.opened_now: Optional[ActivityRow] = None
+        self.opened_now: ActivityRow | None = None
 
         self.activity_list = activity_list
         self.name_width = name_width
@@ -332,4 +327,3 @@ class ActivityMainUI(QMainWindow):
 
     def _setup_callbacks(self):
         self.create_client_btn.clicked.connect(self.controller.create_activity)
-
