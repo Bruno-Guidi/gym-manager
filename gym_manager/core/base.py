@@ -35,6 +35,9 @@ class Validatable(abc.ABC):
     def __eq__(self, o: Validatable) -> bool:
         return self._value == o._value
 
+    def __hash__(self) -> int:
+        return hash(self._value)
+
     @abc.abstractmethod
     def validate(self, value: Any, **kwargs) -> Any:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
