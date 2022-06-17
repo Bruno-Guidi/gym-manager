@@ -118,7 +118,7 @@ class PaymentRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, client: Client, **kwargs) -> Iterable[Payment]:
+    def all(self, client: Client, **kwargs) -> Generator[Payment, None, None]:
         """Retrieves the payments of the given *client*
         """
         raise NotImplementedError
