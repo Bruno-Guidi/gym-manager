@@ -207,6 +207,9 @@ class SqlitePaymentRepo(PaymentRepo):
     """Payments repository implementation based on Sqlite and peewee ORM.
     """
 
+    def __init__(self) -> None:
+        create_table(PaymentTable)
+
     def register(
             self, client: Client, when: Date, amount: Currency, method: String, responsible: String, description: String
     ) -> Payment:
@@ -255,6 +258,9 @@ class SqliteRegistrationRepo(RegistrationRepo):
     """Inscriptions repository implementation based on Sqlite and peewee ORM.
     """
 
+    def __init__(self) -> None:
+        create_table(RegistrationTable)
+
     def update_or_create(self, registration: Registration):
         """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
         new one.
@@ -264,8 +270,8 @@ class SqliteRegistrationRepo(RegistrationRepo):
         raw_reg = RegistrationTable.get_or_none(client=raw_client, activity=raw_activity)
         if raw_reg is None:
             RegistrationTable.create(
-                client=ClientTable.get_by_id(registration.client.dni),
-                activity=ActivityTable.get_by_id(registration.activity.id),
+                client=ClientTable.get_by_id(registration.client.dni.as_primitive()),
+                activity=ActivityTable.get_by_id(registration.activity.id.as_primitive()),
                 payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
             )
 
