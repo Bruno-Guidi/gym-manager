@@ -400,7 +400,8 @@ class ClientMainUI(QMainWindow):
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
         self.controller = Controller(client_repo, activity_manager, self.client_list)
-        self._setup_callbacks()
+
+        self.create_client_btn.clicked.connect(self.controller.add_client)
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
         self.resize(800, 600)
@@ -483,6 +484,3 @@ class ClientMainUI(QMainWindow):
         self.next_btn = QPushButton(self.widget)
         self.index_layout.addWidget(self.next_btn)
         config_btn(self.next_btn, ">", font_size=18, width=30)
-
-    def _setup_callbacks(self):
-        self.create_client_btn.clicked.connect(self.controller.add_client)
