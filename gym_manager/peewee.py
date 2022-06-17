@@ -1,11 +1,12 @@
 from datetime import date
 from typing import Type, Generator
 
-from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField
+from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField, \
+    CompositeKey
 
 from gym_manager.core import attr_constraints as constraints
-from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo
+from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment, Registration
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo, RegistrationRepo
 
 _DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
@@ -238,3 +239,59 @@ class SqlitePaymentRepo(PaymentRepo):
 
         for row in query:
             yield Payment(row.id, client, row.day, Currency(row.amount), row.method, row.responsible, row.description)
+
+
+class RegistrationTable(Model):
+    client = ForeignKeyField(ClientTable, backref="activities")
+    activity = ForeignKeyField(ActivityTable, backref="entries")
+    payment = ForeignKeyField(PaymentTable, backref="payments", null=True)
+
+    class Meta:
+        database = _DATABASE
+        primary_key = CompositeKey("client", "activity")
+
+
+class SqliteRegistrationRepo(RegistrationRepo):
+    """Inscriptions repository implementation based on Sqlite and peewee ORM.
+    """
+
+    def update_or_create(self, registration: Registration):
+        """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
+        new one.
+        """
+        raw_client = ClientTable.get_by_id(registration.client.dni.as_primitive())
+        raw_activity = ActivityTable.get_by_id(registration.activity.id.as_primitive())
+        raw_reg = RegistrationTable.get_or_none(client=raw_client, activity=raw_activity)
+        if raw_reg is None:
+            RegistrationTable.create(
+                client=ClientTable.get_by_id(registration.client.dni),
+                activity=ActivityTable.get_by_id(registration.activity.id),
+                payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
+            )
+
+
+        # try:
+        #     # If the entry already exists, it means the client is registered in the activity. It also means that this
+        #     # method is being invoked to register the payment for the activity, so we can assure the *entry* has
+        #     # payment information.
+        #     raw_entry = RegistrationTable.get_by_id((registration.client, registration.activity))  # Raises DoesNotExist.
+        #     raw_entry.payment = PaymentTable.get_by_id(registration.payment.id)
+        #     raw_entry.save()
+        # except DoesNotExist:
+        #     # If the entry doesn't exists, then the client is getting registered in the activity. There might be
+        #     # payment information if the client should pay when he is registered in the activity.
+        #     RegistrationTable.create(
+        #         client=ClientTable.get_by_id(registration.client.dni),
+        #         activity=ActivityTable.get_by_id(registration.activity.id),
+        #         payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
+        #     )
+
+    def expired(self, when: date, **kwargs) -> Generator[Registration, None, None]:
+        """Retrieves all entries whose pay day has passed if today date were *when*.
+
+        Keyword Args:
+            activities: dict[int, Activity] with existing activities.
+            page_number: number of page of the table to return.
+            items_per_page: number of items per page.
+        """
+        pass
