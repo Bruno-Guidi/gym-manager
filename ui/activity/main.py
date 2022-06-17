@@ -266,7 +266,8 @@ class ActivityMainUI(QMainWindow):
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
         self.controller = Controller(activity_manager, self.activity_list)
-        self._setup_callbacks()
+
+        self.create_client_btn.clicked.connect(self.controller.add_activity)
 
     def _setup_ui(self, name_width: int, price_width: int, pay_once_width: int):
         self.resize(800, 600)
@@ -324,23 +325,6 @@ class ActivityMainUI(QMainWindow):
         # Activities.
         self.activity_list = QListWidget(self.widget)
         self.main_layout.addWidget(self.activity_list)
-
-        # Index.
-        self.index_layout = QHBoxLayout()
-        self.main_layout.addLayout(self.index_layout)
-        config_layout(self.index_layout, left_margin=100, right_margin=100)
-
-        self.prev_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, "<", font_size=18, width=30)
-
-        self.index_lbl = QLabel(self.widget)
-        self.index_layout.addWidget(self.index_lbl)
-        config_lbl(self.index_lbl, "#", font_size=18)
-
-        self.next_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, ">", font_size=18, width=30)
 
     def _setup_callbacks(self):
         self.create_client_btn.clicked.connect(self.controller.add_activity)
