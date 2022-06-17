@@ -324,6 +324,3 @@ class ActivityMainUI(QMainWindow):
         # Activities.
         self.activity_list = QListWidget(self.widget)
         self.main_layout.addWidget(self.activity_list)
-
-    def _setup_callbacks(self):
-        self.create_client_btn.clicked.connect(self.controller.create_activity)
