@@ -21,8 +21,7 @@ from ui.widgets import Field
 class ClientRow(QWidget):
     def __init__(
             self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
-            item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
-            total_width: int, height: int,
+            item: QListWidgetItem, main_ui_controller: Controller, total_width: int, height: int,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         super().__init__()
@@ -32,7 +31,6 @@ class ClientRow(QWidget):
         self.activity_manager = activity_manager
         self.item = item
         self.main_ui_controller = main_ui_controller
-        self.change_selected_item = change_selected_item
 
         self._setup_ui(total_width, height, name_width, dni_width, admission_width, tel_width, dir_width)
 
@@ -293,7 +291,7 @@ class ClientRow(QWidget):
             self.main_ui_controller.opened_now = None
 
         # Hide or show the widgets.
-        self.change_selected_item(self.item)
+        self.item.listWidget().setCurrentItem(self.item)
         self.set_hidden(self.is_hidden)
 
     def save_changes(self):
@@ -384,8 +382,7 @@ class Controller:
             self.client_list.addItem(item)
             client_row = ClientRow(
                 client, self.client_repo, self.activity_manager,
-                item, self, change_selected_item=self.client_list.setCurrentItem,
-                total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
+                item, self, total_width=800, height=50, name_width=175, dni_width=90, admission_width=100, tel_width=110, dir_width=140)
             self.client_list.setItemWidget(item, client_row)
 
     def add_client(self):
