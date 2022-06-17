@@ -171,41 +171,6 @@ class Client:
     admission: Date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
-    _registrations: dict[int, Registration] = field(default_factory=dict, compare=False)
-
-    @property
-    def registrations(self) -> Iterable[Registration]:
-        return self._registrations.values()
-
-    def n_registrations(self) -> int:
-        return len(self._registrations)
-
-    def add_registration(self, registration: Registration):
-        self._registrations[registration.activity.id] = registration
-
-    def record_payment(self, activity: Activity, payment: Payment):
-        """Records the payment of the given *activity*.
-
-        Raises:
-            ValueError if *payment.client* is different from *self.client*.
-            NotRegistered if *self* isn't registered in the *activity*.
-        """
-        if self != payment.client:
-            raise ValueError(f"The client '{payment.client.name}' is paying the activity '{activity.name}' for "
-                             f"the client '{self.name}'.")
-
-        try:
-            entry = self._registrations[activity.id]
-            entry.record_payment(payment)
-            return entry
-        except KeyError as err:
-            raise NotRegistered(self, activity.id) from err
-
-    def registration(self, reg_id: int) -> Registration:
-        try:
-            return self._registrations[reg_id]
-        except KeyError as err:
-            raise NotRegistered(self, reg_id) from err
 
 
 @dataclass
@@ -220,8 +185,8 @@ class Payment:
 
 
 @dataclass
-class Registration:
-    """Stores information about an specific activity done by an specific client.
+class Inscription:
+    """Stores information about an activity inscription of a client.
     """
     client: Client
     activity: Activity

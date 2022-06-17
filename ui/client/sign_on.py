@@ -6,14 +6,14 @@ from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout,
     QComboBox, QMessageBox
 
 from gym_manager.core.base import Client
-from gym_manager.core.persistence import RegistrationRepo, ActivityRepo
+from gym_manager.core.persistence import InscriptionRepo, ActivityRepo
 from ui.widget_config import config_lbl, config_combobox, fill_combobox
 
 
 class Controller:
 
     def __init__(
-            self, activity_repo: ActivityRepo, registration_repo: RegistrationRepo, client: Client, combobox: QComboBox
+            self, activity_repo: ActivityRepo, registration_repo: InscriptionRepo, client: Client, combobox: QComboBox
     ) -> None:
         self.activity_repo = activity_repo
         self.registration_repo = registration_repo
@@ -32,7 +32,7 @@ class Controller:
 
 
 class SignOn(QDialog):
-    def __init__(self, activity_repo: ActivityRepo, registration_repo: RegistrationRepo, client: Client) -> None:
+    def __init__(self, activity_repo: ActivityRepo, registration_repo: InscriptionRepo, client: Client) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = Controller(activity_repo, registration_repo, client, self.activity_combobox)

@@ -5,8 +5,8 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
     CompositeKey
 
 from gym_manager.core import attr_constraints as constraints
-from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment, Registration
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo, RegistrationRepo
+from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment, Inscription
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo, InscriptionRepo
 
 _DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
@@ -244,7 +244,7 @@ class SqlitePaymentRepo(PaymentRepo):
             yield Payment(row.id, client, row.day, Currency(row.amount), row.method, row.responsible, row.description)
 
 
-class RegistrationTable(Model):
+class InscriptionTable(Model):
     client = ForeignKeyField(ClientTable, backref="activities")
     activity = ForeignKeyField(ActivityTable, backref="entries")
     payment = ForeignKeyField(PaymentTable, backref="payments", null=True)
@@ -254,22 +254,22 @@ class RegistrationTable(Model):
         primary_key = CompositeKey("client", "activity")
 
 
-class SqliteRegistrationRepo(RegistrationRepo):
+class SqliteInscriptionRepo(InscriptionRepo):
     """Inscriptions repository implementation based on Sqlite and peewee ORM.
     """
 
     def __init__(self) -> None:
-        create_table(RegistrationTable)
+        create_table(InscriptionTable)
 
-    def update_or_create(self, registration: Registration):
+    def update_or_create(self, registration: Inscription):
         """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
         new one.
         """
         raw_client = ClientTable.get_by_id(registration.client.dni.as_primitive())
         raw_activity = ActivityTable.get_by_id(registration.activity.id.as_primitive())
-        raw_reg = RegistrationTable.get_or_none(client=raw_client, activity=raw_activity)
+        raw_reg = InscriptionTable.get_or_none(client=raw_client, activity=raw_activity)
         if raw_reg is None:
-            RegistrationTable.create(
+            InscriptionTable.create(
                 client=ClientTable.get_by_id(registration.client.dni.as_primitive()),
                 activity=ActivityTable.get_by_id(registration.activity.id.as_primitive()),
                 payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
@@ -292,7 +292,7 @@ class SqliteRegistrationRepo(RegistrationRepo):
         #         payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
         #     )
 
-    def expired(self, when: date, **kwargs) -> Generator[Registration, None, None]:
+    def expired(self, when: date, **kwargs) -> Generator[Inscription, None, None]:
         """Retrieves all entries whose pay day has passed if today date were *when*.
 
         Keyword Args:

@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.base import Client, String, Number, Date
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, RegistrationRepo
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, InscriptionRepo
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
@@ -18,7 +18,7 @@ from ui.widgets import Field
 
 class ClientRow(QWidget):
     def __init__(
-            self, client: Client, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo,
+            self, client: Client, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: InscriptionRepo,
             item: QListWidgetItem, main_ui_controller: Controller, change_selected_item: Callable[[QListWidgetItem], None],
             total_width: int, height: int,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
@@ -339,7 +339,7 @@ class ClientRow(QWidget):
 
 class Controller:
     def __init__(
-            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo,
+            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: InscriptionRepo,
             client_list: QListWidget
     ):
         self.client_repo = client_repo
@@ -373,7 +373,7 @@ class Controller:
 class ClientMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: RegistrationRepo
+            self, client_repo: ClientRepo, activity_repo: ActivityRepo, reg_repo: InscriptionRepo
     ) -> None:
         super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
