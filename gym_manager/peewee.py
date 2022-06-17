@@ -55,7 +55,8 @@ class SqliteClientRepo(ClientRepo):
             dni,
             String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
             Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
-            String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL, max_len=constraints.CLIENT_TEL_CHARS),
+            String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
+                   max_len=constraints.CLIENT_TEL_CHARS),
             String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL, max_len=constraints.CLIENT_DIR_CHARS)
         )
 
@@ -139,8 +140,10 @@ class SqliteClientRepo(ClientRepo):
                 Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
                 String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
                 Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
-                String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL, max_len=constraints.CLIENT_TEL_CHARS),
-                String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL, max_len=constraints.CLIENT_DIR_CHARS)
+                String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
+                       max_len=constraints.CLIENT_TEL_CHARS),
+                String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
+                       max_len=constraints.CLIENT_DIR_CHARS)
             )
 
             for raw_inscription in raw_client.inscriptions:
@@ -173,13 +176,17 @@ class SqliteActivityRepo(ActivityRepo):
     def __init__(self) -> None:
         create_table(ActivityTable)
 
-    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> int:
-        """Creates an activity with the given data, and returns its id in the repository.
+    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
+        """Creates an activity with the given data, and returns it.
         """
         raw_activity = ActivityTable.create(
             name=str(name), price=str(price), pay_once=pay_once, description=str(description)
         )
-        return raw_activity.id
+        return Activity(raw_activity.id,
+                        String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
+                        Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
+                        raw_activity.pay_once,
+                        String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
 
     def remove(self, activity: Activity, cascade_removing: bool = False):
         """Tries to remove the given *activity*.

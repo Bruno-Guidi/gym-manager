@@ -10,8 +10,8 @@ class ActivityManager:
         self.activity_repo = activity_repo
         self.inscription_repo = inscription_repo
 
-    def create(self, name: String, price: Currency, pay_once: bool, description: String):
-        self.activity_repo.create(name, price, pay_once, description)
+    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
+        return self.activity_repo.create(name, price, pay_once, description)
 
     def update(self, activity: Activity):
         self.activity_repo.update(activity)
