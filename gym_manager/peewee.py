@@ -80,7 +80,7 @@ class SqliteClientRepo(ClientRepo):
         raw_client.is_active = False
         raw_client.save()
 
-        # ToDo. Delete registrations.
+        InscriptionTable.delete().where(client == client.dni.as_primitive())
 
     def update(self, client: Client):
         """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
@@ -270,7 +270,7 @@ class SqlitePaymentRepo(PaymentRepo):
 
 
 class InscriptionTable(Model):
-    client = ForeignKeyField(ClientTable, backref="inscriptions")
+    client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="entries", on_delete="CASCADE")
     payment = ForeignKeyField(PaymentTable, backref="payments", null=True)
 
