@@ -164,12 +164,12 @@ class SqliteActivityRepo(ActivityRepo):
             raise Exception(f"The activity '{activity.name}' can not be removed because it has {registered_clients} "
                             f"registered clients and 'cascade_removing' was set to False.")
         # ToDo. To remove activity and its registrations, set on_delete=True in RegistrationTable.
-        ActivityTable.delete_by_id(activity.id.as_primitive())
+        ActivityTable.delete_by_id(activity.id)
 
     def update(self, activity: Activity):
         """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
         """
-        raw_activity = ActivityTable.get_or_none(ActivityTable.id == activity.id.as_primitive())
+        raw_activity = ActivityTable.get_or_none(ActivityTable.id == activity.id)
         raw_activity.name = activity.name.as_primitive()
         raw_activity.price = str(activity.price)
         raw_activity.pay_once = activity.pay_once
@@ -178,7 +178,7 @@ class SqliteActivityRepo(ActivityRepo):
 
     def all(self) -> Generator[Activity, None, None]:
         for raw_activity in ActivityTable.select():
-            yield Activity(Number(raw_activity.id),
+            yield Activity(raw_activity.id,
                            String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
                            Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
                            raw_activity.pay_once,
