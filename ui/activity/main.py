@@ -31,7 +31,6 @@ class ActivityRow(QWidget):
         # Because the widgets are yet to be hided, the hint has the 'extended' height.
         self.current_height, self.previous_height = height, None
         self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
-        print(self.width(), self.widget.width(), self.item.listWidget().width())
 
         def _setup_hidden_ui():
             # Name.
@@ -184,7 +183,6 @@ class ActivityRow(QWidget):
             self._setup_hidden_ui()
             self._setup_callbacks()
             self.hidden_ui_loaded, self.previous_height = True, 350
-        print(self.width(), self.widget.width(), self.item.listWidget().width())
 
         # Hides previously opened detail.
         if self.main_ui_controller.opened_now is None:
