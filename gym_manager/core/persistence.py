@@ -100,8 +100,8 @@ class RegistrationRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def expired(self, today: date, **kwargs) -> Iterable[Registration]:
-        """Retrieves all entries whose pay day has passed if today date were *today*.
+    def expired(self, when: date, **kwargs) -> Generator[Registration, None, None]:
+        """Retrieves all entries whose pay day has passed if today date were *when*.
         """
         raise NotImplementedError
 
