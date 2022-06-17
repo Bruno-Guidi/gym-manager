@@ -266,7 +266,7 @@ class SqliteInscriptionRepo(InscriptionRepo):
         """
         InscriptionTable.create(
             client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
-            activity=ActivityTable.get_by_id(inscription.activity.id.as_primitive()),
+            activity=ActivityTable.get_by_id(inscription.activity.id),
             payment=None if inscription.payment is None else PaymentTable.get_by_id(inscription.payment.id)
         )
 
@@ -275,16 +275,14 @@ class SqliteInscriptionRepo(InscriptionRepo):
         new one.
         """
         raw_client = ClientTable.get_by_id(registration.client.dni.as_primitive())
-        raw_activity = ActivityTable.get_by_id(registration.activity.id.as_primitive())
+        raw_activity = ActivityTable.get_by_id(registration.activity.id)
         raw_reg = InscriptionTable.get_or_none(client=raw_client, activity=raw_activity)
         if raw_reg is None:
             InscriptionTable.create(
                 client=ClientTable.get_by_id(registration.client.dni.as_primitive()),
-                activity=ActivityTable.get_by_id(registration.activity.id.as_primitive()),
+                activity=ActivityTable.get_by_id(registration.activity.id),
                 payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
             )
-
-
         # try:
         #     # If the entry already exists, it means the client is registered in the activity. It also means that this
         #     # method is being invoked to register the payment for the activity, so we can assure the *entry* has
