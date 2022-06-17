@@ -105,6 +105,12 @@ class InscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def remove(self, inscription: Inscription):
+        """Removes the given *inscription* from the repository.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def update_or_create(self, registration: Inscription):
         """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
         new one.

@@ -30,3 +30,9 @@ class ActivityManager:
         client.sign_on(inscription)
         logging.info(f"'Client' [{client.dni}] signed up in the 'activity' [{activity.name}] with 'payment' "
                      f"{'None' if payment is None else payment.id}")
+
+    def unsubscribe(self, inscription: Inscription):
+        inscription.client.cancel(inscription)
+        self.inscription_repo.remove(inscription)
+        logging.info(f"'Client' [{inscription.client.dni}] unsubscribed from the 'activity' "
+                     f"[{inscription.activity.name}].")

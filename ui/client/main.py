@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import Client, String, Number, Date
+from gym_manager.core.base import Client, String, Number, Date, Inscription
 from gym_manager.core.persistence import ClientRepo
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
@@ -27,6 +27,7 @@ class ClientRow(QWidget):
     ):
         super().__init__()
         self.client = client
+        self.inscriptions: dict[int, Inscription] = {}
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.item = item
@@ -238,6 +239,7 @@ class ClientRow(QWidget):
         self.save_btn.clicked.connect(self.save_changes)
         self.remove_client_btn.clicked.connect(self.remove)
         self.add_activity_btn.clicked.connect(self.sign_on)
+        self.remove_activity_btn.clicked.connect(self.unsubscribe)
 
     def set_hidden(self, hidden: bool):
         # Hides widgets.
@@ -330,10 +332,24 @@ class ClientRow(QWidget):
         self.sign_on_ui.exec_()
         self.load_inscriptions()
 
+    def unsubscribe(self):
+        if self.inscription_table.currentRow() == -1:
+            QMessageBox.about(self.name_field.window(), "Error", "Seleccione una actividad")
+        else:
+            inscription = self.inscriptions[self.inscription_table.currentRow()]
+            unsubscribe = QMessageBox.question(self.name_field.window(), "Confirmar",
+                                               f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
+                                               f"actividad {inscription.activity.name}?")
+            if unsubscribe:
+                self.activity_manager.unsubscribe(inscription)
+                self.inscription_table.removeRow(self.inscription_table.currentRow())
+
+    # noinspection PyUnresolvedReferences
     def load_inscriptions(self):
         self.inscription_table.setRowCount(self.client.n_inscriptions())
 
         for row, inscription in enumerate(self.client.inscriptions()):
+            self.inscriptions[row] = inscription
             self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
 
             when = "Sin pagar" if inscription.payment is None else str(inscription.payment.when)

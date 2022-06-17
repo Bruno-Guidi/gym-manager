@@ -178,6 +178,9 @@ class Client:
         """
         self._inscriptions[inscription.activity.id] = inscription
 
+    def cancel(self, inscription: Inscription):
+        self._inscriptions.pop(inscription.activity.id)
+
     def is_signed_up(self, activity: Activity) -> bool:
         return activity.id in self._inscriptions
 

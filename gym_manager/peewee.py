@@ -303,6 +303,11 @@ class SqliteInscriptionRepo(InscriptionRepo):
             payment=None if inscription.payment is None else PaymentTable.get_by_id(inscription.payment.id)
         )
 
+    def remove(self, inscription: Inscription):
+        """Removes the given *inscription* from the repository.
+        """
+        InscriptionTable.delete_by_id((inscription.activity.id, inscription.client.dni.as_primitive()))
+
     def update_or_create(self, registration: Inscription):
         """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
         new one.
