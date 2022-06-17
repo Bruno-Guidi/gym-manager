@@ -318,12 +318,19 @@ class ClientRow(QWidget):
                               f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
     def remove(self):
-        self.main_ui_controller.opened_now = None
-        self.client_repo.remove(self.client)
-        self.item.listWidget().takeItem(self.item.listWidget().currentRow())
+        delete = QMessageBox.question(self.name_field.window(), "Confirmar",
+                                      f"¿Desea eliminar el cliente {self.client.name}?")
 
-        QMessageBox.about(self.name_field.window(), "Éxito",
-                          f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
+        if delete:
+            self.main_ui_controller.opened_now = None
+            self.client_repo.remove(self.client)
+            self.item.listWidget().takeItem(self.item.listWidget().currentRow())
+
+            # ToDo. Move the cache to ActivityManager.
+            self.main_ui_controller._add_client(next(self.client_repo.all(cache=None, page_number=2, items_per_page=1)))
+
+            QMessageBox.about(self.name_field.window(), "Éxito",
+                              f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
     def sign_on(self):
         self.sign_on_ui = SignOn(self.activity_manager, self.client)
