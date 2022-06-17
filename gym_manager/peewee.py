@@ -299,6 +299,14 @@ class SqliteInscriptionRepo(InscriptionRepo):
         #         payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
         #     )
 
+    def all(self, client: Client) -> Generator[Inscription, None, None]:
+        """Retrieves all inscriptions of the given *client*.
+        """
+        query = InscriptionTable.select()
+        for x in query:
+            print(type(x))
+            yield x
+
     def expired(self, when: date, **kwargs) -> Generator[Inscription, None, None]:
         """Retrieves all entries whose pay day has passed if today date were *when*.
 

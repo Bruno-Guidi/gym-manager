@@ -354,6 +354,7 @@ class Controller:
         self.client_list.clear()
 
         for row, client in enumerate(self.client_repo.all(page_number=self.current_page, items_per_page=15)):
+            self.activity_manager.load_inscriptions(client)
             item = QListWidgetItem(self.client_list)
             self.client_list.addItem(item)
             row = ClientRow(

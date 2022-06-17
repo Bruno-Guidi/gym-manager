@@ -15,6 +15,10 @@ class ActivityManager:
         """
         yield from self.activity_repo.all()
 
+    def load_inscriptions(self, client: Client):
+        for inscription in self.inscription_repo.all(client):
+            client.sign_on(inscription)
+
     def sign_on(self, client: Client, activity: Activity, payment: Payment | None = None):
         """Signs on a client in an activity.
         """

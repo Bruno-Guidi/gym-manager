@@ -33,6 +33,9 @@ class MockInscriptionRepo(InscriptionRepo):
     def update_or_create(self, registration: Inscription):
         pass
 
+    def all(self, client: Client) -> Generator[Inscription, None, None]:
+        pass
+
     def expired(self, when: date, **kwargs) -> Generator[Inscription, None, None]:
         pass
 

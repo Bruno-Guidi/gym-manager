@@ -106,6 +106,12 @@ class InscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def all(self, client: Client) -> Generator[Inscription, None, None]:
+        """Retrieves all inscriptions of the given *client*.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def expired(self, when: date, **kwargs) -> Generator[Inscription, None, None]:
         """Retrieves all entries whose pay day has passed if today date were *when*.
         """
