@@ -337,7 +337,7 @@ class ClientRow(QWidget):
     def sign_on(self):
         self.sign_on_ui = SignOn(self.activity_manager, self.client)
         self.sign_on_ui.exec_()
-        self.load_inscriptions()
+        self.load_inscriptions()  # ToDo. Load only the new inscription.
 
     def unsubscribe(self):
         if self.inscription_table.currentRow() == -1:
