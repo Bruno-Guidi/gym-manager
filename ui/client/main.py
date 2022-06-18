@@ -5,7 +5,7 @@ from datetime import date
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
     QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
-    QTableWidgetItem
+    QTableWidgetItem, QDateEdit
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.accounting import PaymentSystem
@@ -15,7 +15,8 @@ from gym_manager.core.persistence import ClientRepo
 from ui.accounting.charge import ChargeUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table, \
+    config_date_edit
 from ui.widgets import Field
 
 
@@ -65,9 +66,9 @@ class ClientRow(QWidget):
             self.admission_layout.addWidget(self.admission_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.admission_lbl, "Ingreso", font_size=12, width=admission_width)
 
-            self.admission_field = Field(Date, self.widget, format=attr_constraints.DATE_FORMATS)
+            self.admission_field = QDateEdit()
             self.admission_layout.addWidget(self.admission_field)
-            config_line(self.admission_field, str(client.admission), width=admission_width)
+            config_date_edit(self.admission_field, date.today(), width=admission_width)
 
             # Telephone.
             self.tel_lbl = QLabel(self.widget)
@@ -184,7 +185,7 @@ class ClientRow(QWidget):
                    alignment=Qt.AlignVCenter)
 
         self.admission_lbl: QLabel | None = None
-        self.admission_field: Field | None = None
+        self.admission_field: QDateEdit | None = None
 
         # Telephone layout.
         self.tel_layout = QVBoxLayout()
@@ -299,14 +300,14 @@ class ClientRow(QWidget):
         self._set_hidden(self.is_hidden)
 
     def save_changes(self):
-        valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
-                     self.tel_field.valid_value(), self.dir_field.valid_value()])
+        valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.tel_field.valid_value(),
+                     self.dir_field.valid_value()])
         if not valid:
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         else:
             # Updates client object.
             self.client.name = self.name_field.value()
-            self.client.admission = self.admission_field.value()
+            self.client.admission = self.admission_field.date().toPyDate()
             self.client.telephone = self.tel_field.value()
             self.client.direction = self.dir_field.value()
 

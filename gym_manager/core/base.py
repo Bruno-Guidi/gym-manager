@@ -168,7 +168,7 @@ class Activity:
 class Client:
     dni: Number
     name: String = field(compare=False)
-    admission: Date = field(compare=False)
+    admission: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
     _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)
