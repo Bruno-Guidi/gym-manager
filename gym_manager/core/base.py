@@ -203,18 +203,17 @@ class Transaction:
 
 @dataclass
 class Inscription:
-    """Stores information about an activity inscription of a client.
+    """Stores information about a customer's inscription in an activity.
     """
+    when: date
     client: Client
     activity: Activity
-    transaction: Optional[Transaction] = None
+    transaction: Transaction | None = None
 
-    def first_pay_missing(self) -> bool:
-        return self.transaction is None
-
-    def pay_day_passed(self, today: date) -> bool:
+    def charge_day_passed(self, today: date) -> bool:
         if self.transaction is None:
-            return True
+            # More than 30 days passed since the client signed up on the activity, so he should be charged.
+            return pay_day_passed(self.when, today)
         return pay_day_passed(self.transaction.when, today)
 
     def record_payment(self, payment: Transaction):

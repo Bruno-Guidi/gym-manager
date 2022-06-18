@@ -1,4 +1,5 @@
 import logging
+from datetime import date
 from typing import Generator, Type
 
 from gym_manager.core.base import Client, Activity, Transaction, Inscription, String, Currency, ActivityFilter, NameFilter
@@ -41,10 +42,10 @@ class ActivityManager:
         for inscription in self.inscription_repo.all(client):
             client.sign_on(inscription)
 
-    def sign_on(self, client: Client, activity: Activity, payment: Transaction | None = None):
+    def sign_on(self, when: date, client: Client, activity: Activity, payment: Transaction | None = None):
         """Signs on a client in an activity.
         """
-        inscription = Inscription(client, activity, payment)
+        inscription = Inscription(when, client, activity, payment)
         self.inscription_repo.add(inscription)
         client.sign_on(inscription)
         logging.info(f"'Client' [{client.dni}] signed up in the 'activity' [{activity.name}] with 'payment' "

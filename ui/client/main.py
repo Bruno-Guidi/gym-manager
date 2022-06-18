@@ -377,7 +377,7 @@ class ClientRow(QWidget):
             transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
             self.inscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
 
-            expired = "Si" if inscription.pay_day_passed(date.today()) else "No"
+            expired = "Si" if inscription.charge_day_passed(date.today()) else "No"
             self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
 
 
