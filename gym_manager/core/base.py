@@ -100,32 +100,6 @@ class String(Validatable):
         return value
 
 
-class Date(Validatable):
-
-    def validate(self, value: str | date, **kwargs) -> date:
-        """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
-        implementation stores.
-
-        Keyword Args:
-            format: iterable with date formats.
-
-        Raises:
-            ValidationError if the validation failed.
-        """
-        if isinstance(value, date):
-            return value
-
-        for format_ in kwargs['format']:
-            try:
-                return datetime.strptime(value, format_).date()
-            except ValueError:
-                pass
-        raise ValidationError(f"None of the formats in '{kwargs['format']}' could be used to format the value '{value}'.")
-
-    def __str__(self) -> str:
-        return datetime.strftime(self._value, attr_constraints.DATE_FORMATS[0])
-
-
 class Currency(Validatable):
 
     def validate(self, value: str, **kwargs) -> Any:

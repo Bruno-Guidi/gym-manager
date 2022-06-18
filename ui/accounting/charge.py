@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout,
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.accounting import PaymentSystem
-from gym_manager.core.base import String, Number, Date, Client, Currency, Activity
+from gym_manager.core.base import String, Number, Client, Currency, Activity
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox
 from ui.widgets import Field, valid_text_value

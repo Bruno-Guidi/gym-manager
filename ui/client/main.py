@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 from gym_manager.core import attr_constraints
 from gym_manager.core.accounting import PaymentSystem
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import Client, String, Number, Date, Inscription
+from gym_manager.core.base import Client, String, Number, Inscription
 from gym_manager.core.persistence import ClientRepo
 from ui.accounting.charge import ChargeUI
 from ui.client.create import CreateUI
@@ -68,7 +68,7 @@ class ClientRow(QWidget):
 
             self.admission_field = QDateEdit()
             self.admission_layout.addWidget(self.admission_field)
-            config_date_edit(self.admission_field, date.today(), width=admission_width)
+            config_date_edit(self.admission_field, self.client.admission, width=admission_width)
 
             # Telephone.
             self.tel_lbl = QLabel(self.widget)
@@ -181,8 +181,8 @@ class ClientRow(QWidget):
 
         self.admission_summary = QLabel(self.widget)
         self.admission_layout.addWidget(self.admission_summary, alignment=Qt.AlignTop)
-        config_lbl(self.admission_summary, str(self.client.admission), width=admission_width, height=30,
-                   alignment=Qt.AlignVCenter)
+        config_lbl(self.admission_summary, self.client.admission.strftime(attr_constraints.DATE_FORMAT),
+                   width=admission_width, height=30, alignment=Qt.AlignVCenter)
 
         self.admission_lbl: QLabel | None = None
         self.admission_field: QDateEdit | None = None
@@ -315,7 +315,7 @@ class ClientRow(QWidget):
 
             # Updates ui.
             self.name_summary.setText(str(self.client.name))
-            self.admission_summary.setText(str(self.client.admission))
+            self.admission_summary.setText(self.client.admission.strftime(attr_constraints.DATE_FORMAT))
             self.tel_summary.setText(self.client.telephone.as_primitive())
             self.dir_summary.setText(self.client.direction.as_primitive())
 

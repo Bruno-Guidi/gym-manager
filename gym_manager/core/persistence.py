@@ -2,7 +2,7 @@ import abc
 from datetime import date
 from typing import Iterable, Generator
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Date, Inscription, Payment
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Payment
 
 
 class ClientRepo(abc.ABC):
