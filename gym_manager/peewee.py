@@ -7,7 +7,7 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
     CompositeKey, prefetch
 
 from gym_manager.core import attr_constraints as constraints
-from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment, Inscription
+from gym_manager.core.base import Client, Number, String, Currency, Activity, Payment, Inscription
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo, InscriptionRepo
 
 _DATABASE_NAME = r"test.db"
@@ -47,19 +47,6 @@ class SqliteClientRepo(ClientRepo):
 
         return ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) is not None
 
-    def get(self, dni: Number) -> Client:
-        """Returns the client with the given *dni*.
-        """
-        raw_client = ClientTable.get_by_id(dni)
-        return Client(
-            dni,
-            String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
-            Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
-            String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
-                   max_len=constraints.CLIENT_TEL_CHARS),
-            String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL, max_len=constraints.CLIENT_DIR_CHARS)
-        )
-
     def add(self, client: Client):
         """Adds the *client* to the repository.
         """
@@ -68,7 +55,7 @@ class SqliteClientRepo(ClientRepo):
 
         ClientTable.create(dni=client.dni.as_primitive(),
                            name=client.name.as_primitive(),
-                           admission=client.admission.as_primitive(),
+                           admission=client.admission,
                            telephone=client.telephone.as_primitive(),
                            direction=client.direction.as_primitive(),
                            is_active=True)
@@ -87,7 +74,7 @@ class SqliteClientRepo(ClientRepo):
         """
         raw_client = ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive())
         raw_client.name = client.name.as_primitive()
-        raw_client.admission = client.admission.as_primitive()
+        raw_client.admission = client.admission
         raw_client.telephone = client.telephone.as_primitive()
         raw_client.direction = client.direction.as_primitive()
         raw_client.save()
@@ -97,8 +84,8 @@ class SqliteClientRepo(ClientRepo):
             return cache[raw_activity.id]
         else:
             new = Activity(raw_activity.id,
-                           String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
+                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
             cache[raw_activity.id] = new
@@ -127,8 +114,8 @@ class SqliteClientRepo(ClientRepo):
         for raw_client in prefetch(clients_q, inscription_q, payments_q):
             client = Client(
                 Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
-                String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
-                Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
+                String(raw_client.name, max_len=constraints.CLIENT_NAME_CHARS),
+                date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
                 String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
                        max_len=constraints.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
@@ -204,8 +191,8 @@ class SqliteActivityRepo(ActivityRepo):
     def all(self) -> Generator[Activity, None, None]:
         for raw_activity in ActivityTable.select():
             yield Activity(raw_activity.id,
-                           String(raw_activity.name, optional=False, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
+                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
 
@@ -257,8 +244,8 @@ class SqlitePaymentRepo(PaymentRepo):
         else:
             new = Client(
                 Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
-                String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
-                Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
+                String(raw_client.name, max_len=constraints.CLIENT_NAME_CHARS),
+                date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
                 String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
                        max_len=constraints.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
@@ -289,10 +276,10 @@ class SqlitePaymentRepo(PaymentRepo):
 
         for raw_payment in query.paginate(page_number, items_per_page):
             yield Payment(raw_payment.id, self._get_client(raw_payment.client, cache), raw_payment.when,
-                          Currency(raw_payment.amount, positive=True, max_currency=constraints.MAX_CURRENCY),
-                          String(raw_payment.method, optional=False, max_len=50),
-                          String(raw_payment.responsible, optional=False, max_len=50),
-                          String(raw_payment.description, optional=False, max_len=50))
+                          Currency(raw_payment.amount, max_currency=constraints.MAX_CURRENCY),
+                          String(raw_payment.method, max_len=50),
+                          String(raw_payment.responsible, max_len=50),
+                          String(raw_payment.description, max_len=50))
 
 
 class InscriptionTable(Model):

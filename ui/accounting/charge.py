@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout,
 
 from gym_manager.core import attr_constraints
 from gym_manager.core.accounting import PaymentSystem
-from gym_manager.core.base import String, Number, Date, Client, Currency, Activity
+from gym_manager.core.base import String, Number, Client, Currency, Activity
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox
 from ui.widgets import Field, valid_text_value
@@ -112,7 +112,7 @@ class ChargeUI(QDialog):
         self.amount_layout.addWidget(self.amount_lbl)
         config_lbl(self.amount_lbl, "Monto", font_size=16, width=120)
 
-        self.amount_field = Field(Currency, positive=True, max_currency=attr_constraints.MAX_CURRENCY)
+        self.amount_field = Field(Currency, max_currency=attr_constraints.MAX_CURRENCY)
         self.amount_layout.addWidget(self.amount_field)
         config_line(self.amount_field, place_holder="000.00", font_size=16, height=30)
 
@@ -138,7 +138,7 @@ class ChargeUI(QDialog):
         self.responsible_layout.addWidget(self.responsible_lbl)
         config_lbl(self.responsible_lbl, "Responsable", font_size=16, width=120)
 
-        self.responsible_field = Field(String, optional=False, max_len=attr_constraints.CLIENT_DIR_CHARS)
+        self.responsible_field = Field(String, max_len=attr_constraints.CLIENT_DIR_CHARS)
         self.responsible_layout.addWidget(self.responsible_field)
         config_line(self.responsible_field, place_holder="Responsable", font_size=16)
 

@@ -2,19 +2,19 @@ from datetime import datetime, date
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox, QDateEdit
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.base import String, Number, Date, Client
+from gym_manager.core.base import String, Number, Client
 from gym_manager.core.persistence import ClientRepo
-from ui.widget_config import config_layout, config_lbl, config_line
+from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit
 from ui.widgets import Field
 
 
 class Controller:
 
     def __init__(
-            self, name_field: Field, dni_field: Field, admission_field: Field, tel_field: Field, dir_field: Field,
+            self, name_field: Field, dni_field: Field, admission_field: QDateEdit, tel_field: Field, dir_field: Field,
             client_repo: ClientRepo
     ) -> None:
         self.name_field = name_field
@@ -28,15 +28,15 @@ class Controller:
 
     # noinspection PyTypeChecker
     def create_client(self):
-        valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.admission_field.valid_value(),
-                     self.tel_field.valid_value(), self.dir_field.valid_value()])
+        valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.tel_field.valid_value(),
+                     self.dir_field.valid_value()])
         if not valid:
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         elif self.client_repo.contains(self.dni_field.value()):
             QMessageBox.about(self.name_field.window(), "Error",
                               f"Ya existe un cliente con el dni '{self.dni_field.value().as_primitive()}'.")
         else:
-            self.client = Client(self.dni_field.value(), self.name_field.value(), self.admission_field.value(),
+            self.client = Client(self.dni_field.value(), self.name_field.value(), self.admission_field.date().toPyDate(),
                                  self.tel_field.value(), self.dir_field.value())
             self.client_repo.add(self.client)
             QMessageBox.about(self.name_field.window(), "Éxito",
@@ -72,7 +72,7 @@ class CreateUI(QDialog):
         self.name_layout.addWidget(self.name_lbl)
         config_lbl(self.name_lbl, "Nombre", font_size=16, width=120)
 
-        self.name_field = Field(validatable=String, optional=False, max_len=attr_constraints.CLIENT_NAME_CHARS)
+        self.name_field = Field(validatable=String, max_len=attr_constraints.CLIENT_NAME_CHARS)
         self.name_layout.addWidget(self.name_field)
         config_line(self.name_field, place_holder="Nombre", font_size=16)
 
@@ -85,7 +85,7 @@ class CreateUI(QDialog):
         self.dni_layout.addWidget(self.dni_lbl)
         config_lbl(self.dni_lbl, "DNI", font_size=16, width=120)
 
-        self.dni_field = Field(validatable=Number, min_value=attr_constraints.CLIENT_MIN_DNI,
+        self.dni_field = Field(Number, min_value=attr_constraints.CLIENT_MIN_DNI,
                                max_value=attr_constraints.CLIENT_MAX_DNI)
         self.dni_layout.addWidget(self.dni_field)
         config_line(self.dni_field, place_holder="DNI", font_size=16)
@@ -99,10 +99,9 @@ class CreateUI(QDialog):
         self.admission_layout.addWidget(self.admission_lbl)
         config_lbl(self.admission_lbl, "Ingreso", font_size=16, width=120)
 
-        self.admission_field = Field(Date, format=attr_constraints.DATE_FORMATS)
+        self.admission_field = QDateEdit()
         self.admission_layout.addWidget(self.admission_field)
-        config_line(self.admission_field, text=datetime.strftime(date.today(), attr_constraints.DATE_FORMATS[0]),
-                    place_holder="DD-MM-AAAA", font_size=16, height=30)
+        config_date_edit(self.admission_field, date.today(), font_size=16, height=30)
 
         # Telephone.
         self.tel_layout = QHBoxLayout()

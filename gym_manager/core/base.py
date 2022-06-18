@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass, field
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Optional
-
-from gym_manager.core import attr_constraints
 
 ONE_MONTH_TD = timedelta(days=30)
 
@@ -44,6 +42,7 @@ class Validatable(abc.ABC):
         implementation stores.
 
         Keyword Args:
+            KeyError if a kwarg is missing.
             Any argument required to validate the value.
 
         Raises:
@@ -87,54 +86,34 @@ class String(Validatable):
         implementation stores.
 
         Keyword Args:
-            optional: True if the String may be empty, False otherwise.
+            optional: True if the String may be empty, False otherwise. False by default.
             max_len: maximum amount of characters.
 
         Raises:
+            KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-        if not kwargs['optional'] and len(value) == 0:
+        if 'max_len' not in kwargs:
+            raise KeyError(f"The String.validate(args) method is missing the kwarg 'max_len'.")
+        optional = False if 'optional' not in kwargs else kwargs['optional']
+
+        if not optional and len(value) == 0:
             raise ValidationError(f"A non optional String cannot be empty.")
         if len(value) > kwargs['max_len']:
             raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
         return value
 
 
-class Date(Validatable):
-
-    def validate(self, value: str | date, **kwargs) -> date:
-        """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
-        implementation stores.
-
-        Keyword Args:
-            format: iterable with date formats.
-
-        Raises:
-            ValidationError if the validation failed.
-        """
-        if isinstance(value, date):
-            return value
-
-        for format_ in kwargs['format']:
-            try:
-                return datetime.strptime(value, format_).date()
-            except ValueError:
-                pass
-        raise ValidationError(f"None of the formats in '{kwargs['format']}' could be used to format the value '{value}'.")
-
-    def __str__(self) -> str:
-        return datetime.strftime(self._value, attr_constraints.DATE_FORMATS[0])
-
-
 class Currency(Validatable):
 
     def validate(self, value: str, **kwargs) -> Any:
+        if 'max_currency' not in kwargs:
+            raise KeyError(f"The Currency.validate(args) method is missing the kwarg 'max_currency'.")
+
         try:
             value = Decimal(value)
         except InvalidOperation:
             raise ValidationError(f"The value '{value}' is not a valid currency.")
-        if kwargs['positive'] and value <= 0:
-            raise ValidationError(f"The currency '{value}' is not valid. It should be greater than zero.")
         if value >= kwargs['max_currency']:
             raise ValidationError(
                 f"The currency '{value}' is not valid. It should be less than '{kwargs['max_currency']}'.")
@@ -168,7 +147,7 @@ class Activity:
 class Client:
     dni: Number
     name: String = field(compare=False)
-    admission: Date = field(compare=False)
+    admission: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
     _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)

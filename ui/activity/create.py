@@ -65,7 +65,7 @@ class CreateUI(QDialog):
         self.name_layout.addWidget(self.name_lbl)
         config_lbl(self.name_lbl, "Nombre", font_size=16, width=120)
 
-        self.name_field = Field(String, optional=False, max_len=attr_constraints.ACTIVITY_NAME_CHARS)
+        self.name_field = Field(String, max_len=attr_constraints.ACTIVITY_NAME_CHARS)
         self.name_layout.addWidget(self.name_field)
         config_line(self.name_field, place_holder="Nombre", font_size=16)
 
@@ -78,7 +78,7 @@ class CreateUI(QDialog):
         self.price_layout.addWidget(self.price_lbl)
         config_lbl(self.price_lbl, "Precio", font_size=16, width=120)
 
-        self.price_field = Field(Currency, positive=True, max_currency=attr_constraints.MAX_CURRENCY)
+        self.price_field = Field(Currency, max_currency=attr_constraints.MAX_CURRENCY)
         self.price_layout.addWidget(self.price_field)
         config_line(self.price_field, place_holder="Precio", font_size=16)
 

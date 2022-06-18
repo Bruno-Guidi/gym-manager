@@ -2,7 +2,7 @@ import abc
 from datetime import date
 from typing import Iterable, Generator
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Date, Inscription, Payment
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Payment
 
 
 class ClientRepo(abc.ABC):
@@ -12,12 +12,6 @@ class ClientRepo(abc.ABC):
     @abc.abstractmethod
     def contains(self, dni: Number) -> bool:
         """Returns True if there is a client with the given *dni*, False otherwise.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def get(self, dni: Number) -> Client:
-        """Returns the client with the given *dni*.
         """
         raise NotImplementedError
 

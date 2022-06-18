@@ -11,8 +11,7 @@ class PaymentSystem:
         self.payment_repo = payment_repo
 
     def methods(self) -> Iterable[String]:
-        methods = [String("Efectivo", optional=False, max_len=20), String("Débito", optional=False, max_len=20),
-                   String("Crédito", optional=False, max_len=20)]
+        methods = [String("Efectivo", max_len=20), String("Débito", max_len=20), String("Crédito", max_len=20)]
         for m in methods:
             yield m
 

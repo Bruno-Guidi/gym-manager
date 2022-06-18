@@ -35,7 +35,7 @@ class ActivityRow(QWidget):
             self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.name_lbl, "Nombre", font_size=12, width=name_width)
 
-            self.name_field = Field(String, self.widget, optional=False, max_len=attr_constraints.CLIENT_NAME_CHARS)
+            self.name_field = Field(String, self.widget, max_len=attr_constraints.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
             config_line(self.name_field, str(activity.name), width=name_width)
 
@@ -44,7 +44,7 @@ class ActivityRow(QWidget):
             self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.price_lbl, "Precio", font_size=12, width=price_width)
 
-            self.price_field = Field(Currency, self.widget, positive=True, max_currency=attr_constraints.MAX_CURRENCY)
+            self.price_field = Field(Currency, self.widget, max_currency=attr_constraints.MAX_CURRENCY)
             self.price_layout.addWidget(self.price_field)
             config_line(self.price_field, str(activity.price), width=price_width)
 
