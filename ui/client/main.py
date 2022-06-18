@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from datetime import date, datetime
-from typing import Any
+from datetime import date
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
+    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QMessageBox, \
     QTableWidgetItem, QDateEdit
 
 from gym_manager.core import attr_constraints
@@ -16,8 +15,8 @@ from gym_manager.core.persistence import ClientRepo
 from ui.accounting.charge import ChargeUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table, \
-    config_date_edit, fill_combobox
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
+    config_date_edit
 from ui.widgets import Field, SearchBox
 
 
