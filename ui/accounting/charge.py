@@ -112,7 +112,7 @@ class ChargeUI(QDialog):
         self.amount_layout.addWidget(self.amount_lbl)
         config_lbl(self.amount_lbl, "Monto", font_size=16, width=120)
 
-        self.amount_field = Field(Currency, positive=True, max_currency=attr_constraints.MAX_CURRENCY)
+        self.amount_field = Field(Currency, max_currency=attr_constraints.MAX_CURRENCY)
         self.amount_layout.addWidget(self.amount_field)
         config_line(self.amount_field, place_holder="000.00", font_size=16, height=30)
 

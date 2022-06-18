@@ -85,7 +85,7 @@ class SqliteClientRepo(ClientRepo):
         else:
             new = Activity(raw_activity.id,
                            String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
+                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
             cache[raw_activity.id] = new
@@ -192,7 +192,7 @@ class SqliteActivityRepo(ActivityRepo):
         for raw_activity in ActivityTable.select():
             yield Activity(raw_activity.id,
                            String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, positive=True, max_currency=constraints.MAX_CURRENCY),
+                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
 
@@ -276,7 +276,7 @@ class SqlitePaymentRepo(PaymentRepo):
 
         for raw_payment in query.paginate(page_number, items_per_page):
             yield Payment(raw_payment.id, self._get_client(raw_payment.client, cache), raw_payment.when,
-                          Currency(raw_payment.amount, positive=True, max_currency=constraints.MAX_CURRENCY),
+                          Currency(raw_payment.amount, max_currency=constraints.MAX_CURRENCY),
                           String(raw_payment.method, max_len=50),
                           String(raw_payment.responsible, max_len=50),
                           String(raw_payment.description, max_len=50))

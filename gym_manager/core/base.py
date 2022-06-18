@@ -107,8 +107,6 @@ class String(Validatable):
 class Currency(Validatable):
 
     def validate(self, value: str, **kwargs) -> Any:
-        if 'positive' not in kwargs:
-            raise KeyError(f"The Currency.validate(args) method is missing the kwarg 'positive'.")
         if 'max_currency' not in kwargs:
             raise KeyError(f"The Currency.validate(args) method is missing the kwarg 'max_currency'.")
 
@@ -116,8 +114,6 @@ class Currency(Validatable):
             value = Decimal(value)
         except InvalidOperation:
             raise ValidationError(f"The value '{value}' is not a valid currency.")
-        if kwargs['positive'] and value <= 0:
-            raise ValidationError(f"The currency '{value}' is not valid. It should be greater than zero.")
         if value >= kwargs['max_currency']:
             raise ValidationError(
                 f"The currency '{value}' is not valid. It should be less than '{kwargs['max_currency']}'.")

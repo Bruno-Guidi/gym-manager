@@ -78,7 +78,7 @@ class CreateUI(QDialog):
         self.price_layout.addWidget(self.price_lbl)
         config_lbl(self.price_lbl, "Precio", font_size=16, width=120)
 
-        self.price_field = Field(Currency, positive=True, max_currency=attr_constraints.MAX_CURRENCY)
+        self.price_field = Field(Currency, max_currency=attr_constraints.MAX_CURRENCY)
         self.price_layout.addWidget(self.price_field)
         config_line(self.price_field, place_holder="Precio", font_size=16)
 

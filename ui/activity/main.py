@@ -44,7 +44,7 @@ class ActivityRow(QWidget):
             self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.price_lbl, "Precio", font_size=12, width=price_width)
 
-            self.price_field = Field(Currency, self.widget, positive=True, max_currency=attr_constraints.MAX_CURRENCY)
+            self.price_field = Field(Currency, self.widget, max_currency=attr_constraints.MAX_CURRENCY)
             self.price_layout.addWidget(self.price_field)
             config_line(self.price_field, str(activity.price), width=price_width)
 
