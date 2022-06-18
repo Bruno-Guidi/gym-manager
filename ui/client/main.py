@@ -104,7 +104,8 @@ class ClientRow(QWidget):
             self.row_layout.addWidget(self.activities_lbl)
             config_lbl(self.activities_lbl, "Actividades", font_size=12)
 
-            # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
+            # Layout that contains activities and buttons to add, remove and charge registrations, and to see
+            # transactions.
             self.bottom_layout = QHBoxLayout()
             self.row_layout.addLayout(self.bottom_layout)
             config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
@@ -132,9 +133,9 @@ class ClientRow(QWidget):
             self.bottom_buttons_layout.addWidget(self.charge_activity_btn)
             config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=110)
 
-            self.payments_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.payments_btn)
-            config_btn(self.payments_btn, text="Ver pagos", width=110)
+            self.transactions_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.transactions_btn)
+            config_btn(self.transactions_btn, text="Ver pagos", width=110)
 
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
@@ -223,7 +224,8 @@ class ClientRow(QWidget):
         # Activities.
         self.activities_lbl: QLabel | None = None
 
-        # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
+        # Layout that contains activities and buttons to add, remove and charge registrations, and to see
+        # transactions.
         self.bottom_layout: QHBoxLayout | None = None
 
         self.inscription_table: QTableWidget | None = None
@@ -233,7 +235,7 @@ class ClientRow(QWidget):
         self.sign_on_btn: QPushButton | None = None
         self.unsubscribe_btn: QPushButton | None = None
         self.charge_activity_btn: QPushButton | None = None
-        self.payments_btn: QPushButton | None = None
+        self.transactions_btn: QPushButton | None = None
 
         self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
 
@@ -265,7 +267,7 @@ class ClientRow(QWidget):
         self.sign_on_btn.setHidden(hidden)
         self.unsubscribe_btn.setHidden(hidden)
         self.charge_activity_btn.setHidden(hidden)
-        self.payments_btn.setHidden(hidden)
+        self.transactions_btn.setHidden(hidden)
 
         # Updates the height of the widget.
         self.previous_height, self.current_height = self.current_height, self.previous_height
@@ -370,11 +372,11 @@ class ClientRow(QWidget):
             self.inscriptions[row] = inscription
             self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
 
-            when = "Sin pagar" if inscription.payment is None else str(inscription.payment.when)
+            when = "Sin pagar" if inscription.transaction is None else str(inscription.transaction.when)
             self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
 
-            payment_id = "-" if inscription.payment is None else str(inscription.payment.id)
-            self.inscription_table.setItem(row, 2, QTableWidgetItem(payment_id))
+            transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
+            self.inscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
 
             expired = "Si" if inscription.pay_day_passed(date.today()) else "No"
             self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))

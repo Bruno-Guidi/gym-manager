@@ -1,13 +1,13 @@
 from datetime import date
 from typing import Iterable
 
-from gym_manager.core.base import Payment, Client, Activity, String
-from gym_manager.core.persistence import PaymentRepo
+from gym_manager.core.base import Transaction, Client, Activity, String
+from gym_manager.core.persistence import TransactionRepo
 
 
 class PaymentSystem:
 
-    def __init__(self, payment_repo: PaymentRepo) -> None:
+    def __init__(self, payment_repo: TransactionRepo) -> None:
         self.payment_repo = payment_repo
 
     def methods(self) -> Iterable[String]:
@@ -18,7 +18,7 @@ class PaymentSystem:
     def payments(
             self, from_date: date | None = None, to_date: date | None = None, page_number: int = 1,
             items_per_page: int = 15
-    ) -> Iterable[Payment]:
+    ) -> Iterable[Transaction]:
         """Returns payments.
         """
         cache = {}

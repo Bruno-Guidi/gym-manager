@@ -2,7 +2,7 @@ import abc
 from datetime import date
 from typing import Iterable, Generator
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Payment
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Transaction
 
 
 class ClientRepo(abc.ABC):
@@ -108,13 +108,6 @@ class InscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_or_create(self, registration: Inscription):
-        """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
-        new one.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def all(self, client: Client) -> Generator[Inscription, None, None]:
         """Retrieves all inscriptions of the given *client*.
         """
@@ -127,14 +120,15 @@ class InscriptionRepo(abc.ABC):
         raise NotImplementedError
 
 
-class PaymentRepo(abc.ABC):
-    """Payments repository interface.
+class TransactionRepo(abc.ABC):
+    """Transaction repository interface.
     """
     @abc.abstractmethod
     def charge(
             self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
-    ) -> Payment:
-        """Register a new payment with the given information. This method must return the created payment.
+    ) -> Transaction:
+        """Register a new charge transaction with the given information. This method must return the created
+        transaction.
         """
         raise NotImplementedError
 
@@ -142,7 +136,7 @@ class PaymentRepo(abc.ABC):
     def all(
             self, cache: dict[Number, Client] | None = None, from_date: date | None = None, to_date: date | None = None,
             **kwargs
-    ) -> Generator[Payment, None, None]:
-        """Retrieves the payments in the repository.
+    ) -> Generator[Transaction, None, None]:
+        """Retrieves the transactions in the repository.
         """
         raise NotImplementedError

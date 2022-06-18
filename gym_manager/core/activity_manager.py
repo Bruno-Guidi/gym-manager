@@ -1,7 +1,7 @@
 import logging
 from typing import Generator, Type
 
-from gym_manager.core.base import Client, Activity, Payment, Inscription, String, Currency, ActivityFilter, NameFilter
+from gym_manager.core.base import Client, Activity, Transaction, Inscription, String, Currency, ActivityFilter, NameFilter
 from gym_manager.core.persistence import ActivityRepo, InscriptionRepo
 
 
@@ -40,7 +40,7 @@ class ActivityManager:
         for inscription in self.inscription_repo.all(client):
             client.sign_on(inscription)
 
-    def sign_on(self, client: Client, activity: Activity, payment: Payment | None = None):
+    def sign_on(self, client: Client, activity: Activity, payment: Transaction | None = None):
         """Signs on a client in an activity.
         """
         inscription = Inscription(client, activity, payment)

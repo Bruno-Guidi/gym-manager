@@ -190,7 +190,7 @@ class Client:
 
 
 @dataclass
-class Payment:
+class Transaction:
     id: int
     client: Client
     when: date
@@ -206,17 +206,17 @@ class Inscription:
     """
     client: Client
     activity: Activity
-    payment: Optional[Payment] = None
+    transaction: Optional[Transaction] = None
 
     def first_pay_missing(self) -> bool:
-        return self.payment is None
+        return self.transaction is None
 
     def pay_day_passed(self, today: date) -> bool:
-        if self.payment is None:
+        if self.transaction is None:
             return True  # ToDo add inscription date and compare to it.
-        return pay_day_passed(self.payment.when.as_primitive(), today)
+        return pay_day_passed(self.transaction.when.as_primitive(), today)
 
-    def record_payment(self, payment: Payment):
+    def record_payment(self, payment: Transaction):
         """Records the payment of the activity.
 
         Raises:
@@ -225,4 +225,4 @@ class Inscription:
         if self.client != payment.client:
             raise ValueError(f"The client '{payment.client.name}' is paying the activity '{self.activity.name}' for "
                              f"the client '{self.client.name}'.")
-        self.payment = payment
+        self.transaction = payment
