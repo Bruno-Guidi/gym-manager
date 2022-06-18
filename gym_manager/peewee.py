@@ -7,7 +7,7 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
     CompositeKey, prefetch
 
 from gym_manager.core import attr_constraints as constraints
-from gym_manager.core.base import Client, Number, String, Date, Currency, Activity, Payment, Inscription
+from gym_manager.core.base import Client, Number, String, Currency, Activity, Payment, Inscription
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo, InscriptionRepo
 
 _DATABASE_NAME = r"test.db"
@@ -258,7 +258,7 @@ class SqlitePaymentRepo(PaymentRepo):
             new = Client(
                 Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
                 String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
-                Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
+                date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
                 String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
                        max_len=constraints.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
