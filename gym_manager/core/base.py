@@ -195,7 +195,7 @@ class Client:
 class Payment:
     id: int
     client: Client
-    when: Date
+    when: date
     amount: Currency
     method: String
     responsible: String

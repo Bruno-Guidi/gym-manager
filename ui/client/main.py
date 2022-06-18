@@ -8,9 +8,11 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTableWidgetItem
 
 from gym_manager.core import attr_constraints
+from gym_manager.core.accounting import PaymentSystem
 from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import Client, String, Number, Date, Inscription
 from gym_manager.core.persistence import ClientRepo
+from ui.accounting.charge import ChargeUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table
@@ -20,7 +22,7 @@ from ui.widgets import Field
 class ClientRow(QWidget):
     def __init__(
             self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
-            item: QListWidgetItem, main_ui_controller: Controller,
+            payment_system: PaymentSystem, item: QListWidgetItem, main_ui_controller: Controller,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int, height: int
     ):
         super().__init__()
@@ -28,6 +30,7 @@ class ClientRow(QWidget):
         self.inscriptions: dict[int, Inscription] = {}
         self.client_repo = client_repo
         self.activity_manager = activity_manager
+        self.payment_system = payment_system
         self.item = item
         self.main_ui_controller = main_ui_controller
 
@@ -238,6 +241,7 @@ class ClientRow(QWidget):
         self.remove_btn.clicked.connect(self.remove)
         self.sign_on_btn.clicked.connect(self.sign_on)
         self.unsubscribe_btn.clicked.connect(self.unsubscribe)
+        self.charge_activity_btn.clicked.connect(self.charge)
 
     def _set_hidden(self, hidden: bool):
         # Hides widgets.
@@ -337,7 +341,7 @@ class ClientRow(QWidget):
     def sign_on(self):
         self.sign_on_ui = SignOn(self.activity_manager, self.client)
         self.sign_on_ui.exec_()
-        self.load_inscriptions()
+        self.load_inscriptions()  # ToDo. Load only the new inscription.
 
     def unsubscribe(self):
         if self.inscription_table.currentRow() == -1:
@@ -350,6 +354,12 @@ class ClientRow(QWidget):
             if unsubscribe:
                 self.activity_manager.unsubscribe(inscription)
                 self.inscription_table.removeRow(self.inscription_table.currentRow())
+
+    def charge(self):
+        activity = self.inscriptions[self.inscription_table.currentRow()].activity
+        descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=attr_constraints.DESCRIPTION_CHARS)
+        self.charge_ui = ChargeUI(self.payment_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
+        self.charge_ui.exec_()
 
     # noinspection PyUnresolvedReferences
     def load_inscriptions(self):
@@ -371,11 +381,12 @@ class ClientRow(QWidget):
 
 class Controller:
     def __init__(
-            self, client_repo: ClientRepo, activity_manager: ActivityManager, client_list: QListWidget,
-            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
+            client_list: QListWidget, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
+        self.payment_system = payment_system
         self.current_page, self.items_per_page = 1, 10
         self.opened_now: ClientRow | None = None
 
@@ -395,7 +406,7 @@ class Controller:
         item = QListWidgetItem(self.client_list)
         self.client_list.addItem(item)
         client_row = ClientRow(
-            client, self.client_repo, self.activity_manager, item, self,
+            client, self.client_repo, self.activity_manager, self.payment_system, item, self,
             self.name_width, self.dni_width, self.admission_width, self.tel_width, self.dir_width, height=50)
         self.client_list.setItemWidget(item, client_row)
 
@@ -420,12 +431,12 @@ class Controller:
 class ClientMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, activity_manager: ActivityManager
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
     ) -> None:
         super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(client_repo, activity_manager, self.client_list,
+        self.controller = Controller(client_repo, activity_manager, payment_system, self.client_list,
                                      name_width, dni_width, admission_width, tel_width, dir_width)
 
         self.create_client_btn.clicked.connect(self.controller.add_client)

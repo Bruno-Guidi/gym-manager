@@ -235,44 +235,70 @@ class SqlitePaymentRepo(PaymentRepo):
     def __init__(self) -> None:
         create_table(PaymentTable)
 
-    def register(
-            self, client: Client, when: Date, amount: Currency, method: String, responsible: String, description: String
+    def charge(
+            self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
     ) -> Payment:
         """Register a new payment with the given information. This method must return the created payment.
         """
         payment = PaymentTable.create(
-            client=ClientTable.get_by_id(client.dni),
+            client=ClientTable.get_by_id(client.dni.as_primitive()),
             when=when,
-            amount=amount,
-            method=method,
-            responsible=responsible,
-            description=description
+            amount=amount.as_primitive(),
+            method=method.as_primitive(),
+            responsible=responsible.as_primitive(),
+            description=description.as_primitive()
         )
 
         return Payment(payment.id, client, when, amount, method, responsible, description)
 
-    def all(self, client: Client, **kwargs) -> Generator[Payment, None, None]:
-        """Retrieves the payments of the given *client*
+    def _get_client(self, raw_client, cache: dict[int, Client]) -> Client:
+        if raw_client.dni in cache:
+            return cache[raw_client.dni]
+        else:
+            new = Client(
+                Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
+                String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
+                Date(date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day)),
+                String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
+                       max_len=constraints.CLIENT_TEL_CHARS),
+                String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
+                       max_len=constraints.CLIENT_DIR_CHARS)
+            )
+            cache[raw_client.dni] = new
+            return new
 
-        Args:
-            client: client whose payments are wanted.
+    def all(
+            self, cache: dict[Number, Client] | None = None, from_date: date | None = None, to_date: date | None = None,
+            **kwargs
+    ) -> Generator[Payment, None, None]:
+        """Retrieves the payments in the repository.
 
         Keyword Args:
             page_number: number of page of the table to return.
             items_per_page: number of items per page.
         """
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
-        query = PaymentTable.select().join(ClientTable).where(ClientTable.dni == client.dni)
-        query = query.paginate(page_number, items_per_page)
 
-        for row in query:
-            yield Payment(row.id, client, row.day, Currency(row.amount), row.method, row.responsible, row.description)
+        query = PaymentTable.select().join(ClientTable)
+        if from_date is not None:
+            query = query.where(PaymentTable.when >= from_date)
+        if to_date is not None:
+            query = query.where(PaymentTable.when <= to_date)
+
+        cache = {} if cache is None else cache
+
+        for raw_payment in query.paginate(page_number, items_per_page):
+            yield Payment(raw_payment.id, self._get_client(raw_payment.client, cache), raw_payment.when,
+                          Currency(raw_payment.amount, positive=True, max_currency=constraints.MAX_CURRENCY),
+                          String(raw_payment.method, optional=False, max_len=50),
+                          String(raw_payment.responsible, optional=False, max_len=50),
+                          String(raw_payment.description, optional=False, max_len=50))
 
 
 class InscriptionTable(Model):
     client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
-    activity = ForeignKeyField(ActivityTable, backref="entries", on_delete="CASCADE")
-    payment = ForeignKeyField(PaymentTable, backref="payments", null=True)
+    activity = ForeignKeyField(ActivityTable, backref="inscriptions", on_delete="CASCADE")
+    payment = ForeignKeyField(PaymentTable, backref="inscription_payment", null=True)
 
     class Meta:
         database = _DATABASE
