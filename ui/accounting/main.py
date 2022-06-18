@@ -2,61 +2,50 @@ from datetime import date
 
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QLabel, QTableWidget, QComboBox, QLineEdit, QDateEdit
+    QSizePolicy, QLabel, QTableWidget, QComboBox, QLineEdit, QDateEdit, QTableWidgetItem
 
+from gym_manager.core.accounting import PaymentSystem
 from gym_manager.core.base import ONE_MONTH_TD
 from ui.widget_config import config_layout, config_btn, config_lbl, config_combobox, config_line, config_table, \
     config_date_edit
 
 
-# class Controller:
-#
-#     def __init__(self, booking_system: BookingSystem, bookings: QTableWidget, page_label: QLabel,
-#                  cancelled_checkbox: QCheckBox) -> None:
-#         self.booking_system = booking_system
-#
-#         self.bookings = bookings
-#         self.page_label = page_label
-#         self.cancelled_checkbox = cancelled_checkbox
-#
-#         self.current_page = 1
-#         self.states = {State.TO_HAPPEN: "Por suceder", State.CANCELLED: "Cancelado", State.PAID: "Pago"}
-#         self.update_history()
-#
-#     def prev_clicked(self):
-#         if self.current_page > 0:
-#             self.current_page -= 1
-#             self.update_history()
-#
-#     def next_clicked(self):
-#         self.current_page += 1
-#         self.update_history()
-#
-#     def update_history(self):
-#         self.page_label.setText(str(self.current_page))
-#
-#         items_per_page = 14
-#         states = [State.PAID, State.CANCELLED] if self.cancelled_checkbox.isChecked() else [State.PAID]
-#         booking_gen = self.booking_system.history(states, self.current_page, items_per_page)
-#
-#         self.bookings.setRowCount(0)  # Clears the table.
-#         self.bookings.setRowCount(items_per_page)
-#         for row, booking in enumerate(booking_gen):
-#             add_cell(self.bookings, row, 0, str(booking.when))
-#             add_cell(self.bookings, row, 1, booking.start.strftime("%H:%M"))
-#             add_cell(self.bookings, row, 2, booking.end.strftime("%H:%M"))
-#             add_cell(self.bookings, row, 3, str(booking.court))
-#             add_cell(self.bookings, row, 4, str(booking.client.name))
-#             add_cell(self.bookings, row, 5, self.states[booking.state.name])
-#             add_cell(self.bookings, row, 6, str(booking.state.updated_by))
+class Controller:
+
+    def __init__(
+            self, payment_system: PaymentSystem, payment_table: QTableWidget, from_line: QDateEdit, to_line: QDateEdit
+    ) -> None:
+        self.payment_table = payment_table
+        self.from_line = from_line
+        self.to_line = to_line
+
+        self.payment_system = payment_system
+        self.current_page, self.items_per_page = 1, 20
+
+        self.load_payments()
+
+    def load_payments(self):
+        self.payment_table.clear()
+        self.payment_table.setRowCount(self.items_per_page)
+
+        payments = self.payment_system.payments(from_date=self.from_line.date().toPyDate(),
+                                                to_date=self.to_line.date().toPyDate())
+        for row, payment in enumerate(payments):
+            self.payment_table.setItem(row, 0, QTableWidgetItem(str(payment.id)))
+            self.payment_table.setItem(row, 1, QTableWidgetItem(str(payment.client.name)))
+            self.payment_table.setItem(row, 2, QTableWidgetItem(str(payment.when)))
+            self.payment_table.setItem(row, 3, QTableWidgetItem(str(payment.amount)))
+            self.payment_table.setItem(row, 4, QTableWidgetItem(str(payment.method)))
+            self.payment_table.setItem(row, 5, QTableWidgetItem(str(payment.responsible)))
+            self.payment_table.setItem(row, 6, QTableWidgetItem(str(payment.description)))
 
 
 class AccountingMainUI(QMainWindow):
 
-    def __init__(self) -> None:
+    def __init__(self, payment_system: PaymentSystem) -> None:
         super().__init__()
         self._setup_ui()
-        # self.controller = Controller(booking_system, self.payment_table, self.page_label, self.cancelled_checkbox)
+        self.controller = Controller(payment_system, self.payment_table, self.from_line, self.to_line)
 
     def _setup_ui(self):
         self.resize(800, 600)

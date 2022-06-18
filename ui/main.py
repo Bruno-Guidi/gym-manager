@@ -1,7 +1,9 @@
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
+from gym_manager.core.accounting import PaymentSystem
 from gym_manager.core.activity_manager import ActivityManager
+from ui.accounting.main import AccountingMainUI
 from ui.activity.main import ActivityMainUI
 from ui.client.main import ClientMainUI
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, InscriptionRepo
@@ -9,9 +11,10 @@ from ui.widget_config import config_layout, config_lbl, config_btn
 
 
 class Controller:
-    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager):
+    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
+        self.payment_system = payment_system
 
     def show_client_main_ui(self):
         self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager)
@@ -23,12 +26,17 @@ class Controller:
         self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
         self.activity_main_ui.show()
 
+    def show_accounting_main_ui(self):
+        self.accounting_main_ui = AccountingMainUI(self.payment_system)
+        self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.accounting_main_ui.show()
+
 
 class MainUI(QMainWindow):
-    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager):
+    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem):
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, activity_manager)
+        self.controller = Controller(client_repo, activity_manager, payment_system)
         self._setup_callbacks(self.controller)
 
     def _setup_ui(self):
@@ -72,3 +80,4 @@ class MainUI(QMainWindow):
     def _setup_callbacks(self, controller: Controller):
         self.client_ui_btn.clicked.connect(controller.show_client_main_ui)
         self.activity_ui_btn.clicked.connect(controller.show_activity_main_ui)
+        self.accounting_ui_btn.clicked.connect(controller.show_accounting_main_ui)
