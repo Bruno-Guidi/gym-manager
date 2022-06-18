@@ -25,7 +25,7 @@ class Controller:
         self.load_payments()
 
     def load_payments(self):
-        self.payment_table.clear()
+        self.payment_table.setRowCount(0)
         self.payment_table.setRowCount(self.items_per_page)
 
         payments = self.payment_system.payments(from_date=self.from_line.date().toPyDate(),
