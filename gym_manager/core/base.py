@@ -44,6 +44,7 @@ class Validatable(abc.ABC):
         implementation stores.
 
         Keyword Args:
+            KeyError if a kwarg is missing.
             Any argument required to validate the value.
 
         Raises:
@@ -87,13 +88,18 @@ class String(Validatable):
         implementation stores.
 
         Keyword Args:
-            optional: True if the String may be empty, False otherwise.
+            optional: True if the String may be empty, False otherwise. False by default.
             max_len: maximum amount of characters.
 
         Raises:
+            KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-        if not kwargs['optional'] and len(value) == 0:
+        if 'max_len' not in kwargs:
+            raise KeyError(f"The String.validate(args) method is missing the kwarg 'max_len'.")
+        optional = False if 'optional' not in kwargs else kwargs['optional']
+
+        if not optional and len(value) == 0:
             raise ValidationError(f"A non optional String cannot be empty.")
         if len(value) > kwargs['max_len']:
             raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
@@ -103,6 +109,11 @@ class String(Validatable):
 class Currency(Validatable):
 
     def validate(self, value: str, **kwargs) -> Any:
+        if 'positive' not in kwargs:
+            raise KeyError(f"The Currency.validate(args) method is missing the kwarg 'positive'.")
+        if 'max_currency' not in kwargs:
+            raise KeyError(f"The Currency.validate(args) method is missing the kwarg 'max_currency'.")
+
         try:
             value = Decimal(value)
         except InvalidOperation:
