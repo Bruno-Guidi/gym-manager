@@ -142,7 +142,10 @@ class PaymentRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, client: Client, **kwargs) -> Generator[Payment, None, None]:
-        """Retrieves the payments of the given *client*
+    def all(
+            self, cache: dict[Number, Client] | None = None, from_date: date | None = None, to_date: date | None = None,
+            **kwargs
+    ) -> Generator[Payment, None, None]:
+        """Retrieves the payments in the repository.
         """
         raise NotImplementedError
