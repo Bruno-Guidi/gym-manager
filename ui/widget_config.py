@@ -1,10 +1,11 @@
+from datetime import date
 from typing import Iterable, Callable, Any
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem, \
-    QTextEdit, QCheckBox
+    QTextEdit, QCheckBox, QDateEdit
 
 
 def config_line(
@@ -32,6 +33,16 @@ def config_lbl(
     if height > 0:
         target.setFixedHeight(height)
     target.setAlignment(alignment)
+
+
+def config_date_edit(
+        target: QDateEdit, value: date, font: str = "MS Shell Dlg 2", font_size: int = 14, calendar: bool = True,
+        width: int = 0, height: int = 0, layout_direction=Qt.LayoutDirection.LeftToRight
+):
+    target.setDate(value)
+    target.setFont(QFont(font, font_size))
+    target.setCalendarPopup(calendar)
+    target.setLayoutDirection(layout_direction)
 
 
 def config_btn(
