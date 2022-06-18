@@ -65,7 +65,10 @@ class SearchBox(QWidget):
     def filters(self) -> dict[str, str]:
         """Returns a dict {k: v}, where k is the filter name and v is the filter value.
         """
-        # First save the current value in the field that is going to be used to filter.
+        # Clear filters.
+        for f in self.filters_values.keys():
+            self.filters_values[f] = ""
+        # Then save the current value in the field that is going to be used to filter.
         self.filters_values[self.filter_combobox.currentData(Qt.UserRole)] = self.search_field.text()
 
         return self.filters_values
