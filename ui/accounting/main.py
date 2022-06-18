@@ -33,12 +33,13 @@ class Controller:
                                                            to_date=self.to_line.date().toPyDate())
         for row, transaction in enumerate(transactions):
             self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
-            self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.client.name)))
-            self.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.when)))
-            self.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.amount)))
-            self.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.method)))
-            self.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.responsible)))
-            self.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.description)))
+            self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
+            self.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
+            self.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
+            self.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
+            self.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
+            self.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
+            self.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
 
 
 class AccountingMainUI(QMainWindow):
@@ -111,7 +112,7 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True,
-            columns={"#": 100, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120, "Responsable": 175,
+            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120, "Responsable": 175,
                      "Descripción": 200}
         )
 
