@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTableWidgetItem, QDateEdit
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.accounting import PaymentSystem
+from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import Client, String, Number, Inscription
 from gym_manager.core.persistence import ClientRepo
@@ -23,7 +23,7 @@ from ui.widgets import Field, SearchBox
 class ClientRow(QWidget):
     def __init__(
             self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
-            payment_system: PaymentSystem, item: QListWidgetItem, main_ui_controller: Controller,
+            accounting_system: AccountingSystem, item: QListWidgetItem, main_ui_controller: Controller,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int, height: int
     ):
         super().__init__()
@@ -31,7 +31,7 @@ class ClientRow(QWidget):
         self.inscriptions: dict[int, Inscription] = {}
         self.client_repo = client_repo
         self.activity_manager = activity_manager
-        self.payment_system = payment_system
+        self.accounting_system = accounting_system
         self.item = item
         self.main_ui_controller = main_ui_controller
 
@@ -361,7 +361,7 @@ class ClientRow(QWidget):
     def charge(self):
         activity = self.inscriptions[self.inscription_table.currentRow()].activity
         descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=attr_constraints.DESCRIPTION_CHARS)
-        self.charge_ui = ChargeUI(self.payment_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
+        self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
         self.charge_ui.exec_()
 
     # noinspection PyUnresolvedReferences
@@ -384,13 +384,13 @@ class ClientRow(QWidget):
 
 class Controller:
     def __init__(
-            self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
             client_list: QListWidget, search_box: SearchBox,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
-        self.payment_system = payment_system
+        self.accounting_system = accounting_system
         self.current_page, self.items_per_page = 1, 10
         self.opened_now: ClientRow | None = None
 
@@ -412,7 +412,7 @@ class Controller:
         item = QListWidgetItem(self.client_list)
         self.client_list.addItem(item)
         client_row = ClientRow(
-            client, self.client_repo, self.activity_manager, self.payment_system, item, self,
+            client, self.client_repo, self.activity_manager, self.accounting_system, item, self,
             self.name_width, self.dni_width, self.admission_width, self.tel_width, self.dir_width, height=50)
         self.client_list.setItemWidget(item, client_row)
 
@@ -437,13 +437,13 @@ class Controller:
 class ClientMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
     ) -> None:
         super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
         self.controller = Controller(
-            client_repo, activity_manager, payment_system, self.client_list, self.search_box,
+            client_repo, activity_manager, accounting_system, self.client_list, self.search_box,
             name_width, dni_width, admission_width, tel_width, dir_width)
 
         self.create_client_btn.clicked.connect(self.controller.add_client)

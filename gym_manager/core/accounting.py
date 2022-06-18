@@ -5,36 +5,36 @@ from gym_manager.core.base import Transaction, Client, Activity, String
 from gym_manager.core.persistence import TransactionRepo
 
 
-class PaymentSystem:
+class AccountingSystem:
 
-    def __init__(self, payment_repo: TransactionRepo) -> None:
-        self.payment_repo = payment_repo
+    def __init__(self, transaction_repo: TransactionRepo) -> None:
+        self.transaction_repo = transaction_repo
 
     def methods(self) -> Iterable[String]:
         methods = [String("Efectivo", max_len=20), String("Débito", max_len=20), String("Crédito", max_len=20)]
         for m in methods:
             yield m
 
-    def payments(
+    def transactions(
             self, from_date: date | None = None, to_date: date | None = None, page_number: int = 1,
             items_per_page: int = 15
     ) -> Iterable[Transaction]:
-        """Returns payments.
+        """Returns transactions.
         """
         cache = {}
-        yield from self.payment_repo.all(cache, from_date, to_date, page_number=page_number, items_per_page=items_per_page)
+        yield from self.transaction_repo.all(cache, from_date, to_date, page_number=page_number, items_per_page=items_per_page)
 
     def charge(
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,
             description: String
     ) -> int:
-        """Registers the payment of an *activity* done by the *client*.
+        """Register a new charge transaction of an *activity* done by the *client*.
 
         Raises:
             NotRegistered if *client* doesn't do the *activity*.
         """
         # Register the payment.
-        payment = self.payment_repo.charge(client, when, activity.price, method, responsible, description)
+        transaction = self.transaction_repo.charge(client, when, activity.price, method, responsible, description)
 
         # For the activities that are not 'paid once', record that the client paid it.
         # A 'paid once' activity is, for example, an activity related to bookings.
@@ -42,7 +42,7 @@ class PaymentSystem:
         #     entry = client.record_payment(activity, payment)  # Raises NotRegistered.
         #     self.activity_entry_repo.update_or_create(entry)
 
-        return payment.id
+        return transaction.id
 
 #     def all_expired_activities(self, **kwargs) -> Iterable[ActivityEntry]:
 #         """Retrieves all activity entries whose pay day has passed.

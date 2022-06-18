@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout,
     QDateEdit, QComboBox, QTextEdit
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.accounting import PaymentSystem
+from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.base import String, Number, Client, Currency, Activity
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox
@@ -17,7 +17,7 @@ class Controller:
     def __init__(
             self, client_field: QLineEdit, when_field: QDateEdit, amount_field: Field, method_field: QComboBox,
             responsible_field: Field, descr_field: QTextEdit,
-            client: Client, activity: Activity, descr: String, payment_system: PaymentSystem,
+            client: Client, activity: Activity, descr: String, accounting_system: AccountingSystem,
             fixed_amount: bool = False, fixed_descr: bool = False,
 
     ) -> None:
@@ -33,13 +33,13 @@ class Controller:
         self.amount_field.setText(str(activity.price))
         if fixed_amount:
             self.amount_field.setEnabled(False)
-        fill_combobox(method_field, payment_system.methods(), display=lambda method: method)
+        fill_combobox(method_field, accounting_system.methods(), display=lambda method: method)
         self.descr_field.setText(str(descr))
         if fixed_descr:
             self.descr_field.setEnabled(False)
 
         self.client, self.activity = client, activity
-        self.payment_system = payment_system
+        self.accounting_system = accounting_system
 
     # noinspection PyTypeChecker
     def charge(self):
@@ -47,24 +47,24 @@ class Controller:
         if not all([self.amount_field.valid_value(), self.responsible_field.valid_value(), valid_descr]):
             QMessageBox.about(self.descr_field.window(), "Error", "Hay datos que no son válidos.")
         else:
-            payment_id = self.payment_system.charge(
+            transaction_id = self.accounting_system.charge(
                 self.when_field.date().toPyDate(), self.client, self.activity,
                 self.method_field.currentData(Qt.UserRole), self.responsible_field.value(), descr)
             QMessageBox.about(self.descr_field.window(), "Éxito",
-                              f"Se ha registrado un cobro con número de identificación '{payment_id}'.")
+                              f"Se ha registrado un cobro con número de identificación '{transaction_id}'.")
             self.descr_field.window().close()
 
 
 class ChargeUI(QDialog):
     def __init__(
-            self, payment_system: PaymentSystem, client: Client, activity: Activity, descr: String,
+            self, accounting_system: AccountingSystem, client: Client, activity: Activity, descr: String,
             fixed_amount: bool = False, fixed_descr: bool = False
     ) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = Controller(self.client_field, self.when_field, self.amount_field, self.method_field,
-                                     self.responsible_field, self.descr_field, client, activity, descr, payment_system,
-                                     fixed_amount, fixed_descr)
+                                     self.responsible_field, self.descr_field, client, activity, descr,
+                                     accounting_system, fixed_amount, fixed_descr)
 
         self.button_box.accepted.connect(self.controller.charge)
         # self.button_box.rejected.connect(self.reject)

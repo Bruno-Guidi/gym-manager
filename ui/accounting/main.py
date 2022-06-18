@@ -4,7 +4,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QLabel, QTableWidget, QComboBox, QLineEdit, QDateEdit, QTableWidgetItem
 
-from gym_manager.core.accounting import PaymentSystem
+from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.base import ONE_MONTH_TD
 from ui.widget_config import config_layout, config_btn, config_lbl, config_combobox, config_line, config_table, \
     config_date_edit
@@ -13,39 +13,40 @@ from ui.widget_config import config_layout, config_btn, config_lbl, config_combo
 class Controller:
 
     def __init__(
-            self, payment_system: PaymentSystem, payment_table: QTableWidget, from_line: QDateEdit, to_line: QDateEdit
+            self, accounting_system: AccountingSystem, transaction_table: QTableWidget, from_line: QDateEdit,
+            to_line: QDateEdit
     ) -> None:
-        self.payment_table = payment_table
+        self.transaction_table = transaction_table
         self.from_line = from_line
         self.to_line = to_line
 
-        self.payment_system = payment_system
+        self.accounting_system = accounting_system
         self.current_page, self.items_per_page = 1, 20
 
-        self.load_payments()
+        self.load_transactions()
 
-    def load_payments(self):
-        self.payment_table.setRowCount(0)
-        self.payment_table.setRowCount(self.items_per_page)
+    def load_transactions(self):
+        self.transaction_table.setRowCount(0)
+        self.transaction_table.setRowCount(self.items_per_page)
 
-        payments = self.payment_system.payments(from_date=self.from_line.date().toPyDate(),
-                                                to_date=self.to_line.date().toPyDate())
-        for row, payment in enumerate(payments):
-            self.payment_table.setItem(row, 0, QTableWidgetItem(str(payment.id)))
-            self.payment_table.setItem(row, 1, QTableWidgetItem(str(payment.client.name)))
-            self.payment_table.setItem(row, 2, QTableWidgetItem(str(payment.when)))
-            self.payment_table.setItem(row, 3, QTableWidgetItem(str(payment.amount)))
-            self.payment_table.setItem(row, 4, QTableWidgetItem(str(payment.method)))
-            self.payment_table.setItem(row, 5, QTableWidgetItem(str(payment.responsible)))
-            self.payment_table.setItem(row, 6, QTableWidgetItem(str(payment.description)))
+        transactions = self.accounting_system.transactions(from_date=self.from_line.date().toPyDate(),
+                                                           to_date=self.to_line.date().toPyDate())
+        for row, transaction in enumerate(transactions):
+            self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
+            self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.client.name)))
+            self.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.when)))
+            self.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.amount)))
+            self.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.method)))
+            self.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.responsible)))
+            self.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.description)))
 
 
 class AccountingMainUI(QMainWindow):
 
-    def __init__(self, payment_system: PaymentSystem) -> None:
+    def __init__(self, accounting_system: AccountingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(payment_system, self.payment_table, self.from_line, self.to_line)
+        self.controller = Controller(accounting_system, self.transaction_table, self.from_line, self.to_line)
 
     def _setup_ui(self):
         self.resize(800, 600)
@@ -105,11 +106,11 @@ class AccountingMainUI(QMainWindow):
         self.utils_layout.addWidget(self.search_btn)
         config_btn(self.search_btn, "Busq", font_size=16)
 
-        # Payments.
-        self.payment_table = QTableWidget(self.widget)
-        self.main_layout.addWidget(self.payment_table)
+        # Transactions.
+        self.transaction_table = QTableWidget(self.widget)
+        self.main_layout.addWidget(self.transaction_table)
         config_table(
-            target=self.payment_table, allow_resizing=True,
+            target=self.transaction_table, allow_resizing=True,
             columns={"#": 100, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120, "Responsable": 175,
                      "Descripción": 200}
         )
