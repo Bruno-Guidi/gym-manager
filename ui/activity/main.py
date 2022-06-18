@@ -10,7 +10,7 @@ from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import String, Activity, Currency
 from ui.activity.create import CreateUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_checkbox
-from ui.widgets import Field, valid_text_value
+from ui.widgets import Field, valid_text_value, SearchBox
 
 
 class ActivityRow(QWidget):
@@ -228,17 +228,19 @@ class ActivityRow(QWidget):
 
 
 class Controller:
-    def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget,
+    def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget, search_box: SearchBox,
                  name_width: int, price_width: int, pay_once_width: int):
         self.activity_manager = activity_manager
         self.opened_now: ActivityRow | None = None
 
         self.activity_list = activity_list
+        self.search_box = search_box
+
         self.name_width = name_width
         self.price_width = price_width
         self.pay_once_width = pay_once_width
 
-        for activity in self.activity_manager.activities():
+        for activity in self.activity_manager.activities(**self.search_box.filters()):
             self._add_activity(activity)
 
     def _add_activity(self, activity: Activity):
@@ -254,6 +256,11 @@ class Controller:
         if self.add_ui.controller.activity is not None:
             self._add_activity(self.add_ui.controller.activity)
 
+    def search(self):
+        self.activity_list.clear()
+        for activity in self.activity_manager.activities(**self.search_box.filters()):
+            self._add_activity(activity)
+
 
 class ActivityMainUI(QMainWindow):
 
@@ -261,9 +268,11 @@ class ActivityMainUI(QMainWindow):
         super().__init__(parent=None)
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
-        self.controller = Controller(activity_manager, self.activity_list, name_width, price_width, pay_once_width)
+        self.controller = Controller(activity_manager, self.activity_list, self.search_box, name_width, price_width,
+                                     pay_once_width)
 
         self.create_client_btn.clicked.connect(self.controller.create_activity)
+        self.search_btn.clicked.connect(self.controller.search)
 
     def _setup_ui(self, name_width: int, price_width: int, pay_once_width: int):
         self.resize(800, 600)
@@ -281,13 +290,8 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.filter_combobox = QComboBox(self.widget)
-        self.utils_layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox, font_size=16)
-
-        self.search_box = QLineEdit(self.widget)
+        self.search_box = SearchBox(filters_names={"name": "Nombre"}, parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
-        config_line(self.search_box, place_holder="Búsqueda", font_size=16)
 
         self.search_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.search_btn)

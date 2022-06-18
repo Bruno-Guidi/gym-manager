@@ -143,6 +143,25 @@ class Activity:
     description: String
 
 
+class ActivityFilter(abc.ABC):
+
+    def __init__(self, filter_value: Any) -> None:
+        self.filter_value = filter_value
+
+    @abc.abstractmethod
+    def passes_filter(self, activity: Activity) -> bool:
+        raise NotImplementedError
+
+
+class NameFilter(ActivityFilter):
+
+    def passes_filter(self, activity: Activity) -> bool:
+        if not isinstance(self.filter_value, str):
+            raise TypeError(f"NameFilter activity filter expects a 'str', but received a '{type(self.filter_value)}'")
+
+        return self.filter_value in activity.name.as_primitive()
+
+
 @dataclass
 class Client:
     dni: Number
@@ -171,8 +190,9 @@ class Client:
 
 
 @dataclass
-class Payment:
+class Transaction:
     id: int
+    type: String
     client: Client
     when: date
     amount: Currency
@@ -187,17 +207,17 @@ class Inscription:
     """
     client: Client
     activity: Activity
-    payment: Optional[Payment] = None
+    transaction: Optional[Transaction] = None
 
     def first_pay_missing(self) -> bool:
-        return self.payment is None
+        return self.transaction is None
 
     def pay_day_passed(self, today: date) -> bool:
-        if self.payment is None:
-            return True  # ToDo add inscription date and compare to it.
-        return pay_day_passed(self.payment.when.as_primitive(), today)
+        if self.transaction is None:
+            return True
+        return pay_day_passed(self.transaction.when.as_primitive(), today)
 
-    def record_payment(self, payment: Payment):
+    def record_payment(self, payment: Transaction):
         """Records the payment of the activity.
 
         Raises:
@@ -206,4 +226,4 @@ class Inscription:
         if self.client != payment.client:
             raise ValueError(f"The client '{payment.client.name}' is paying the activity '{self.activity.name}' for "
                              f"the client '{self.client.name}'.")
-        self.payment = payment
+        self.transaction = payment

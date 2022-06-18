@@ -2,7 +2,7 @@ import abc
 from datetime import date
 from typing import Iterable, Generator
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Payment
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Transaction
 
 
 class ClientRepo(abc.ABC):
@@ -34,13 +34,16 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
-            ) -> Generator[Client, None, None]:
+    def all(
+            self, cache: dict[int, Activity] | None = None, only_actives: bool = True, name_filter: str = "",
+            **kwargs
+    ) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
-            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
             cache: cached activities.
+            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
+            name_filter: If given, filter clients that fulfill the condition 'name_filter like %client.name%'.
 
         Keyword Args:
             page_number: number of page of the table to return.
@@ -105,13 +108,6 @@ class InscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update_or_create(self, registration: Inscription):
-        """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
-        new one.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def all(self, client: Client) -> Generator[Inscription, None, None]:
         """Retrieves all inscriptions of the given *client*.
         """
@@ -124,22 +120,31 @@ class InscriptionRepo(abc.ABC):
         raise NotImplementedError
 
 
-class PaymentRepo(abc.ABC):
-    """Payments repository interface.
+class TransactionRepo(abc.ABC):
+    """Transaction repository interface.
     """
     @abc.abstractmethod
-    def charge(
-            self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
-    ) -> Payment:
-        """Register a new payment with the given information. This method must return the created payment.
+    def create(
+            self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
+            description: String
+    ) -> Transaction:
+        """Register a new transaction with the given information. This method must return the created
+        transaction.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def all(
-            self, cache: dict[Number, Client] | None = None, from_date: date | None = None, to_date: date | None = None,
-            **kwargs
-    ) -> Generator[Payment, None, None]:
-        """Retrieves the payments in the repository.
+            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None, **kwargs
+    ) -> Generator[Transaction, None, None]:
+        """Retrieves the transactions in the repository.
+
+        Keyword Args:
+            client: allows filtering by client name.
+            type: allows filtering by transaction type.
+            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
+            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
+            method: allows filtering by transaction method.
+            responsible: allows filtering by transaction responsible.
         """
         raise NotImplementedError

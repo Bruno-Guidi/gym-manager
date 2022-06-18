@@ -7,8 +7,8 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
     CompositeKey, prefetch
 
 from gym_manager.core import attr_constraints as constraints
-from gym_manager.core.base import Client, Number, String, Currency, Activity, Payment, Inscription
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, PaymentRepo, InscriptionRepo
+from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo
 
 _DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
@@ -91,27 +91,33 @@ class SqliteClientRepo(ClientRepo):
             cache[raw_activity.id] = new
             return new
 
-    def all(self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
-            ) -> Generator[Client, None, None]:
+    def all(
+            self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
+    ) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
-            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
             cache: cached activities.
+            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
 
         Keyword Args:
             page_number: number of page of the table to return.
             items_per_page: number of items per page.
+            name: If given, filter clients that fulfill the condition kwargs['name'] like %client.name%.
         """
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
 
         cache = {} if cache is None else cache
 
-        clients_q = ClientTable.select().where(ClientTable.is_active).paginate(page_number, items_per_page)
-        inscription_q = InscriptionTable.select()
-        payments_q = PaymentTable.select()
+        clients_q = ClientTable.select().where(ClientTable.is_active)
+        if 'name' in kwargs and len(kwargs['name']) > 0:
+            clients_q = clients_q.where(ClientTable.name.contains(kwargs['name']))
+        clients_q.paginate(page_number, items_per_page)
 
-        for raw_client in prefetch(clients_q, inscription_q, payments_q):
+        inscription_q = InscriptionTable.select()
+        transactions_q = TransactionTable.select()
+
+        for raw_client in prefetch(clients_q, inscription_q, transactions_q):
             client = Client(
                 Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
                 String(raw_client.name, max_len=constraints.CLIENT_NAME_CHARS),
@@ -124,12 +130,13 @@ class SqliteClientRepo(ClientRepo):
 
             for raw_inscription in raw_client.inscriptions:
                 activity = self._get_activity(raw_inscription.activity, cache)
-                raw_payment = raw_inscription.payment
-                payment = None
-                if raw_payment is not None:
-                    payment = Payment(raw_payment.id, client, raw_payment.when, Currency(raw_payment.amount),
-                                      raw_payment.method, raw_payment.responsible, raw_payment.description)
-                client.sign_on(Inscription(client, activity, payment))
+                raw_transaction = raw_inscription.transaction
+                transaction = None
+                if raw_transaction is not None:
+                    transaction = Transaction(  # ToDo fix.
+                        raw_transaction.id, client, raw_transaction.when, Currency(raw_transaction.amount),
+                        raw_transaction.method, raw_transaction.responsible, raw_transaction.description)
+                client.sign_on(Inscription(client, activity, transaction))
 
             yield client
 
@@ -202,9 +209,10 @@ class SqliteActivityRepo(ActivityRepo):
         return InscriptionTable.select().where(InscriptionTable.activity == activity.id).count()
 
 
-class PaymentTable(Model):
+class TransactionTable(Model):
     id = IntegerField(primary_key=True)
-    client = ForeignKeyField(ClientTable, backref="payments")
+    type = CharField()
+    client = ForeignKeyField(ClientTable, backref="transactions")
     when = DateField()
     amount = CharField()
     method = CharField()
@@ -215,19 +223,22 @@ class PaymentTable(Model):
         database = _DATABASE
 
 
-class SqlitePaymentRepo(PaymentRepo):
-    """Payments repository implementation based on Sqlite and peewee ORM.
+class SqliteTransactionRepo(TransactionRepo):
+    """Transaction repository implementation based on Sqlite and peewee ORM.
     """
 
     def __init__(self) -> None:
-        create_table(PaymentTable)
+        create_table(TransactionTable)
 
-    def charge(
-            self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
-    ) -> Payment:
-        """Register a new payment with the given information. This method must return the created payment.
+    def create(
+            self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
+            description: String
+    ) -> Transaction:
+        """Register a new transaction with the given information. This method must return the created
+        transaction.
         """
-        payment = PaymentTable.create(
+        transaction = TransactionTable.create(
+            type=type.as_primitive(),
             client=ClientTable.get_by_id(client.dni.as_primitive()),
             when=when,
             amount=amount.as_primitive(),
@@ -236,7 +247,7 @@ class SqlitePaymentRepo(PaymentRepo):
             description=description.as_primitive()
         )
 
-        return Payment(payment.id, client, when, amount, method, responsible, description)
+        return Transaction(transaction.id, type, client, when, amount, method, responsible, description)
 
     def _get_client(self, raw_client, cache: dict[int, Client]) -> Client:
         if raw_client.dni in cache:
@@ -255,37 +266,47 @@ class SqlitePaymentRepo(PaymentRepo):
             return new
 
     def all(
-            self, cache: dict[Number, Client] | None = None, from_date: date | None = None, to_date: date | None = None,
-            **kwargs
-    ) -> Generator[Payment, None, None]:
-        """Retrieves the payments in the repository.
+            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None, **kwargs
+    ) -> Generator[Transaction, None, None]:
+        """Retrieves the transactions in the repository.
 
         Keyword Args:
-            page_number: number of page of the table to return.
-            items_per_page: number of items per page.
+            client: allows filtering by client name.
+            type: allows filtering by transaction type.
+            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
+            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
+            method: allows filtering by transaction method.
+            responsible: allows filtering by transaction responsible.
         """
-        page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
-
-        query = PaymentTable.select().join(ClientTable)
-        if from_date is not None:
-            query = query.where(PaymentTable.when >= from_date)
-        if to_date is not None:
-            query = query.where(PaymentTable.when <= to_date)
+        transactions_q = TransactionTable.select().join(ClientTable)
+        if 'client' in kwargs and len(kwargs['client']) > 0:
+            transactions_q = transactions_q.where(ClientTable.name.contains(kwargs['client']))
+        if 'type' in kwargs and len(kwargs['type']) > 0:
+            transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])
+        if 'from_date' in kwargs:
+            transactions_q = transactions_q.where(TransactionTable.when >= kwargs['from_date'])
+        if 'to_date' in kwargs:
+            transactions_q = transactions_q.where(TransactionTable.when <= kwargs['to_date'])
+        if 'method' in kwargs and len(kwargs['method']) > 0:
+            transactions_q = transactions_q.where(TransactionTable.method == kwargs['method'])
+        if 'responsible' in kwargs and len(kwargs['responsible']) > 0:
+            transactions_q = transactions_q.where(TransactionTable.responsible.contains(kwargs['responsible']))
 
         cache = {} if cache is None else cache
 
-        for raw_payment in query.paginate(page_number, items_per_page):
-            yield Payment(raw_payment.id, self._get_client(raw_payment.client, cache), raw_payment.when,
-                          Currency(raw_payment.amount, max_currency=constraints.MAX_CURRENCY),
-                          String(raw_payment.method, max_len=50),
-                          String(raw_payment.responsible, max_len=50),
-                          String(raw_payment.description, max_len=50))
+        for raw_transaction in transactions_q.paginate(page, page_len):
+            yield Transaction(raw_transaction.id, String(raw_transaction.type, max_len=50),
+                              self._get_client(raw_transaction.client, cache), raw_transaction.when,
+                              Currency(raw_transaction.amount, max_currency=constraints.MAX_CURRENCY),
+                              String(raw_transaction.method, max_len=50),
+                              String(raw_transaction.responsible, max_len=50),
+                              String(raw_transaction.description, max_len=50))
 
 
 class InscriptionTable(Model):
     client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="inscriptions", on_delete="CASCADE")
-    payment = ForeignKeyField(PaymentTable, backref="inscription_payment", null=True)
+    transaction = ForeignKeyField(TransactionTable, backref="inscription_transaction", null=True)
 
     class Meta:
         database = _DATABASE
@@ -305,42 +326,13 @@ class SqliteInscriptionRepo(InscriptionRepo):
         InscriptionTable.create(
             client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
             activity=ActivityTable.get_by_id(inscription.activity.id),
-            payment=None if inscription.payment is None else PaymentTable.get_by_id(inscription.payment.id)
+            transaction=None if inscription.transaction is None else TransactionTable.get_by_id(inscription.transaction.id)
         )
 
     def remove(self, inscription: Inscription):
         """Removes the given *inscription* from the repository.
         """
         InscriptionTable.delete_by_id((inscription.activity.id, inscription.client.dni.as_primitive()))
-
-    def update_or_create(self, registration: Inscription):
-        """Updates the given *registration* in the repository. If there is no row in the repository, then creates a
-        new one.
-        """
-        raw_client = ClientTable.get_by_id(registration.client.dni.as_primitive())
-        raw_activity = ActivityTable.get_by_id(registration.activity.id)
-        raw_reg = InscriptionTable.get_or_none(client=raw_client, activity=raw_activity)
-        if raw_reg is None:
-            InscriptionTable.create(
-                client=ClientTable.get_by_id(registration.client.dni.as_primitive()),
-                activity=ActivityTable.get_by_id(registration.activity.id),
-                payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
-            )
-        # try:
-        #     # If the entry already exists, it means the client is registered in the activity. It also means that this
-        #     # method is being invoked to register the payment for the activity, so we can assure the *entry* has
-        #     # payment information.
-        #     raw_entry = RegistrationTable.get_by_id((registration.client, registration.activity))  # Raises DoesNotExist.
-        #     raw_entry.payment = PaymentTable.get_by_id(registration.payment.id)
-        #     raw_entry.save()
-        # except DoesNotExist:
-        #     # If the entry doesn't exists, then the client is getting registered in the activity. There might be
-        #     # payment information if the client should pay when he is registered in the activity.
-        #     RegistrationTable.create(
-        #         client=ClientTable.get_by_id(registration.client.dni),
-        #         activity=ActivityTable.get_by_id(registration.activity.id),
-        #         payment=None if registration.payment is None else PaymentTable.get_by_id(registration.payment.id)
-        #     )
 
     def all(self, client: Client) -> Generator[Inscription, None, None]:
         """Retrieves all inscriptions of the given *client*.

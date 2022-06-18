@@ -1,29 +1,29 @@
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
+    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QMessageBox, \
     QTableWidgetItem, QDateEdit
 
 from gym_manager.core import attr_constraints
-from gym_manager.core.accounting import PaymentSystem
+from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import Client, String, Number, Inscription
 from gym_manager.core.persistence import ClientRepo
 from ui.accounting.charge import ChargeUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table, \
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
-from ui.widgets import Field
+from ui.widgets import Field, SearchBox
 
 
 class ClientRow(QWidget):
     def __init__(
             self, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
-            payment_system: PaymentSystem, item: QListWidgetItem, main_ui_controller: Controller,
+            accounting_system: AccountingSystem, item: QListWidgetItem, main_ui_controller: Controller,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int, height: int
     ):
         super().__init__()
@@ -31,7 +31,7 @@ class ClientRow(QWidget):
         self.inscriptions: dict[int, Inscription] = {}
         self.client_repo = client_repo
         self.activity_manager = activity_manager
-        self.payment_system = payment_system
+        self.accounting_system = accounting_system
         self.item = item
         self.main_ui_controller = main_ui_controller
 
@@ -104,7 +104,8 @@ class ClientRow(QWidget):
             self.row_layout.addWidget(self.activities_lbl)
             config_lbl(self.activities_lbl, "Actividades", font_size=12)
 
-            # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
+            # Layout that contains activities and buttons to add, remove and charge registrations, and to see
+            # transactions.
             self.bottom_layout = QHBoxLayout()
             self.row_layout.addLayout(self.bottom_layout)
             config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
@@ -132,9 +133,9 @@ class ClientRow(QWidget):
             self.bottom_buttons_layout.addWidget(self.charge_activity_btn)
             config_btn(self.charge_activity_btn, text="Cobrar\nactividad", width=110)
 
-            self.payments_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.payments_btn)
-            config_btn(self.payments_btn, text="Ver pagos", width=110)
+            self.transactions_btn = QPushButton(self.widget)
+            self.bottom_buttons_layout.addWidget(self.transactions_btn)
+            config_btn(self.transactions_btn, text="Ver pagos", width=110)
 
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
@@ -223,7 +224,8 @@ class ClientRow(QWidget):
         # Activities.
         self.activities_lbl: QLabel | None = None
 
-        # Layout that contains activities and buttons to add, remove and charge registrations, and to see payments.
+        # Layout that contains activities and buttons to add, remove and charge registrations, and to see
+        # transactions.
         self.bottom_layout: QHBoxLayout | None = None
 
         self.inscription_table: QTableWidget | None = None
@@ -233,7 +235,7 @@ class ClientRow(QWidget):
         self.sign_on_btn: QPushButton | None = None
         self.unsubscribe_btn: QPushButton | None = None
         self.charge_activity_btn: QPushButton | None = None
-        self.payments_btn: QPushButton | None = None
+        self.transactions_btn: QPushButton | None = None
 
         self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
 
@@ -265,7 +267,7 @@ class ClientRow(QWidget):
         self.sign_on_btn.setHidden(hidden)
         self.unsubscribe_btn.setHidden(hidden)
         self.charge_activity_btn.setHidden(hidden)
-        self.payments_btn.setHidden(hidden)
+        self.transactions_btn.setHidden(hidden)
 
         # Updates the height of the widget.
         self.previous_height, self.current_height = self.current_height, self.previous_height
@@ -359,7 +361,7 @@ class ClientRow(QWidget):
     def charge(self):
         activity = self.inscriptions[self.inscription_table.currentRow()].activity
         descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=attr_constraints.DESCRIPTION_CHARS)
-        self.charge_ui = ChargeUI(self.payment_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
+        self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
         self.charge_ui.exec_()
 
     # noinspection PyUnresolvedReferences
@@ -370,11 +372,11 @@ class ClientRow(QWidget):
             self.inscriptions[row] = inscription
             self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
 
-            when = "Sin pagar" if inscription.payment is None else str(inscription.payment.when)
+            when = "Sin pagar" if inscription.transaction is None else str(inscription.transaction.when)
             self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
 
-            payment_id = "-" if inscription.payment is None else str(inscription.payment.id)
-            self.inscription_table.setItem(row, 2, QTableWidgetItem(payment_id))
+            transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
+            self.inscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
 
             expired = "Si" if inscription.pay_day_passed(date.today()) else "No"
             self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
@@ -382,16 +384,19 @@ class ClientRow(QWidget):
 
 class Controller:
     def __init__(
-            self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
-            client_list: QListWidget, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
+            client_list: QListWidget, search_box: SearchBox,
+            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
-        self.payment_system = payment_system
+        self.accounting_system = accounting_system
         self.current_page, self.items_per_page = 1, 10
         self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
+        self.search_box = search_box
+
         self.name_width = name_width
         self.dni_width = dni_width
         self.admission_width = admission_width
@@ -407,7 +412,7 @@ class Controller:
         item = QListWidgetItem(self.client_list)
         self.client_list.addItem(item)
         client_row = ClientRow(
-            client, self.client_repo, self.activity_manager, self.payment_system, item, self,
+            client, self.client_repo, self.activity_manager, self.accounting_system, item, self,
             self.name_width, self.dni_width, self.admission_width, self.tel_width, self.dir_width, height=50)
         self.client_list.setItemWidget(item, client_row)
 
@@ -419,7 +424,7 @@ class Controller:
 
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
         for client in self.client_repo.all(activity_cache, page_number=self.current_page,
-                                           items_per_page=self.items_per_page):
+                                           items_per_page=self.items_per_page, **self.search_box.filters()):
             self._add_client(client)
 
     def add_client(self):
@@ -432,15 +437,17 @@ class Controller:
 class ClientMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
+            self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
     ) -> None:
         super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(client_repo, activity_manager, payment_system, self.client_list,
-                                     name_width, dni_width, admission_width, tel_width, dir_width)
+        self.controller = Controller(
+            client_repo, activity_manager, accounting_system, self.client_list, self.search_box,
+            name_width, dni_width, admission_width, tel_width, dir_width)
 
         self.create_client_btn.clicked.connect(self.controller.add_client)
+        self.search_btn.clicked.connect(self.controller.load_clients)
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
         self.resize(800, 600)
@@ -458,13 +465,8 @@ class ClientMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.filter_combobox = QComboBox(self.widget)
-        self.utils_layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox, font_size=16)
-
-        self.search_box = QLineEdit(self.widget)
+        self.search_box = SearchBox(filters_names={"name": "Nombre"}, parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
-        config_line(self.search_box, place_holder="Búsqueda", font_size=16)
 
         self.search_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.search_btn)

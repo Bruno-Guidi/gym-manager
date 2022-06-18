@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
-from gym_manager.core.accounting import PaymentSystem
+from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.activity_manager import ActivityManager
 from ui.accounting.main import AccountingMainUI
 from ui.activity.main import ActivityMainUI
@@ -11,13 +11,13 @@ from ui.widget_config import config_layout, config_lbl, config_btn
 
 
 class Controller:
-    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem):
+    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
-        self.payment_system = payment_system
+        self.accounting_system = accounting_system
 
     def show_client_main_ui(self):
-        self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager, self.payment_system)
+        self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager, self.accounting_system)
         self.client_main_ui.setWindowModality(Qt.ApplicationModal)
         self.client_main_ui.show()
 
@@ -27,16 +27,16 @@ class Controller:
         self.activity_main_ui.show()
 
     def show_accounting_main_ui(self):
-        self.accounting_main_ui = AccountingMainUI(self.payment_system)
+        self.accounting_main_ui = AccountingMainUI(self.accounting_system)
         self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
         self.accounting_main_ui.show()
 
 
 class MainUI(QMainWindow):
-    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem):
+    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem):
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, activity_manager, payment_system)
+        self.controller = Controller(client_repo, activity_manager, accounting_system)
         self._setup_callbacks(self.controller)
 
     def _setup_ui(self):

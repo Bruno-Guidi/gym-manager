@@ -2,50 +2,59 @@ from datetime import date
 
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QLabel, QTableWidget, QComboBox, QLineEdit, QDateEdit, QTableWidgetItem
+    QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
-from gym_manager.core.accounting import PaymentSystem
+from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.base import ONE_MONTH_TD
-from ui.widget_config import config_layout, config_btn, config_lbl, config_combobox, config_line, config_table, \
+from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
+from ui.widgets import SearchBox
 
 
 class Controller:
 
     def __init__(
-            self, payment_system: PaymentSystem, payment_table: QTableWidget, from_line: QDateEdit, to_line: QDateEdit
+            self, accounting_system: AccountingSystem, transaction_table: QTableWidget, from_line: QDateEdit,
+            to_line: QDateEdit, search_box: SearchBox
     ) -> None:
-        self.payment_table = payment_table
+        self.transaction_table = transaction_table
         self.from_line = from_line
         self.to_line = to_line
+        self.search_box = search_box
 
-        self.payment_system = payment_system
-        self.current_page, self.items_per_page = 1, 20
+        self.accounting_system = accounting_system
+        self.current_page, self.page_len = 1, 20
 
-        self.load_payments()
+        self.load_transactions()
 
-    def load_payments(self):
-        self.payment_table.setRowCount(0)
-        self.payment_table.setRowCount(self.items_per_page)
+    def load_transactions(self):
+        self.transaction_table.setRowCount(0)
+        self.transaction_table.setRowCount(self.page_len)
 
-        payments = self.payment_system.payments(from_date=self.from_line.date().toPyDate(),
-                                                to_date=self.to_line.date().toPyDate())
-        for row, payment in enumerate(payments):
-            self.payment_table.setItem(row, 0, QTableWidgetItem(str(payment.id)))
-            self.payment_table.setItem(row, 1, QTableWidgetItem(str(payment.client.name)))
-            self.payment_table.setItem(row, 2, QTableWidgetItem(str(payment.when)))
-            self.payment_table.setItem(row, 3, QTableWidgetItem(str(payment.amount)))
-            self.payment_table.setItem(row, 4, QTableWidgetItem(str(payment.method)))
-            self.payment_table.setItem(row, 5, QTableWidgetItem(str(payment.responsible)))
-            self.payment_table.setItem(row, 6, QTableWidgetItem(str(payment.description)))
+        transactions = self.accounting_system.transactions(self.current_page, self.page_len,
+                                                           from_date=self.from_line.date().toPyDate(),
+                                                           to_date=self.to_line.date().toPyDate(),
+                                                           **self.search_box.filters())
+        for row, transaction in enumerate(transactions):
+            self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
+            self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
+            self.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
+            self.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
+            self.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
+            self.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
+            self.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
+            self.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
 
 
 class AccountingMainUI(QMainWindow):
 
-    def __init__(self, payment_system: PaymentSystem) -> None:
+    def __init__(self, accounting_system: AccountingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(payment_system, self.payment_table, self.from_line, self.to_line)
+        self.controller = Controller(accounting_system, self.transaction_table, self.from_line, self.to_line,
+                                     self.search_box)
+
+        self.search_btn.clicked.connect(self.controller.load_transactions)
 
     def _setup_ui(self):
         self.resize(800, 600)
@@ -64,13 +73,11 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
-        self.filter_combobox = QComboBox(self.widget)
-        self.utils_layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox, font_size=16)
-
-        self.search_box = QLineEdit(self.widget)
+        self.search_box = SearchBox(
+            filters_names={"client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"},
+            parent=self.widget
+        )
         self.utils_layout.addWidget(self.search_box)
-        config_line(self.search_box, place_holder="Filtro", font_size=16)
 
         self.utils_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
@@ -105,12 +112,12 @@ class AccountingMainUI(QMainWindow):
         self.utils_layout.addWidget(self.search_btn)
         config_btn(self.search_btn, "Busq", font_size=16)
 
-        # Payments.
-        self.payment_table = QTableWidget(self.widget)
-        self.main_layout.addWidget(self.payment_table)
+        # Transactions.
+        self.transaction_table = QTableWidget(self.widget)
+        self.main_layout.addWidget(self.transaction_table)
         config_table(
-            target=self.payment_table, allow_resizing=True,
-            columns={"#": 100, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120, "Responsable": 175,
+            target=self.transaction_table, allow_resizing=True,
+            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120, "Responsable": 175,
                      "Descripción": 200}
         )
 
