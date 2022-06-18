@@ -1,14 +1,17 @@
 from datetime import date
 from typing import Iterable
 
+from gym_manager.core import attr_constraints
 from gym_manager.core.base import Transaction, Client, Activity, String
 from gym_manager.core.persistence import TransactionRepo
 
 
 class AccountingSystem:
 
-    def __init__(self, transaction_repo: TransactionRepo) -> None:
+    def __init__(self, transaction_repo: TransactionRepo, transaction_types: list[str]) -> None:
         self.transaction_repo = transaction_repo
+        self.transaction_types = {name: String(name, max_len=attr_constraints.TRANSACTION_TYPE_CHARS)
+                                  for name in transaction_types}
 
     def methods(self) -> Iterable[String]:
         methods = [String("Efectivo", max_len=20), String("Débito", max_len=20), String("Crédito", max_len=20)]
@@ -34,7 +37,9 @@ class AccountingSystem:
             NotRegistered if *client* doesn't do the *activity*.
         """
         # Register the payment.
-        transaction = self.transaction_repo.charge(client, when, activity.price, method, responsible, description)
+        trans_type = self.transaction_types["charge"]
+        transaction = self.transaction_repo.create(trans_type, client, when, activity.price, method, responsible,
+                                                   description)
 
         # For the activities that are not 'paid once', record that the client paid it.
         # A 'paid once' activity is, for example, an activity related to bookings.

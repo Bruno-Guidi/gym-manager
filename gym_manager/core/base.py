@@ -192,6 +192,7 @@ class Client:
 @dataclass
 class Transaction:
     id: int
+    type: String
     client: Client
     when: date
     amount: Currency

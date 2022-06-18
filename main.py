@@ -16,7 +16,7 @@ if __name__ == "__main__":
     inscription_repo = peewee.SqliteInscriptionRepo()
 
     activity_manager = ActivityManager(activity_repo, inscription_repo)
-    accounting_system = AccountingSystem(transaction_repo)
+    accounting_system = AccountingSystem(transaction_repo, transaction_types=["charge", "extract"])
 
     window = MainUI(client_repo, activity_manager, accounting_system)
     window.show()

@@ -124,10 +124,11 @@ class TransactionRepo(abc.ABC):
     """Transaction repository interface.
     """
     @abc.abstractmethod
-    def charge(
-            self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
+    def create(
+            self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
+            description: String
     ) -> Transaction:
-        """Register a new charge transaction with the given information. This method must return the created
+        """Register a new transaction with the given information. This method must return the created
         transaction.
         """
         raise NotImplementedError

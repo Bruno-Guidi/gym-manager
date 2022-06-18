@@ -133,7 +133,7 @@ class SqliteClientRepo(ClientRepo):
                 raw_transaction = raw_inscription.transaction
                 transaction = None
                 if raw_transaction is not None:
-                    transaction = Transaction(
+                    transaction = Transaction(  # ToDo fix.
                         raw_transaction.id, client, raw_transaction.when, Currency(raw_transaction.amount),
                         raw_transaction.method, raw_transaction.responsible, raw_transaction.description)
                 client.sign_on(Inscription(client, activity, transaction))
@@ -211,6 +211,7 @@ class SqliteActivityRepo(ActivityRepo):
 
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)
+    type = CharField()
     client = ForeignKeyField(ClientTable, backref="transactions")
     when = DateField()
     amount = CharField()
@@ -229,13 +230,15 @@ class SqliteTransactionRepo(TransactionRepo):
     def __init__(self) -> None:
         create_table(TransactionTable)
 
-    def charge(
-            self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
+    def create(
+            self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
+            description: String
     ) -> Transaction:
-        """Register a new charge transaction with the given information. This method must return the created
+        """Register a new transaction with the given information. This method must return the created
         transaction.
         """
         transaction = TransactionTable.create(
+            type=type.as_primitive(),
             client=ClientTable.get_by_id(client.dni.as_primitive()),
             when=when,
             amount=amount.as_primitive(),
@@ -244,7 +247,7 @@ class SqliteTransactionRepo(TransactionRepo):
             description=description.as_primitive()
         )
 
-        return Transaction(transaction.id, client, when, amount, method, responsible, description)
+        return Transaction(transaction.id, type, client, when, amount, method, responsible, description)
 
     def _get_client(self, raw_client, cache: dict[int, Client]) -> Client:
         if raw_client.dni in cache:
@@ -283,7 +286,8 @@ class SqliteTransactionRepo(TransactionRepo):
         cache = {} if cache is None else cache
 
         for raw_transaction in query.paginate(page_number, items_per_page):
-            yield Transaction(raw_transaction.id, self._get_client(raw_transaction.client, cache), raw_transaction.when,
+            yield Transaction(raw_transaction.id, String(raw_transaction.type, max_len=50),
+                              self._get_client(raw_transaction.client, cache), raw_transaction.when,
                               Currency(raw_transaction.amount, max_currency=constraints.MAX_CURRENCY),
                               String(raw_transaction.method, max_len=50),
                               String(raw_transaction.responsible, max_len=50),
