@@ -330,6 +330,14 @@ class SqliteInscriptionRepo(InscriptionRepo):
         """
         InscriptionTable.delete_by_id((inscription.activity.id, inscription.client.dni.as_primitive()))
 
+    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
+        """Registers in the repository that the client was charged for the activity.
+        """
+        raw_inscription = InscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
+        raw_transaction = TransactionTable.get_by_id(transaction.id)
+        raw_inscription.transaction = raw_transaction
+        raw_inscription.save()
+
     def all(self, client: Client) -> Generator[Inscription, None, None]:
         """Retrieves all inscriptions of the given *client*.
         """

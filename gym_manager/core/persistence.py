@@ -108,6 +108,12 @@ class InscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
+        """Registers in the repository that the client was charged for the activity.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def all(self, client: Client) -> Generator[Inscription, None, None]:
         """Retrieves all inscriptions of the given *client*.
         """

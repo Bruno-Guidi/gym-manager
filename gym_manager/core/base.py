@@ -188,6 +188,11 @@ class Client:
     def inscriptions(self) -> Iterable[Inscription]:
         return self._inscriptions.values()
 
+    def register_charge(self, activity: Activity, transaction: Transaction):
+        """Registers that the client was charged for the activity.
+        """
+        self._inscriptions[activity.id].register_charge(transaction)
+
 
 @dataclass
 class Transaction:
@@ -216,13 +221,10 @@ class Inscription:
             return pay_day_passed(self.when, today)
         return pay_day_passed(self.transaction.when, today)
 
-    def record_payment(self, payment: Transaction):
-        """Records the payment of the activity.
-
-        Raises:
-            ValueError if *payment.client* is different from *self.client*.
+    def register_charge(self, transaction: Transaction):
+        """Updates the inscription with the given *transaction*.
         """
-        if self.client != payment.client:
-            raise ValueError(f"The client '{payment.client.name}' is paying the activity '{self.activity.name}' for "
-                             f"the client '{self.client.name}'.")
-        self.transaction = payment
+        if self.client != transaction.client:
+            raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
+                             f"'{self.activity.name}' that should be charged to the client '{self.client.name}'.")
+        self.transaction = transaction
