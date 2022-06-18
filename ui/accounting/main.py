@@ -21,15 +21,16 @@ class Controller:
         self.to_line = to_line
 
         self.accounting_system = accounting_system
-        self.current_page, self.items_per_page = 1, 20
+        self.current_page, self.page_len = 1, 20
 
         self.load_transactions()
 
     def load_transactions(self):
         self.transaction_table.setRowCount(0)
-        self.transaction_table.setRowCount(self.items_per_page)
+        self.transaction_table.setRowCount(self.page_len)
 
-        transactions = self.accounting_system.transactions(from_date=self.from_line.date().toPyDate(),
+        transactions = self.accounting_system.transactions(self.current_page, self.page_len,
+                                                           from_date=self.from_line.date().toPyDate(),
                                                            to_date=self.to_line.date().toPyDate())
         for row, transaction in enumerate(transactions):
             self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))

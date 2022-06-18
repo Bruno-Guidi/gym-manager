@@ -135,7 +135,8 @@ class TransactionRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, cache: dict[Number, Client] | None = None, from_date: date | None = None, to_date: date | None = None,
+            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None,
+            from_date: date | None = None, to_date: date | None = None,
             **kwargs
     ) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.

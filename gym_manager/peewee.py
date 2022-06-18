@@ -266,26 +266,35 @@ class SqliteTransactionRepo(TransactionRepo):
             return new
 
     def all(
-            self, cache: dict[Number, Client] | None = None, from_date: date | None = None, to_date: date | None = None,
-            **kwargs
+            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None, **kwargs
     ) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
 
         Keyword Args:
-            page_number: number of page of the table to return.
-            items_per_page: number of items per page.
+            client: allows filtering by client name.
+            type: allows filtering by transaction type.
+            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
+            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
+            method: allows filtering by transaction method.
+            responsible: allows filtering by transaction responsible.
         """
-        page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
-
-        query = TransactionTable.select().join(ClientTable)
-        if from_date is not None:
-            query = query.where(TransactionTable.when >= from_date)
-        if to_date is not None:
-            query = query.where(TransactionTable.when <= to_date)
+        transactions_q = TransactionTable.select().join(ClientTable)
+        if 'client' in kwargs and len(kwargs['client']) > 0:
+            transactions_q = transactions_q.where(TransactionTable.client.name.contains(kwargs['client']))
+        if 'type' in kwargs and len(kwargs['type']) > 0:
+            transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])
+        if 'from_date' in kwargs:
+            transactions_q = transactions_q.where(TransactionTable.when >= kwargs['from_date'])
+        if 'to_date' in kwargs:
+            transactions_q = transactions_q.where(TransactionTable.when <= kwargs['to_date'])
+        if 'method' in kwargs and len(kwargs['method']) > 0:
+            transactions_q = transactions_q.where(TransactionTable.method == kwargs['method'])
+        if 'responsible' in kwargs and len(kwargs['responsible']) > 0:
+            transactions_q = transactions_q.where(TransactionTable.client.name.contains(kwargs['responsible']))
 
         cache = {} if cache is None else cache
 
-        for raw_transaction in query.paginate(page_number, items_per_page):
+        for raw_transaction in transactions_q.paginate(page, page_len):
             yield Transaction(raw_transaction.id, String(raw_transaction.type, max_len=50),
                               self._get_client(raw_transaction.client, cache), raw_transaction.when,
                               Currency(raw_transaction.amount, max_currency=constraints.MAX_CURRENCY),

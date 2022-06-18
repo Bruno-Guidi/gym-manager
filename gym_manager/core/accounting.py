@@ -18,14 +18,19 @@ class AccountingSystem:
         for m in methods:
             yield m
 
-    def transactions(
-            self, from_date: date | None = None, to_date: date | None = None, page_number: int = 1,
-            items_per_page: int = 15
-    ) -> Iterable[Transaction]:
+    def transactions(self, page: int = 1, page_len: int = 15, **filters) -> Iterable[Transaction]:
         """Returns transactions.
+
+        Keyword Args:
+            client: allows filtering by client name.
+            type: allows filtering by transaction type.
+            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
+            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
+            method: allows filtering by transaction method.
+            responsible: allows filtering by transaction responsible.
         """
         cache = {}
-        yield from self.transaction_repo.all(cache, from_date, to_date, page_number=page_number, items_per_page=items_per_page)
+        yield from self.transaction_repo.all(page, page_len, cache, **filters)
 
     def charge(
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,
