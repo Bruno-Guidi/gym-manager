@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass, field
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Optional
-
-from gym_manager.core import attr_constraints
 
 ONE_MONTH_TD = timedelta(days=30)
 
