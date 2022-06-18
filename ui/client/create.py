@@ -85,7 +85,7 @@ class CreateUI(QDialog):
         self.dni_layout.addWidget(self.dni_lbl)
         config_lbl(self.dni_lbl, "DNI", font_size=16, width=120)
 
-        self.dni_field = Field(validatable=Number, min_value=attr_constraints.CLIENT_MIN_DNI,
+        self.dni_field = Field(Number, min_value=attr_constraints.CLIENT_MIN_DNI,
                                max_value=attr_constraints.CLIENT_MAX_DNI)
         self.dni_layout.addWidget(self.dni_field)
         config_line(self.dni_field, place_holder="DNI", font_size=16)
