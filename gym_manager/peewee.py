@@ -278,9 +278,10 @@ class SqliteTransactionRepo(TransactionRepo):
             method: allows filtering by transaction method.
             responsible: allows filtering by transaction responsible.
         """
+        print(kwargs)
         transactions_q = TransactionTable.select().join(ClientTable)
         if 'client' in kwargs and len(kwargs['client']) > 0:
-            transactions_q = transactions_q.where(TransactionTable.client.name.contains(kwargs['client']))
+            transactions_q = transactions_q.where(ClientTable.name.contains(kwargs['client']))
         if 'type' in kwargs and len(kwargs['type']) > 0:
             transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])
         if 'from_date' in kwargs:
@@ -290,7 +291,9 @@ class SqliteTransactionRepo(TransactionRepo):
         if 'method' in kwargs and len(kwargs['method']) > 0:
             transactions_q = transactions_q.where(TransactionTable.method == kwargs['method'])
         if 'responsible' in kwargs and len(kwargs['responsible']) > 0:
-            transactions_q = transactions_q.where(TransactionTable.client.name.contains(kwargs['responsible']))
+            transactions_q = transactions_q.where(TransactionTable.responsible.contains(kwargs['responsible']))
+
+        print(transactions_q)
 
         cache = {} if cache is None else cache
 

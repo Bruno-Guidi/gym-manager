@@ -2,23 +2,25 @@ from datetime import date
 
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QLabel, QTableWidget, QComboBox, QLineEdit, QDateEdit, QTableWidgetItem
+    QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
 from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.base import ONE_MONTH_TD
-from ui.widget_config import config_layout, config_btn, config_lbl, config_combobox, config_line, config_table, \
+from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
+from ui.widgets import SearchBox
 
 
 class Controller:
 
     def __init__(
             self, accounting_system: AccountingSystem, transaction_table: QTableWidget, from_line: QDateEdit,
-            to_line: QDateEdit
+            to_line: QDateEdit, search_box: SearchBox
     ) -> None:
         self.transaction_table = transaction_table
         self.from_line = from_line
         self.to_line = to_line
+        self.search_box = search_box
 
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
@@ -31,7 +33,8 @@ class Controller:
 
         transactions = self.accounting_system.transactions(self.current_page, self.page_len,
                                                            from_date=self.from_line.date().toPyDate(),
-                                                           to_date=self.to_line.date().toPyDate())
+                                                           to_date=self.to_line.date().toPyDate(),
+                                                           **self.search_box.filters())
         for row, transaction in enumerate(transactions):
             self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
             self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
@@ -48,7 +51,10 @@ class AccountingMainUI(QMainWindow):
     def __init__(self, accounting_system: AccountingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(accounting_system, self.transaction_table, self.from_line, self.to_line)
+        self.controller = Controller(accounting_system, self.transaction_table, self.from_line, self.to_line,
+                                     self.search_box)
+
+        self.search_btn.clicked.connect(self.controller.load_transactions)
 
     def _setup_ui(self):
         self.resize(800, 600)
@@ -67,13 +73,11 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
-        self.filter_combobox = QComboBox(self.widget)
-        self.utils_layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox, font_size=16)
-
-        self.search_box = QLineEdit(self.widget)
+        self.search_box = SearchBox(
+            filters_names={"client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"},
+            parent=self.widget
+        )
         self.utils_layout.addWidget(self.search_box)
-        config_line(self.search_box, place_holder="Filtro", font_size=16)
 
         self.utils_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
