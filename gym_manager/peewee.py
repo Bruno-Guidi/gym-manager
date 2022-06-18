@@ -235,18 +235,18 @@ class SqlitePaymentRepo(PaymentRepo):
     def __init__(self) -> None:
         create_table(PaymentTable)
 
-    def register(
-            self, client: Client, when: Date, amount: Currency, method: String, responsible: String, description: String
+    def charge(
+            self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
     ) -> Payment:
         """Register a new payment with the given information. This method must return the created payment.
         """
         payment = PaymentTable.create(
-            client=ClientTable.get_by_id(client.dni),
+            client=ClientTable.get_by_id(client.dni.as_primitive()),
             when=when,
-            amount=amount,
-            method=method,
-            responsible=responsible,
-            description=description
+            amount=amount.as_primitive(),
+            method=method.as_primitive(),
+            responsible=responsible.as_primitive(),
+            description=description.as_primitive()
         )
 
         return Payment(payment.id, client, when, amount, method, responsible, description)

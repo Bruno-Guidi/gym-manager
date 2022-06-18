@@ -17,7 +17,7 @@ class Controller:
         self.payment_system = payment_system
 
     def show_client_main_ui(self):
-        self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager)
+        self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager, self.payment_system)
         self.client_main_ui.setWindowModality(Qt.ApplicationModal)
         self.client_main_ui.show()
 

@@ -134,7 +134,7 @@ class PaymentRepo(abc.ABC):
     """Payments repository interface.
     """
     @abc.abstractmethod
-    def register(
+    def charge(
             self, client: Client, when: date, amount: Currency, method: String, responsible: String, description: String
     ) -> Payment:
         """Register a new payment with the given information. This method must return the created payment.
