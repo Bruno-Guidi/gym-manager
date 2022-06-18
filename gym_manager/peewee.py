@@ -47,19 +47,6 @@ class SqliteClientRepo(ClientRepo):
 
         return ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) is not None
 
-    def get(self, dni: Number) -> Client:
-        """Returns the client with the given *dni*.
-        """
-        raw_client = ClientTable.get_by_id(dni)
-        return Client(
-            dni,
-            String(raw_client.name, optional=False, max_len=constraints.CLIENT_NAME_CHARS),
-            date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
-            String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
-                   max_len=constraints.CLIENT_TEL_CHARS),
-            String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL, max_len=constraints.CLIENT_DIR_CHARS)
-        )
-
     def add(self, client: Client):
         """Adds the *client* to the repository.
         """

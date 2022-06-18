@@ -16,12 +16,6 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, dni: Number) -> Client:
-        """Returns the client with the given *dni*.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def add(self, client: Client):
         """Adds the *client* to the repository.
         """
