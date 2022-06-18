@@ -394,9 +394,6 @@ class Controller:
 
         self.client_list = client_list
         self.search_box = search_box
-        # self.filters_names: dict[str, str] = {"name": "Nombre"}
-        # self.filters_values: dict[str, Any] = {"name": ""}
-        # fill_combobox(self.filter_combobox, self.filters_names.keys(), display=lambda f: self.filters_names[f])
 
         self.name_width = name_width
         self.dni_width = dni_width
