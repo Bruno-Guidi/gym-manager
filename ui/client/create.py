@@ -72,7 +72,7 @@ class CreateUI(QDialog):
         self.name_layout.addWidget(self.name_lbl)
         config_lbl(self.name_lbl, "Nombre", font_size=16, width=120)
 
-        self.name_field = Field(validatable=String, optional=False, max_len=attr_constraints.CLIENT_NAME_CHARS)
+        self.name_field = Field(validatable=String, max_len=attr_constraints.CLIENT_NAME_CHARS)
         self.name_layout.addWidget(self.name_field)
         config_line(self.name_field, place_holder="Nombre", font_size=16)
 

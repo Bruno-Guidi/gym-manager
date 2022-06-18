@@ -35,7 +35,7 @@ class ActivityRow(QWidget):
             self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.name_lbl, "Nombre", font_size=12, width=name_width)
 
-            self.name_field = Field(String, self.widget, optional=False, max_len=attr_constraints.CLIENT_NAME_CHARS)
+            self.name_field = Field(String, self.widget, max_len=attr_constraints.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
             config_line(self.name_field, str(activity.name), width=name_width)
 

@@ -138,7 +138,7 @@ class ChargeUI(QDialog):
         self.responsible_layout.addWidget(self.responsible_lbl)
         config_lbl(self.responsible_lbl, "Responsable", font_size=16, width=120)
 
-        self.responsible_field = Field(String, optional=False, max_len=attr_constraints.CLIENT_DIR_CHARS)
+        self.responsible_field = Field(String, max_len=attr_constraints.CLIENT_DIR_CHARS)
         self.responsible_layout.addWidget(self.responsible_field)
         config_line(self.responsible_field, place_holder="Responsable", font_size=16)
 
