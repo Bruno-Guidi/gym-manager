@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Any
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
@@ -16,7 +17,7 @@ from ui.accounting.charge import ChargeUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table, \
-    config_date_edit
+    config_date_edit, fill_combobox
 from ui.widgets import Field
 
 
@@ -383,7 +384,8 @@ class ClientRow(QWidget):
 class Controller:
     def __init__(
             self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
-            client_list: QListWidget, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
+            client_list: QListWidget, filter_combobox: QComboBox, filter_box: QLineEdit,
+            name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
@@ -392,6 +394,12 @@ class Controller:
         self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
+        self.filter_combobox = filter_combobox
+        self.filter_box = filter_box
+        self.filters_names: dict[str, str] = {"name": "Nombre"}
+        self.filters_values: dict[str, Any] = {"name": ""}
+        fill_combobox(self.filter_combobox, self.filters_names.keys(), display=lambda f: self.filters_names[f])
+
         self.name_width = name_width
         self.dni_width = dni_width
         self.admission_width = admission_width
@@ -419,7 +427,7 @@ class Controller:
 
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
         for client in self.client_repo.all(activity_cache, page_number=self.current_page,
-                                           items_per_page=self.items_per_page):
+                                           items_per_page=self.items_per_page, **self.filters_values):
             self._add_client(client)
 
     def add_client(self):
@@ -427,6 +435,10 @@ class Controller:
         self.add_ui.exec_()
         if self.add_ui.controller.client is not None:
             self._add_client(self.add_ui.controller.client, set_to_current=True, check_limit=True)
+
+    def search(self):
+        self.filters_values[self.filter_combobox.currentData(Qt.UserRole)] = self.filter_box.text()
+        self.load_clients()
 
 
 class ClientMainUI(QMainWindow):
@@ -437,10 +449,12 @@ class ClientMainUI(QMainWindow):
         super().__init__(parent=None)
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(client_repo, activity_manager, payment_system, self.client_list,
-                                     name_width, dni_width, admission_width, tel_width, dir_width)
+        self.controller = Controller(
+            client_repo, activity_manager, payment_system, self.client_list, self.filter_combobox, self.search_box,
+            name_width, dni_width, admission_width, tel_width, dir_width)
 
         self.create_client_btn.clicked.connect(self.controller.add_client)
+        self.search_btn.clicked.connect(self.controller.search)
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
         self.resize(800, 600)

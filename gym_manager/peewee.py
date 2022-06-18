@@ -91,23 +91,32 @@ class SqliteClientRepo(ClientRepo):
             cache[raw_activity.id] = new
             return new
 
-    def all(self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
-            ) -> Generator[Client, None, None]:
+    def all(
+            self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
+    ) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
-            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
             cache: cached activities.
+            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
 
         Keyword Args:
             page_number: number of page of the table to return.
             items_per_page: number of items per page.
+            name: If given, filter clients that fulfill the condition kwargs['name'] like %client.name%.
         """
+        print(kwargs)
+
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
 
         cache = {} if cache is None else cache
 
-        clients_q = ClientTable.select().where(ClientTable.is_active).paginate(page_number, items_per_page)
+        clients_q = ClientTable.select().where(ClientTable.is_active)
+        if 'name' in kwargs and len(kwargs['name']) > 0:
+            clients_q = clients_q.where(ClientTable.name.contains(kwargs['name']))
+        print(clients_q)
+        clients_q.paginate(page_number, items_per_page)
+
         inscription_q = InscriptionTable.select()
         payments_q = PaymentTable.select()
 
