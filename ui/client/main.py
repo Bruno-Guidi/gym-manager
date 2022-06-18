@@ -18,7 +18,7 @@ from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_table, \
     config_date_edit, fill_combobox
-from ui.widgets import Field
+from ui.widgets import Field, SearchBox
 
 
 class ClientRow(QWidget):
@@ -384,7 +384,7 @@ class ClientRow(QWidget):
 class Controller:
     def __init__(
             self, client_repo: ClientRepo, activity_manager: ActivityManager, payment_system: PaymentSystem,
-            client_list: QListWidget, filter_combobox: QComboBox, filter_box: QLineEdit,
+            client_list: QListWidget, search_box: SearchBox,
             name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
     ):
         self.client_repo = client_repo
@@ -394,11 +394,10 @@ class Controller:
         self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
-        self.filter_combobox = filter_combobox
-        self.filter_box = filter_box
-        self.filters_names: dict[str, str] = {"name": "Nombre"}
-        self.filters_values: dict[str, Any] = {"name": ""}
-        fill_combobox(self.filter_combobox, self.filters_names.keys(), display=lambda f: self.filters_names[f])
+        self.search_box = search_box
+        # self.filters_names: dict[str, str] = {"name": "Nombre"}
+        # self.filters_values: dict[str, Any] = {"name": ""}
+        # fill_combobox(self.filter_combobox, self.filters_names.keys(), display=lambda f: self.filters_names[f])
 
         self.name_width = name_width
         self.dni_width = dni_width
@@ -427,7 +426,7 @@ class Controller:
 
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
         for client in self.client_repo.all(activity_cache, page_number=self.current_page,
-                                           items_per_page=self.items_per_page, **self.filters_values):
+                                           items_per_page=self.items_per_page, **self.search_box.filters()):
             self._add_client(client)
 
     def add_client(self):
@@ -437,7 +436,7 @@ class Controller:
             self._add_client(self.add_ui.controller.client, set_to_current=True, check_limit=True)
 
     def search(self):
-        self.filters_values[self.filter_combobox.currentData(Qt.UserRole)] = self.filter_box.text()
+        self.search_box.save_state()
         self.load_clients()
 
 
@@ -450,7 +449,7 @@ class ClientMainUI(QMainWindow):
         name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
         self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
         self.controller = Controller(
-            client_repo, activity_manager, payment_system, self.client_list, self.filter_combobox, self.search_box,
+            client_repo, activity_manager, payment_system, self.client_list, self.search_box,
             name_width, dni_width, admission_width, tel_width, dir_width)
 
         self.create_client_btn.clicked.connect(self.controller.add_client)
@@ -472,13 +471,8 @@ class ClientMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.filter_combobox = QComboBox(self.widget)
-        self.utils_layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox, font_size=16)
-
-        self.search_box = QLineEdit(self.widget)
+        self.search_box = SearchBox(filters_names={"name": "Nombre"}, parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
-        config_line(self.search_box, place_holder="Búsqueda", font_size=16)
 
         self.search_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.search_btn)

@@ -105,8 +105,6 @@ class SqliteClientRepo(ClientRepo):
             items_per_page: number of items per page.
             name: If given, filter clients that fulfill the condition kwargs['name'] like %client.name%.
         """
-        print(kwargs)
-
         page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
 
         cache = {} if cache is None else cache
@@ -114,7 +112,6 @@ class SqliteClientRepo(ClientRepo):
         clients_q = ClientTable.select().where(ClientTable.is_active)
         if 'name' in kwargs and len(kwargs['name']) > 0:
             clients_q = clients_q.where(ClientTable.name.contains(kwargs['name']))
-        print(clients_q)
         clients_q.paginate(page_number, items_per_page)
 
         inscription_q = InscriptionTable.select()
