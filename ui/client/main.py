@@ -435,10 +435,6 @@ class Controller:
         if self.add_ui.controller.client is not None:
             self._add_client(self.add_ui.controller.client, set_to_current=True, check_limit=True)
 
-    def search(self):
-        self.search_box.save_state()
-        self.load_clients()
-
 
 class ClientMainUI(QMainWindow):
 
@@ -453,7 +449,7 @@ class ClientMainUI(QMainWindow):
             name_width, dni_width, admission_width, tel_width, dir_width)
 
         self.create_client_btn.clicked.connect(self.controller.add_client)
-        self.search_btn.clicked.connect(self.controller.search)
+        self.search_btn.clicked.connect(self.controller.load_clients)
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
         self.resize(800, 600)
