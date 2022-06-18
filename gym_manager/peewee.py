@@ -252,7 +252,7 @@ class SqlitePaymentRepo(PaymentRepo):
         return Payment(payment.id, client, when, amount, method, responsible, description)
 
     def _get_client(self, raw_client, cache: dict[int, Client]) -> Client:
-        if raw_client.id in cache:
+        if raw_client.dni in cache:
             return cache[raw_client.dni]
         else:
             new = Client(
@@ -264,7 +264,7 @@ class SqlitePaymentRepo(PaymentRepo):
                 String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
                        max_len=constraints.CLIENT_DIR_CHARS)
             )
-            cache[raw_client.id] = new
+            cache[raw_client.dni] = new
             return new
 
     def all(
@@ -287,10 +287,12 @@ class SqlitePaymentRepo(PaymentRepo):
 
         cache = {} if cache is None else cache
 
-        for raw_client in query.paginate(page_number, items_per_page):
-            yield Payment(raw_client.id, self._get_client(raw_client, cache), raw_client.day,
-                          Currency(raw_client.amount), raw_client.method, raw_client.responsible,
-                          raw_client.description)
+        for raw_payment in query.paginate(page_number, items_per_page):
+            yield Payment(raw_payment.id, self._get_client(raw_payment.client, cache), raw_payment.when,
+                          Currency(raw_payment.amount, positive=True, max_currency=constraints.MAX_CURRENCY),
+                          String(raw_payment.method, optional=False, max_len=50),
+                          String(raw_payment.responsible, optional=False, max_len=50),
+                          String(raw_payment.description, optional=False, max_len=50))
 
 
 class InscriptionTable(Model):

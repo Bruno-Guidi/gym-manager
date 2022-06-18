@@ -22,7 +22,8 @@ class PaymentSystem:
     ) -> Iterable[Payment]:
         """Returns payments.
         """
-        yield from self.payment_repo.all(from_date, to_date, page_number=page_number, items_per_page=items_per_page)
+        cache = {}
+        yield from self.payment_repo.all(cache, from_date, to_date, page_number=page_number, items_per_page=items_per_page)
 
     def charge(
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,
