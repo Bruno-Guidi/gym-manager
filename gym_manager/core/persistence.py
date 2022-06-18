@@ -135,10 +135,16 @@ class TransactionRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None,
-            from_date: date | None = None, to_date: date | None = None,
-            **kwargs
+            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None, **kwargs
     ) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
+
+        Keyword Args:
+            client: allows filtering by client name.
+            type: allows filtering by transaction type.
+            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
+            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
+            method: allows filtering by transaction method.
+            responsible: allows filtering by transaction responsible.
         """
         raise NotImplementedError
