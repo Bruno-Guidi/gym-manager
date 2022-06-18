@@ -73,7 +73,7 @@ class AccountingMainUI(QMainWindow):
         # Utilities.
         self.utils_layout = QHBoxLayout()
         self.main_layout.addLayout(self.utils_layout)
-        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
+        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         self.filter_combobox = QComboBox(self.widget)
         self.utils_layout.addWidget(self.filter_combobox)
@@ -81,24 +81,40 @@ class AccountingMainUI(QMainWindow):
 
         self.search_box = QLineEdit(self.widget)
         self.utils_layout.addWidget(self.search_box)
-        config_line(self.search_box, place_holder="Búsqueda", font_size=16)
+        config_line(self.search_box, place_holder="Filtro", font_size=16)
+
+        self.utils_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
+
+        self.from_layout = QVBoxLayout()
+        self.utils_layout.addLayout(self.from_layout)
+
+        self.from_lbl = QLabel()
+        self.from_layout.addWidget(self.from_lbl)
+        config_lbl(self.from_lbl, "Desde", font_size=16, alignment=Qt.AlignCenter)
+
+        self.from_line = QDateEdit()
+        self.from_layout.addWidget(self.from_line)
+        config_date_edit(self.from_line, date.today() - ONE_MONTH_TD, calendar=True,
+                         layout_direction=Qt.LayoutDirection.RightToLeft)
+
+        self.utils_layout.addItem(QSpacerItem(10, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
+
+        self.to_layout = QVBoxLayout()
+        self.utils_layout.addLayout(self.to_layout)
+
+        self.to_lbl = QLabel()
+        self.to_layout.addWidget(self.to_lbl)
+        config_lbl(self.to_lbl, "Hasta", font_size=16, alignment=Qt.AlignCenter)
+
+        self.to_line = QDateEdit()
+        self.to_layout.addWidget(self.to_line)
+        config_date_edit(self.to_line, date.today(), calendar=True, layout_direction=Qt.LayoutDirection.RightToLeft)
+
+        self.utils_layout.addItem(QSpacerItem(30, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
         self.search_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.search_btn)
         config_btn(self.search_btn, "Busq", font_size=16)
-
-        self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
-
-        self.from_line = QDateEdit()
-        self.utils_layout.addWidget(self.from_line)
-        config_date_edit(self.from_line, date.today() - ONE_MONTH_TD, calendar=True,
-                         layout_direction=Qt.LayoutDirection.RightToLeft)
-
-        self.to_line = QDateEdit()
-        self.utils_layout.addWidget(self.to_line)
-        config_date_edit(self.to_line, date.today(), calendar=True, layout_direction=Qt.LayoutDirection.RightToLeft)
-
-        self.main_layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
         # Payments.
         self.payment_table = QTableWidget(self.widget)
