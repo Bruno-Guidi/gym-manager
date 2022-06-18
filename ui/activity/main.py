@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QListWidgetItem, QVBoxLayout, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
     QTextEdit, QCheckBox
 
-from gym_manager.core import attr_constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import String, Activity, Currency
 from ui.activity.create import CreateUI
@@ -35,7 +35,7 @@ class ActivityRow(QWidget):
             self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.name_lbl, "Nombre", font_size=12, width=name_width)
 
-            self.name_field = Field(String, self.widget, max_len=attr_constraints.CLIENT_NAME_CHARS)
+            self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
             config_line(self.name_field, str(activity.name), width=name_width)
 
@@ -44,7 +44,7 @@ class ActivityRow(QWidget):
             self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.price_lbl, "Precio", font_size=12, width=price_width)
 
-            self.price_field = Field(Currency, self.widget, max_currency=attr_constraints.MAX_CURRENCY)
+            self.price_field = Field(Currency, self.widget, max_currency=consts.MAX_CURRENCY)
             self.price_layout.addWidget(self.price_field)
             config_line(self.price_field, str(activity.price), width=price_width)
 
@@ -189,8 +189,7 @@ class ActivityRow(QWidget):
         self._set_hidden(self.is_hidden)  # Hide or show the widgets.
 
     def save_changes(self):
-        valid_descr, descr = valid_text_value(self.description_text, optional=True,
-                                              max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
+        valid_descr, descr = valid_text_value(self.description_text, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
         if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         else:

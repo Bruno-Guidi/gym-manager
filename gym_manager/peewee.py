@@ -6,7 +6,7 @@ from typing import Type, Generator
 from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField, \
     CompositeKey, prefetch
 
-from gym_manager.core import attr_constraints as constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo
 
@@ -84,10 +84,10 @@ class SqliteClientRepo(ClientRepo):
             return cache[raw_activity.id]
         else:
             new = Activity(raw_activity.id,
-                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
+                           String(raw_activity.name, max_len=consts.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
                            raw_activity.pay_once,
-                           String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
+                           String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
             cache[raw_activity.id] = new
             return new
 
@@ -119,13 +119,11 @@ class SqliteClientRepo(ClientRepo):
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
             client = Client(
-                Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
-                String(raw_client.name, max_len=constraints.CLIENT_NAME_CHARS),
+                Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
+                String(raw_client.name, max_len=consts.CLIENT_NAME_CHARS),
                 date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
-                String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
-                       max_len=constraints.CLIENT_TEL_CHARS),
-                String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
-                       max_len=constraints.CLIENT_DIR_CHARS)
+                String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
+                String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
             )
 
             for raw_inscription in raw_client.inscriptions:
@@ -198,10 +196,10 @@ class SqliteActivityRepo(ActivityRepo):
     def all(self) -> Generator[Activity, None, None]:
         for raw_activity in ActivityTable.select():
             yield Activity(raw_activity.id,
-                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
+                           String(raw_activity.name, max_len=consts.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
                            raw_activity.pay_once,
-                           String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
+                           String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
 
     def inscriptions(self, activity: Activity) -> int:
         """Returns the number of clients registered in the given *activity*.
@@ -254,13 +252,11 @@ class SqliteTransactionRepo(TransactionRepo):
             return cache[raw_client.dni]
         else:
             new = Client(
-                Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
-                String(raw_client.name, max_len=constraints.CLIENT_NAME_CHARS),
+                Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
+                String(raw_client.name, max_len=consts.CLIENT_NAME_CHARS),
                 date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
-                String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
-                       max_len=constraints.CLIENT_TEL_CHARS),
-                String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
-                       max_len=constraints.CLIENT_DIR_CHARS)
+                String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
+                String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
             )
             cache[raw_client.dni] = new
             return new
@@ -297,7 +293,7 @@ class SqliteTransactionRepo(TransactionRepo):
         for raw_transaction in transactions_q.paginate(page, page_len):
             yield Transaction(raw_transaction.id, String(raw_transaction.type, max_len=50),
                               self._get_client(raw_transaction.client, cache), raw_transaction.when,
-                              Currency(raw_transaction.amount, max_currency=constraints.MAX_CURRENCY),
+                              Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
                               String(raw_transaction.method, max_len=50),
                               String(raw_transaction.responsible, max_len=50),
                               String(raw_transaction.description, max_len=50))

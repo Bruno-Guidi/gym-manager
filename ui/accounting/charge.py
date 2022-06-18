@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox, QLineEdit, \
     QDateEdit, QComboBox, QTextEdit
 
-from gym_manager.core import attr_constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.base import String, Number, Client, Currency, Activity
 from gym_manager.core.persistence import ClientRepo
@@ -43,7 +43,7 @@ class Controller:
 
     # noinspection PyTypeChecker
     def charge(self):
-        valid_descr, descr = valid_text_value(self.descr_field, optional=False, max_len=attr_constraints.DESCRIPTION_CHARS)
+        valid_descr, descr = valid_text_value(self.descr_field, optional=False, max_len=consts.DESCRIPTION_CHARS)
         if not all([self.amount_field.valid_value(), self.responsible_field.valid_value(), valid_descr]):
             QMessageBox.about(self.descr_field.window(), "Error", "Hay datos que no son válidos.")
         else:
@@ -112,7 +112,7 @@ class ChargeUI(QDialog):
         self.amount_layout.addWidget(self.amount_lbl)
         config_lbl(self.amount_lbl, "Monto", font_size=16, width=120)
 
-        self.amount_field = Field(Currency, max_currency=attr_constraints.MAX_CURRENCY)
+        self.amount_field = Field(Currency, max_currency=consts.MAX_CURRENCY)
         self.amount_layout.addWidget(self.amount_field)
         config_line(self.amount_field, place_holder="000.00", font_size=16, height=30)
 
@@ -138,7 +138,7 @@ class ChargeUI(QDialog):
         self.responsible_layout.addWidget(self.responsible_lbl)
         config_lbl(self.responsible_lbl, "Responsable", font_size=16, width=120)
 
-        self.responsible_field = Field(String, max_len=attr_constraints.CLIENT_DIR_CHARS)
+        self.responsible_field = Field(String, max_len=consts.CLIENT_DIR_CHARS)
         self.responsible_layout.addWidget(self.responsible_field)
         config_line(self.responsible_field, place_holder="Responsable", font_size=16)
 

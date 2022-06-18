@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Iterable
 
-from gym_manager.core import attr_constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.base import Transaction, Client, Activity, String
 from gym_manager.core.persistence import TransactionRepo
 
@@ -10,7 +10,7 @@ class AccountingSystem:
 
     def __init__(self, transaction_repo: TransactionRepo, transaction_types: list[str]) -> None:
         self.transaction_repo = transaction_repo
-        self.transaction_types = {name: String(name, max_len=attr_constraints.TRANSACTION_TYPE_CHARS)
+        self.transaction_types = {name: String(name, max_len=consts.TRANSACTION_TYPE_CHARS)
                                   for name in transaction_types}
 
     def methods(self) -> Iterable[String]:

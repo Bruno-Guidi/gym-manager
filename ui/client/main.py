@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QMessageBox, \
     QTableWidgetItem, QDateEdit
 
-from gym_manager.core import attr_constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import Client, String, Number, Inscription
@@ -47,7 +47,7 @@ class ClientRow(QWidget):
             self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.name_lbl, "Nombre", font_size=12, width=name_width)
 
-            self.name_field = Field(String, self.widget, max_len=attr_constraints.CLIENT_NAME_CHARS)
+            self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
             config_line(self.name_field, str(client.name), width=name_width)
 
@@ -56,8 +56,7 @@ class ClientRow(QWidget):
             self.dni_layout.addWidget(self.dni_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.dni_lbl, "DNI", font_size=12, width=dni_width)
 
-            self.dni_field = Field(Number, self.widget, min_value=attr_constraints.CLIENT_MIN_DNI,
-                                   max_value=attr_constraints.CLIENT_MAX_DNI)
+            self.dni_field = Field(Number, self.widget, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
             self.dni_layout.addWidget(self.dni_field)
             config_line(self.dni_field, str(client.dni), width=dni_width, enabled=False)
 
@@ -75,8 +74,8 @@ class ClientRow(QWidget):
             self.tel_layout.addWidget(self.tel_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.tel_lbl, "Teléfono", font_size=12, width=tel_width)
 
-            self.tel_field = Field(String, self.widget, optional=attr_constraints.CLIENT_TEL_OPTIONAL,
-                                   max_len=attr_constraints.CLIENT_TEL_CHARS)
+            self.tel_field = Field(String, self.widget, optional=consts.CLIENT_TEL_OPTIONAL,
+                                   max_len=consts.CLIENT_TEL_CHARS)
             self.tel_layout.addWidget(self.tel_field)
             config_line(self.tel_field, str(client.telephone), width=tel_width)
 
@@ -85,8 +84,8 @@ class ClientRow(QWidget):
             self.dir_layout.addWidget(self.dir_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.dir_lbl, "Dirección", font_size=12, width=dir_width)
 
-            self.dir_field = Field(String, self.widget, optional=attr_constraints.CLIENT_DIR_OPTIONAL,
-                                   max_len=attr_constraints.CLIENT_DIR_CHARS)
+            self.dir_field = Field(String, self.widget, optional=consts.CLIENT_DIR_OPTIONAL,
+                                   max_len=consts.CLIENT_DIR_CHARS)
             self.dir_layout.addWidget(self.dir_field)
             config_line(self.dir_field, str(client.direction), width=dir_width)
 
@@ -182,7 +181,7 @@ class ClientRow(QWidget):
 
         self.admission_summary = QLabel(self.widget)
         self.admission_layout.addWidget(self.admission_summary, alignment=Qt.AlignTop)
-        config_lbl(self.admission_summary, self.client.admission.strftime(attr_constraints.DATE_FORMAT),
+        config_lbl(self.admission_summary, self.client.admission.strftime(consts.DATE_FORMAT),
                    width=admission_width, height=30, alignment=Qt.AlignVCenter)
 
         self.admission_lbl: QLabel | None = None
@@ -317,7 +316,7 @@ class ClientRow(QWidget):
 
             # Updates ui.
             self.name_summary.setText(str(self.client.name))
-            self.admission_summary.setText(self.client.admission.strftime(attr_constraints.DATE_FORMAT))
+            self.admission_summary.setText(self.client.admission.strftime(consts.DATE_FORMAT))
             self.tel_summary.setText(self.client.telephone.as_primitive())
             self.dir_summary.setText(self.client.direction.as_primitive())
 
@@ -360,7 +359,7 @@ class ClientRow(QWidget):
 
     def charge(self):
         activity = self.inscriptions[self.inscription_table.currentRow()].activity
-        descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=attr_constraints.DESCRIPTION_CHARS)
+        descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=consts.DESCRIPTION_CHARS)
         self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
         self.charge_ui.exec_()
 
