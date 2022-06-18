@@ -271,8 +271,8 @@ class SqlitePaymentRepo(PaymentRepo):
 
 class InscriptionTable(Model):
     client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
-    activity = ForeignKeyField(ActivityTable, backref="entries", on_delete="CASCADE")
-    payment = ForeignKeyField(PaymentTable, backref="payments", null=True)
+    activity = ForeignKeyField(ActivityTable, backref="inscriptions", on_delete="CASCADE")
+    payment = ForeignKeyField(PaymentTable, backref="inscription_payment", null=True)
 
     class Meta:
         database = _DATABASE
