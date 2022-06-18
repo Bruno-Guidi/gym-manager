@@ -215,7 +215,7 @@ class Inscription:
     def pay_day_passed(self, today: date) -> bool:
         if self.transaction is None:
             return True
-        return pay_day_passed(self.transaction.when.as_primitive(), today)
+        return pay_day_passed(self.transaction.when, today)
 
     def record_payment(self, payment: Transaction):
         """Records the payment of the activity.
