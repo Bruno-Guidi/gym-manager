@@ -214,7 +214,7 @@ class Inscription:
 
     def pay_day_passed(self, today: date) -> bool:
         if self.transaction is None:
-            return True  # ToDo add inscription date and compare to it.
+            return True
         return pay_day_passed(self.transaction.when.as_primitive(), today)
 
     def record_payment(self, payment: Transaction):
