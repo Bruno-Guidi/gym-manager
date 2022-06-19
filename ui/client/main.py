@@ -359,7 +359,7 @@ class ClientRow(QWidget):
 
     def charge(self):
         activity = self.inscriptions[self.inscription_table.currentRow()].activity
-        descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=consts.DESCRIPTION_CHARS)
+        descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=consts.TRANSACTION_DESCR_CHARS)
         self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
         self.charge_ui.exec_()
 

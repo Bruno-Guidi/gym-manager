@@ -43,7 +43,7 @@ class Controller:
 
     # noinspection PyTypeChecker
     def charge(self):
-        valid_descr, descr = valid_text_value(self.descr_field, optional=False, max_len=consts.DESCRIPTION_CHARS)
+        valid_descr, descr = valid_text_value(self.descr_field, optional=False, max_len=consts.TRANSACTION_DESCR_CHARS)
         if not all([self.amount_field.valid_value(), self.responsible_field.valid_value(), valid_descr]):
             QMessageBox.about(self.descr_field.window(), "Error", "Hay datos que no son válidos.")
         else:

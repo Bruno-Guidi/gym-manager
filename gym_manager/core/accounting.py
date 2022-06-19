@@ -20,7 +20,9 @@ class AccountingSystem:
                                   for name in transaction_types}
 
     def methods(self) -> Iterable[String]:
-        methods = [String("Efectivo", max_len=20), String("Débito", max_len=20), String("Crédito", max_len=20)]
+        methods = [String("Efectivo", max_len=consts.TRANSACTION_METHOD_CHARS),
+                   String("Débito", max_len=consts.TRANSACTION_METHOD_CHARS),
+                   String("Crédito", max_len=consts.TRANSACTION_METHOD_CHARS)]
         for m in methods:
             yield m
 

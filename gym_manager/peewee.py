@@ -291,12 +291,14 @@ class SqliteTransactionRepo(TransactionRepo):
         cache = {} if cache is None else cache
 
         for raw_transaction in transactions_q.paginate(page, page_len):
-            yield Transaction(raw_transaction.id, String(raw_transaction.type, max_len=50),
-                              self._get_client(raw_transaction.client, cache), raw_transaction.when,
+            yield Transaction(raw_transaction.id,
+                              String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
+                              self._get_client(raw_transaction.client, cache),
+                              raw_transaction.when,
                               Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
-                              String(raw_transaction.method, max_len=50),
-                              String(raw_transaction.responsible, max_len=50),
-                              String(raw_transaction.description, max_len=50))
+                              String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),
+                              String(raw_transaction.responsible, max_len=consts.TRANSACTION_RESP_CHARS),
+                              String(raw_transaction.description, max_len=consts.TRANSACTION_DESCR_CHARS))
 
 
 class InscriptionTable(Model):
