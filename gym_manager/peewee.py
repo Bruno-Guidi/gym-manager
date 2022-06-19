@@ -205,13 +205,11 @@ class SqliteActivityRepo(ActivityRepo):
     def update(self, activity: Activity):
         """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
         """
-        # ToDo. Use replace().execute()
-        raw_activity = ActivityTable.get_or_none(ActivityTable.id == activity.id)
-        raw_activity.act_name = activity.name.as_primitive()
-        raw_activity.price = str(activity.price)
-        raw_activity.pay_once = activity.pay_once
-        raw_activity.description = activity.description.as_primitive()
-        raw_activity.save()
+        ActivityTable.replace(id=activity.id,
+                              act_name=activity.name.as_primitive(),
+                              price=str(activity.price),
+                              pay_once=activity.pay_once,
+                              description=activity.description.as_primitive()).execute()
 
     def all(self) -> Generator[Activity, None, None]:
         for raw_activity in ActivityTable.select():
