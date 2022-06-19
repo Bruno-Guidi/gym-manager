@@ -121,7 +121,7 @@ class SqliteClientRepo(ClientRepo):
             client = Client(
                 Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
                 String(raw_client.name, max_len=consts.CLIENT_NAME_CHARS),
-                date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
+                raw_client.admission,
                 String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
             )
@@ -261,7 +261,7 @@ class SqliteTransactionRepo(TransactionRepo):
             new = Client(
                 Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
                 String(raw_client.name, max_len=consts.CLIENT_NAME_CHARS),
-                date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
+                raw_client.admission,
                 String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
             )
