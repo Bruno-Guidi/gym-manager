@@ -93,27 +93,27 @@ class SqliteClientRepo(ClientRepo):
             return new
 
     def all(
-            self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
+            self, page: int, page_len: int = 20, activity_cache: dict[Number, Client] | None = None, **kwargs
     ) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
-            cache: cached activities.
-            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
+            page: page to retrieve.
+            page_len: clients per page.
+            activity_cache: cached activities.
 
         Keyword Args:
-            page_number: number of page of the table to return.
-            items_per_page: number of items per page.
-            name: If given, filter clients that fulfill the condition kwargs['name'] like %client.name%.
+            only_actives: allows filtering only active clients.
+            name: allows filtering clients by name.
         """
-        page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
+        activity_cache = {} if activity_cache is None else activity_cache
 
-        cache = {} if cache is None else cache
-
-        clients_q = ClientTable.select().where(ClientTable.is_active)
+        clients_q = ClientTable.select()
+        if 'actives_only' not in kwargs or kwargs['actives_only']:
+            clients_q = clients_q.where(ClientTable.is_active)
         if 'name' in kwargs and len(kwargs['name']) > 0:
             clients_q = clients_q.where(ClientTable.name.contains(kwargs['name']))
-        clients_q.paginate(page_number, items_per_page)
+        clients_q.paginate(page, page_len)
 
         inscription_q = InscriptionTable.select()
         transactions_q = TransactionTable.select()
@@ -128,7 +128,7 @@ class SqliteClientRepo(ClientRepo):
             )
 
             for raw_inscription in raw_client.inscriptions:
-                activity = self._get_activity(raw_inscription.activity, cache)
+                activity = self._get_activity(raw_inscription.activity, activity_cache)
                 raw_transaction = raw_inscription.transaction
                 transaction = None
                 if raw_transaction is not None:

@@ -57,7 +57,8 @@ class ClientRow(QWidget):
             self.dni_layout.addWidget(self.dni_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.dni_lbl, "DNI", font_size=12, width=dni_width)
 
-            self.dni_field = Field(Number, self.widget, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+            self.dni_field = Field(Number, self.widget, min_value=consts.CLIENT_MIN_DNI,
+                                   max_value=consts.CLIENT_MAX_DNI)
             self.dni_layout.addWidget(self.dni_field)
             config_line(self.dni_field, str(client.dni), width=dni_width, enabled=False)
 
@@ -335,8 +336,10 @@ class ClientRow(QWidget):
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
             # ToDo. Move the cache to ActivityManager.
-            for client in self.client_repo.all(cache=None, page_number=self.main_ui_controller.current_page + 1,
-                                               items_per_page=self.main_ui_controller.items_per_page):
+            clients = self.client_repo.all(self.main_ui_controller.current_page + 1,
+                                           self.main_ui_controller.items_per_page,
+                                           activity_cache=None, **self.main_ui_controller.search_box.filters())
+            for client in clients:
                 self.main_ui_controller.add_client(client)
 
             QMessageBox.about(self.name_field.window(), "Éxito",
@@ -362,7 +365,8 @@ class ClientRow(QWidget):
     def charge(self):
         activity = self.inscriptions[self.inscription_table.currentRow()].activity
         descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=consts.TRANSACTION_DESCR_CHARS)
-        self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True, fixed_descr=True)
+        self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True,
+                                  fixed_descr=True)
         self.charge_ui.exec_()
 
     # noinspection PyUnresolvedReferences
@@ -429,8 +433,9 @@ class Controller:
         self.client_list.clear()
 
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
-        for client in self.client_repo.all(activity_cache, page_number=self.current_page,
-                                           items_per_page=self.items_per_page, **self.search_box.filters()):
+        clients = self.client_repo.all(self.current_page, self.items_per_page, activity_cache,
+                                       **self.search_box.filters())
+        for client in clients:
             self.add_client(client)
 
     def create_client(self):
