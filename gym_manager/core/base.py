@@ -197,13 +197,27 @@ class Filter(abc.ABC):
 
 class TextLike(Filter):
 
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
     def passes(self, to_filter: Any, filter_value: str) -> bool:
-        if not isinstance(to_filter, String):
-            raise TypeError(f"The attribute 'name' must be a 'String', not a '{type(to_filter)}'.")
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
+
         if not isinstance(filter_value, str):
-            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'str', but received a "
-                            f"'{type(filter_value)}'.")
-        return to_filter.contains(filter_value)
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
+                            f", but received a '{type(filter_value)}'.")
+
+        attr_value = getattr(to_filter, self.attr)
+        if not isinstance(attr_value, String):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
+                            f"'String', not a '{type(attr_value)}'.")
+
+        return attr_value.contains(filter_value)
 
 
 class NameLike(Filter):
