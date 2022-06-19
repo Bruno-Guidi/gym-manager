@@ -109,8 +109,8 @@ class SqliteClientRepo(ClientRepo):
         activity_cache = {} if activity_cache is None else activity_cache
 
         clients_q = ClientTable.select()
-        for filter_name, (filter_, value) in kwargs.items():
-            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+        for filter_, value in kwargs.values():
+            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable.name, value))
 
         clients_q.paginate(page, page_len)
 

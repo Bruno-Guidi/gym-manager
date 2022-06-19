@@ -188,17 +188,15 @@ class Filter(abc.ABC):
         return self.translate_fun(to_filter, filter_value)
 
 
-class NameLike(Filter):
+class TextLike(Filter):
 
     def passes(self, to_filter: Any, filter_value: str) -> bool:
-        if not hasattr(to_filter, "name"):
-            raise TypeError(f"The object '{type(to_filter)}' does not have the attribute 'name'.")
-        if not isinstance(to_filter.name, String):
-            raise TypeError(f"The attribute 'name' must be a 'String', not a '{type(to_filter.name)}'.")
+        if not isinstance(to_filter, String):
+            raise TypeError(f"The attribute 'name' must be a 'String', not a '{type(to_filter)}'.")
         if not isinstance(filter_value, str):
             raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'str', but received a "
                             f"'{type(filter_value)}'.")
-        return to_filter.name.contains(filter_value)
+        return to_filter.contains(filter_value)
 
 
 @dataclass
