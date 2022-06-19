@@ -1,7 +1,8 @@
 import logging
+from datetime import date
 from typing import Generator, Type
 
-from gym_manager.core.base import Client, Activity, Transaction, Inscription, String, Currency, ActivityFilter, NameFilter
+from gym_manager.core.base import Client, Activity, Transaction, Inscription, String, Currency, ActivityFilter, OldNameFilter
 from gym_manager.core.persistence import ActivityRepo, InscriptionRepo
 
 
@@ -9,7 +10,7 @@ class ActivityManager:
     def __init__(self, activity_repo: ActivityRepo, inscription_repo: InscriptionRepo):
         self.activity_repo = activity_repo
         self.inscription_repo = inscription_repo
-        self.filters: dict[str, Type[ActivityFilter]] = {"name": NameFilter}
+        self.filters: dict[str, Type[ActivityFilter]] = {"name": OldNameFilter}
 
     def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
         return self.activity_repo.create(name, price, pay_once, description)
@@ -27,11 +28,8 @@ class ActivityManager:
             name: If given, filter activities that fulfill the condition kwargs['name'] like %activity.name%.
         """
         # ToDo cache.
-        _active_filters: dict[str, ActivityFilter] = {name: filter_type(active_filters[name])
-                                                      for name, filter_type in self.filters.items()
-                                                      if name in active_filters}
         for activity in self.activity_repo.all():
-            if all([filter_.passes_filter(activity) for filter_ in _active_filters.values()]):
+            if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
                 yield activity
 
     def inscriptions(self, activity: Activity) -> int:
@@ -41,10 +39,10 @@ class ActivityManager:
         for inscription in self.inscription_repo.all(client):
             client.sign_on(inscription)
 
-    def sign_on(self, client: Client, activity: Activity, payment: Transaction | None = None):
+    def sign_on(self, when: date, client: Client, activity: Activity, payment: Transaction | None = None):
         """Signs on a client in an activity.
         """
-        inscription = Inscription(client, activity, payment)
+        inscription = Inscription(when, client, activity, payment)
         self.inscription_repo.add(inscription)
         client.sign_on(inscription)
         logging.info(f"'Client' [{client.dni}] signed up in the 'activity' [{activity.name}] with 'payment' "

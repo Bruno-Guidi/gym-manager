@@ -4,7 +4,7 @@ import abc
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Callable
 
 ONE_MONTH_TD = timedelta(days=30)
 
@@ -81,6 +81,13 @@ class Number(Validatable):
 
 class String(Validatable):
 
+    def __eq__(self, o: String | str) -> bool:
+        if isinstance(o, str):
+            return self._value == o
+        if isinstance(o, String):
+            return super().__eq__(o)
+        raise TypeError("Invalid equal comparison.")
+
     def validate(self, value: str, **kwargs) -> str:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
         implementation stores.
@@ -102,6 +109,9 @@ class String(Validatable):
         if len(value) > kwargs['max_len']:
             raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
         return value
+
+    def contains(self, substring: str) -> bool:
+        return substring in self._value
 
 
 class Currency(Validatable):
@@ -153,13 +163,118 @@ class ActivityFilter(abc.ABC):
         raise NotImplementedError
 
 
-class NameFilter(ActivityFilter):
+class OldNameFilter(ActivityFilter):
 
     def passes_filter(self, activity: Activity) -> bool:
         if not isinstance(self.filter_value, str):
             raise TypeError(f"NameFilter activity filter expects a 'str', but received a '{type(self.filter_value)}'")
 
         return self.filter_value in activity.name.as_primitive()
+
+
+class Filter(abc.ABC):
+
+    def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool] | None = None) -> None:
+        self.name = name
+        self.display_name = display_name
+        self.translate_fun = translate_fun
+
+    def __eq__(self, o: Filter) -> bool:
+        return self.name == o.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    @abc.abstractmethod
+    def passes(self, to_filter: Any, filter_value: Any) -> bool:
+        raise NotImplementedError
+
+    def passes_in_repo(self, to_filter: Any, filter_value: Any) -> bool:
+        if self.translate_fun is None:
+            raise AttributeError(f"The filter '{self.name}' of type '{type(self)}' does not have a 'transalte_fun'.")
+        return self.translate_fun(to_filter, filter_value)
+
+
+class TextLike(Filter):
+
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
+    def passes(self, to_filter: Any, filter_value: str) -> bool:
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
+
+        if not isinstance(filter_value, str):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
+                            f", but received a '{type(filter_value)}'.")
+
+        attr_value = getattr(to_filter, self.attr)
+        if not isinstance(attr_value, String):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
+                            f"'String', not a '{type(attr_value)}'.")
+
+        return attr_value.contains(filter_value)
+
+
+class ClientLike(Filter):
+
+    def passes(self, to_filter: Any, filter_value: str) -> bool:
+        if not hasattr(to_filter, "client"):
+            raise TypeError(f"The argument 'to_filter' must be of a type that has the attribute 'client'. Instead, it "
+                            f"is of type '{type(to_filter)}'.")
+        if not isinstance(to_filter.client, Client):
+            raise TypeError(f"The argument 'to_filter' must be a 'Client', not a '{type(to_filter)}'.")
+        if not isinstance(filter_value, str):
+            raise TypeError(f"The argument 'filter_value' must be a 'str', not a '{type(filter_value)}'.")
+
+        return to_filter.client.name.contains(filter_value)
+
+
+class TextEqual(Filter):
+
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
+    def passes(self, to_filter: Any, filter_value: str) -> bool:
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
+
+        if not isinstance(filter_value, str):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
+                            f", but received a '{type(filter_value)}'.")
+
+        attr_value = getattr(to_filter, self.attr)
+        if not isinstance(attr_value, String):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
+                            f"'String', not a '{type(attr_value)}'.")
+
+        return attr_value == filter_value
+
+
+class DateGreater(Filter):
+
+    def passes(self, to_filter: Any, filter_value: date) -> bool:
+        if not isinstance(filter_value, date):
+            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
+                            f"'{type(filter_value)}'.")
+        return to_filter >= filter_value
+
+
+class DateLesser(Filter):
+
+    def passes(self, to_filter: Any, filter_value: date) -> bool:
+        if not isinstance(filter_value, date):
+            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
+                            f"'{type(filter_value)}'.")
+        return to_filter <= filter_value
 
 
 @dataclass
@@ -188,6 +303,11 @@ class Client:
     def inscriptions(self) -> Iterable[Inscription]:
         return self._inscriptions.values()
 
+    def register_charge(self, activity: Activity, transaction: Transaction):
+        """Registers that the client was charged for the activity.
+        """
+        self._inscriptions[activity.id].register_charge(transaction)
+
 
 @dataclass
 class Transaction:
@@ -203,27 +323,23 @@ class Transaction:
 
 @dataclass
 class Inscription:
-    """Stores information about an activity inscription of a client.
+    """Stores information about a customer's inscription in an activity.
     """
+    when: date
     client: Client
     activity: Activity
-    transaction: Optional[Transaction] = None
+    transaction: Transaction | None = None
 
-    def first_pay_missing(self) -> bool:
-        return self.transaction is None
-
-    def pay_day_passed(self, today: date) -> bool:
+    def charge_day_passed(self, today: date) -> bool:
         if self.transaction is None:
-            return True
-        return pay_day_passed(self.transaction.when.as_primitive(), today)
+            # More than 30 days passed since the client signed up on the activity, so he should be charged.
+            return pay_day_passed(self.when, today)
+        return pay_day_passed(self.transaction.when, today)
 
-    def record_payment(self, payment: Transaction):
-        """Records the payment of the activity.
-
-        Raises:
-            ValueError if *payment.client* is different from *self.client*.
+    def register_charge(self, transaction: Transaction):
+        """Updates the inscription with the given *transaction*.
         """
-        if self.client != payment.client:
-            raise ValueError(f"The client '{payment.client.name}' is paying the activity '{self.activity.name}' for "
-                             f"the client '{self.client.name}'.")
-        self.transaction = payment
+        if self.client != transaction.client:
+            raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
+                             f"'{self.activity.name}' that should be charged to the client '{self.client.name}'.")
+        self.transaction = transaction

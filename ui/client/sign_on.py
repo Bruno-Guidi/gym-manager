@@ -1,4 +1,5 @@
 import itertools
+from datetime import date
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
@@ -24,7 +25,7 @@ class Controller:
 
     def sign_on(self):
         activity: Activity = self.combobox.currentData(Qt.UserRole)
-        self.activity_manager.sign_on(self.client, activity)
+        self.activity_manager.sign_on(date.today(), self.client, activity)
         QMessageBox.about(self.combobox.window(), "Éxito",
                           f"El cliente '{self.client.name}' fue registrado correctamente en la actividad '{activity.name}'.")
         self.combobox.window().close()

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
 from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.base import ONE_MONTH_TD
+from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox
@@ -15,7 +15,7 @@ class Controller:
 
     def __init__(
             self, accounting_system: AccountingSystem, transaction_table: QTableWidget, from_line: QDateEdit,
-            to_line: QDateEdit, search_box: SearchBox
+            to_line: QDateEdit, search_box: SearchBox, client: Client | None = None
     ) -> None:
         self.transaction_table = transaction_table
         self.from_line = from_line
@@ -25,16 +25,22 @@ class Controller:
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
 
-        self.load_transactions()
+        self.load_transactions(client=client)
 
-    def load_transactions(self):
+    def load_transactions(self, **kwargs):
         self.transaction_table.setRowCount(0)
         self.transaction_table.setRowCount(self.page_len)
 
-        transactions = self.accounting_system.transactions(self.current_page, self.page_len,
-                                                           from_date=self.from_line.date().toPyDate(),
-                                                           to_date=self.to_line.date().toPyDate(),
-                                                           **self.search_box.filters())
+        from_date_filter = DateGreater("from", display_name="Desde",
+                                       translate_fun=lambda trans, when: trans.when >= when)
+        to_date_filter = DateLesser("to", display_name="Hasta",
+                                    translate_fun=lambda trans, when: trans.when <= when)
+        transactions = self.accounting_system.transactions(
+            self.current_page, self.page_len,
+            from_date=(from_date_filter, self.from_line.date().toPyDate()),
+            to_date=(to_date_filter, self.to_line.date().toPyDate()),
+            **self.search_box.filters()
+        )
         for row, transaction in enumerate(transactions):
             self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
             self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
@@ -48,11 +54,11 @@ class Controller:
 
 class AccountingMainUI(QMainWindow):
 
-    def __init__(self, accounting_system: AccountingSystem) -> None:
+    def __init__(self, accounting_system: AccountingSystem, client: Client | None = None) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = Controller(accounting_system, self.transaction_table, self.from_line, self.to_line,
-                                     self.search_box)
+                                     self.search_box, client)
 
         self.search_btn.clicked.connect(self.controller.load_transactions)
 
@@ -74,7 +80,14 @@ class AccountingMainUI(QMainWindow):
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         self.search_box = SearchBox(
-            filters_names={"client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"},
+            filters=[ClientLike("client", display_name="Cliente",
+                                translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
+                     TextEqual("type", display_name="Tipo", attr="type",
+                               translate_fun=lambda trans, value: trans.type == value),
+                     TextEqual("method", display_name="Método", attr="method",
+                               translate_fun=lambda trans, value: trans.method == value),
+                     TextLike("responsible", display_name="Responsable", attr="responsible",
+                              translate_fun=lambda trans, value: trans.responsible.contains(value))],
             parent=self.widget
         )
         self.utils_layout.addWidget(self.search_box)
@@ -117,7 +130,8 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True,
-            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120, "Responsable": 175,
+            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120,
+                     "Responsable": 175,
                      "Descripción": 200}
         )
 

@@ -3,7 +3,7 @@ from typing import Type, Any
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox
 
-from gym_manager.core.base import Validatable, ValidationError, String
+from gym_manager.core.base import Validatable, ValidationError, String, Filter
 from ui.widget_config import fill_combobox, config_combobox, config_line
 
 
@@ -38,18 +38,18 @@ class Field(QLineEdit):
 
 
 class SearchBox(QWidget):
-    def __init__(self, filters_names: dict[str, str], parent: QWidget | None = None):
+    def __init__(self, filters: list[Filter], parent: QWidget | None = None):
         """
         Args:
-            filters_names: dict {k: v}, where k is the filter name and v is the str to display in the combobox.
+            filters: dict {k: v}, where k is the filter name and v is the str to display in the combobox.
         """
         super().__init__(parent)
 
         self._setup_ui()
 
-        self.filters_names = filters_names
-        self.filters_values = {f: "" for f in filters_names.keys()}
-        fill_combobox(self.filter_combobox, self.filters_names.keys(), display=lambda f: self.filters_names[f])
+        self._filters = filters
+        # self.filters_values = {f: "" for f in filters.keys()}
+        fill_combobox(self.filter_combobox, self._filters, display=lambda f: f.display_name)
 
     def _setup_ui(self):
         self.layout = QHBoxLayout(self)
@@ -62,13 +62,18 @@ class SearchBox(QWidget):
         self.layout.addWidget(self.search_field)
         config_line(self.search_field, place_holder="Búsqueda", font_size=16)
 
-    def filters(self) -> dict[str, str]:
-        """Returns a dict {k: v}, where k is the filter name and v is the filter value.
-        """
-        # Clear filters.
-        for f in self.filters_values.keys():
-            self.filters_values[f] = ""
-        # Then save the current value in the field that is going to be used to filter.
-        self.filters_values[self.filter_combobox.currentData(Qt.UserRole)] = self.search_field.text()
+    def clear(self):
+        pass
 
-        return self.filters_values
+    def filters(self) -> dict[str: tuple[Filter, str]]:
+        """Returns a dict {k: v}, where k is a Filter object and v is its value to filter.
+        """
+        selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
+        return {selected.name: (selected, self.search_field.text())}
+
+    def passes_filters(self, to_filter: Any) -> bool:
+        selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
+        return selected.passes(to_filter, self.search_field.text())
+
+    def set_filter(self, name: str, value: str):
+        pass

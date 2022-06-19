@@ -1,6 +1,6 @@
 import abc
 from datetime import date
-from typing import Iterable, Generator
+from typing import Generator
 
 from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Transaction
 
@@ -23,7 +23,7 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def remove(self, client: Client):
-        """Marks the given *client* as inactive.
+        """Marks the given *client* as inactive, and delete its inscriptions.
         """
         raise NotImplementedError
 
@@ -35,19 +35,18 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, cache: dict[int, Activity] | None = None, only_actives: bool = True, name_filter: str = "",
-            **kwargs
+            self, page: int, page_len: int = 20, activity_cache: dict[Number, Client] | None = None, **kwargs
     ) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
-            cache: cached activities.
-            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
-            name_filter: If given, filter clients that fulfill the condition 'name_filter like %client.name%'.
+            page: page to retrieve.
+            page_len: clients per page.
+            activity_cache: cached activities.
 
         Keyword Args:
-            page_number: number of page of the table to return.
-            items_per_page: number of items per page.
+            only_actives: allows filtering only active clients.
+            name: allows filtering clients by name.
         """
         raise NotImplementedError
 
@@ -104,6 +103,12 @@ class InscriptionRepo(abc.ABC):
     @abc.abstractmethod
     def remove(self, inscription: Inscription):
         """Removes the given *inscription* from the repository.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
+        """Registers in the repository that the client was charged for the activity.
         """
         raise NotImplementedError
 

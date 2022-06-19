@@ -6,7 +6,7 @@ from typing import Type, Generator
 from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField, \
     CompositeKey, prefetch
 
-from gym_manager.core import attr_constraints as constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo
 
@@ -22,7 +22,7 @@ def create_table(table: Type[Model], drop_before: bool = False):
 
 class ClientTable(Model):
     dni = IntegerField(primary_key=True)
-    name = CharField()
+    cli_name = CharField()
     admission = DateField()
     telephone = CharField()
     direction = CharField()
@@ -45,7 +45,8 @@ class SqliteClientRepo(ClientRepo):
         if not isinstance(dni, Number):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
-        return ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) is not None
+        raw_client = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
+        return raw_client is not None and raw_client.is_active
 
     def add(self, client: Client):
         """Adds the *client* to the repository.
@@ -53,15 +54,15 @@ class SqliteClientRepo(ClientRepo):
         if self.contains(client.dni):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
 
-        ClientTable.create(dni=client.dni.as_primitive(),
-                           name=client.name.as_primitive(),
-                           admission=client.admission,
-                           telephone=client.telephone.as_primitive(),
-                           direction=client.direction.as_primitive(),
-                           is_active=True)
+        ClientTable.replace(dni=client.dni.as_primitive(),
+                            cli_name=client.name.as_primitive(),
+                            admission=client.admission,
+                            telephone=client.telephone.as_primitive(),
+                            direction=client.direction.as_primitive(),
+                            is_active=True).execute()
 
     def remove(self, client: Client):
-        """Marks the given *client* as inactive.
+        """Marks the given *client* as inactive, and delete its inscriptions.
         """
         raw_client = ClientTable.get_by_id(client.dni.as_primitive())
         raw_client.is_active = False
@@ -73,7 +74,7 @@ class SqliteClientRepo(ClientRepo):
         """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
         """
         raw_client = ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive())
-        raw_client.name = client.name.as_primitive()
+        raw_client.cli_name = client.name.as_primitive()
         raw_client.admission = client.admission
         raw_client.telephone = client.telephone.as_primitive()
         raw_client.direction = client.direction.as_primitive()
@@ -84,66 +85,70 @@ class SqliteClientRepo(ClientRepo):
             return cache[raw_activity.id]
         else:
             new = Activity(raw_activity.id,
-                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
+                           String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
                            raw_activity.pay_once,
-                           String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
+                           String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
             cache[raw_activity.id] = new
             return new
 
     def all(
-            self, cache: dict[int, Activity] | None = None, only_actives: bool = True, **kwargs
+            self, page: int, page_len: int = 20, activity_cache: dict[Number, Client] | None = None, **kwargs
     ) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
-            cache: cached activities.
-            only_actives: If True, retrieve only the active clients. An active client is a client that wasn't removed.
+            page: page to retrieve.
+            page_len: clients per page.
+            activity_cache: cached activities.
 
         Keyword Args:
-            page_number: number of page of the table to return.
-            items_per_page: number of items per page.
-            name: If given, filter clients that fulfill the condition kwargs['name'] like %client.name%.
+            only_actives: allows filtering only active clients.
+            name: allows filtering clients by name.
         """
-        page_number, items_per_page = kwargs["page_number"], kwargs["items_per_page"]
+        activity_cache = {} if activity_cache is None else activity_cache
 
-        cache = {} if cache is None else cache
+        clients_q = ClientTable.select()
+        for filter_, value in kwargs.values():
+            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
 
-        clients_q = ClientTable.select().where(ClientTable.is_active)
-        if 'name' in kwargs and len(kwargs['name']) > 0:
-            clients_q = clients_q.where(ClientTable.name.contains(kwargs['name']))
-        clients_q.paginate(page_number, items_per_page)
+        clients_q.paginate(page, page_len)
 
         inscription_q = InscriptionTable.select()
         transactions_q = TransactionTable.select()
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
             client = Client(
-                Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
-                String(raw_client.name, max_len=constraints.CLIENT_NAME_CHARS),
-                date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
-                String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
-                       max_len=constraints.CLIENT_TEL_CHARS),
-                String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
-                       max_len=constraints.CLIENT_DIR_CHARS)
+                Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
+                String(raw_client.cli_name, max_len=consts.CLIENT_NAME_CHARS),
+                raw_client.admission,
+                String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
+                String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
             )
 
             for raw_inscription in raw_client.inscriptions:
-                activity = self._get_activity(raw_inscription.activity, cache)
+                activity = self._get_activity(raw_inscription.activity, activity_cache)
                 raw_transaction = raw_inscription.transaction
                 transaction = None
                 if raw_transaction is not None:
-                    transaction = Transaction(  # ToDo fix.
-                        raw_transaction.id, client, raw_transaction.when, Currency(raw_transaction.amount),
-                        raw_transaction.method, raw_transaction.responsible, raw_transaction.description)
-                client.sign_on(Inscription(client, activity, transaction))
+                    transaction = Transaction(
+                        raw_transaction.id,
+                        String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
+                        client,
+                        raw_transaction.when,
+                        Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
+                        String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),
+                        String(raw_transaction.responsible, max_len=consts.TRANSACTION_RESP_CHARS),
+                        String(raw_transaction.description, max_len=consts.TRANSACTION_DESCR_CHARS)
+                    )
+                client.sign_on(Inscription(raw_inscription.when, client, activity, transaction))
 
             yield client
 
 
 class ActivityTable(Model):
     id = IntegerField(primary_key=True)
-    name = CharField()
+    act_name = CharField()
     price = CharField()
     pay_once = BooleanField()
     description = TextField()
@@ -163,7 +168,7 @@ class SqliteActivityRepo(ActivityRepo):
         """Creates an activity with the given data, and returns it.
         """
         raw_activity = ActivityTable.create(
-            name=str(name), price=str(price), pay_once=pay_once, description=str(description)
+            act_name=name.as_primitive(), price=str(price), pay_once=pay_once, description=description.as_primitive()
         )
         return Activity(raw_activity.id, name, price, pay_once, description)
 
@@ -189,7 +194,7 @@ class SqliteActivityRepo(ActivityRepo):
         """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
         """
         raw_activity = ActivityTable.get_or_none(ActivityTable.id == activity.id)
-        raw_activity.name = activity.name.as_primitive()
+        raw_activity.act_name = activity.name.as_primitive()
         raw_activity.price = str(activity.price)
         raw_activity.pay_once = activity.pay_once
         raw_activity.description = activity.description.as_primitive()
@@ -198,10 +203,10 @@ class SqliteActivityRepo(ActivityRepo):
     def all(self) -> Generator[Activity, None, None]:
         for raw_activity in ActivityTable.select():
             yield Activity(raw_activity.id,
-                           String(raw_activity.name, max_len=constraints.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, max_currency=constraints.MAX_CURRENCY),
+                           String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
+                           Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
                            raw_activity.pay_once,
-                           String(raw_activity.description, optional=True, max_len=constraints.ACTIVITY_DESCR_CHARS))
+                           String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
 
     def inscriptions(self, activity: Activity) -> int:
         """Returns the number of clients registered in the given *activity*.
@@ -254,13 +259,11 @@ class SqliteTransactionRepo(TransactionRepo):
             return cache[raw_client.dni]
         else:
             new = Client(
-                Number(raw_client.dni, min_value=constraints.CLIENT_MIN_DNI, max_value=constraints.CLIENT_MAX_DNI),
-                String(raw_client.name, max_len=constraints.CLIENT_NAME_CHARS),
-                date(raw_client.admission.year, raw_client.admission.month, raw_client.admission.day),
-                String(raw_client.telephone, optional=constraints.CLIENT_TEL_OPTIONAL,
-                       max_len=constraints.CLIENT_TEL_CHARS),
-                String(raw_client.direction, optional=constraints.CLIENT_DIR_OPTIONAL,
-                       max_len=constraints.CLIENT_DIR_CHARS)
+                Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
+                String(raw_client.cli_name, max_len=consts.CLIENT_NAME_CHARS),
+                raw_client.admission,
+                String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
+                String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
             )
             cache[raw_client.dni] = new
             return new
@@ -279,31 +282,25 @@ class SqliteTransactionRepo(TransactionRepo):
             responsible: allows filtering by transaction responsible.
         """
         transactions_q = TransactionTable.select().join(ClientTable)
-        if 'client' in kwargs and len(kwargs['client']) > 0:
-            transactions_q = transactions_q.where(ClientTable.name.contains(kwargs['client']))
-        if 'type' in kwargs and len(kwargs['type']) > 0:
-            transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])
-        if 'from_date' in kwargs:
-            transactions_q = transactions_q.where(TransactionTable.when >= kwargs['from_date'])
-        if 'to_date' in kwargs:
-            transactions_q = transactions_q.where(TransactionTable.when <= kwargs['to_date'])
-        if 'method' in kwargs and len(kwargs['method']) > 0:
-            transactions_q = transactions_q.where(TransactionTable.method == kwargs['method'])
-        if 'responsible' in kwargs and len(kwargs['responsible']) > 0:
-            transactions_q = transactions_q.where(TransactionTable.responsible.contains(kwargs['responsible']))
+
+        for filter_, value in kwargs.values():
+            transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
         cache = {} if cache is None else cache
 
         for raw_transaction in transactions_q.paginate(page, page_len):
-            yield Transaction(raw_transaction.id, String(raw_transaction.type, max_len=50),
-                              self._get_client(raw_transaction.client, cache), raw_transaction.when,
-                              Currency(raw_transaction.amount, max_currency=constraints.MAX_CURRENCY),
-                              String(raw_transaction.method, max_len=50),
-                              String(raw_transaction.responsible, max_len=50),
-                              String(raw_transaction.description, max_len=50))
+            yield Transaction(raw_transaction.id,
+                              String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
+                              self._get_client(raw_transaction.client, cache),
+                              raw_transaction.when,
+                              Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
+                              String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),
+                              String(raw_transaction.responsible, max_len=consts.TRANSACTION_RESP_CHARS),
+                              String(raw_transaction.description, max_len=consts.TRANSACTION_DESCR_CHARS))
 
 
 class InscriptionTable(Model):
+    when = DateField()
     client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="inscriptions", on_delete="CASCADE")
     transaction = ForeignKeyField(TransactionTable, backref="inscription_transaction", null=True)
@@ -324,15 +321,25 @@ class SqliteInscriptionRepo(InscriptionRepo):
         """Adds the given *inscription* to the repository.
         """
         InscriptionTable.create(
+            when=inscription.when,
             client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
             activity=ActivityTable.get_by_id(inscription.activity.id),
-            transaction=None if inscription.transaction is None else TransactionTable.get_by_id(inscription.transaction.id)
+            transaction=None if inscription.transaction is None else TransactionTable.get_by_id(
+                inscription.transaction.id)
         )
 
     def remove(self, inscription: Inscription):
         """Removes the given *inscription* from the repository.
         """
         InscriptionTable.delete_by_id((inscription.activity.id, inscription.client.dni.as_primitive()))
+
+    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
+        """Registers in the repository that the client was charged for the activity.
+        """
+        raw_inscription = InscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
+        raw_transaction = TransactionTable.get_by_id(transaction.id)
+        raw_inscription.transaction = raw_transaction
+        raw_inscription.save()
 
     def all(self, client: Client) -> Generator[Inscription, None, None]:
         """Retrieves all inscriptions of the given *client*.

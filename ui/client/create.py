@@ -4,7 +4,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox, QDateEdit
 
-from gym_manager.core import attr_constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Number, Client
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit
@@ -72,7 +72,7 @@ class CreateUI(QDialog):
         self.name_layout.addWidget(self.name_lbl)
         config_lbl(self.name_lbl, "Nombre", font_size=16, width=120)
 
-        self.name_field = Field(validatable=String, max_len=attr_constraints.CLIENT_NAME_CHARS)
+        self.name_field = Field(validatable=String, max_len=consts.CLIENT_NAME_CHARS)
         self.name_layout.addWidget(self.name_field)
         config_line(self.name_field, place_holder="Nombre", font_size=16)
 
@@ -85,8 +85,7 @@ class CreateUI(QDialog):
         self.dni_layout.addWidget(self.dni_lbl)
         config_lbl(self.dni_lbl, "DNI", font_size=16, width=120)
 
-        self.dni_field = Field(Number, min_value=attr_constraints.CLIENT_MIN_DNI,
-                               max_value=attr_constraints.CLIENT_MAX_DNI)
+        self.dni_field = Field(Number, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
         self.dni_layout.addWidget(self.dni_field)
         config_line(self.dni_field, place_holder="DNI", font_size=16)
 
@@ -112,8 +111,7 @@ class CreateUI(QDialog):
         self.tel_layout.addWidget(self.tel_lbl)
         config_lbl(self.tel_lbl, "Teléfono", font_size=16, width=120)
 
-        self.tel_field = Field(validatable=String, optional=attr_constraints.CLIENT_TEL_OPTIONAL,
-                               max_len=attr_constraints.CLIENT_TEL_CHARS)
+        self.tel_field = Field(validatable=String, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
         self.tel_layout.addWidget(self.tel_field)
         config_line(self.tel_field, place_holder="Teléfono", font_size=16)
 
@@ -126,8 +124,7 @@ class CreateUI(QDialog):
         self.dir_layout.addWidget(self.dir_lbl)
         config_lbl(self.dir_lbl, "Dirección", font_size=16, width=120)
 
-        self.dir_field = Field(validatable=String, optional=attr_constraints.CLIENT_DIR_OPTIONAL,
-                               max_len=attr_constraints.CLIENT_DIR_CHARS)
+        self.dir_field = Field(validatable=String, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
         self.dir_layout.addWidget(self.dir_field)
         config_line(self.dir_field, place_holder="Dirección", font_size=16)
 

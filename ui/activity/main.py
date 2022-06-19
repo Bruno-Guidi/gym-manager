@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
+    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QMessageBox, \
     QTextEdit, QCheckBox
 
-from gym_manager.core import attr_constraints
+from gym_manager.core import constants as consts
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import String, Activity, Currency
+from gym_manager.core.base import String, Activity, Currency, TextLike
 from ui.activity.create import CreateUI
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_checkbox
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
 from ui.widgets import Field, valid_text_value, SearchBox
 
 
@@ -35,7 +35,7 @@ class ActivityRow(QWidget):
             self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.name_lbl, "Nombre", font_size=12, width=name_width)
 
-            self.name_field = Field(String, self.widget, max_len=attr_constraints.CLIENT_NAME_CHARS)
+            self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
             config_line(self.name_field, str(activity.name), width=name_width)
 
@@ -44,7 +44,7 @@ class ActivityRow(QWidget):
             self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
             config_lbl(self.price_lbl, "Precio", font_size=12, width=price_width)
 
-            self.price_field = Field(Currency, self.widget, max_currency=attr_constraints.MAX_CURRENCY)
+            self.price_field = Field(Currency, self.widget, max_currency=consts.MAX_CURRENCY)
             self.price_layout.addWidget(self.price_field)
             config_line(self.price_field, str(activity.price), width=price_width)
 
@@ -189,8 +189,7 @@ class ActivityRow(QWidget):
         self._set_hidden(self.is_hidden)  # Hide or show the widgets.
 
     def save_changes(self):
-        valid_descr, descr = valid_text_value(self.description_text, optional=True,
-                                              max_len=attr_constraints.ACTIVITY_DESCR_CHARS)
+        valid_descr, descr = valid_text_value(self.description_text, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
         if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
         else:
@@ -241,9 +240,12 @@ class Controller:
         self.pay_once_width = pay_once_width
 
         for activity in self.activity_manager.activities(**self.search_box.filters()):
-            self._add_activity(activity)
+            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
 
-    def _add_activity(self, activity: Activity):
+    def _add_activity(self, activity: Activity, check_filters: bool):
+        if check_filters and not self.search_box.passes_filters(activity):
+            return
+
         item = QListWidgetItem(self.activity_list)
         self.activity_list.addItem(item)
         row = ActivityRow(activity, self.activity_manager, item, self, self.name_width, self.price_width,
@@ -254,12 +256,12 @@ class Controller:
         self.add_ui = CreateUI(self.activity_manager)
         self.add_ui.exec_()
         if self.add_ui.controller.activity is not None:
-            self._add_activity(self.add_ui.controller.activity)
+            self._add_activity(self.add_ui.controller.activity, check_filters=True)
 
     def search(self):
         self.activity_list.clear()
         for activity in self.activity_manager.activities(**self.search_box.filters()):
-            self._add_activity(activity)
+            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
 
 
 class ActivityMainUI(QMainWindow):
@@ -290,7 +292,7 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox(filters_names={"name": "Nombre"}, parent=self.widget)
+        self.search_box = SearchBox([TextLike("name", display_name="Nombre", attr="name")], parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
 
         self.search_btn = QPushButton(self.widget)
