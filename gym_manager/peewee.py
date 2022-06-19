@@ -203,7 +203,7 @@ class SqliteActivityRepo(ActivityRepo):
     def all(self) -> Generator[Activity, None, None]:
         for raw_activity in ActivityTable.select():
             yield Activity(raw_activity.id,
-                           String(raw_activity.name, max_len=consts.ACTIVITY_NAME_CHARS),
+                           String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
                            Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
