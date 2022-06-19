@@ -10,6 +10,12 @@ class ClientRepo(abc.ABC):
     """
 
     @abc.abstractmethod
+    def get(self, dni: int | Number) -> Client:
+        """Returns the client with the given *dni*.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def contains(self, dni: Number) -> bool:
         """Returns True if there is a client with the given *dni*, False otherwise.
         """
@@ -131,6 +137,11 @@ class InscriptionRepo(abc.ABC):
 class TransactionRepo(abc.ABC):
     """Transaction repository interface.
     """
+
+    @abc.abstractmethod
+    def create_or_get_existent(self, id, type, client, when, amount, method, responsible, description):
+        raise NotImplementedError
+
     @abc.abstractmethod
     def create(
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,

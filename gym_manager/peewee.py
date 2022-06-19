@@ -36,9 +36,32 @@ class SqliteClientRepo(ClientRepo):
     """Clients repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self, activity_repo: ActivityRepo) -> None:
+    def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo) -> None:
         create_table(ClientTable)
         self.activity_repo = activity_repo
+        self.transaction_repo = transaction_repo
+        self.cache: dict[Number, Client] = {}
+
+    def get(self, dni: int | Number) -> Client:
+        """Returns the client with the given *dni*.
+        """
+        if not isinstance(dni, (Number, int)):
+            raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
+        if isinstance(dni, int):
+            dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+
+        if dni not in self.cache:
+            raw = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
+            if raw is None:
+                raise KeyError
+            self.cache[dni] = Client(
+                Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
+                String(raw.cli_name, max_len=consts.CLIENT_NAME_CHARS),
+                raw.admission,
+                String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
+                String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
+            )  # ToDo get inscriptions.
+        return self.cache[dni]
 
     def contains(self, dni: Number) -> bool:
         """Returns True if there is a client with the given *dni*, False otherwise.
@@ -108,18 +131,11 @@ class SqliteClientRepo(ClientRepo):
 
             for raw_inscription in raw_client.inscriptions:
                 activity = self.activity_repo.get(raw_inscription.activity_id)
-                raw_transaction = raw_inscription.transaction
-                transaction = None
-                if raw_transaction is not None:
-                    transaction = Transaction(
-                        raw_transaction.id,
-                        String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
-                        client,
-                        raw_transaction.when,
-                        Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
-                        String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),
-                        String(raw_transaction.responsible, max_len=consts.TRANSACTION_RESP_CHARS),
-                        String(raw_transaction.description, max_len=consts.TRANSACTION_DESCR_CHARS)
+                raw_trans, transaction = raw_inscription.transaction, None
+                if raw_trans is not None:
+                    transaction = self.transaction_repo.create_or_get_existent(
+                        raw_trans.id, raw_trans.type, client, raw_trans.when, raw_trans.amount, raw_trans.method,
+                        raw_trans.responsible, raw_trans.description
                     )
                 client.sign_on(Inscription(raw_inscription.when, client, activity, transaction))
 
@@ -233,6 +249,19 @@ class SqliteTransactionRepo(TransactionRepo):
 
     def __init__(self) -> None:
         create_table(TransactionTable)
+        self.cache: dict[int, Transaction] = {}
+
+    def create_or_get_existent(self, id, type, client, when, amount, method, responsible, description):
+        if id not in self.cache:
+            transaction = Transaction(id,
+                                      String(type, max_len=consts.TRANSACTION_TYPE_CHARS),
+                                      client,
+                                      when, Currency(amount, max_currency=consts.MAX_CURRENCY),
+                                      String(method, max_len=consts.TRANSACTION_METHOD_CHARS),
+                                      String(responsible, max_len=consts.TRANSACTION_RESP_CHARS),
+                                      String(description, max_len=consts.TRANSACTION_DESCR_CHARS))
+            self.cache[id] = transaction
+        return self.cache[id]
 
     def create(
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
