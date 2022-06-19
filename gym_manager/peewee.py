@@ -110,12 +110,12 @@ class SqliteClientRepo(ClientRepo):
     def update(self, client: Client):
         """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
         """
-        raw_client = ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive())
-        raw_client.cli_name = client.name.as_primitive()
-        raw_client.admission = client.admission
-        raw_client.telephone = client.telephone.as_primitive()
-        raw_client.direction = client.direction.as_primitive()
-        raw_client.save()
+        ClientTable.replace(dni=client.dni.as_primitive(),
+                            cli_name=client.name.as_primitive(),
+                            admission=client.admission,
+                            telephone=client.telephone.as_primitive(),
+                            direction=client.direction.as_primitive(),
+                            is_active=True).execute()
 
     def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
