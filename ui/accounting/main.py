@@ -31,10 +31,14 @@ class Controller:
         self.transaction_table.setRowCount(0)
         self.transaction_table.setRowCount(self.page_len)
 
-        transactions = self.accounting_system.transactions(self.current_page, self.page_len,
-                                                           # from_date=self.from_line.date().toPyDate(),
-                                                           # to_date=self.to_line.date().toPyDate(),
-                                                           **self.search_box.filters())
+        from_date_filter = DateGreater("from", display_name="Desde",
+                                       translate_fun=lambda trans, when: trans.when >= when)
+        transactions = self.accounting_system.transactions(
+            self.current_page, self.page_len,
+            from_date=(from_date_filter, self.from_line.date().toPyDate()),
+            # to_date=self.to_line.date().toPyDate(),
+            **self.search_box.filters()
+        )
         for row, transaction in enumerate(transactions):
             self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
             self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))

@@ -288,8 +288,6 @@ class SqliteTransactionRepo(TransactionRepo):
 
         if 'type' in kwargs and len(kwargs['type']) > 0:
             transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])
-        if 'from_date' in kwargs:
-            transactions_q = transactions_q.where(TransactionTable.when >= kwargs['from_date'])
         if 'to_date' in kwargs:
             transactions_q = transactions_q.where(TransactionTable.when <= kwargs['to_date'])
         if 'method' in kwargs and len(kwargs['method']) > 0:
