@@ -191,6 +191,7 @@ class SqliteActivityRepo(ActivityRepo):
     def update(self, activity: Activity):
         """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
         """
+        # ToDo. Use replace().execute()
         raw_activity = ActivityTable.get_or_none(ActivityTable.id == activity.id)
         raw_activity.act_name = activity.name.as_primitive()
         raw_activity.price = str(activity.price)
@@ -206,7 +207,7 @@ class SqliteActivityRepo(ActivityRepo):
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
 
-    def inscriptions(self, activity: Activity) -> int:
+    def inscriptions(self, activity: Activity) -> int:  # ToDo rename to n_inscriptions and update docstring.
         """Returns the number of clients registered in the given *activity*.
         """
         return InscriptionTable.select().where(InscriptionTable.activity == activity.id).count()
