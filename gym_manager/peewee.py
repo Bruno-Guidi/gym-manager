@@ -213,11 +213,15 @@ class SqliteActivityRepo(ActivityRepo):
 
     def all(self) -> Generator[Activity, None, None]:
         for raw_activity in ActivityTable.select():
-            yield Activity(raw_activity.id,
-                           String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
-                           raw_activity.pay_once,
-                           String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
+            if raw_activity.id not in self.cache:
+                self.cache[raw_activity.id] = Activity(
+                    raw_activity.id,
+                    String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
+                    Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
+                    raw_activity.pay_once,
+                    String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
+                )
+            yield self.cache[raw_activity.id]
 
     def inscriptions(self, activity: Activity) -> int:  # ToDo rename to n_inscriptions and update docstring.
         """Returns the number of clients registered in the given *activity*.
