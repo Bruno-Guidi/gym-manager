@@ -434,10 +434,10 @@ class Controller:
             self._add_client(client)
 
     def create_client(self):
-        self.add_ui = CreateUI(self.client_repo)
-        self.add_ui.exec_()
-        if self.add_ui.controller.client is not None:
-            self._add_client(self.add_ui.controller.client, set_to_current=True, check_limit=True)
+        self.create_ui = CreateUI(self.client_repo)
+        self.create_ui.exec_()
+        if self.create_ui.controller.client is not None:
+            self._add_client(self.create_ui.controller.client, set_to_current=True, check_limit=True)
 
 
 class ClientMainUI(QMainWindow):
