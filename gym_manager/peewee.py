@@ -286,9 +286,6 @@ class SqliteTransactionRepo(TransactionRepo):
         for filter_, value in kwargs.values():
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
-        if 'responsible' in kwargs and len(kwargs['responsible']) > 0:
-            transactions_q = transactions_q.where(TransactionTable.responsible.contains(kwargs['responsible']))
-
         cache = {} if cache is None else cache
 
         for raw_transaction in transactions_q.paginate(page, page_len):
