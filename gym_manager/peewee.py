@@ -42,6 +42,25 @@ class SqliteClientRepo(ClientRepo):
         self.transaction_repo = transaction_repo
         self.cache: dict[Number, Client] = {}
 
+    def from_raw(self, raw) -> Client:
+        client = Client(Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
+                        String(raw.cli_name, max_len=consts.CLIENT_NAME_CHARS),
+                        raw.admission,
+                        String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
+                        String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS))
+
+        for raw_inscription in raw.inscriptions:
+            activity = self.activity_repo.get(raw_inscription.activity_id)
+            raw_trans, transaction = raw_inscription.transaction, None
+            if raw_trans is not None:
+                transaction = self.transaction_repo.create_or_get_existent(
+                    raw_trans.id, raw_trans.type, client, raw_trans.when, raw_trans.amount, raw_trans.method,
+                    raw_trans.responsible, raw_trans.description
+                )
+            client.sign_on(Inscription(raw_inscription.when, client, activity, transaction))
+
+        return client
+
     def get(self, dni: int | Number) -> Client:
         """Returns the client with the given *dni*.
         """
@@ -49,18 +68,12 @@ class SqliteClientRepo(ClientRepo):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
             dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+        if not self.contains(dni):
+            raise KeyError(f"There is no client with the 'dni'='{str(dni)}'")
 
         if dni not in self.cache:
-            raw = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
-            if raw is None:
-                raise KeyError
-            self.cache[dni] = Client(
-                Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
-                String(raw.cli_name, max_len=consts.CLIENT_NAME_CHARS),
-                raw.admission,
-                String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
-                String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
-            )  # ToDo get inscriptions.
+            raw = ClientTable.get_by_id(dni.as_primitive()).join(InscriptionTable).join(TransactionTable)
+            self.cache[dni] = self.from_raw(raw)
         return self.cache[dni]
 
     def contains(self, dni: Number) -> bool:
@@ -119,24 +132,7 @@ class SqliteClientRepo(ClientRepo):
         inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
-            client = Client(
-                Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
-                String(raw_client.cli_name, max_len=consts.CLIENT_NAME_CHARS),
-                raw_client.admission,
-                String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
-                String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
-            )
-
-            for raw_inscription in raw_client.inscriptions:
-                activity = self.activity_repo.get(raw_inscription.activity_id)
-                raw_trans, transaction = raw_inscription.transaction, None
-                if raw_trans is not None:
-                    transaction = self.transaction_repo.create_or_get_existent(
-                        raw_trans.id, raw_trans.type, client, raw_trans.when, raw_trans.amount, raw_trans.method,
-                        raw_trans.responsible, raw_trans.description
-                    )
-                client.sign_on(Inscription(raw_inscription.when, client, activity, transaction))
-
+            client = self.from_raw(raw_client)
             self.cache[client.dni] = client
             yield client
 
