@@ -354,7 +354,8 @@ class SqliteInscriptionRepo(InscriptionRepo):
     def remove(self, inscription: Inscription):
         """Removes the given *inscription* from the repository.
         """
-        InscriptionTable.delete_by_id((inscription.activity.id, inscription.client.dni.as_primitive()))
+        InscriptionTable.delete().where((InscriptionTable.client_id == inscription.client.dni.as_primitive())
+                                        & (InscriptionTable.activity_id == inscription.activity.id)).execute()
 
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
         """Registers in the repository that the client was charged for the activity.
