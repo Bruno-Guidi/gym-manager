@@ -49,7 +49,7 @@ class SqliteClientRepo(ClientRepo):
                         String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
                         String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS))
 
-        for raw_inscription in raw.inscriptions:
+        for raw_inscription in raw.n_inscriptions:
             activity = self.activity_repo.get(raw_inscription.activity_id)
             raw_trans, transaction = raw_inscription.transaction, None
             if raw_trans is not None:
@@ -195,7 +195,7 @@ class SqliteActivityRepo(ActivityRepo):
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
         """
-        inscriptions = self.inscriptions(activity)
+        inscriptions = self.n_inscriptions(activity)
         if not cascade_removing and inscriptions > 0:
             raise Exception(f"The activity '{activity.name}' can not be removed because it has {inscriptions} "
                             f"registered clients and 'cascade_removing' was set to False.")
@@ -223,8 +223,8 @@ class SqliteActivityRepo(ActivityRepo):
                 )
             yield self.cache[raw_activity.id]
 
-    def inscriptions(self, activity: Activity) -> int:  # ToDo rename to n_inscriptions and update docstring.
-        """Returns the number of clients registered in the given *activity*.
+    def n_inscriptions(self, activity: Activity) -> int:
+        """Returns the number of clients that are signed up in the given *activity*.
         """
         return InscriptionTable.select().where(InscriptionTable.activity == activity.id).count()
 

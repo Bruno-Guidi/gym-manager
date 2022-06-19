@@ -33,7 +33,7 @@ class ActivityManager:
                 yield activity
 
     def inscriptions(self, activity: Activity) -> int:
-        return self.activity_repo.inscriptions(activity)
+        return self.activity_repo.n_inscriptions(activity)
 
     def load_inscriptions(self, client: Client):
         for inscription in self.inscription_repo.all(client):
