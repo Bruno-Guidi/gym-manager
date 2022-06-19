@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
 from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike
+from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox
@@ -33,10 +33,12 @@ class Controller:
 
         from_date_filter = DateGreater("from", display_name="Desde",
                                        translate_fun=lambda trans, when: trans.when >= when)
+        to_date_filter = DateLesser("to", display_name="Hasta",
+                                    translate_fun=lambda trans, when: trans.when <= when)
         transactions = self.accounting_system.transactions(
             self.current_page, self.page_len,
             from_date=(from_date_filter, self.from_line.date().toPyDate()),
-            # to_date=self.to_line.date().toPyDate(),
+            to_date=(to_date_filter, self.to_line.date().toPyDate()),
             **self.search_box.filters()
         )
         for row, transaction in enumerate(transactions):
