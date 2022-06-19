@@ -76,7 +76,7 @@ class AccountingMainUI(QMainWindow):
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         self.search_box = SearchBox(
-            filters_names={"client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"},
+            filters={"client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"},
             parent=self.widget
         )
         self.utils_layout.addWidget(self.search_box)

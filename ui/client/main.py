@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 from gym_manager.core import constants as consts
 from gym_manager.core.accounting import AccountingSystem
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import Client, String, Number, Inscription
+from gym_manager.core.base import Client, String, Number, Inscription, NameLike
 from gym_manager.core.persistence import ClientRepo
 from ui.accounting.charge import ChargeUI
 from ui.accounting.main import AccountingMainUI
@@ -439,6 +439,10 @@ class Controller:
             self.add_client(client)
 
     def create_client(self):
+        # Clears the search box before creating, so i don't need to check if the new client passes the filter or not.
+        self.search_box.clear()
+        self.load_clients()
+
         self.create_ui = CreateUI(self.client_repo)
         self.create_ui.exec_()
         if self.create_ui.controller.client is not None:
@@ -476,7 +480,9 @@ class ClientMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox(filters_names={"name": "Nombre"}, parent=self.widget)
+        self.search_box = SearchBox(filters=[NameLike("name", display_name="Nombre",
+                                                      translate_fun=lambda cli, name: cli.name.contains(name))],
+                                    parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
 
         self.search_btn = QPushButton(self.widget)

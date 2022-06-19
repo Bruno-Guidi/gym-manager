@@ -4,7 +4,7 @@ import abc
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable, Optional, Callable
 
 ONE_MONTH_TD = timedelta(days=30)
 
@@ -153,13 +153,40 @@ class ActivityFilter(abc.ABC):
         raise NotImplementedError
 
 
-class NameFilter(ActivityFilter):
+class OldNameFilter(ActivityFilter):
 
     def passes_filter(self, activity: Activity) -> bool:
         if not isinstance(self.filter_value, str):
             raise TypeError(f"NameFilter activity filter expects a 'str', but received a '{type(self.filter_value)}'")
 
         return self.filter_value in activity.name.as_primitive()
+
+
+class Filter(abc.ABC):
+
+    def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool]) -> None:
+        self.name = name
+        self.display_name = display_name
+        self.translate_fun = translate_fun
+
+    def __eq__(self, o: Filter) -> bool:
+        return self.name == o.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    @abc.abstractmethod
+    def passes(self, to_filter: Any, filter_value: Any) -> bool:
+        raise NotImplementedError
+
+    def passes_in_repo(self, to_filter: Any, filter_value: Any) -> bool:
+        return self.translate_fun(to_filter, filter_value)
+
+
+class NameLike(Filter):
+
+    def passes(self, to_filter: Any, filter_value: Any) -> bool:
+        return filter_value in to_filter.name
 
 
 @dataclass

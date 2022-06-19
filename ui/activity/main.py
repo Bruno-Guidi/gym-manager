@@ -250,6 +250,8 @@ class Controller:
         self.activity_list.setItemWidget(item, row)
 
     def create_activity(self):
+        # Clears the search box before creating, so i don't need to check if the new activity passes the filter or not.
+        self.search_box.clear()
         self.add_ui = CreateUI(self.activity_manager)
         self.add_ui.exec_()
         if self.add_ui.controller.activity is not None:
@@ -289,7 +291,7 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox(filters_names={"name": "Nombre"}, parent=self.widget)
+        self.search_box = SearchBox(filters={"name": "Nombre"}, parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
 
         self.search_btn = QPushButton(self.widget)

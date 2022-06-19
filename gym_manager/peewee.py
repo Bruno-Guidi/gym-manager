@@ -109,10 +109,9 @@ class SqliteClientRepo(ClientRepo):
         activity_cache = {} if activity_cache is None else activity_cache
 
         clients_q = ClientTable.select()
-        if 'actives_only' not in kwargs or kwargs['actives_only']:
-            clients_q = clients_q.where(ClientTable.is_active)
-        if 'name' in kwargs and len(kwargs['name']) > 0:
-            clients_q = clients_q.where(ClientTable.name.contains(kwargs['name']))
+        for filter_name, (filter_, value) in kwargs.items():
+            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+
         clients_q.paginate(page, page_len)
 
         inscription_q = InscriptionTable.select()
