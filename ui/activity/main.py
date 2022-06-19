@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QComboBox, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, \
+    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QMessageBox, \
     QTextEdit, QCheckBox
 
 from gym_manager.core import constants as consts
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import String, Activity, Currency, TextLike, NameLike
+from gym_manager.core.base import String, Activity, Currency, TextLike
 from ui.activity.create import CreateUI
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_checkbox
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
 from ui.widgets import Field, valid_text_value, SearchBox
 
 
@@ -292,7 +292,7 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox([NameLike("name", display_name="Nombre")], parent=self.widget)
+        self.search_box = SearchBox([TextLike("name", display_name="Nombre", attr="name")], parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
 
         self.search_btn = QPushButton(self.widget)
