@@ -29,7 +29,7 @@ class ActivityManager:
         """
         # ToDo cache.
         for activity in self.activity_repo.all():
-            if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
+            if all([filter_.passes(activity.name, value) for filter_, value in active_filters.values()]):
                 yield activity
 
     def inscriptions(self, activity: Activity) -> int:
