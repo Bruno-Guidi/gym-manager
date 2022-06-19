@@ -213,6 +213,20 @@ class NameLike(Filter):
         return to_filter.name.contains(filter_value)
 
 
+class ClientLike(Filter):
+
+    def passes(self, to_filter: Any, filter_value: str) -> bool:
+        if not hasattr(to_filter, "client"):
+            raise TypeError(f"The argument 'to_filter' must be of a type that has the attribute 'client'. Instead, it "
+                            f"is of type '{type(to_filter)}'.")
+        if not isinstance(to_filter.client, Client):
+            raise TypeError(f"The argument 'to_filter' must be a 'Client', not a '{type(to_filter)}'.")
+        if not isinstance(filter_value, str):
+            raise TypeError(f"The argument 'filter_value' must be a 'str', not a '{type(filter_value)}'.")
+
+        return to_filter.client.name.contains(filter_value)
+
+
 class TextEqual:
     pass
 

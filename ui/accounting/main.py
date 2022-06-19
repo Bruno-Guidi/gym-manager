@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
 from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.base import ONE_MONTH_TD, Client, TextLike
+from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox
@@ -74,8 +74,8 @@ class AccountingMainUI(QMainWindow):
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         self.search_box = SearchBox(
-            filters=[TextLike("client", display_name="Cliente",
-                              translate_fun=lambda name, value: name.contains(value))
+            filters=[ClientLike("client", display_name="Cliente",
+                                translate_fun=lambda trans, value: trans.client.cli_name.contains(value))
                      ],
             # filters=["client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"],
             parent=self.widget
