@@ -23,7 +23,7 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def remove(self, client: Client):
-        """Marks the given *client* as inactive.
+        """Marks the given *client* as inactive, and delete its inscriptions.
         """
         raise NotImplementedError
 

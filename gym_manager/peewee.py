@@ -45,7 +45,8 @@ class SqliteClientRepo(ClientRepo):
         if not isinstance(dni, Number):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
-        return ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) is not None
+        raw_client = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
+        return raw_client is None or raw_client.is_active
 
     def add(self, client: Client):
         """Adds the *client* to the repository.
@@ -53,15 +54,15 @@ class SqliteClientRepo(ClientRepo):
         if self.contains(client.dni):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
 
-        ClientTable.create(dni=client.dni.as_primitive(),
-                           name=client.name.as_primitive(),
-                           admission=client.admission,
-                           telephone=client.telephone.as_primitive(),
-                           direction=client.direction.as_primitive(),
-                           is_active=True)
+        ClientTable.replace(dni=client.dni.as_primitive(),
+                            name=client.name.as_primitive(),
+                            admission=client.admission,
+                            telephone=client.telephone.as_primitive(),
+                            direction=client.direction.as_primitive(),
+                            is_active=True).execute()
 
     def remove(self, client: Client):
-        """Marks the given *client* as inactive.
+        """Marks the given *client* as inactive, and delete its inscriptions.
         """
         raw_client = ClientTable.get_by_id(client.dni.as_primitive())
         raw_client.is_active = False
