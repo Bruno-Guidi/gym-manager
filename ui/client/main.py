@@ -335,9 +335,9 @@ class ClientRow(QWidget):
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
             # ToDo. Move the cache to ActivityManager.
-            clients = [client for client in self.client_repo.all(cache=None, page_number=2, items_per_page=1)]
-            if len(clients) > 0:
-                self.main_ui_controller.add_client(clients[0])
+            for client in self.client_repo.all(cache=None, page_number=self.main_ui_controller.current_page + 1,
+                                               items_per_page=self.main_ui_controller.items_per_page):
+                self.main_ui_controller.add_client(client)
 
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
