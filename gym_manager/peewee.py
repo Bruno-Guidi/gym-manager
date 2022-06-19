@@ -163,6 +163,24 @@ class SqliteActivityRepo(ActivityRepo):
 
     def __init__(self) -> None:
         create_table(ActivityTable)
+        self.cache: dict[int, Activity] = {}
+
+    def get(self, id: int) -> Activity:
+        """Retrieves the activity with the given *id* in the repository, if it exists.
+
+        Raises:
+            KeyError if there is no activity with the given *id*.
+        """
+        if id not in self.cache:
+            raw = ActivityTable.get_or_none(ActivityTable.id == id)
+            if raw is None:
+                raise KeyError(f"There is no activity with the id '{id}'")
+            self.cache[id] = Activity(raw.id,
+                                      String(raw.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
+                                      Currency(raw.price, max_currency=consts.MAX_CURRENCY),
+                                      raw.pay_once,
+                                      String(raw.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
+        return self.cache[id]
 
     def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
         """Creates an activity with the given data, and returns it.

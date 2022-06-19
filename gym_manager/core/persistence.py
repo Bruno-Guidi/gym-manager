@@ -54,6 +54,16 @@ class ClientRepo(abc.ABC):
 class ActivityRepo(abc.ABC):
     """Activities repository interface.
     """
+
+    @abc.abstractmethod
+    def get(self, id: int) -> Activity:
+        """Retrieves the activity with the given *id* in the repository, if it exists.
+
+        Raises:
+            KeyError if there is no activity with the given *id*.
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
         """Creates an activity with the given data, and returns it.
