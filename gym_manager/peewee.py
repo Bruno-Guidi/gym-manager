@@ -46,7 +46,7 @@ class SqliteClientRepo(ClientRepo):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
         raw_client = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
-        return raw_client is None or raw_client.is_active
+        return raw_client is not None and raw_client.is_active
 
     def add(self, client: Client):
         """Adds the *client* to the repository.
