@@ -114,11 +114,9 @@ class SqliteClientRepo(ClientRepo):
         clients_q = ClientTable.select()
         for filter_, value in kwargs.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
-
         clients_q.paginate(page, page_len)
 
-        inscription_q = InscriptionTable.select()
-        transactions_q = TransactionTable.select()
+        inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
             client = Client(
@@ -139,6 +137,7 @@ class SqliteClientRepo(ClientRepo):
                     )
                 client.sign_on(Inscription(raw_inscription.when, client, activity, transaction))
 
+            self.cache[client.dni] = client
             yield client
 
 
