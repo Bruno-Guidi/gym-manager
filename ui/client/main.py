@@ -13,6 +13,7 @@ from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import Client, String, Number, Inscription
 from gym_manager.core.persistence import ClientRepo
 from ui.accounting.charge import ChargeUI
+from ui.accounting.main import AccountingMainUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
@@ -244,6 +245,7 @@ class ClientRow(QWidget):
         self.sign_on_btn.clicked.connect(self.sign_on)
         self.unsubscribe_btn.clicked.connect(self.unsubscribe)
         self.charge_activity_btn.clicked.connect(self.charge)
+        self.transactions_btn.clicked.connect(self.transactions)
 
     def _set_hidden(self, hidden: bool):
         # Hides widgets.
@@ -379,6 +381,11 @@ class ClientRow(QWidget):
 
             expired = "Si" if inscription.charge_day_passed(date.today()) else "No"
             self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
+
+    def transactions(self):
+        self.accounting_main_ui = AccountingMainUI(self.accounting_system, self.client)
+        self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.accounting_main_ui.show()
 
 
 class Controller:

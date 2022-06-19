@@ -72,3 +72,7 @@ class SearchBox(QWidget):
         self.filters_values[self.filter_combobox.currentData(Qt.UserRole)] = self.search_field.text()
 
         return self.filters_values
+
+    def set_filter(self, name: str, value: str):
+        self.search_field.setText(value)
+        self.filters_values[name] = value

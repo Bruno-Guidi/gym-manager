@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
 from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.base import ONE_MONTH_TD
+from gym_manager.core.base import ONE_MONTH_TD, Client
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox
@@ -15,7 +15,7 @@ class Controller:
 
     def __init__(
             self, accounting_system: AccountingSystem, transaction_table: QTableWidget, from_line: QDateEdit,
-            to_line: QDateEdit, search_box: SearchBox
+            to_line: QDateEdit, search_box: SearchBox, client: Client | None = None
     ) -> None:
         self.transaction_table = transaction_table
         self.from_line = from_line
@@ -25,12 +25,14 @@ class Controller:
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
 
-        self.load_transactions()
+        self.load_transactions(client=client)
 
-    def load_transactions(self):
+    def load_transactions(self, **kwargs):
         self.transaction_table.setRowCount(0)
         self.transaction_table.setRowCount(self.page_len)
 
+        if 'client' in kwargs:
+            self.search_box.set_filter("name", kwargs['client'].name.as_primitive())
         transactions = self.accounting_system.transactions(self.current_page, self.page_len,
                                                            from_date=self.from_line.date().toPyDate(),
                                                            to_date=self.to_line.date().toPyDate(),
@@ -48,11 +50,11 @@ class Controller:
 
 class AccountingMainUI(QMainWindow):
 
-    def __init__(self, accounting_system: AccountingSystem) -> None:
+    def __init__(self, accounting_system: AccountingSystem, client: Client | None = None) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = Controller(accounting_system, self.transaction_table, self.from_line, self.to_line,
-                                     self.search_box)
+                                     self.search_box, client)
 
         self.search_btn.clicked.connect(self.controller.load_transactions)
 
