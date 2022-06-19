@@ -240,6 +240,15 @@ class DateGreater(Filter):
         return to_filter >= filter_value
 
 
+class DateLesser(Filter):
+
+    def passes(self, to_filter: Any, filter_value: date) -> bool:
+        if not isinstance(filter_value, date):
+            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
+                            f"'{type(filter_value)}'.")
+        return to_filter <= filter_value
+
+
 @dataclass
 class Client:
     dni: Number
