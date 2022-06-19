@@ -63,23 +63,17 @@ class SearchBox(QWidget):
         config_line(self.search_field, place_holder="Búsqueda", font_size=16)
 
     def clear(self):
-        self.search_field.clear()
-        for f in self.filters_values.keys():
-            self.filters_values[f] = ""
+        pass
 
     def filters(self) -> dict[str: tuple[Filter, str]]:
         """Returns a dict {k: v}, where k is a Filter object and v is its value to filter.
         """
         selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
         return {selected.name: (selected, self.search_field.text())}
-        # Clear filters.
-        # for f in self.filters_values.keys():
-        #     self.filters_values[f] = ""
-        # Then save the current value in the field that is going to be used to filter.
-        # self.filters_values[self.filter_combobox.currentData(Qt.UserRole)] = self.search_field.text()
-        #
-        # return self.filters_values
+
+    def passes_filters(self, to_filter: Any) -> bool:
+        selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
+        return selected.passes(to_filter, self.search_field.text())
 
     def set_filter(self, name: str, value: str):
-        self.search_field.setText(value)
-        self.filters_values[name] = value
+        pass

@@ -415,7 +415,12 @@ class Controller:
 
         self.load_clients()
 
-    def add_client(self, client: Client, set_to_current: bool = False, check_limit: bool = False):
+    def add_client(
+            self, client: Client, check_filters: bool, set_to_current: bool = False, check_limit: bool = False
+    ):
+        if check_filters and not self.search_box.passes_filters(client):
+            return
+
         if check_limit and len(self.client_list) == self.items_per_page:
             self.client_list.takeItem(len(self.client_list) - 1)
 
@@ -436,17 +441,13 @@ class Controller:
         clients = self.client_repo.all(self.current_page, self.items_per_page, activity_cache,
                                        **self.search_box.filters())
         for client in clients:
-            self.add_client(client)
+            self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     def create_client(self):
-        # Clears the search box before creating, so i don't need to check if the new client passes the filter or not.
-        self.search_box.clear()
-        self.load_clients()
-
         self.create_ui = CreateUI(self.client_repo)
         self.create_ui.exec_()
         if self.create_ui.controller.client is not None:
-            self.add_client(self.create_ui.controller.client, set_to_current=True, check_limit=True)
+            self.add_client(self.create_ui.controller.client, check_filters=True, set_to_current=True, check_limit=True)
 
 
 class ClientMainUI(QMainWindow):
