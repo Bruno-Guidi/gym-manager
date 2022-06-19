@@ -282,8 +282,10 @@ class SqliteTransactionRepo(TransactionRepo):
             responsible: allows filtering by transaction responsible.
         """
         transactions_q = TransactionTable.select().join(ClientTable)
-        if 'client' in kwargs and len(kwargs['client']) > 0:
-            transactions_q = transactions_q.where(ClientTable.name.contains(kwargs['client']))
+
+        for filter_, value in kwargs.values():
+            transactions_q = transactions_q.where(filter_.passes_in_repo(ClientTable.name, value))
+
         if 'type' in kwargs and len(kwargs['type']) > 0:
             transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])
         if 'from_date' in kwargs:

@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
 from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.base import ONE_MONTH_TD, Client
+from gym_manager.core.base import ONE_MONTH_TD, Client, TextLike
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox
@@ -31,11 +31,9 @@ class Controller:
         self.transaction_table.setRowCount(0)
         self.transaction_table.setRowCount(self.page_len)
 
-        if 'client' in kwargs:
-            self.search_box.set_filter("name", kwargs['client'].name.as_primitive())
         transactions = self.accounting_system.transactions(self.current_page, self.page_len,
-                                                           from_date=self.from_line.date().toPyDate(),
-                                                           to_date=self.to_line.date().toPyDate(),
+                                                           # from_date=self.from_line.date().toPyDate(),
+                                                           # to_date=self.to_line.date().toPyDate(),
                                                            **self.search_box.filters())
         for row, transaction in enumerate(transactions):
             self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
@@ -76,7 +74,10 @@ class AccountingMainUI(QMainWindow):
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         self.search_box = SearchBox(
-            filters={"client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"},
+            filters=[TextLike("client", display_name="Cliente",
+                              translate_fun=lambda name, value: name.contains(value))
+                     ],
+            # filters=["client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"],
             parent=self.widget
         )
         self.utils_layout.addWidget(self.search_box)
