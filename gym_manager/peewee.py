@@ -131,10 +131,17 @@ class SqliteClientRepo(ClientRepo):
                 raw_transaction = raw_inscription.transaction
                 transaction = None
                 if raw_transaction is not None:
-                    transaction = Transaction(  # ToDo fix.
-                        raw_transaction.id, client, raw_transaction.when, Currency(raw_transaction.amount),
-                        raw_transaction.method, raw_transaction.responsible, raw_transaction.description)
-                client.sign_on(Inscription(client, activity, transaction))
+                    transaction = Transaction(
+                        raw_transaction.id,
+                        String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
+                        client,
+                        raw_transaction.when,
+                        Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
+                        String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),
+                        String(raw_transaction.responsible, max_len=consts.TRANSACTION_RESP_CHARS),
+                        String(raw_transaction.description, max_len=consts.TRANSACTION_DESCR_CHARS)
+                    )
+                client.sign_on(Inscription(raw_inscription.when, client, activity, transaction))
 
             yield client
 
@@ -302,6 +309,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
 
 class InscriptionTable(Model):
+    when = DateField()
     client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="inscriptions", on_delete="CASCADE")
     transaction = ForeignKeyField(TransactionTable, backref="inscription_transaction", null=True)
@@ -322,9 +330,11 @@ class SqliteInscriptionRepo(InscriptionRepo):
         """Adds the given *inscription* to the repository.
         """
         InscriptionTable.create(
+            when=inscription.when,
             client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
             activity=ActivityTable.get_by_id(inscription.activity.id),
-            transaction=None if inscription.transaction is None else TransactionTable.get_by_id(inscription.transaction.id)
+            transaction=None if inscription.transaction is None else TransactionTable.get_by_id(
+                inscription.transaction.id)
         )
 
     def remove(self, inscription: Inscription):
