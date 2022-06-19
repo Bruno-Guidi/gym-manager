@@ -433,7 +433,7 @@ class Controller:
                                            items_per_page=self.items_per_page, **self.search_box.filters()):
             self._add_client(client)
 
-    def add_client(self):
+    def create_client(self):
         self.add_ui = CreateUI(self.client_repo)
         self.add_ui.exec_()
         if self.add_ui.controller.client is not None:
@@ -452,7 +452,7 @@ class ClientMainUI(QMainWindow):
             client_repo, activity_manager, accounting_system, self.client_list, self.search_box,
             name_width, dni_width, admission_width, tel_width, dir_width)
 
-        self.create_client_btn.clicked.connect(self.controller.add_client)
+        self.create_client_btn.clicked.connect(self.controller.create_client)
         self.search_btn.clicked.connect(self.controller.load_clients)
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
