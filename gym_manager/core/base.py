@@ -215,9 +215,6 @@ class Inscription:
     activity: Activity
     transaction: Transaction | None = None
 
-    def __post_init__(self):
-        print(type(self.when))
-
     def charge_day_passed(self, today: date) -> bool:
         if self.transaction is None:
             # More than 30 days passed since the client signed up on the activity, so he should be charged.
