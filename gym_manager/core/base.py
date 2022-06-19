@@ -167,7 +167,7 @@ class OldNameFilter(ActivityFilter):
 
 class Filter(abc.ABC):
 
-    def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool]) -> None:
+    def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool] | None = None) -> None:
         self.name = name
         self.display_name = display_name
         self.translate_fun = translate_fun
@@ -183,6 +183,8 @@ class Filter(abc.ABC):
         raise NotImplementedError
 
     def passes_in_repo(self, to_filter: Any, filter_value: Any) -> bool:
+        if self.translate_fun is None:
+            raise AttributeError(f"The filter '{self.name}' of type '{type(self)}' does not have a 'transalte_fun'.")
         return self.translate_fun(to_filter, filter_value)
 
 
