@@ -286,8 +286,6 @@ class SqliteTransactionRepo(TransactionRepo):
         for filter_, value in kwargs.values():
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
-        if 'type' in kwargs and len(kwargs['type']) > 0:
-            transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])
         if 'method' in kwargs and len(kwargs['method']) > 0:
             transactions_q = transactions_q.where(TransactionTable.method == kwargs['method'])
         if 'responsible' in kwargs and len(kwargs['responsible']) > 0:
