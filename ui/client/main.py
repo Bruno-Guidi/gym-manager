@@ -337,7 +337,7 @@ class ClientRow(QWidget):
             # ToDo. Move the cache to ActivityManager.
             clients = [client for client in self.client_repo.all(cache=None, page_number=2, items_per_page=1)]
             if len(clients) > 0:
-                self.main_ui_controller._add_client(clients[0])
+                self.main_ui_controller.add_client(clients[0])
 
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
@@ -411,7 +411,7 @@ class Controller:
 
         self.load_clients()
 
-    def _add_client(self, client: Client, set_to_current: bool = False, check_limit: bool = False):
+    def add_client(self, client: Client, set_to_current: bool = False, check_limit: bool = False):
         if check_limit and len(self.client_list) == self.items_per_page:
             self.client_list.takeItem(len(self.client_list) - 1)
 
@@ -431,13 +431,13 @@ class Controller:
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
         for client in self.client_repo.all(activity_cache, page_number=self.current_page,
                                            items_per_page=self.items_per_page, **self.search_box.filters()):
-            self._add_client(client)
+            self.add_client(client)
 
     def create_client(self):
         self.create_ui = CreateUI(self.client_repo)
         self.create_ui.exec_()
         if self.create_ui.controller.client is not None:
-            self._add_client(self.create_ui.controller.client, set_to_current=True, check_limit=True)
+            self.add_client(self.create_ui.controller.client, set_to_current=True, check_limit=True)
 
 
 class ClientMainUI(QMainWindow):
