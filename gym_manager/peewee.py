@@ -74,7 +74,7 @@ class SqliteClientRepo(ClientRepo):
         """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
         """
         raw_client = ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive())
-        raw_client.name = client.name.as_primitive()
+        raw_client.cli_name = client.name.as_primitive()
         raw_client.admission = client.admission
         raw_client.telephone = client.telephone.as_primitive()
         raw_client.direction = client.direction.as_primitive()
@@ -85,7 +85,7 @@ class SqliteClientRepo(ClientRepo):
             return cache[raw_activity.id]
         else:
             new = Activity(raw_activity.id,
-                           String(raw_activity.name, max_len=consts.ACTIVITY_NAME_CHARS),
+                           String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
                            Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
                            raw_activity.pay_once,
                            String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
@@ -148,7 +148,7 @@ class SqliteClientRepo(ClientRepo):
 
 class ActivityTable(Model):
     id = IntegerField(primary_key=True)
-    name = CharField()
+    act_name = CharField()
     price = CharField()
     pay_once = BooleanField()
     description = TextField()
@@ -168,7 +168,7 @@ class SqliteActivityRepo(ActivityRepo):
         """Creates an activity with the given data, and returns it.
         """
         raw_activity = ActivityTable.create(
-            name=str(name), price=str(price), pay_once=pay_once, description=str(description)
+            act_name=name.as_primitive(), price=str(price), pay_once=pay_once, description=description.as_primitive()
         )
         return Activity(raw_activity.id, name, price, pay_once, description)
 
@@ -194,7 +194,7 @@ class SqliteActivityRepo(ActivityRepo):
         """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
         """
         raw_activity = ActivityTable.get_or_none(ActivityTable.id == activity.id)
-        raw_activity.name = activity.name.as_primitive()
+        raw_activity.act_name = activity.name.as_primitive()
         raw_activity.price = str(activity.price)
         raw_activity.pay_once = activity.pay_once
         raw_activity.description = activity.description.as_primitive()
