@@ -22,7 +22,7 @@ def create_table(table: Type[Model], drop_before: bool = False):
 
 class ClientTable(Model):
     dni = IntegerField(primary_key=True)
-    name = CharField()
+    cli_name = CharField()
     admission = DateField()
     telephone = CharField()
     direction = CharField()
@@ -55,7 +55,7 @@ class SqliteClientRepo(ClientRepo):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
 
         ClientTable.replace(dni=client.dni.as_primitive(),
-                            name=client.name.as_primitive(),
+                            cli_name=client.name.as_primitive(),
                             admission=client.admission,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
@@ -110,7 +110,7 @@ class SqliteClientRepo(ClientRepo):
 
         clients_q = ClientTable.select()
         for filter_, value in kwargs.values():
-            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable.name, value))
+            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
 
         clients_q.paginate(page, page_len)
 
@@ -120,7 +120,7 @@ class SqliteClientRepo(ClientRepo):
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
             client = Client(
                 Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
-                String(raw_client.name, max_len=consts.CLIENT_NAME_CHARS),
+                String(raw_client.cli_name, max_len=consts.CLIENT_NAME_CHARS),
                 raw_client.admission,
                 String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
                 String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
@@ -284,7 +284,7 @@ class SqliteTransactionRepo(TransactionRepo):
         transactions_q = TransactionTable.select().join(ClientTable)
 
         for filter_, value in kwargs.values():
-            transactions_q = transactions_q.where(filter_.passes_in_repo(ClientTable.name, value))
+            transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
         if 'type' in kwargs and len(kwargs['type']) > 0:
             transactions_q = transactions_q.where(TransactionTable.type == kwargs['type'])

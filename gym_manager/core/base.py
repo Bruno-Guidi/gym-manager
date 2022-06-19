@@ -199,6 +199,33 @@ class TextLike(Filter):
         return to_filter.contains(filter_value)
 
 
+class NameLike(Filter):
+
+    def passes(self, to_filter: Any, filter_value: Any) -> bool:
+        if not hasattr(to_filter, "name"):
+            raise TypeError(f"The argument 'to_filter' must be of a type that has the attribute 'name'. Instead, it is "
+                            f"of type '{type(to_filter)}'.")
+        if not isinstance(to_filter.name, String):
+            raise TypeError(f"The argument 'to_filter' must be a 'String', not a '{type(to_filter)}'.")
+        if not isinstance(filter_value, str):
+            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'str', but received a "
+                            f"'{type(filter_value)}'.")
+        return to_filter.name.contains(filter_value)
+
+
+class TextEqual:
+    pass
+
+
+class DateGreater(Filter):
+
+    def passes(self, to_filter: Any, filter_value: date) -> bool:
+        if not isinstance(filter_value, date):
+            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
+                            f"'{type(filter_value)}'.")
+        return to_filter >= filter_value
+
+
 @dataclass
 class Client:
     dni: Number
