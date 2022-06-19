@@ -101,11 +101,14 @@ class SqliteClientRepo(ClientRepo):
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its inscriptions.
         """
-        raw_client = ClientTable.get_by_id(client.dni.as_primitive())
-        raw_client.is_active = False
-        raw_client.save()
-
-        InscriptionTable.delete().where(client == client.dni.as_primitive())
+        ClientTable.replace(dni=client.dni.as_primitive(),
+                            cli_name=client.name.as_primitive(),
+                            admission=client.admission,
+                            telephone=client.telephone.as_primitive(),
+                            direction=client.direction.as_primitive(),
+                            is_active=False).execute()
+        self.cache.pop(client.dni)
+        InscriptionTable.delete().where(client == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
         """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
