@@ -81,6 +81,13 @@ class Number(Validatable):
 
 class String(Validatable):
 
+    def __eq__(self, o: String | str) -> bool:
+        if isinstance(o, str):
+            return self._value == o
+        if isinstance(o, String):
+            return super().__eq__(o)
+        raise TypeError("Invalid equal comparison.")
+
     def validate(self, value: str, **kwargs) -> str:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
         implementation stores.
@@ -227,8 +234,29 @@ class ClientLike(Filter):
         return to_filter.client.name.contains(filter_value)
 
 
-class TextEqual:
-    pass
+class TextEqual(Filter):
+
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
+    def passes(self, to_filter: Any, filter_value: str) -> bool:
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
+
+        if not isinstance(filter_value, str):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
+                            f", but received a '{type(filter_value)}'.")
+
+        attr_value = getattr(to_filter, self.attr)
+        if not isinstance(attr_value, String):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
+                            f"'String', not a '{type(attr_value)}'.")
+
+        return attr_value == filter_value
 
 
 class DateGreater(Filter):
