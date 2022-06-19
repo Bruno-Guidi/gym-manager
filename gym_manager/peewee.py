@@ -36,8 +36,9 @@ class SqliteClientRepo(ClientRepo):
     """Clients repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, activity_repo: ActivityRepo) -> None:
         create_table(ClientTable)
+        self.activity_repo = activity_repo
 
     def contains(self, dni: Number) -> bool:
         """Returns True if there is a client with the given *dni*, False otherwise.
@@ -80,34 +81,13 @@ class SqliteClientRepo(ClientRepo):
         raw_client.direction = client.direction.as_primitive()
         raw_client.save()
 
-    def _get_activity(self, raw_activity, cache: dict[int, Activity]) -> Activity:
-        if raw_activity.id in cache:
-            return cache[raw_activity.id]
-        else:
-            new = Activity(raw_activity.id,
-                           String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                           Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
-                           raw_activity.pay_once,
-                           String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
-            cache[raw_activity.id] = new
-            return new
-
-    def all(
-            self, page: int, page_len: int = 20, activity_cache: dict[Number, Client] | None = None, **kwargs
-    ) -> Generator[Client, None, None]:
+    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page.
-            activity_cache: cached activities.
-
-        Keyword Args:
-            only_actives: allows filtering only active clients.
-            name: allows filtering clients by name.
         """
-        activity_cache = {} if activity_cache is None else activity_cache
-
         clients_q = ClientTable.select()
         for filter_, value in kwargs.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
@@ -127,7 +107,7 @@ class SqliteClientRepo(ClientRepo):
             )
 
             for raw_inscription in raw_client.inscriptions:
-                activity = self._get_activity(raw_inscription.activity, activity_cache)
+                activity = self.activity_repo.get(raw_inscription.activity_id)
                 raw_transaction = raw_inscription.transaction
                 transaction = None
                 if raw_transaction is not None:

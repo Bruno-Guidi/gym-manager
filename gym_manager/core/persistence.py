@@ -34,19 +34,12 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(
-            self, page: int, page_len: int = 20, activity_cache: dict[Number, Client] | None = None, **kwargs
-    ) -> Generator[Client, None, None]:
+    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page.
-            activity_cache: cached activities.
-
-        Keyword Args:
-            only_actives: allows filtering only active clients.
-            name: allows filtering clients by name.
         """
         raise NotImplementedError
 
