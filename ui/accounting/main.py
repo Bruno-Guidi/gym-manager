@@ -83,8 +83,9 @@ class AccountingMainUI(QMainWindow):
             filters=[ClientLike("client", display_name="Cliente",
                                 translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
                      TextEqual("type", display_name="Tipo", attr="type",
-                               translate_fun=lambda trans, value: trans.type == value)
-
+                               translate_fun=lambda trans, value: trans.type == value),
+                     TextEqual("method", display_name="Método", attr="method",
+                               translate_fun=lambda trans, value: trans.method == value)
                      ],
             # filters=["client": "Nombre", "type": "Tipo", "method": "Método", "responsible": "Responsable"],
             parent=self.widget
