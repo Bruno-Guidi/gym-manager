@@ -28,11 +28,8 @@ class ActivityManager:
             name: If given, filter activities that fulfill the condition kwargs['name'] like %activity.name%.
         """
         # ToDo cache.
-        _active_filters: dict[str, ActivityFilter] = {name: filter_type(active_filters[name])
-                                                      for name, filter_type in self.filters.items()
-                                                      if name in active_filters}
         for activity in self.activity_repo.all():
-            if all([filter_.passes_filter(activity) for filter_ in _active_filters.values()]):
+            if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
                 yield activity
 
     def inscriptions(self, activity: Activity) -> int:

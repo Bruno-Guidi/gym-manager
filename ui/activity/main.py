@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 
 from gym_manager.core import constants as consts
 from gym_manager.core.activity_manager import ActivityManager
-from gym_manager.core.base import String, Activity, Currency
+from gym_manager.core.base import String, Activity, Currency, NameLike
 from ui.activity.create import CreateUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_combobox, config_checkbox
 from ui.widgets import Field, valid_text_value, SearchBox
@@ -240,9 +240,12 @@ class Controller:
         self.pay_once_width = pay_once_width
 
         for activity in self.activity_manager.activities(**self.search_box.filters()):
-            self._add_activity(activity)
+            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
 
-    def _add_activity(self, activity: Activity):
+    def _add_activity(self, activity: Activity, check_filters: bool):
+        if check_filters and not self.search_box.passes_filters(activity):
+            return
+
         item = QListWidgetItem(self.activity_list)
         self.activity_list.addItem(item)
         row = ActivityRow(activity, self.activity_manager, item, self, self.name_width, self.price_width,
@@ -250,17 +253,15 @@ class Controller:
         self.activity_list.setItemWidget(item, row)
 
     def create_activity(self):
-        # Clears the search box before creating, so i don't need to check if the new activity passes the filter or not.
-        self.search_box.clear()
         self.add_ui = CreateUI(self.activity_manager)
         self.add_ui.exec_()
         if self.add_ui.controller.activity is not None:
-            self._add_activity(self.add_ui.controller.activity)
+            self._add_activity(self.add_ui.controller.activity, check_filters=True)
 
     def search(self):
         self.activity_list.clear()
         for activity in self.activity_manager.activities(**self.search_box.filters()):
-            self._add_activity(activity)
+            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
 
 
 class ActivityMainUI(QMainWindow):
@@ -291,7 +292,7 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox(filters={"name": "Nombre"}, parent=self.widget)
+        self.search_box = SearchBox([NameLike("name", display_name="Nombre")], parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
 
         self.search_btn = QPushButton(self.widget)
