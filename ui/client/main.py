@@ -482,7 +482,7 @@ class ClientMainUI(QMainWindow):
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
         self.search_box = SearchBox(
-            filters=[NameLike("name", display_name="Nombre",
+            filters=[TextLike("name", display_name="Nombre", attr="name",
                               translate_fun=lambda client, value: client.cli_name.contains(value))],
             parent=self.widget)
         self.utils_layout.addWidget(self.search_box)
