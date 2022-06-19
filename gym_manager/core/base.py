@@ -103,8 +103,8 @@ class String(Validatable):
             raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
         return value
 
-    def __iter__(self):
-        return iter(self._value)
+    def contains(self, substring: str) -> bool:
+        return substring in self._value
 
 
 class Currency(Validatable):
