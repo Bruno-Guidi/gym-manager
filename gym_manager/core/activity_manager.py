@@ -1,8 +1,8 @@
 import logging
 from datetime import date
-from typing import Generator, Type
+from typing import Generator
 
-from gym_manager.core.base import Client, Activity, Transaction, Inscription, String, Currency, ActivityFilter, OldNameFilter
+from gym_manager.core.base import Client, Activity, Transaction, Inscription, String, Currency
 from gym_manager.core.persistence import ActivityRepo, InscriptionRepo
 
 
@@ -10,7 +10,6 @@ class ActivityManager:
     def __init__(self, activity_repo: ActivityRepo, inscription_repo: InscriptionRepo):
         self.activity_repo = activity_repo
         self.inscription_repo = inscription_repo
-        self.filters: dict[str, Type[ActivityFilter]] = {"name": OldNameFilter}
 
     def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
         return self.activity_repo.create(name, price, pay_once, description)
@@ -33,7 +32,7 @@ class ActivityManager:
                 yield activity
 
     def inscriptions(self, activity: Activity) -> int:
-        return self.activity_repo.inscriptions(activity)
+        return self.activity_repo.n_inscriptions(activity)
 
     def load_inscriptions(self, client: Client):
         for inscription in self.inscription_repo.all(client):

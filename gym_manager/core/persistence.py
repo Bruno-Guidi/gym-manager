@@ -10,8 +10,14 @@ class ClientRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def contains(self, dni: Number) -> bool:
-        """Returns True if there is a client with the given *dni*, False otherwise.
+    def get(self, dni: int | Number) -> Client:
+        """Returns the client with the given *dni*.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def is_active(self, dni: Number) -> bool:
+        """Checks if there is an active client with the given *dni*.
         """
         raise NotImplementedError
 
@@ -34,19 +40,12 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(
-            self, page: int, page_len: int = 20, activity_cache: dict[Number, Client] | None = None, **kwargs
-    ) -> Generator[Client, None, None]:
+    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page.
-            activity_cache: cached activities.
-
-        Keyword Args:
-            only_actives: allows filtering only active clients.
-            name: allows filtering clients by name.
         """
         raise NotImplementedError
 
@@ -54,6 +53,16 @@ class ClientRepo(abc.ABC):
 class ActivityRepo(abc.ABC):
     """Activities repository interface.
     """
+
+    @abc.abstractmethod
+    def get(self, id: int) -> Activity:
+        """Retrieves the activity with the given *id* in the repository, if it exists.
+
+        Raises:
+            KeyError if there is no activity with the given *id*.
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
         """Creates an activity with the given data, and returns it.
@@ -85,7 +94,7 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def inscriptions(self, activity: Activity) -> int:
+    def n_inscriptions(self, activity: Activity) -> int:
         """Returns the number of clients registered in the given *activity*.
         """
         raise NotImplementedError
@@ -128,6 +137,13 @@ class InscriptionRepo(abc.ABC):
 class TransactionRepo(abc.ABC):
     """Transaction repository interface.
     """
+
+    @abc.abstractmethod
+    def from_raw_data(self, id, type, client: Client, when, amount, method, responsible, description):
+        """Creates a Transaction with the given data.
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def create(
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
@@ -139,9 +155,7 @@ class TransactionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(
-            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None, **kwargs
-    ) -> Generator[Transaction, None, None]:
+    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
 
         Keyword Args:

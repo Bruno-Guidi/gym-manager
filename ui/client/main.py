@@ -338,9 +338,9 @@ class ClientRow(QWidget):
             # ToDo. Move the cache to ActivityManager.
             clients = self.client_repo.all(self.main_ui_controller.current_page + 1,
                                            self.main_ui_controller.items_per_page,
-                                           activity_cache=None, **self.main_ui_controller.search_box.filters())
-            for client in clients:
-                self.main_ui_controller.add_client(client)
+                                           **self.main_ui_controller.search_box.filters())
+            # for client in clients:
+            #     self.main_ui_controller.add_client(client)
 
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
@@ -438,8 +438,7 @@ class Controller:
         self.client_list.clear()
 
         activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
-        clients = self.client_repo.all(self.current_page, self.items_per_page, activity_cache,
-                                       **self.search_box.filters())
+        clients = self.client_repo.all(self.current_page, self.items_per_page, **self.search_box.filters())
         for client in clients:
             self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
