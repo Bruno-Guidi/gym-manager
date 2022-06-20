@@ -29,7 +29,9 @@ class Validatable(abc.ABC):
     def __str__(self) -> str:
         return str(self._value)
 
-    def __eq__(self, o: Validatable) -> bool:
+    def __eq__(self, o) -> bool:
+        if isinstance(o, type(self._value)):
+            return self._value == o
         return self._value == o._value
 
     def __hash__(self) -> int:
