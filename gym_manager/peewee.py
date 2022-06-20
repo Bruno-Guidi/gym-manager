@@ -72,8 +72,10 @@ class SqliteClientRepo(ClientRepo):
             raise KeyError(f"There is no client with the 'dni'='{str(dni)}'")
 
         if dni not in self.cache:
-            raw = ClientTable.select().where(ClientTable.dni == dni.as_primitive()).join(InscriptionTable).join(TransactionTable)
-            self.cache[dni] = self.from_raw(raw)
+            clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive(), ClientTable.is_active == True)
+            inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
+            for raw in prefetch(clients_q, inscriptions_q, trans_q):
+                self.cache[dni] = self.from_raw(raw)
         return self.cache[dni]
 
     def contains(self, dni: Number) -> bool:
@@ -83,7 +85,6 @@ class SqliteClientRepo(ClientRepo):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
         raw_client = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
-        print(raw_client is not None, raw_client.is_active if raw_client is not None else "None")
         return raw_client is not None and raw_client.is_active
 
     def add(self, client: Client):
@@ -109,7 +110,7 @@ class SqliteClientRepo(ClientRepo):
                             direction=client.direction.as_primitive(),
                             is_active=False).execute()
         self.cache.pop(client.dni)
-        InscriptionTable.delete().where(client == client.dni.as_primitive()).execute()
+        InscriptionTable.delete().where(InscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
         """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
@@ -131,6 +132,7 @@ class SqliteClientRepo(ClientRepo):
         clients_q = ClientTable.select()
         for filter_, value in kwargs.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+        clients_q = clients_q.where(ClientTable.is_active == True)
         clients_q.paginate(page, page_len)
 
         inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
