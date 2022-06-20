@@ -356,6 +356,19 @@ class ClientRow(QWidget):
                 self.activity_manager.unsubscribe(inscription)
                 self.inscription_table.removeRow(self.inscription_table.currentRow())
 
+    def _load_inscription(self, row: int, inscription: Inscription):
+        self.inscriptions[row] = inscription
+        self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
+
+        when = "Sin pagar" if inscription.transaction is None else str(inscription.transaction.when)
+        self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
+
+        transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
+        self.inscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
+
+        expired = "Si" if inscription.charge_day_passed(date.today()) else "No"
+        self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
+
     def charge(self):
         if self.inscription_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad")
@@ -365,23 +378,15 @@ class ClientRow(QWidget):
             self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True,
                                       fixed_descr=True)
             self.charge_ui.exec_()
+            self._load_inscription(self.inscription_table.currentRow(),
+                                   self.inscriptions[self.inscription_table.currentRow()])
 
     # noinspection PyUnresolvedReferences
     def load_inscriptions(self):
         self.inscription_table.setRowCount(self.client.n_inscriptions())
 
         for row, inscription in enumerate(self.client.inscriptions()):
-            self.inscriptions[row] = inscription
-            self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
-
-            when = "Sin pagar" if inscription.transaction is None else str(inscription.transaction.when)
-            self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
-
-            transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
-            self.inscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
-
-            expired = "Si" if inscription.charge_day_passed(date.today()) else "No"
-            self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
+            self._load_inscription(row, inscription)
 
     def transactions(self):
         self.accounting_main_ui = AccountingMainUI(self.accounting_system, self.client)
