@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout,
     QCheckBox, QTextEdit, QMessageBox
 
 from gym_manager.core import constants as consts
-from gym_manager.core.activity_manager import ActivityManager
+from gym_manager.core.system import ActivityManager
 from gym_manager.core.base import String, Currency, Activity
 from ui.widget_config import config_layout, config_lbl, config_line
 from ui.widgets import Field, valid_text_value

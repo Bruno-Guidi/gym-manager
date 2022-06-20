@@ -8,8 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTableWidgetItem, QDateEdit
 
 from gym_manager.core import constants as consts
-from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.activity_manager import ActivityManager
+from gym_manager.core.system import ActivityManager, AccountingSystem
 from gym_manager.core.base import Client, String, Number, Inscription, TextLike
 from gym_manager.core.persistence import ClientRepo
 from ui.accounting.charge import ChargeUI

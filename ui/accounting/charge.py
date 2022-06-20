@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout,
     QDateEdit, QComboBox, QTextEdit
 
 from gym_manager.core import constants as consts
-from gym_manager.core.accounting import AccountingSystem
+from gym_manager.core.system import AccountingSystem
 from gym_manager.core.base import String, Number, Client, Currency, Activity
 from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox

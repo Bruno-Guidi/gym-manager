@@ -4,7 +4,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
-from gym_manager.core.accounting import AccountingSystem
+from gym_manager.core.system import AccountingSystem
 from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit

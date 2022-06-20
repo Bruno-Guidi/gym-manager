@@ -1,8 +1,7 @@
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
-from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.activity_manager import ActivityManager
+from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.main import AccountingMainUI
 from ui.activity.main import ActivityMainUI
 from ui.client.main import ClientMainUI

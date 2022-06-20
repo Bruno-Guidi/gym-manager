@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTextEdit, QCheckBox
 
 from gym_manager.core import constants as consts
-from gym_manager.core.activity_manager import ActivityManager
+from gym_manager.core.system import ActivityManager
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from ui.activity.create import CreateUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox

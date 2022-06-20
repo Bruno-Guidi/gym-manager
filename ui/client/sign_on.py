@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QMessageBox
 
-from gym_manager.core.activity_manager import ActivityManager
+from gym_manager.core.system import ActivityManager
 from gym_manager.core.base import Client, Activity
 from ui.widget_config import config_lbl, config_combobox, fill_combobox
 
