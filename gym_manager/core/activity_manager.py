@@ -26,7 +26,6 @@ class ActivityManager:
         Keyword Args:
             name: If given, filter activities that fulfill the condition kwargs['name'] like %activity.name%.
         """
-        # ToDo cache.
         for activity in self.activity_repo.all():
             if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
                 yield activity
