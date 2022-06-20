@@ -84,6 +84,13 @@ class Number(Validatable):
 
 class String(Validatable):
 
+    def __eq__(self, o: object) -> bool:
+        if isinstance(o, String):
+            return self._value.lower() == o._value.lower()
+        if isinstance(o, str):
+            return self._value.lower() == o.lower()
+        return NotImplemented
+
     def validate(self, value: str, **kwargs) -> str:
         """Validates the given *value*. If the validation succeeds, return the given *value*.
 
