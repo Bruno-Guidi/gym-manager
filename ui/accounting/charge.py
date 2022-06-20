@@ -1,16 +1,15 @@
-from datetime import datetime, date
+from datetime import date
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox, QLineEdit, \
+from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, \
     QDateEdit, QComboBox, QTextEdit
 
 from gym_manager.core import constants as consts
+from gym_manager.core.base import String, Client, Currency, Activity
 from gym_manager.core.system import AccountingSystem
-from gym_manager.core.base import String, Number, Client, Currency, Activity
-from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox
-from ui.widgets import Field, valid_text_value
+from ui.widgets import Field, valid_text_value, dialog
 
 
 class Controller:
@@ -45,13 +44,12 @@ class Controller:
     def charge(self):
         valid_descr, descr = valid_text_value(self.descr_field, optional=False, max_len=consts.TRANSACTION_DESCR_CHARS)
         if not all([self.amount_field.valid_value(), self.responsible_field.valid_value(), valid_descr]):
-            QMessageBox.about(self.descr_field.window(), "Error", "Hay datos que no son válidos.")
+            dialog().info("Hay datos que no son válidos.")
         else:
             transaction_id = self.accounting_system.charge(
                 self.when_field.date().toPyDate(), self.client, self.activity,
                 self.method_field.currentData(Qt.UserRole), self.responsible_field.value(), descr)
-            QMessageBox.about(self.descr_field.window(), "Éxito",
-                              f"Se ha registrado un cobro con número de identificación '{transaction_id}'.")
+            dialog().confirm(f"Se ha registrado un cobro con número de identificación '{transaction_id}'.")
             self.descr_field.window().close()
 
 

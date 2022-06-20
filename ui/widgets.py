@@ -78,7 +78,7 @@ class SearchBox(QWidget):
 
 class Dialog(QDialog):
 
-    def create_confirm(self, question: str):
+    def confirm(self, question: str):
         self.setWindowTitle("Confirmar")
         self.question_lbl.setText(question)
         self.ok_btn.setEnabled(True)
@@ -86,7 +86,7 @@ class Dialog(QDialog):
 
         self.exec_()
 
-    def create_info(self, message: str):
+    def info(self, message: str):
         self.setWindowTitle("Información")
         self.question_lbl.setText(message)
         self.ok_btn.setEnabled(True)

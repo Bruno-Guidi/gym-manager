@@ -8,16 +8,16 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QTableWidgetItem, QDateEdit
 
 from gym_manager.core import constants as consts
-from gym_manager.core.system import ActivityManager, AccountingSystem
 from gym_manager.core.base import Client, String, Number, Inscription, TextLike
 from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.charge import ChargeUI
 from ui.accounting.main import AccountingMainUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
-from ui.widgets import Field, SearchBox
+from ui.widgets import Field, SearchBox, dialog
 
 
 class ClientRow(QWidget):
@@ -306,7 +306,7 @@ class ClientRow(QWidget):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.tel_field.valid_value(),
                      self.dir_field.valid_value()])
         if not valid:
-            QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
+            dialog().info("Hay datos que no son válidos.")
         else:
             # Updates client object.
             self.client.name = self.name_field.value()
@@ -322,14 +322,12 @@ class ClientRow(QWidget):
             self.tel_summary.setText(self.client.telephone.as_primitive())
             self.dir_summary.setText(self.client.direction.as_primitive())
 
-            QMessageBox.about(self.name_field.window(), "Éxito",
-                              f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
+            dialog().info(f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
     def remove(self):
-        delete = QMessageBox.question(self.name_field.window(), "Confirmar",
-                                      f"¿Desea eliminar el cliente {self.client.name}?")
+        self.confirm_dialog = dialog().confirm(f"¿Desea eliminar el cliente {self.client.name}?")
 
-        if delete:
+        if self.confirm_dialog.confirmed:
             self.main_ui_controller.opened_now = None
             self.client_repo.remove(self.client)
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())

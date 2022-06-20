@@ -1,13 +1,13 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
-    QCheckBox, QTextEdit, QMessageBox
+    QCheckBox, QTextEdit
 
 from gym_manager.core import constants as consts
-from gym_manager.core.system import ActivityManager
 from gym_manager.core.base import String, Currency, Activity
+from gym_manager.core.system import ActivityManager
 from ui.widget_config import config_layout, config_lbl, config_line
-from ui.widgets import Field, valid_text_value
+from ui.widgets import Field, valid_text_value, dialog
 
 
 class Controller:
@@ -30,11 +30,9 @@ class Controller:
         if all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             self.activity = self.activity_manager.create(self.name_field.value(), self.price_field.value(),
                                                          self.pay_once_checkbox.isChecked(), descr)
-            QMessageBox.about(self.name_field.window(), "Éxito",
-                              f"La categoría '{self.name_field.value()}' fue creada correctamente.")
-            self.price_field.window().close()
+            dialog().info(f"La categoría '{self.name_field.value()}' fue creada correctamente.")
         else:
-            QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
+            dialog().info("Hay datos que no son válidos.")
 
 
 class CreateUI(QDialog):
