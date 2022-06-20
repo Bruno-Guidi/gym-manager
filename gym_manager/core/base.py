@@ -4,7 +4,7 @@ import abc
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Optional, Callable
+from typing import Any, Iterable, Callable
 
 ONE_MONTH_TD = timedelta(days=30)
 
@@ -156,6 +156,75 @@ class Activity:
     description: String
 
 
+@dataclass
+class Client:
+    dni: Number
+    name: String = field(compare=False)
+    admission: date = field(compare=False)
+    telephone: String = field(compare=False)
+    direction: String = field(compare=False)
+    is_active: bool = field(compare=False)
+    _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)
+
+    def sign_on(self, inscription: Inscription):
+        """Registers the given *inscription*.
+        """
+        self._inscriptions[inscription.activity.id] = inscription
+
+    def cancel(self, inscription: Inscription):
+        self._inscriptions.pop(inscription.activity.id)
+
+    def is_signed_up(self, activity: Activity) -> bool:
+        return activity.id in self._inscriptions
+
+    def n_inscriptions(self) -> int:
+        return len(self._inscriptions)
+
+    def inscriptions(self) -> Iterable[Inscription]:
+        return self._inscriptions.values()
+
+    def register_charge(self, activity: Activity, transaction: Transaction):
+        """Registers that the client was charged for the activity.
+        """
+        self._inscriptions[activity.id].register_charge(transaction)
+
+
+@dataclass
+class Transaction:
+    id: int
+    type: String
+    client: Client
+    when: date
+    amount: Currency
+    method: String
+    responsible: String
+    description: String
+
+
+@dataclass
+class Inscription:
+    """Stores information about a customer's inscription in an activity.
+    """
+    when: date
+    client: Client
+    activity: Activity
+    transaction: Transaction | None = None
+
+    def charge_day_passed(self, today: date) -> bool:
+        if self.transaction is None:
+            # More than 30 days passed since the client signed up on the activity, so he should be charged.
+            return pay_day_passed(self.when, today)
+        return pay_day_passed(self.transaction.when, today)
+
+    def register_charge(self, transaction: Transaction):
+        """Updates the inscription with the given *transaction*.
+        """
+        if self.client != transaction.client:
+            raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
+                             f"'{self.activity.name}' that should be charged to the client '{self.client.name}'.")
+        self.transaction = transaction
+
+
 class Filter(abc.ABC):
 
     def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool] | None = None) -> None:
@@ -259,72 +328,3 @@ class DateLesser(Filter):
             raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
                             f"'{type(filter_value)}'.")
         return to_filter <= filter_value
-
-
-@dataclass
-class Client:
-    dni: Number
-    name: String = field(compare=False)
-    admission: date = field(compare=False)
-    telephone: String = field(compare=False)
-    direction: String = field(compare=False)
-    is_active: bool = field(compare=False)
-    _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)
-
-    def sign_on(self, inscription: Inscription):
-        """Registers the given *inscription*.
-        """
-        self._inscriptions[inscription.activity.id] = inscription
-
-    def cancel(self, inscription: Inscription):
-        self._inscriptions.pop(inscription.activity.id)
-
-    def is_signed_up(self, activity: Activity) -> bool:
-        return activity.id in self._inscriptions
-
-    def n_inscriptions(self) -> int:
-        return len(self._inscriptions)
-
-    def inscriptions(self) -> Iterable[Inscription]:
-        return self._inscriptions.values()
-
-    def register_charge(self, activity: Activity, transaction: Transaction):
-        """Registers that the client was charged for the activity.
-        """
-        self._inscriptions[activity.id].register_charge(transaction)
-
-
-@dataclass
-class Transaction:
-    id: int
-    type: String
-    client: Client
-    when: date
-    amount: Currency
-    method: String
-    responsible: String
-    description: String
-
-
-@dataclass
-class Inscription:
-    """Stores information about a customer's inscription in an activity.
-    """
-    when: date
-    client: Client
-    activity: Activity
-    transaction: Transaction | None = None
-
-    def charge_day_passed(self, today: date) -> bool:
-        if self.transaction is None:
-            # More than 30 days passed since the client signed up on the activity, so he should be charged.
-            return pay_day_passed(self.when, today)
-        return pay_day_passed(self.transaction.when, today)
-
-    def register_charge(self, transaction: Transaction):
-        """Updates the inscription with the given *transaction*.
-        """
-        if self.client != transaction.client:
-            raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
-                             f"'{self.activity.name}' that should be charged to the client '{self.client.name}'.")
-        self.transaction = transaction
