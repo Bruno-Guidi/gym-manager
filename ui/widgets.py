@@ -76,9 +76,9 @@ class SearchBox(QWidget):
 
 class ConfirmDialog(QDialog):
 
-    def __init__(self, question: str, show_cancel_btn: bool = True) -> None:
+    def __init__(self, title: str, question: str, show_cancel_btn: bool = True) -> None:
         super().__init__()
-        self._setup_ui(question, show_cancel_btn)
+        self._setup_ui(title, question, show_cancel_btn)
         self.confirmed = False
         self.ok_btn.clicked.connect(self.accept)
         if show_cancel_btn:
@@ -88,8 +88,9 @@ class ConfirmDialog(QDialog):
         self.confirmed = True
         super().accept()
 
-    def _setup_ui(self, question: str, show_cancel_btn: bool):
+    def _setup_ui(self, title: str, question: str, show_cancel_btn: bool):
         self.resize(300, 120)
+        self.setWindowTitle(title)
 
         self.layout = QVBoxLayout(self)
 
