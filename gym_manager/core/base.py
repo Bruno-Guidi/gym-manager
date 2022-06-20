@@ -51,6 +51,7 @@ class Number(Validatable):
 
     def __eq__(self, o) -> bool:
         if isinstance(o, type(self._value)):
+            print("Comparison between Number and int", self._value, o)
             return self._value == o
         return self._value == o._value
 
