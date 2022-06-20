@@ -3,9 +3,8 @@ from decimal import Decimal
 
 import pytest
 
-from gym_manager.core import constants as consts
-
-from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction, Client, Activity
+from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction, Client, Activity, \
+    TextLike
 
 
 def test_Number_validInputType():
@@ -189,3 +188,19 @@ def test_Inscription_registerCharge_raisesValueError():
         trans = Transaction(1, type=None, client=client, when=None, amount=None, method=None, responsible=None,
                             description=None)
         Inscription(when=None, client=other_client, activity=activity).register_charge(trans)
+
+
+# noinspection PyTypeChecker
+def test_TextLike():
+    client = Client(Number(1), String("TestName", max_len=20), admission=None, telephone=None, direction=None,
+                    is_active=True)
+
+    filter_ = TextLike("name", "display_name", "name")
+
+    assert filter_.passes(client, "")
+    assert filter_.passes(client, "test")
+    assert filter_.passes(client, "ame")
+    assert filter_.passes(client, "ame")
+    assert filter_.passes(client, "tESTnAme")
+
+    assert not filter_.passes(client, "TestNme")
