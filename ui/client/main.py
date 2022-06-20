@@ -4,8 +4,7 @@ from datetime import date
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QMessageBox, \
-    QTableWidgetItem, QDateEdit
+    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, String, Number, Inscription, TextLike
@@ -17,7 +16,7 @@ from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
-from ui.widgets import Field, SearchBox, dialog
+from ui.widgets import Field, SearchBox, Dialog
 
 
 class ClientRow(QWidget):
@@ -306,7 +305,7 @@ class ClientRow(QWidget):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.tel_field.valid_value(),
                      self.dir_field.valid_value()])
         if not valid:
-            dialog().info("Hay datos que no son válidos.")
+            Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             # Updates client object.
             self.client.name = self.name_field.value()
@@ -322,12 +321,12 @@ class ClientRow(QWidget):
             self.tel_summary.setText(self.client.telephone.as_primitive())
             self.dir_summary.setText(self.client.direction.as_primitive())
 
-            dialog().info(f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
+            Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
     def remove(self):
-        self.confirm_dialog = dialog().confirm(f"¿Desea eliminar el cliente {self.client.name}?")
+        remove = Dialog.confirm(f"¿Desea eliminar el cliente '{self.client.name}'?")
 
-        if self.confirm_dialog.confirmed:
+        if remove:
             self.main_ui_controller.opened_now = None
             self.client_repo.remove(self.client)
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
@@ -339,8 +338,7 @@ class ClientRow(QWidget):
             # for client in clients:
             #     self.main_ui_controller.add_client(client)
 
-            QMessageBox.about(self.name_field.window(), "Éxito",
-                              f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
+            Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
     def sign_on(self):
         self.sign_on_ui = SignOn(self.activity_manager, self.client)
@@ -349,19 +347,18 @@ class ClientRow(QWidget):
 
     def unsubscribe(self):
         if self.inscription_table.currentRow() == -1:
-            QMessageBox.about(self.name_field.window(), "Error", "Seleccione una actividad")
+            Dialog.info("Error", "Seleccione una actividad")
         else:
             inscription = self.inscriptions[self.inscription_table.currentRow()]
-            unsubscribe = QMessageBox.question(self.name_field.window(), "Confirmar",
-                                               f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
-                                               f"actividad {inscription.activity.name}?")
+            unsubscribe = Dialog.confirm(f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
+                                         f"actividad {inscription.activity.name}?")
             if unsubscribe:
                 self.activity_manager.unsubscribe(inscription)
                 self.inscription_table.removeRow(self.inscription_table.currentRow())
 
     def charge(self):
         if self.inscription_table.currentRow() == -1:
-            QMessageBox.about(self.name_field.window(), "Error", "Seleccione una actividad")
+            Dialog.info("Error", "Seleccione una actividad")
         else:
             activity = self.inscriptions[self.inscription_table.currentRow()].activity
             descr = String(f"Cobro por actividad {activity.name}", max_len=consts.TRANSACTION_DESCR_CHARS)

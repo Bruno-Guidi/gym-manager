@@ -4,11 +4,12 @@ from datetime import date
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
-    QComboBox, QMessageBox
+    QComboBox
 
-from gym_manager.core.system import ActivityManager
 from gym_manager.core.base import Client, Activity
+from gym_manager.core.system import ActivityManager
 from ui.widget_config import config_lbl, config_combobox, fill_combobox
+from ui.widgets import Dialog
 
 
 class Controller:
@@ -26,8 +27,8 @@ class Controller:
     def sign_on(self):
         activity: Activity = self.combobox.currentData(Qt.UserRole)
         self.activity_manager.sign_on(date.today(), self.client, activity)
-        QMessageBox.about(self.combobox.window(), "Éxito",
-                          f"El cliente '{self.client.name}' fue registrado correctamente en la actividad '{activity.name}'.")
+        Dialog.info("Éxito",
+                    f"El cliente '{self.client.name}' fue registrado correctamente en la actividad '{activity.name}'.")
         self.combobox.window().close()
 
 

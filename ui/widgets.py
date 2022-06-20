@@ -78,40 +78,43 @@ class SearchBox(QWidget):
 
 class Dialog(QDialog):
 
-    def confirm(self, question: str):
-        self.setWindowTitle("Confirmar")
-        self.question_lbl.setText(question)
-        self.ok_btn.setEnabled(True)
-        self.cancel_btn.setEnabled(True)
+    @classmethod
+    def confirm(cls, question: str) -> bool:
+        dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True)
+        dialog.exec_()
+        return dialog.confirmed
 
-        self.exec_()
+    @classmethod
+    def info(cls, title: str, message: str) -> bool:
+        dialog = Dialog(title=title, text=message, show_cancel_btn=False)
+        dialog.exec_()
+        return True
 
-    def info(self, message: str):
-        self.setWindowTitle("Información")
-        self.question_lbl.setText(message)
-        self.ok_btn.setEnabled(True)
-
-        self.exec_()
-
-    def __init__(self) -> None:
+    def __init__(self, title: str, text: str, show_cancel_btn: bool) -> None:
         super().__init__()
-        self._setup_ui()
+        self._setup_ui(title, text, show_cancel_btn)
         self.confirmed = False
         self.ok_btn.clicked.connect(self.accept)
-        self.cancel_btn.clicked.connect(self.reject)
+        if self.cancel_btn is not None:
+            self.cancel_btn.clicked.connect(self.reject)
 
     def accept(self) -> None:
         self.confirmed = True
         super().accept()
 
-    def _setup_ui(self):
+    def reject(self) -> None:
+        self.confirmed = False
+        super().reject()
+
+    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
         self.resize(300, 120)
+        self.setWindowTitle(title)
 
         self.layout = QVBoxLayout(self)
 
         self.question_lbl = QLabel(self)
         self.layout.addWidget(self.question_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.question_lbl, width=300, word_wrap=True)
+        config_lbl(self.question_lbl, text=text, width=300, word_wrap=True)
 
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
@@ -121,17 +124,9 @@ class Dialog(QDialog):
         self.buttons_layout.addWidget(self.ok_btn)
         config_btn(self.ok_btn, "Ok", width=100)
 
-        self.cancel_btn = QPushButton()
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", width=100)
-
-
-DIALOG: Dialog | None = None
-
-
-def dialog():
-    global DIALOG
-    if DIALOG is None:
-        DIALOG = Dialog()
-    return DIALOG
+        self.cancel_btn: QPushButton | None = None
+        if show_cancel_btn:
+            self.cancel_btn = QPushButton()
+            self.buttons_layout.addWidget(self.cancel_btn)
+            config_btn(self.cancel_btn, "Cancelar", width=100)
 

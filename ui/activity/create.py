@@ -7,7 +7,7 @@ from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Currency, Activity
 from gym_manager.core.system import ActivityManager
 from ui.widget_config import config_layout, config_lbl, config_line
-from ui.widgets import Field, valid_text_value, dialog
+from ui.widgets import Field, valid_text_value, Dialog
 
 
 class Controller:
@@ -30,9 +30,9 @@ class Controller:
         if all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             self.activity = self.activity_manager.create(self.name_field.value(), self.price_field.value(),
                                                          self.pay_once_checkbox.isChecked(), descr)
-            dialog().info(f"La categoría '{self.name_field.value()}' fue creada correctamente.")
+            Dialog.info("Éxito", f"La categoría '{self.name_field.value()}' fue creada correctamente.")
         else:
-            dialog().info("Hay datos que no son válidos.")
+            Dialog.info("Error", "Hay datos que no son válidos.")
 
 
 class CreateUI(QDialog):
