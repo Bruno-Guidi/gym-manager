@@ -8,7 +8,7 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo, FilterValuePair
 
 _DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
@@ -125,15 +125,19 @@ class SqliteClientRepo(ClientRepo):
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
 
-    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Client, None, None]:
+    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page.
+
+        Keyword Args:
+            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
+                filter.
         """
         clients_q = ClientTable.select()
-        for filter_, value in kwargs.values():
+        for filter_, value in filters.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
         clients_q = clients_q.where(ClientTable.is_active == True)
         clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
@@ -297,16 +301,12 @@ class SqliteTransactionRepo(TransactionRepo):
 
         return Transaction(transaction.id, type, client, when, amount, method, responsible, description)
 
-    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Transaction, None, None]:
+    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
 
         Keyword Args:
-            client: allows filtering by client name.
-            type: allows filtering by transaction type.
-            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
-            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
-            method: allows filtering by transaction method.
-            responsible: allows filtering by transaction responsible.
+            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
+                filter.
 
         Raises:
             AttributeError if the client_repo attribute wasn't set before the execution of the method.
@@ -315,7 +315,7 @@ class SqliteTransactionRepo(TransactionRepo):
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
         transactions_q = TransactionTable.select().join(ClientTable)
-        for filter_, value in kwargs.values():
+        for filter_, value in filters.values():
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
         for raw_transaction in transactions_q.paginate(page, page_len):
