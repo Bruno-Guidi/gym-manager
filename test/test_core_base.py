@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction, Client, Activity, \
-    TextLike, ClientLike
+    TextLike, ClientLike, TextEqual
 
 
 def test_Number_validInputType():
@@ -198,9 +198,9 @@ def test_TextLike():
     filter_ = TextLike("name", "display_name", "name")
 
     assert filter_.passes(client, "")
-    assert filter_.passes(client, "test")
-    assert filter_.passes(client, "ame")
-    assert filter_.passes(client, "ame")
+    assert filter_.passes(client, String("test", max_len=20))
+    assert filter_.passes(client, String("ame", max_len=20))
+    assert filter_.passes(client, String("ame", max_len=20))
     assert filter_.passes(client, "tESTnAme")
 
     assert not filter_.passes(client, "TestNme")
@@ -216,3 +216,20 @@ def test_ClientLike():
     filter_ = ClientLike("name", "display_name")
     assert filter_.passes(transaction, "tN")
     assert not filter_.passes(transaction, "TestName#")
+
+
+# noinspection PyTypeChecker
+def test_TextEqual():
+    client = Client(Number(1), String("TestName", max_len=20), admission=None, telephone=None, direction=None,
+                    is_active=True)
+
+    filter_ = TextEqual("name", "display_name", "name")
+
+    assert filter_.passes(client, String("tESTnAme", max_len=20))
+    assert filter_.passes(client, "TestName")
+
+    assert not filter_.passes(client, "")
+    assert not filter_.passes(client, String("test", max_len=20))
+    assert not filter_.passes(client, "ame")
+    assert not filter_.passes(client, String("ame", max_len=20))
+    assert not filter_.passes(client, "TestNme")
