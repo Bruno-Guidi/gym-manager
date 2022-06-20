@@ -136,11 +136,12 @@ class SqliteClientRepo(ClientRepo):
         for filter_, value in kwargs.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
         clients_q = clients_q.where(ClientTable.is_active == True)
-        clients_q.paginate(page, page_len)
+        clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
         inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
+            # ToDo check cache first.
             client = self.from_raw(raw_client)
             self.cache[client.dni] = client
             yield client
