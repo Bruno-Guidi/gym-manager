@@ -29,14 +29,6 @@ class Validatable(abc.ABC):
     def __str__(self) -> str:
         return str(self._value)
 
-    def __eq__(self, o) -> bool:
-        if isinstance(o, type(self._value)):
-            return self._value == o
-        return self._value == o._value
-
-    def __hash__(self) -> int:
-        return hash(self._value)
-
     def as_primitive(self) -> Any:
         return self._value
 
@@ -56,6 +48,14 @@ class Validatable(abc.ABC):
 
 
 class Number(Validatable):
+
+    def __eq__(self, o) -> bool:
+        if isinstance(o, type(self._value)):
+            return self._value == o
+        return self._value == o._value
+
+    def __hash__(self) -> int:
+        return hash(self._value)
 
     def validate(self, value: str | int, **kwargs) -> int:
         """Validates the given *value*. If the validation succeeds, returns the given *value* as int, regardless of its
