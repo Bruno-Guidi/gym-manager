@@ -4,21 +4,19 @@ from datetime import date
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QMessageBox, \
-    QTableWidgetItem, QDateEdit
+    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit
 
 from gym_manager.core import constants as consts
-from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.activity_manager import ActivityManager
 from gym_manager.core.base import Client, String, Number, Inscription, TextLike
 from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.charge import ChargeUI
 from ui.accounting.main import AccountingMainUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
-from ui.widgets import Field, SearchBox
+from ui.widgets import Field, SearchBox, Dialog
 
 
 class ClientRow(QWidget):
@@ -307,7 +305,7 @@ class ClientRow(QWidget):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.tel_field.valid_value(),
                      self.dir_field.valid_value()])
         if not valid:
-            QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
+            Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             # Updates client object.
             self.client.name = self.name_field.value()
@@ -323,27 +321,18 @@ class ClientRow(QWidget):
             self.tel_summary.setText(self.client.telephone.as_primitive())
             self.dir_summary.setText(self.client.direction.as_primitive())
 
-            QMessageBox.about(self.name_field.window(), "Éxito",
-                              f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
+            Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
     def remove(self):
-        delete = QMessageBox.question(self.name_field.window(), "Confirmar",
-                                      f"¿Desea eliminar el cliente {self.client.name}?")
+        remove = Dialog.confirm(f"¿Desea eliminar el cliente '{self.client.name}'?")
 
-        if delete:
+        if remove:
             self.main_ui_controller.opened_now = None
             self.client_repo.remove(self.client)
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
+            self.main_ui_controller.load_clients()
 
-            # ToDo. Move the cache to ActivityManager.
-            clients = self.client_repo.all(self.main_ui_controller.current_page + 1,
-                                           self.main_ui_controller.items_per_page,
-                                           **self.main_ui_controller.search_box.filters())
-            # for client in clients:
-            #     self.main_ui_controller.add_client(client)
-
-            QMessageBox.about(self.name_field.window(), "Éxito",
-                              f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
+            Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
     def sign_on(self):
         self.sign_on_ui = SignOn(self.activity_manager, self.client)
@@ -352,39 +341,46 @@ class ClientRow(QWidget):
 
     def unsubscribe(self):
         if self.inscription_table.currentRow() == -1:
-            QMessageBox.about(self.name_field.window(), "Error", "Seleccione una actividad")
+            Dialog.info("Error", "Seleccione una actividad")
         else:
             inscription = self.inscriptions[self.inscription_table.currentRow()]
-            unsubscribe = QMessageBox.question(self.name_field.window(), "Confirmar",
-                                               f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
-                                               f"actividad {inscription.activity.name}?")
+            unsubscribe = Dialog.confirm(f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
+                                         f"actividad {inscription.activity.name}?")
             if unsubscribe:
                 self.activity_manager.unsubscribe(inscription)
                 self.inscription_table.removeRow(self.inscription_table.currentRow())
 
+    def _load_inscription(self, row: int, inscription: Inscription):
+        self.inscriptions[row] = inscription
+        self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
+
+        when = "Sin pagar" if inscription.transaction is None else str(inscription.transaction.when)
+        self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
+
+        transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
+        self.inscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
+
+        expired = "Si" if inscription.charge_day_passed(date.today()) else "No"
+        self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
+
     def charge(self):
-        activity = self.inscriptions[self.inscription_table.currentRow()].activity
-        descr = String(f"Cobro por actividad {activity.name}", optional=False, max_len=consts.TRANSACTION_DESCR_CHARS)
-        self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True,
-                                  fixed_descr=True)
-        self.charge_ui.exec_()
+        if self.inscription_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad")
+        else:
+            activity = self.inscriptions[self.inscription_table.currentRow()].activity
+            descr = String(f"Cobro por actividad {activity.name}", max_len=consts.TRANSACTION_DESCR_CHARS)
+            self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True,
+                                      fixed_descr=True)
+            self.charge_ui.exec_()
+            self._load_inscription(self.inscription_table.currentRow(),
+                                   self.inscriptions[self.inscription_table.currentRow()])
 
     # noinspection PyUnresolvedReferences
     def load_inscriptions(self):
         self.inscription_table.setRowCount(self.client.n_inscriptions())
 
         for row, inscription in enumerate(self.client.inscriptions()):
-            self.inscriptions[row] = inscription
-            self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
-
-            when = "Sin pagar" if inscription.transaction is None else str(inscription.transaction.when)
-            self.inscription_table.setItem(row, 1, QTableWidgetItem(when))
-
-            transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
-            self.inscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
-
-            expired = "Si" if inscription.charge_day_passed(date.today()) else "No"
-            self.inscription_table.setItem(row, 3, QTableWidgetItem(expired))
+            self._load_inscription(row, inscription)
 
     def transactions(self):
         self.accounting_main_ui = AccountingMainUI(self.accounting_system, self.client)
@@ -401,7 +397,7 @@ class Controller:
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
-        self.current_page, self.items_per_page = 1, 10
+        self.current_page, self.page_len = 1, 3
         self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
@@ -421,7 +417,7 @@ class Controller:
         if check_filters and not self.search_box.passes_filters(client):
             return
 
-        if check_limit and len(self.client_list) == self.items_per_page:
+        if check_limit and len(self.client_list) == self.page_len:
             self.client_list.takeItem(len(self.client_list) - 1)
 
         item = QListWidgetItem(self.client_list)
@@ -437,8 +433,7 @@ class Controller:
     def load_clients(self):
         self.client_list.clear()
 
-        activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
-        clients = self.client_repo.all(self.current_page, self.items_per_page, **self.search_box.filters())
+        clients = self.client_repo.all(self.current_page, self.page_len, **self.search_box.filters())
         for client in clients:
             self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
 

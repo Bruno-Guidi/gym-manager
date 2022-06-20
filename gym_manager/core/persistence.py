@@ -40,12 +40,16 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Client, None, None]:
+    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Client, None, None]:
         """Returns all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page.
+
+        Keyword Args:
+            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
+                filter.
         """
         raise NotImplementedError
 
@@ -121,18 +125,6 @@ class InscriptionRepo(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def all(self, client: Client) -> Generator[Inscription, None, None]:
-        """Retrieves all inscriptions of the given *client*.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def expired(self, when: date, **kwargs) -> Generator[Inscription, None, None]:
-        """Retrieves all entries whose pay day has passed if today date were *when*.
-        """
-        raise NotImplementedError
-
 
 class TransactionRepo(abc.ABC):
     """Transaction repository interface.
@@ -155,15 +147,11 @@ class TransactionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Transaction, None, None]:
+    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
 
         Keyword Args:
-            client: allows filtering by client name.
-            type: allows filtering by transaction type.
-            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
-            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
-            method: allows filtering by transaction method.
-            responsible: allows filtering by transaction responsible.
+            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
+                filter.
         """
         raise NotImplementedError

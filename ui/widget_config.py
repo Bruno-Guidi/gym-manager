@@ -24,8 +24,9 @@ def config_line(
 
 def config_lbl(
         target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0,
-        height: int = 0, alignment=Qt.AlignLeft
+        height: int = 0, alignment=Qt.AlignLeft, word_wrap: bool = False
 ):
+    target.setWordWrap(word_wrap)
     target.setText(text)
     target.setFont(QFont(font, font_size))
     if width > 0:

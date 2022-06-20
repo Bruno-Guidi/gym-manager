@@ -4,7 +4,7 @@ import abc
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Optional, Callable
+from typing import Any, Iterable, Callable
 
 ONE_MONTH_TD = timedelta(days=30)
 
@@ -18,8 +18,7 @@ def pay_day_passed(last_paid_on: date, today: date) -> bool:
 class ValidationError(Exception):
 
     def __init__(self, cause: str, *args: object) -> None:
-        super().__init__(*args)
-        self.cause = cause
+        super().__init__(cause, *args)
 
 
 class Validatable(abc.ABC):
@@ -30,11 +29,8 @@ class Validatable(abc.ABC):
     def __str__(self) -> str:
         return str(self._value)
 
-    def __eq__(self, o: Validatable) -> bool:
-        return self._value == o._value
-
-    def __hash__(self) -> int:
-        return hash(self._value)
+    def as_primitive(self) -> Any:
+        return self._value
 
     @abc.abstractmethod
     def validate(self, value: Any, **kwargs) -> Any:
@@ -50,15 +46,21 @@ class Validatable(abc.ABC):
         """
         raise NotImplementedError
 
-    def as_primitive(self) -> Any:
-        return self._value
-
 
 class Number(Validatable):
 
+    def __eq__(self, o) -> bool:
+        if isinstance(o, type(self._value)):
+            print("Comparison between Number and int", self._value, o)
+            return self._value == o
+        return self._value == o._value
+
+    def __hash__(self) -> int:
+        return hash(self._value)
+
     def validate(self, value: str | int, **kwargs) -> int:
-        """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
-        implementation stores.
+        """Validates the given *value*. If the validation succeeds, returns the given *value* as int, regardless of its
+        type.
 
         Keyword Args:
             min_value: minimum valid value. If None, min_value will be -inf.
@@ -68,32 +70,32 @@ class Number(Validatable):
             ValidationError if the validation failed.
         """
         if not isinstance(value, (str, int)):
-            raise ValidationError(f"The type '{type(value)}' is not valid for a number.")
-        if isinstance(value, str) and not value.isnumeric():
-            raise ValidationError(f"The str '{value}' is not numeric.")
-        int_value = int(value)
+            raise ValidationError(f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type(value)}]")
+        try:
+            int_value = int(value)
+        except ValueError:
+            raise ValidationError(f"The argument 'value' is not a valid number. [value={value}]")
         min_value = kwargs['min_value'] if 'min_value' in kwargs else float('-inf')
         max_value = kwargs['max_value'] if 'max_value' in kwargs else float('inf')
         if int_value < min_value or int_value >= max_value:
-            raise ValidationError(f"The value '{value}' must be in the range [{min_value}, {max_value})")
+            raise ValidationError(f"The argument 'value' must be in the range [{min_value}, {max_value}). [value={value}]")
         return int_value
 
 
 class String(Validatable):
 
-    def __eq__(self, o: String | str) -> bool:
-        if isinstance(o, str):
-            return self._value == o
+    def __eq__(self, o: object) -> bool:
         if isinstance(o, String):
-            return super().__eq__(o)
-        raise TypeError("Invalid equal comparison.")
+            return self._value.lower() == o._value.lower()
+        if isinstance(o, str):
+            return self._value.lower() == o.lower()
+        return NotImplemented
 
     def validate(self, value: str, **kwargs) -> str:
-        """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
-        implementation stores.
+        """Validates the given *value*. If the validation succeeds, return the given *value*.
 
         Keyword Args:
-            optional: True if the String may be empty, False otherwise. False by default.
+            optional: True if the String may be empty, False otherwise. If not given, it is False.
             max_len: maximum amount of characters.
 
         Raises:
@@ -101,161 +103,52 @@ class String(Validatable):
             ValidationError if the validation failed.
         """
         if 'max_len' not in kwargs:
-            raise KeyError(f"The String.validate(args) method is missing the kwarg 'max_len'.")
+            raise KeyError(f"The method is missing the kwarg 'max_len'. [kwargs={kwargs}]")
         optional = False if 'optional' not in kwargs else kwargs['optional']
 
         if not optional and len(value) == 0:
-            raise ValidationError(f"A non optional String cannot be empty.")
-        if len(value) > kwargs['max_len']:
-            raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
+            raise ValidationError(f"The argument 'value' cannot be empty. [value={value}, optional={optional}]")
+        if len(value) >= kwargs['max_len']:
+            raise ValidationError(f"The argument 'value' has more characters than allowed. "
+                                  f"[len(value)={len(value)}, max_len={kwargs['max_len']}]")
         return value
 
-    def contains(self, substring: str) -> bool:
-        return substring in self._value
+    def contains(self, substring: str | String) -> bool:
+        if isinstance(substring, String):
+            substring = substring.as_primitive()
+        return substring.lower() in self._value.lower()
 
 
 class Currency(Validatable):
 
-    def validate(self, value: str, **kwargs) -> Any:
+    def validate(self, value: str, **kwargs) -> Decimal:
+        """Validates the given *value*. If the validation succeeds, returns the created Decimal object.
+
+        Keyword Args:
+            max_currency: maximum valid currency.
+
+        Raises:
+            KeyError if a kwarg is missing.
+            ValidationError if the validation failed.
+        """
         if 'max_currency' not in kwargs:
-            raise KeyError(f"The Currency.validate(args) method is missing the kwarg 'max_currency'.")
+            raise KeyError(f"The method is missing the kwarg 'max_currency'. [kwargs={kwargs}]")
 
         try:
             value = Decimal(value)
         except InvalidOperation:
-            raise ValidationError(f"The value '{value}' is not a valid currency.")
+            raise ValidationError(f"The argument 'value' is not a valid currency. [value={value}]")
         if value >= kwargs['max_currency']:
-            raise ValidationError(
-                f"The currency '{value}' is not valid. It should be less than '{kwargs['max_currency']}'.")
+            raise ValidationError(f"The argument 'value' must be lesser than {kwargs['max_currency']}. [value={value}]")
         return value
 
 
-class NotRegistered(KeyError):
+class NotSignedUp(KeyError):
     """Exception thrown when the *client* isn't registered in the *activity*.
     """
     def __init__(self, client: Client, activity_id: int, *args: object) -> None:
-        super().__init__(*args)
-        self.client = client
-        self.activity_id = activity_id
-
-    def __str__(self) -> str:
-        return f"The client '{self.client.dni} - {self.client.name}' is not registered in the activity '{self.activity_id}'"
-
-
-@dataclass
-class Activity:
-    """Stores general information about an activity.
-    """
-    id: int
-    name: String
-    price: Currency
-    pay_once: bool
-    description: String
-
-
-class Filter(abc.ABC):
-
-    def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool] | None = None) -> None:
-        self.name = name
-        self.display_name = display_name
-        self.translate_fun = translate_fun
-
-    def __eq__(self, o: Filter) -> bool:
-        return self.name == o.name
-
-    def __hash__(self) -> int:
-        return hash(self.name)
-
-    @abc.abstractmethod
-    def passes(self, to_filter: Any, filter_value: Any) -> bool:
-        raise NotImplementedError
-
-    def passes_in_repo(self, to_filter: Any, filter_value: Any) -> bool:
-        if self.translate_fun is None:
-            raise AttributeError(f"The filter '{self.name}' of type '{type(self)}' does not have a 'transalte_fun'.")
-        return self.translate_fun(to_filter, filter_value)
-
-
-class TextLike(Filter):
-
-    def __init__(
-            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
-    ) -> None:
-        super().__init__(name, display_name, translate_fun)
-        self.attr = attr
-
-    def passes(self, to_filter: Any, filter_value: str) -> bool:
-        if not hasattr(to_filter, self.attr):
-            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
-                                 f"attribute '{self.attr}'.")
-
-        if not isinstance(filter_value, str):
-            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
-                            f", but received a '{type(filter_value)}'.")
-
-        attr_value = getattr(to_filter, self.attr)
-        if not isinstance(attr_value, String):
-            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
-                            f"'String', not a '{type(attr_value)}'.")
-
-        return attr_value.contains(filter_value)
-
-
-class ClientLike(Filter):
-
-    def passes(self, to_filter: Any, filter_value: str) -> bool:
-        if not hasattr(to_filter, "client"):
-            raise TypeError(f"The argument 'to_filter' must be of a type that has the attribute 'client'. Instead, it "
-                            f"is of type '{type(to_filter)}'.")
-        if not isinstance(to_filter.client, Client):
-            raise TypeError(f"The argument 'to_filter' must be a 'Client', not a '{type(to_filter)}'.")
-        if not isinstance(filter_value, str):
-            raise TypeError(f"The argument 'filter_value' must be a 'str', not a '{type(filter_value)}'.")
-
-        return to_filter.client.name.contains(filter_value)
-
-
-class TextEqual(Filter):
-
-    def __init__(
-            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
-    ) -> None:
-        super().__init__(name, display_name, translate_fun)
-        self.attr = attr
-
-    def passes(self, to_filter: Any, filter_value: str) -> bool:
-        if not hasattr(to_filter, self.attr):
-            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
-                                 f"attribute '{self.attr}'.")
-
-        if not isinstance(filter_value, str):
-            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
-                            f", but received a '{type(filter_value)}'.")
-
-        attr_value = getattr(to_filter, self.attr)
-        if not isinstance(attr_value, String):
-            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
-                            f"'String', not a '{type(attr_value)}'.")
-
-        return attr_value == filter_value
-
-
-class DateGreater(Filter):
-
-    def passes(self, to_filter: Any, filter_value: date) -> bool:
-        if not isinstance(filter_value, date):
-            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
-                            f"'{type(filter_value)}'.")
-        return to_filter >= filter_value
-
-
-class DateLesser(Filter):
-
-    def passes(self, to_filter: Any, filter_value: date) -> bool:
-        if not isinstance(filter_value, date):
-            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
-                            f"'{type(filter_value)}'.")
-        return to_filter <= filter_value
+        msg = f"The client '{client.dni} - {client.name}' is not signed up in the activity '{activity_id}'"
+        super().__init__(msg, *args)
 
 
 @dataclass
@@ -292,14 +185,13 @@ class Client:
 
 
 @dataclass
-class Transaction:
+class Activity:
+    """Stores general information about an activity.
+    """
     id: int
-    type: String
-    client: Client
-    when: date
-    amount: Currency
-    method: String
-    responsible: String
+    name: String
+    price: Currency
+    pay_once: bool
     description: String
 
 
@@ -313,6 +205,11 @@ class Inscription:
     transaction: Transaction | None = None
 
     def charge_day_passed(self, today: date) -> bool:
+        """Checks if the charge day for the inscription has passed.
+
+        If *today* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged for the
+        activity after he signed up) then the charge day passed.
+        """
         if self.transaction is None:
             # More than 30 days passed since the client signed up on the activity, so he should be charged.
             return pay_day_passed(self.when, today)
@@ -320,8 +217,128 @@ class Inscription:
 
     def register_charge(self, transaction: Transaction):
         """Updates the inscription with the given *transaction*.
+
+        Raises
+            ValueError if the client of the *transaction* isn't *self.client*.
         """
         if self.client != transaction.client:
             raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
                              f"'{self.activity.name}' that should be charged to the client '{self.client.name}'.")
         self.transaction = transaction
+
+
+@dataclass
+class Transaction:
+    id: int
+    type: String
+    client: Client
+    when: date
+    amount: Currency
+    method: String
+    responsible: String
+    description: String
+
+
+class Filter(abc.ABC):
+
+    def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool] | None = None) -> None:
+        self.name = name
+        self.display_name = display_name
+        self.translate_fun = translate_fun
+
+    def __eq__(self, o: Filter) -> bool:
+        return self.name == o.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    @abc.abstractmethod
+    def passes(self, to_filter: Any, filter_value: Any) -> bool:
+        raise NotImplementedError
+
+    def passes_in_repo(self, to_filter: Any, filter_value: Any) -> bool:
+        if self.translate_fun is None:
+            raise AttributeError(f"The filter '{self.name}' of type '{type(self)}' does not have a 'transalte_fun'.")
+        return self.translate_fun(to_filter, filter_value)
+
+
+class TextLike(Filter):
+
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
+    def passes(self, to_filter: Any, filter_value: str | String) -> bool:
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
+
+        if not isinstance(filter_value, (str, String)):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str' "
+                            f"or 'String', but received a '{type(filter_value)}'.")
+
+        attr_value = getattr(to_filter, self.attr)
+        if not isinstance(attr_value, String):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
+                            f"'String', not a '{type(attr_value)}'.")
+
+        return attr_value.contains(filter_value)
+
+
+class ClientLike(Filter):
+
+    def passes(self, to_filter: Any, filter_value: str) -> bool:
+        if not hasattr(to_filter, "client"):
+            raise TypeError(f"The argument 'to_filter' must be of a type that has the attribute 'client'. Instead, it "
+                            f"is of type '{type(to_filter)}'.")
+        if not isinstance(to_filter.client, Client):
+            raise TypeError(f"The argument 'to_filter' must be a 'Client', not a '{type(to_filter)}'.")
+        if not isinstance(filter_value, str):
+            raise TypeError(f"The argument 'filter_value' must be a 'str', not a '{type(filter_value)}'.")
+
+        return to_filter.client.name.contains(filter_value)
+
+
+class TextEqual(Filter):
+
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
+    def passes(self, to_filter: Any, filter_value: str | String) -> bool:
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
+
+        if not isinstance(filter_value, (str, String)):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str' "
+                            f"or 'String', but received a '{type(filter_value)}'.")
+
+        attr_value = getattr(to_filter, self.attr)
+        if not isinstance(attr_value, String):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
+                            f"'String', not a '{type(attr_value)}'.")
+
+        return attr_value == filter_value
+
+
+class DateGreater(Filter):
+
+    def passes(self, to_filter: Any, filter_value: date) -> bool:
+        if not isinstance(filter_value, date):
+            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
+                            f"'{type(filter_value)}'.")
+        return to_filter >= filter_value
+
+
+class DateLesser(Filter):
+
+    def passes(self, to_filter: Any, filter_value: date) -> bool:
+        if not isinstance(filter_value, date):
+            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
+                            f"'{type(filter_value)}'.")
+        return to_filter <= filter_value

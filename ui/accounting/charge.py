@@ -1,16 +1,15 @@
-from datetime import datetime, date
+from datetime import date
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QMessageBox, QLineEdit, \
-    QDateEdit, QComboBox, QTextEdit
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, \
+    QDateEdit, QComboBox, QTextEdit, QPushButton
 
 from gym_manager.core import constants as consts
-from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.base import String, Number, Client, Currency, Activity
-from gym_manager.core.persistence import ClientRepo
-from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox
-from ui.widgets import Field, valid_text_value
+from gym_manager.core.base import String, Client, Currency, Activity
+from gym_manager.core.system import AccountingSystem
+from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox, \
+    config_btn
+from ui.widgets import Field, valid_text_value, Dialog
 
 
 class Controller:
@@ -33,7 +32,7 @@ class Controller:
         self.amount_field.setText(str(activity.price))
         if fixed_amount:
             self.amount_field.setEnabled(False)
-        fill_combobox(method_field, accounting_system.methods(), display=lambda method: method)
+        fill_combobox(method_field, accounting_system.methods(), display=lambda method: method.as_primitive())
         self.descr_field.setText(str(descr))
         if fixed_descr:
             self.descr_field.setEnabled(False)
@@ -45,13 +44,12 @@ class Controller:
     def charge(self):
         valid_descr, descr = valid_text_value(self.descr_field, optional=False, max_len=consts.TRANSACTION_DESCR_CHARS)
         if not all([self.amount_field.valid_value(), self.responsible_field.valid_value(), valid_descr]):
-            QMessageBox.about(self.descr_field.window(), "Error", "Hay datos que no son válidos.")
+            Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             transaction_id = self.accounting_system.charge(
                 self.when_field.date().toPyDate(), self.client, self.activity,
                 self.method_field.currentData(Qt.UserRole), self.responsible_field.value(), descr)
-            QMessageBox.about(self.descr_field.window(), "Éxito",
-                              f"Se ha registrado un cobro con número de identificación '{transaction_id}'.")
+            Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{transaction_id}'.")
             self.descr_field.window().close()
 
 
@@ -66,8 +64,8 @@ class ChargeUI(QDialog):
                                      self.responsible_field, self.descr_field, client, activity, descr,
                                      accounting_system, fixed_amount, fixed_descr)
 
-        self.button_box.accepted.connect(self.controller.charge)
-        # self.button_box.rejected.connect(self.reject)
+        self.ok_btn.clicked.connect(self.controller.charge)
+        self.cancel_btn.clicked.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -155,10 +153,15 @@ class ChargeUI(QDialog):
         self.descr_layout.addWidget(self.descr_field)
         config_line(self.descr_field, place_holder="Descripción", font_size=16)
 
-
-
         # Buttons.
-        self.button_box = QDialogButtonBox(self)
-        self.layout.addWidget(self.button_box)
-        self.button_box.setOrientation(QtCore.Qt.Horizontal)
-        self.button_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
+
+        self.ok_btn = QPushButton()
+        self.buttons_layout.addWidget(self.ok_btn)
+        config_btn(self.ok_btn, "Ok", width=100)
+
+        self.cancel_btn = QPushButton()
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", width=100)

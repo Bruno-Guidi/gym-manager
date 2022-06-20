@@ -3,8 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 
 from gym_manager import peewee
-from gym_manager.core.accounting import AccountingSystem
-from gym_manager.core.activity_manager import ActivityManager
+from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.main import MainUI
 
 if __name__ == "__main__":
