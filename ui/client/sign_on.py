@@ -1,9 +1,8 @@
 import itertools
 from datetime import date
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, \
     QComboBox, QPushButton
 
 from gym_manager.core.base import Client, Activity

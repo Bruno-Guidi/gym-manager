@@ -1,13 +1,12 @@
 from datetime import date
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, QDateEdit
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QDateEdit, QPushButton
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Number, Client
 from gym_manager.core.persistence import ClientRepo
-from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit
+from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_btn
 from ui.widgets import Field, Dialog
 
 
@@ -50,8 +49,8 @@ class CreateUI(QDialog):
             self.name_field, self.dni_field, self.admission_field, self.tel_field, self.dir_field, client_repo
         )
 
-        self.button_box.accepted.connect(self.controller.create_client)
-        self.button_box.rejected.connect(self.reject)
+        self.ok_btn.clicked.connect(self.controller.create_client)
+        self.cancel_btn.clicked.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -127,7 +126,14 @@ class CreateUI(QDialog):
         config_line(self.dir_field, place_holder="Dirección", font_size=16)
 
         # Buttons.
-        self.button_box = QDialogButtonBox(self)
-        self.layout.addWidget(self.button_box)
-        self.button_box.setOrientation(QtCore.Qt.Horizontal)
-        self.button_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
+
+        self.ok_btn = QPushButton()
+        self.buttons_layout.addWidget(self.ok_btn)
+        config_btn(self.ok_btn, "Ok", width=100)
+
+        self.cancel_btn = QPushButton()
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", width=100)

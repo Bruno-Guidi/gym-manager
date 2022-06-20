@@ -1,12 +1,12 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout, QLabel, \
-    QCheckBox, QTextEdit
+    QCheckBox, QTextEdit, QPushButton
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Currency, Activity
 from gym_manager.core.system import ActivityManager
-from ui.widget_config import config_layout, config_lbl, config_line
+from ui.widget_config import config_layout, config_lbl, config_line, config_btn
 from ui.widgets import Field, valid_text_value, Dialog
 
 
@@ -31,6 +31,7 @@ class Controller:
             self.activity = self.activity_manager.create(self.name_field.value(), self.price_field.value(),
                                                          self.pay_once_checkbox.isChecked(), descr)
             Dialog.info("Éxito", f"La categoría '{self.name_field.value()}' fue creada correctamente.")
+            self.name_field.window().close()
         else:
             Dialog.info("Error", "Hay datos que no son válidos.")
 
@@ -42,8 +43,8 @@ class CreateUI(QDialog):
         self.controller = Controller(self.name_field, self.price_field, self.pay_once_checkbox, self.description_text,
                                      activity_manager)
 
-        self.button_box.accepted.connect(self.controller.create_activity)
-        self.button_box.rejected.connect(self.reject)
+        self.ok_btn.clicked.connect(self.controller.create_activity)
+        self.cancel_btn.clicked.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -105,8 +106,14 @@ class CreateUI(QDialog):
         config_line(self.description_text, place_holder="Descripción", font_size=16)
 
         # Buttons.
-        self.button_box = QDialogButtonBox(self)
-        self.layout.addWidget(self.button_box)
-        self.button_box.setGeometry(QtCore.QRect(30, 240, 341, 32))
-        self.button_box.setOrientation(QtCore.Qt.Horizontal)
-        self.button_box.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
+
+        self.ok_btn = QPushButton()
+        self.buttons_layout.addWidget(self.ok_btn)
+        config_btn(self.ok_btn, "Ok", width=100)
+
+        self.cancel_btn = QPushButton()
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", width=100)
