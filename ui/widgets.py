@@ -1,10 +1,11 @@
 from typing import Type, Any
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox
+from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
+    QPushButton
 
 from gym_manager.core.base import Validatable, ValidationError, String, Filter
-from ui.widget_config import fill_combobox, config_combobox, config_line
+from ui.widget_config import fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout
 
 
 def valid_text_value(text: QTextEdit, optional: bool, max_len: int) -> tuple[bool, Any]:
@@ -73,4 +74,37 @@ class SearchBox(QWidget):
         return selected.passes(to_filter, self.search_field.text())
 
 
+class ConfirmDialog(QDialog):
+
+    def __init__(self, question: str) -> None:
+        super().__init__()
+        self._setup_ui(question)
+        self.confirmed = False
+        self.yes_btn.clicked.connect(self.accept)
+        self.no_btn.clicked.connect(self.reject)
+
+    def accept(self) -> None:
+        self.confirmed = True
+        super().accept()
+
+    def _setup_ui(self, question: str):
+        self.resize(300, 120)
+
+        self.layout = QVBoxLayout(self)
+
+        self.question_lbl = QLabel(self)
+        self.layout.addWidget(self.question_lbl, alignment=Qt.AlignCenter)
+        config_lbl(self.question_lbl, question, width=300, word_wrap=True)
+
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=20)
+
+        self.yes_btn = QPushButton()
+        self.buttons_layout.addWidget(self.yes_btn)
+        config_btn(self.yes_btn, "Si", width=60)
+
+        self.no_btn = QPushButton()
+        self.buttons_layout.addWidget(self.no_btn)
+        config_btn(self.no_btn, "No", width=60)
 
