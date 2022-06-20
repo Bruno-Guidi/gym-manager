@@ -3,23 +3,24 @@ from datetime import date
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, \
-    QComboBox, QPushButton
+    QComboBox, QPushButton, QDateEdit
 
 from gym_manager.core.base import Client, Activity
 from gym_manager.core.system import ActivityManager
-from ui.widget_config import config_lbl, config_combobox, fill_combobox, config_layout, config_btn
+from ui.widget_config import config_lbl, config_combobox, fill_combobox, config_layout, config_btn, config_date_edit
 from ui.widgets import Dialog
 
 
 class Controller:
 
     def __init__(
-            self, activity_manager: ActivityManager, client: Client, combobox: QComboBox
+            self, activity_manager: ActivityManager, client: Client, combobox: QComboBox, when_field: QDateEdit
     ) -> None:
         self.activity_manager = activity_manager
         self.client = client
 
         self.combobox = combobox
+        self.when_field = when_field
         it = itertools.filterfalse(lambda activity: self.client.is_signed_up(activity), activity_manager.activities())
         fill_combobox(combobox, it, lambda activity: str(activity.name))
 
@@ -28,7 +29,7 @@ class Controller:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
             activity: Activity = self.combobox.currentData(Qt.UserRole)
-            self.activity_manager.sign_on(date.today(), self.client, activity)
+            self.activity_manager.sign_on(self.when_field.date().toPyDate(), self.client, activity)
             Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
                                  f"'{activity.name}'.")
             self.combobox.window().close()
@@ -38,7 +39,7 @@ class SignOn(QDialog):
     def __init__(self, activity_manager: ActivityManager, client: Client) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(activity_manager, client, self.activity_combobox)
+        self.controller = Controller(activity_manager, client, self.activity_combobox, self.when_field)
         self.ok_btn.clicked.connect(self.controller.sign_on)
         self.cancel_btn.clicked.connect(self.reject)
 
@@ -58,6 +59,18 @@ class SignOn(QDialog):
         self.activity_combobox = QComboBox()
         self.activity_layout.addWidget(self.activity_combobox)
         config_combobox(self.activity_combobox, font_size=16)
+
+        # When.
+        self.when_layout = QHBoxLayout()
+        self.layout.addLayout(self.when_layout)
+
+        self.when_lbl = QLabel()
+        self.when_layout.addWidget(self.when_lbl)
+        config_lbl(self.when_lbl, "Fecha", font_size=16, width=120)
+
+        self.when_field = QDateEdit()
+        self.when_layout.addWidget(self.when_field)
+        config_date_edit(self.when_field, date.today(), font_size=16)
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
