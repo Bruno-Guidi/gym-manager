@@ -67,14 +67,15 @@ class Number(Validatable):
             ValidationError if the validation failed.
         """
         if not isinstance(value, (str, int)):
-            raise ValidationError(f"The type '{type(value)}' is not valid for a number.")
-        if isinstance(value, str) and not value.isnumeric():
-            raise ValidationError(f"The str '{value}' is not numeric.")
-        int_value = int(value)
+            raise ValidationError(f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type(value)}]")
+        try:
+            int_value = int(value)
+        except ValueError:
+            raise ValidationError(f"The argument 'value' is not a valid number. [value={value}]")
         min_value = kwargs['min_value'] if 'min_value' in kwargs else float('-inf')
         max_value = kwargs['max_value'] if 'max_value' in kwargs else float('inf')
         if int_value < min_value or int_value >= max_value:
-            raise ValidationError(f"The value '{value}' must be in the range [{min_value}, {max_value})")
+            raise ValidationError(f"The argument 'value' must be in the range [{min_value}, {max_value}). [value={value}]")
         return int_value
 
 
