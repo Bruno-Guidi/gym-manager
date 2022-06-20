@@ -113,7 +113,9 @@ class String(Validatable):
                                   f"[len(value)={len(value)}, max_len={kwargs['max_len']}]")
         return value
 
-    def contains(self, substring: str) -> bool:
+    def contains(self, substring: str | String) -> bool:
+        if isinstance(substring, String):
+            substring = substring.as_primitive()
         return substring.lower() in self._value.lower()
 
 
