@@ -268,14 +268,14 @@ class TextLike(Filter):
         super().__init__(name, display_name, translate_fun)
         self.attr = attr
 
-    def passes(self, to_filter: Any, filter_value: str) -> bool:
+    def passes(self, to_filter: Any, filter_value: str | String) -> bool:
         if not hasattr(to_filter, self.attr):
             raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
                                  f"attribute '{self.attr}'.")
 
-        if not isinstance(filter_value, str):
-            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
-                            f", but received a '{type(filter_value)}'.")
+        if not isinstance(filter_value, (str, String)):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str' "
+                            f"or 'String', but received a '{type(filter_value)}'.")
 
         attr_value = getattr(to_filter, self.attr)
         if not isinstance(attr_value, String):
@@ -307,14 +307,14 @@ class TextEqual(Filter):
         super().__init__(name, display_name, translate_fun)
         self.attr = attr
 
-    def passes(self, to_filter: Any, filter_value: str) -> bool:
+    def passes(self, to_filter: Any, filter_value: str | String) -> bool:
         if not hasattr(to_filter, self.attr):
             raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
                                  f"attribute '{self.attr}'.")
 
-        if not isinstance(filter_value, str):
-            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str'"
-                            f", but received a '{type(filter_value)}'.")
+        if not isinstance(filter_value, (str, String)):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a 'str' "
+                            f"or 'String', but received a '{type(filter_value)}'.")
 
         attr_value = getattr(to_filter, self.attr)
         if not isinstance(attr_value, String):
