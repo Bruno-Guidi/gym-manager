@@ -10,7 +10,7 @@ from gym_manager.core.system import ActivityManager
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from ui.activity.create import CreateUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
-from ui.widgets import Field, valid_text_value, SearchBox
+from ui.widgets import Field, valid_text_value, SearchBox, Dialog
 
 
 class ActivityRow(QWidget):
@@ -191,7 +191,7 @@ class ActivityRow(QWidget):
     def save_changes(self):
         valid_descr, descr = valid_text_value(self.description_text, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
         if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
-            QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
+            Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             # Updates activity object.
             self.activity.name = self.name_field.value()
@@ -207,23 +207,23 @@ class ActivityRow(QWidget):
             self.pay_once_summary.setText("Si" if self.activity.pay_once else "No")
             self.description_text.setText(str(self.activity.description))
 
-            QMessageBox.about(self.name_field.window(), "Éxito",
-                              f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
+            Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
 
     def remove(self):
-        inscriptions, delete = self.activity_manager.n_inscriptions(self.activity), True
+        inscriptions, delete = self.activity_manager.n_inscriptions(self.activity), False
         if inscriptions > 0:
-            delete = QMessageBox.question(self.name_field.window(), "Confirmar",
-                                          f"La actividad '{self.activity.name}' tiene {inscriptions} clientes "
-                                          f"inscriptos. ¿Desea eliminarla igual?")
+            delete = Dialog.confirm(f"La actividad '{self.activity.name}' tiene {inscriptions} clientes inscriptos. "
+                                    f"¿Desea eliminarla igual?")
+
+        if not delete:  # If the previous confirmation failed, then ask again.
+            delete = Dialog.confirm(f"¿Desea eliminar la actividad '{self.activity.name}'?")
 
         if delete:
             self.main_ui_controller.opened_now = None
             self.activity_manager.remove(self.activity)
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
-            QMessageBox.about(self.name_field.window(), "Éxito",
-                              f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
+            Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
 
 
 class Controller:
