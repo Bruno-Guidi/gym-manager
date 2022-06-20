@@ -30,12 +30,8 @@ class ActivityManager:
             if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
                 yield activity
 
-    def inscriptions(self, activity: Activity) -> int:
+    def n_inscriptions(self, activity: Activity) -> int:
         return self.activity_repo.n_inscriptions(activity)
-
-    def load_inscriptions(self, client: Client):
-        for inscription in self.inscription_repo.all(client):
-            client.sign_on(inscription)
 
     def sign_on(self, when: date, client: Client, activity: Activity, payment: Transaction | None = None):
         """Signs on a client in an activity.
