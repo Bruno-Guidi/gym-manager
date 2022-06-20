@@ -153,25 +153,6 @@ class Activity:
     description: String
 
 
-class ActivityFilter(abc.ABC):
-
-    def __init__(self, filter_value: Any) -> None:
-        self.filter_value = filter_value
-
-    @abc.abstractmethod
-    def passes_filter(self, activity: Activity) -> bool:
-        raise NotImplementedError
-
-
-class OldNameFilter(ActivityFilter):
-
-    def passes_filter(self, activity: Activity) -> bool:
-        if not isinstance(self.filter_value, str):
-            raise TypeError(f"NameFilter activity filter expects a 'str', but received a '{type(self.filter_value)}'")
-
-        return self.filter_value in activity.name.as_primitive()
-
-
 class Filter(abc.ABC):
 
     def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool] | None = None) -> None:
