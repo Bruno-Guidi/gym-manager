@@ -133,16 +133,12 @@ class Currency(Validatable):
         return value
 
 
-class NotRegistered(KeyError):
+class NotSignedUp(KeyError):
     """Exception thrown when the *client* isn't registered in the *activity*.
     """
     def __init__(self, client: Client, activity_id: int, *args: object) -> None:
-        super().__init__(*args)
-        self.client = client
-        self.activity_id = activity_id
-
-    def __str__(self) -> str:
-        return f"The client '{self.client.dni} - {self.client.name}' is not registered in the activity '{self.activity_id}'"
+        msg = f"The client '{client.dni} - {client.name}' is not signed up in the activity '{activity_id}'"
+        super().__init__(msg, *args)
 
 
 @dataclass
