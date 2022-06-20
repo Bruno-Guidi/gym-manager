@@ -84,11 +84,10 @@ class Number(Validatable):
 class String(Validatable):
 
     def validate(self, value: str, **kwargs) -> str:
-        """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
-        implementation stores.
+        """Validates the given *value*. If the validation succeeds, return the given *value*.
 
         Keyword Args:
-            optional: True if the String may be empty, False otherwise. False by default.
+            optional: True if the String may be empty, False otherwise. If not given, it is False.
             max_len: maximum amount of characters.
 
         Raises:
@@ -96,13 +95,14 @@ class String(Validatable):
             ValidationError if the validation failed.
         """
         if 'max_len' not in kwargs:
-            raise KeyError(f"The String.validate(args) method is missing the kwarg 'max_len'.")
+            raise KeyError(f"The method is missing the kwarg 'max_len'. [kwargs={kwargs}]")
         optional = False if 'optional' not in kwargs else kwargs['optional']
 
         if not optional and len(value) == 0:
-            raise ValidationError(f"A non optional String cannot be empty.")
-        if len(value) > kwargs['max_len']:
-            raise ValidationError(f"A String cannot exceeds {kwargs['max_len']} characters.")
+            raise ValidationError(f"The argument 'value' cannot be empty. [value={value}, optional={optional}]")
+        if len(value) >= kwargs['max_len']:
+            raise ValidationError(f"The argument 'value' has more characters than allowed. "
+                                  f"[len(value)={len(value)}, max_len={kwargs['max_len']}]")
         return value
 
     def contains(self, substring: str) -> bool:
