@@ -67,7 +67,7 @@ class ChargeUI(QDialog):
                                      accounting_system, fixed_amount, fixed_descr)
 
         self.button_box.accepted.connect(self.controller.charge)
-        # self.button_box.rejected.connect(self.reject)
+        self.button_box.rejected.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
