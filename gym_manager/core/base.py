@@ -196,6 +196,11 @@ class Inscription:
     transaction: Transaction | None = None
 
     def charge_day_passed(self, today: date) -> bool:
+        """Checks if the charge day for the inscription has passed.
+
+        If *today* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged for the
+        activity after he signed up) then the charge day passed.
+        """
         if self.transaction is None:
             # More than 30 days passed since the client signed up on the activity, so he should be charged.
             return pay_day_passed(self.when, today)

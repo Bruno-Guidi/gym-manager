@@ -1,9 +1,10 @@
+from datetime import date
 from decimal import Decimal
 
 import pytest
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import ValidationError, Number, String, Currency
+from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction
 
 
 def test_Number_validInputType():
@@ -149,3 +150,28 @@ def test_Currency_raisesValidationError_maxCurrencyExceeded():
     with pytest.raises(ValidationError) as valid_err:
         Currency("100", max_currency=Decimal("100"))
     assert str(valid_err.value) == f"The argument 'value' must be lesser than {'100'}. [value=100]"
+
+
+# noinspection PyTypeChecker
+def test_Inscription_payDayPassed():
+    inscription = Inscription(date(2022, 8, 8), client=None, activity=None)
+
+    # The client wasn't charged for the activity after he signed up. 06/09/2022 is the 30st day after the inscription
+    # date, so the inscription charge day hasn't passed yet.
+    assert not inscription.charge_day_passed(today=date(2022, 9, 6))
+
+    # The client wasn't charged for the activity after he signed up. 07/09/2022 is the 31st day after the inscription
+    # date, so the inscription charge day has passed.
+    assert inscription.charge_day_passed(today=date(2022, 9, 7))
+
+    # The client is charged for the inscription.
+    inscription.transaction = Transaction(1, type=None, client=None, when=date(2022, 9, 7), amount=None, method=None,
+                                          responsible=None, description=None)
+
+    assert not inscription.charge_day_passed(today=date(2022, 9, 7))
+    assert not inscription.charge_day_passed(today=date(2022, 10, 6))  # Only 30 days have passed since the charge.
+    assert inscription.charge_day_passed(today=date(2022, 10, 7))  # 31 days have passed since the charge.
+
+
+def test_Inscription_registerCharge_raisesValueError():
+    pass
