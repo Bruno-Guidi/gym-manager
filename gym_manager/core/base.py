@@ -83,13 +83,6 @@ class Number(Validatable):
 
 class String(Validatable):
 
-    def __eq__(self, o: String | str) -> bool:
-        if isinstance(o, str):
-            return self._value == o
-        if isinstance(o, String):
-            return super().__eq__(o)
-        raise TypeError("Invalid equal comparison.")
-
     def validate(self, value: str, **kwargs) -> str:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
         implementation stores.
