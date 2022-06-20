@@ -51,7 +51,7 @@ class SearchBox(QWidget):
         self._setup_ui()
 
         self._filters = filters
-        # self.filters_values = {f: "" for f in filters.keys()}
+        self._filters_index = {f.name: i for i, f in enumerate(self._filters)}
         fill_combobox(self.filter_combobox, self._filters, display=lambda f: f.display_name)
 
     def _setup_ui(self):
@@ -64,6 +64,10 @@ class SearchBox(QWidget):
         self.search_field = QLineEdit()
         self.layout.addWidget(self.search_field)
         config_line(self.search_field, place_holder="Búsqueda", font_size=16)
+
+    def set_filter(self, name: str, value: str):
+        self.filter_combobox.setCurrentIndex(self._filters_index[name])
+        self.search_field.setText(value)
 
     def filters(self) -> dict[str: tuple[Filter, str]]:
         """Returns a dict {k: v}, where k is a Filter object and v is its value to filter.

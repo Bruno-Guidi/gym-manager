@@ -25,6 +25,8 @@ class Controller:
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
 
+        if client is not None:
+            self.search_box.set_filter("client", client.name.as_primitive())
         self.load_transactions(client=client)
 
     def load_transactions(self, **kwargs):
