@@ -18,8 +18,7 @@ def pay_day_passed(last_paid_on: date, today: date) -> bool:
 class ValidationError(Exception):
 
     def __init__(self, cause: str, *args: object) -> None:
-        super().__init__(*args)
-        self.cause = cause
+        super().__init__(cause, *args)
 
 
 class Validatable(abc.ABC):
