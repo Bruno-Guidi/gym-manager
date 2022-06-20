@@ -111,7 +111,16 @@ class String(Validatable):
 
 class Currency(Validatable):
 
-    def validate(self, value: str, **kwargs) -> Any:
+    def validate(self, value: str, **kwargs) -> Decimal:
+        """Validates the given *value*. If the validation succeeds, returns the created Decimal object.
+
+        Keyword Args:
+            max_currency: maximum valid currency.
+
+        Raises:
+            KeyError if a kwarg is missing.
+            ValidationError if the validation failed.
+        """
         if 'max_currency' not in kwargs:
             raise KeyError(f"The method is missing the kwarg 'max_currency'. [kwargs={kwargs}]")
 
