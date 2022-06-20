@@ -8,7 +8,7 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo, FilterValuePair
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo
 
 _DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
