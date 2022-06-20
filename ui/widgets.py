@@ -62,9 +62,6 @@ class SearchBox(QWidget):
         self.layout.addWidget(self.search_field)
         config_line(self.search_field, place_holder="Búsqueda", font_size=16)
 
-    def clear(self):
-        pass
-
     def filters(self) -> dict[str: tuple[Filter, str]]:
         """Returns a dict {k: v}, where k is a Filter object and v is its value to filter.
         """
@@ -75,5 +72,5 @@ class SearchBox(QWidget):
         selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
         return selected.passes(to_filter, self.search_field.text())
 
-    def set_filter(self, name: str, value: str):
-        pass
+
+
