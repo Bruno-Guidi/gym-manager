@@ -69,18 +69,19 @@ class SqliteClientRepo(ClientRepo):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
             dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
-        if not self.contains(dni):
-            raise KeyError(f"There is no client with the 'dni'='{str(dni)}'")
 
         if dni not in self.cache:
-            clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive(), ClientTable.is_active == True)
+            clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
             inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
             for raw in prefetch(clients_q, inscriptions_q, trans_q):
                 self.cache[dni] = self.from_raw(raw)
-        return self.cache[dni]
+        try:
+            return self.cache[dni]
+        except KeyError as key_err:
+            raise KeyError(f"There is no client with the 'dni'={str(dni)}.") from key_err
 
-    def contains(self, dni: Number) -> bool:
-        """Returns True if there is a client with the given *dni*, False otherwise.
+    def is_active(self, dni: Number) -> bool:
+        """Checks if there is an active client with the given *dni*.
         """
         if not isinstance(dni, Number):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
@@ -91,7 +92,7 @@ class SqliteClientRepo(ClientRepo):
     def add(self, client: Client):
         """Adds the *client* to the repository.
         """
-        if self.contains(client.dni):
+        if self.is_active(client.dni):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
 
         ClientTable.replace(dni=client.dni.as_primitive(),

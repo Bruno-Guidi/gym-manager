@@ -32,12 +32,12 @@ class Controller:
                      self.dir_field.valid_value()])
         if not valid:
             QMessageBox.about(self.name_field.window(), "Error", "Hay datos que no son válidos.")
-        elif self.client_repo.contains(self.dni_field.value()):
+        elif self.client_repo.is_active(self.dni_field.value()):
             QMessageBox.about(self.name_field.window(), "Error",
-                              f"Ya existe un cliente con el dni '{self.dni_field.value().as_primitive()}'.")
+                              f"Ya existe un cliente activo con el dni '{self.dni_field.value().as_primitive()}'.")
         else:
             self.client = Client(self.dni_field.value(), self.name_field.value(), self.admission_field.date().toPyDate(),
-                                 self.tel_field.value(), self.dir_field.value())
+                                 self.tel_field.value(), self.dir_field.value(), is_active=True)
             self.client_repo.add(self.client)
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue creado correctamente.")
