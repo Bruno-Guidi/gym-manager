@@ -121,12 +121,6 @@ class InscriptionRepo(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def all(self, client: Client) -> Generator[Inscription, None, None]:
-        """Retrieves all inscriptions of the given *client*.
-        """
-        raise NotImplementedError
-
 
 class TransactionRepo(abc.ABC):
     """Transaction repository interface.

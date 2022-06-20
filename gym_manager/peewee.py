@@ -370,11 +370,3 @@ class SqliteInscriptionRepo(InscriptionRepo):
         raw_transaction = TransactionTable.get_by_id(transaction.id)
         raw_inscription.transaction = raw_transaction
         raw_inscription.save()
-
-    def all(self, client: Client) -> Generator[Inscription, None, None]:
-        """Retrieves all inscriptions of the given *client*.
-        """
-        query = InscriptionTable.select()
-        for x in query:
-            print(type(x))
-            yield x
