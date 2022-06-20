@@ -37,8 +37,7 @@ class AccountingSystem:
             method: allows filtering by transaction method.
             responsible: allows filtering by transaction responsible.
         """
-        cache = {}
-        yield from self.transaction_repo.all(page, page_len, cache, **filters)
+        yield from self.transaction_repo.all(page, page_len, **filters)
 
     def charge(
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,

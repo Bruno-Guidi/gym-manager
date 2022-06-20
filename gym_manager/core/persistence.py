@@ -139,7 +139,9 @@ class TransactionRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def create_or_get_existent(self, id, type, client, when, amount, method, responsible, description):
+    def from_raw_data(self, id, type, client: Client, when, amount, method, responsible, description):
+        """Creates a Transaction with the given data.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -153,9 +155,7 @@ class TransactionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(
-            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None, **kwargs
-    ) -> Generator[Transaction, None, None]:
+    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
 
         Keyword Args:

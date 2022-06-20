@@ -49,11 +49,11 @@ class SqliteClientRepo(ClientRepo):
                         String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
                         String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS))
 
-        for raw_inscription in raw.n_inscriptions:
+        for raw_inscription in raw.inscriptions:
             activity = self.activity_repo.get(raw_inscription.activity_id)
             raw_trans, transaction = raw_inscription.transaction, None
             if raw_trans is not None:
-                transaction = self.transaction_repo.create_or_get_existent(
+                transaction = self.transaction_repo.from_raw_data(
                     raw_trans.id, raw_trans.type, client, raw_trans.when, raw_trans.amount, raw_trans.method,
                     raw_trans.responsible, raw_trans.description
                 )
@@ -72,7 +72,7 @@ class SqliteClientRepo(ClientRepo):
             raise KeyError(f"There is no client with the 'dni'='{str(dni)}'")
 
         if dni not in self.cache:
-            raw = ClientTable.get_by_id(dni.as_primitive()).join(InscriptionTable).join(TransactionTable)
+            raw = ClientTable.select().where(ClientTable.dni == dni.as_primitive()).join(InscriptionTable).join(TransactionTable)
             self.cache[dni] = self.from_raw(raw)
         return self.cache[dni]
 
@@ -83,6 +83,7 @@ class SqliteClientRepo(ClientRepo):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
         raw_client = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
+        print(raw_client is not None, raw_client.is_active if raw_client is not None else "None")
         return raw_client is not None and raw_client.is_active
 
     def add(self, client: Client):
@@ -249,9 +250,12 @@ class SqliteTransactionRepo(TransactionRepo):
 
     def __init__(self) -> None:
         create_table(TransactionTable)
+        self.client_repo: ClientRepo | None = None
         self.cache: dict[int, Transaction] = {}
 
-    def create_or_get_existent(self, id, type, client, when, amount, method, responsible, description):
+    def from_raw_data(self, id, type, client: Client, when, amount, method, responsible, description):
+        """Creates a Transaction with the given data.
+        """
         if id not in self.cache:
             transaction = Transaction(id,
                                       String(type, max_len=consts.TRANSACTION_TYPE_CHARS),
@@ -267,9 +271,14 @@ class SqliteTransactionRepo(TransactionRepo):
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
             description: String
     ) -> Transaction:
-        """Register a new transaction with the given information. This method must return the created
-        transaction.
+        """Register a new transaction with the given information. This method must return the created transaction.
+
+        Raises:
+            AttributeError if the client_repo attribute wasn't set before the execution of the method.
         """
+        if self.client_repo is None:
+            raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
+
         transaction = TransactionTable.create(
             type=type.as_primitive(),
             client=ClientTable.get_by_id(client.dni.as_primitive()),
@@ -296,9 +305,7 @@ class SqliteTransactionRepo(TransactionRepo):
             cache[raw_client.dni] = new
             return new
 
-    def all(
-            self, page: int, page_len: int = 20, cache: dict[Number, Client] | None = None, **kwargs
-    ) -> Generator[Transaction, None, None]:
+    def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
 
         Keyword Args:
@@ -308,18 +315,21 @@ class SqliteTransactionRepo(TransactionRepo):
             to_date: allows filtering transactions whose *when* is before the given date (inclusive).
             method: allows filtering by transaction method.
             responsible: allows filtering by transaction responsible.
-        """
-        transactions_q = TransactionTable.select().join(ClientTable)
 
+        Raises:
+            AttributeError if the client_repo attribute wasn't set before the execution of the method.
+        """
+        if self.client_repo is None:
+            raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
+
+        transactions_q = TransactionTable.select().join(ClientTable)
         for filter_, value in kwargs.values():
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
-
-        cache = {} if cache is None else cache
 
         for raw_transaction in transactions_q.paginate(page, page_len):
             yield Transaction(raw_transaction.id,
                               String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
-                              self._get_client(raw_transaction.client, cache),
+                              self.client_repo.get(raw_transaction.client_id),
                               raw_transaction.when,
                               Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
                               String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),

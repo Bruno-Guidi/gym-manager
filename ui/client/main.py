@@ -339,8 +339,8 @@ class ClientRow(QWidget):
             clients = self.client_repo.all(self.main_ui_controller.current_page + 1,
                                            self.main_ui_controller.items_per_page,
                                            **self.main_ui_controller.search_box.filters())
-            for client in clients:
-                self.main_ui_controller.add_client(client)
+            # for client in clients:
+            #     self.main_ui_controller.add_client(client)
 
             QMessageBox.about(self.name_field.window(), "Éxito",
                               f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
