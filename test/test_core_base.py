@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction, Client, Activity, \
-    TextLike
+    TextLike, ClientLike
 
 
 def test_Number_validInputType():
@@ -204,3 +204,15 @@ def test_TextLike():
     assert filter_.passes(client, "tESTnAme")
 
     assert not filter_.passes(client, "TestNme")
+
+
+# noinspection PyTypeChecker
+def test_ClientLike():
+    client = Client(Number(1), String("TestName", max_len=20), admission=None, telephone=None, direction=None,
+                    is_active=True)
+    transaction = Transaction(1, type=None, client=client, when=date(2022, 9, 7), amount=None, method=None,
+                              responsible=None, description=None)
+
+    filter_ = ClientLike("name", "display_name")
+    assert filter_.passes(transaction, "tN")
+    assert not filter_.passes(transaction, "TestName#")
