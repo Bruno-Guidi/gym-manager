@@ -330,13 +330,7 @@ class ClientRow(QWidget):
             self.main_ui_controller.opened_now = None
             self.client_repo.remove(self.client)
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
-
-            # ToDo. Move the cache to ActivityManager.
-            clients = self.client_repo.all(self.main_ui_controller.current_page + 1,
-                                           self.main_ui_controller.items_per_page,
-                                           **self.main_ui_controller.search_box.filters())
-            # for client in clients:
-            #     self.main_ui_controller.add_client(client)
+            self.main_ui_controller.load_clients()
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
@@ -403,7 +397,7 @@ class Controller:
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
-        self.current_page, self.items_per_page = 1, 10
+        self.current_page, self.page_len = 1, 3
         self.opened_now: ClientRow | None = None
 
         self.client_list = client_list
@@ -423,7 +417,7 @@ class Controller:
         if check_filters and not self.search_box.passes_filters(client):
             return
 
-        if check_limit and len(self.client_list) == self.items_per_page:
+        if check_limit and len(self.client_list) == self.page_len:
             self.client_list.takeItem(len(self.client_list) - 1)
 
         item = QListWidgetItem(self.client_list)
@@ -439,8 +433,7 @@ class Controller:
     def load_clients(self):
         self.client_list.clear()
 
-        activity_cache = {activity.id: activity for activity in self.activity_manager.activities()}
-        clients = self.client_repo.all(self.current_page, self.items_per_page, **self.search_box.filters())
+        clients = self.client_repo.all(self.current_page, self.page_len, **self.search_box.filters())
         for client in clients:
             self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
