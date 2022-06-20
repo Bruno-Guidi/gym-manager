@@ -37,6 +37,9 @@ class Validatable(abc.ABC):
     def __hash__(self) -> int:
         return hash(self._value)
 
+    def as_primitive(self) -> Any:
+        return self._value
+
     @abc.abstractmethod
     def validate(self, value: Any, **kwargs) -> Any:
         """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
@@ -51,15 +54,12 @@ class Validatable(abc.ABC):
         """
         raise NotImplementedError
 
-    def as_primitive(self) -> Any:
-        return self._value
-
 
 class Number(Validatable):
 
     def validate(self, value: str | int, **kwargs) -> int:
-        """Validates the given *value*. If the validation succeeds, return the primitive that the Validatable
-        implementation stores.
+        """Validates the given *value*. If the validation succeeds, returns the given *value* as int, regardless of its
+        type.
 
         Keyword Args:
             min_value: minimum valid value. If None, min_value will be -inf.

@@ -57,3 +57,21 @@ def test_Number_raisesValidationError_outOfRange():
     with pytest.raises(ValidationError) as valid_err:
         Number(str(max_value), min_value=min_value, max_value=max_value)
     assert str(valid_err.value) == f"The argument 'value' must be in the range [{min_value}, {max_value}). [value={max_value}]"
+
+
+def test_Number_equality():
+    as_int = 5
+    as_number = Number(5)
+
+    assert as_number == as_int and as_int == as_number
+
+
+def test_Number_hashing():
+    as_int = 5
+    as_number = Number(5)
+
+    assert len({as_int, as_number}) == 1
+
+    assert as_int in {as_int} and as_int in {as_number}
+    assert as_number in {as_int} and as_number in {as_number}
+
