@@ -107,7 +107,7 @@ class String(Validatable):
         return value
 
     def contains(self, substring: str) -> bool:
-        return substring in self._value
+        return substring.lower() in self._value.lower()
 
 
 class Currency(Validatable):
