@@ -60,21 +60,3 @@ class AccountingSystem:
             self.inscription_repo.register_charge(client, activity, transaction)
 
         return transaction.id
-
-#     def all_expired_activities(self, **kwargs) -> Iterable[ActivityEntry]:
-#         """Retrieves all activity entries whose pay day has passed.
-#
-#         Keyword Args:
-#             activities: dict[int, Activity] with existing activities.
-#             page_number: number of page of the table to return.
-#             items_per_page: number of items per page.
-#         """
-#         yield from self.activity_entry_repo.expired(date.today(), **kwargs)
-#
-#
-# def expired_activities(client: Client, today: date) -> Iterable[ActivityEntry]:
-#     """Retrieves all the activities that the *client* is doing and whose pay day has passed.
-#     """
-#     for entry in client.activities:
-#         if entry.pay_day_passed(today):
-#             yield entry
