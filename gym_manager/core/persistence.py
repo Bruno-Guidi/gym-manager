@@ -127,12 +127,6 @@ class InscriptionRepo(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def expired(self, when: date, **kwargs) -> Generator[Inscription, None, None]:
-        """Retrieves all entries whose pay day has passed if today date were *when*.
-        """
-        raise NotImplementedError
-
 
 class TransactionRepo(abc.ABC):
     """Transaction repository interface.

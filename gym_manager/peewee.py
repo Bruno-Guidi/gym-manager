@@ -378,13 +378,3 @@ class SqliteInscriptionRepo(InscriptionRepo):
         for x in query:
             print(type(x))
             yield x
-
-    def expired(self, when: date, **kwargs) -> Generator[Inscription, None, None]:
-        """Retrieves all entries whose pay day has passed if today date were *when*.
-
-        Keyword Args:
-            activities: dict[int, Activity] with existing activities.
-            page_number: number of page of the table to return.
-            items_per_page: number of items per page.
-        """
-        pass
