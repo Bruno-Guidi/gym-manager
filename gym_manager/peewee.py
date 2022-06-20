@@ -101,6 +101,7 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
+        self.cache[client.dni] = client
 
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its inscriptions.
