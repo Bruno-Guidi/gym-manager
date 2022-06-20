@@ -113,15 +113,14 @@ class Currency(Validatable):
 
     def validate(self, value: str, **kwargs) -> Any:
         if 'max_currency' not in kwargs:
-            raise KeyError(f"The Currency.validate(args) method is missing the kwarg 'max_currency'.")
+            raise KeyError(f"The method is missing the kwarg 'max_currency'. [kwargs={kwargs}]")
 
         try:
             value = Decimal(value)
         except InvalidOperation:
-            raise ValidationError(f"The value '{value}' is not a valid currency.")
+            raise ValidationError(f"The argument 'value' is not a valid currency. [value={value}]")
         if value >= kwargs['max_currency']:
-            raise ValidationError(
-                f"The currency '{value}' is not valid. It should be less than '{kwargs['max_currency']}'.")
+            raise ValidationError(f"The argument 'value' must be lesser than {kwargs['max_currency']}. [value={value}]")
         return value
 
 

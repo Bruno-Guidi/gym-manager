@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 import pytest
 
-from gym_manager.core.base import ValidationError, Number, String
+from gym_manager.core import constants as consts
+from gym_manager.core.base import ValidationError, Number, String, Currency
 
 
 def test_Number_validInputType():
@@ -108,3 +111,41 @@ def test_String_raisesValidationError_invalidInput():
         String("abcde", optional=False, max_len=5)  # Character limit exceeded.
     assert str(valid_err.value) == (f"The argument 'value' has more characters than allowed. "
                                     f"[len(value)={len('abcde')}, max_len=5]")
+
+
+def test_Currency_raisesKeyError_missingKwarg():
+    with pytest.raises(KeyError):
+        Currency("test")  # Missing max_currency.
+
+    with pytest.raises(KeyError):
+        Currency("test")  # Missing max_currency.
+
+    with pytest.raises(KeyError):
+        Currency("test")  # Missing max_currency.
+
+    with pytest.raises(KeyError):
+        Currency("test", max_crrency=10)  # max_currency misspelled.
+
+
+def test_Currency_raisesValidationError_invalidCurrency():
+    with pytest.raises(ValidationError) as valid_err:
+        Currency("", max_currency=Decimal("100"))
+    assert str(valid_err.value) == f"The argument 'value' is not a valid currency. [value={''}]"
+
+    with pytest.raises(ValidationError) as valid_err:
+        Currency("abcd", max_currency=Decimal("100"))
+    assert str(valid_err.value) == f"The argument 'value' is not a valid currency. [value=abcd]"
+
+    with pytest.raises(ValidationError) as valid_err:
+        Currency("1e", max_currency=Decimal("100"))
+    assert str(valid_err.value) == f"The argument 'value' is not a valid currency. [value=1e]"
+
+    with pytest.raises(ValidationError) as valid_err:
+        Currency("a1", max_currency=Decimal("100"))
+    assert str(valid_err.value) == f"The argument 'value' is not a valid currency. [value=a1]"
+
+
+def test_Currency_raisesValidationError_maxCurrencyExceeded():
+    with pytest.raises(ValidationError) as valid_err:
+        Currency("100", max_currency=Decimal("100"))
+    assert str(valid_err.value) == f"The argument 'value' must be lesser than {'100'}. [value=100]"
