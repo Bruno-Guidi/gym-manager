@@ -142,17 +142,6 @@ class NotSignedUp(KeyError):
 
 
 @dataclass
-class Activity:
-    """Stores general information about an activity.
-    """
-    id: int
-    name: String
-    price: Currency
-    pay_once: bool
-    description: String
-
-
-@dataclass
 class Client:
     dni: Number
     name: String = field(compare=False)
@@ -186,14 +175,13 @@ class Client:
 
 
 @dataclass
-class Transaction:
+class Activity:
+    """Stores general information about an activity.
+    """
     id: int
-    type: String
-    client: Client
-    when: date
-    amount: Currency
-    method: String
-    responsible: String
+    name: String
+    price: Currency
+    pay_once: bool
     description: String
 
 
@@ -219,6 +207,18 @@ class Inscription:
             raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
                              f"'{self.activity.name}' that should be charged to the client '{self.client.name}'.")
         self.transaction = transaction
+
+
+@dataclass
+class Transaction:
+    id: int
+    type: String
+    client: Client
+    when: date
+    amount: Currency
+    method: String
+    responsible: String
+    description: String
 
 
 class Filter(abc.ABC):
