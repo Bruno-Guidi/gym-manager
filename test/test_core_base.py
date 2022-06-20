@@ -4,7 +4,8 @@ from decimal import Decimal
 import pytest
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction
+
+from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction, Client, Activity
 
 
 def test_Number_validInputType():
@@ -173,5 +174,18 @@ def test_Inscription_payDayPassed():
     assert inscription.charge_day_passed(today=date(2022, 10, 7))  # 31 days have passed since the charge.
 
 
+# noinspection PyTypeChecker
 def test_Inscription_registerCharge_raisesValueError():
-    pass
+    client = Client(Number(1), name=None, admission=None, telephone=None, direction=None, is_active=True)
+    other_client = Client(Number(2), name=None, admission=None, telephone=None, direction=None, is_active=True)
+    activity = Activity(0, String("name", max_len=20), price=None, pay_once=True, description=None)
+
+    with pytest.raises(ValueError):
+        trans = Transaction(1, type=None, client=other_client, when=None, amount=None, method=None, responsible=None,
+                            description=None)
+        Inscription(when=None, client=client, activity=activity).register_charge(trans)
+
+    with pytest.raises(ValueError):
+        trans = Transaction(1, type=None, client=client, when=None, amount=None, method=None, responsible=None,
+                            description=None)
+        Inscription(when=None, client=other_client, activity=activity).register_charge(trans)

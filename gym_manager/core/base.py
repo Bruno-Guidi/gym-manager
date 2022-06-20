@@ -208,6 +208,9 @@ class Inscription:
 
     def register_charge(self, transaction: Transaction):
         """Updates the inscription with the given *transaction*.
+
+        Raises
+            ValueError if the client of the *transaction* isn't *self.client*.
         """
         if self.client != transaction.client:
             raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
