@@ -265,6 +265,7 @@ class Client:
     admission: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
+    is_active: bool = field(compare=False)
     _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)
 
     def sign_on(self, inscription: Inscription):

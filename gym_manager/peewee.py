@@ -47,7 +47,8 @@ class SqliteClientRepo(ClientRepo):
                         String(raw.cli_name, max_len=consts.CLIENT_NAME_CHARS),
                         raw.admission,
                         String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
-                        String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS))
+                        String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS),
+                        raw.is_active)
 
         for raw_inscription in raw.inscriptions:
             activity = self.activity_repo.get(raw_inscription.activity_id)
@@ -292,20 +293,6 @@ class SqliteTransactionRepo(TransactionRepo):
         )
 
         return Transaction(transaction.id, type, client, when, amount, method, responsible, description)
-
-    def _get_client(self, raw_client, cache: dict[int, Client]) -> Client:
-        if raw_client.dni in cache:
-            return cache[raw_client.dni]
-        else:
-            new = Client(
-                Number(raw_client.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
-                String(raw_client.cli_name, max_len=consts.CLIENT_NAME_CHARS),
-                raw_client.admission,
-                String(raw_client.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
-                String(raw_client.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
-            )
-            cache[raw_client.dni] = new
-            return new
 
     def all(self, page: int, page_len: int = 20, **kwargs) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
