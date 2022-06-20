@@ -10,21 +10,21 @@ def test_Number_validInputType():
 
 def test_Number_raisesValidationError_invalidInputType():
     with pytest.raises(ValidationError) as valid_err:
-        Number([5], min_value=0, max_value=100)
+        Number([5])
     assert str(valid_err.value) == f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type([5])}]"
 
     with pytest.raises(ValidationError) as valid_err:
-        Number((), min_value=0, max_value=100)
+        Number(())
     assert str(valid_err.value) == f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type(())}]"
 
     with pytest.raises(ValidationError) as valid_err:
-        Number({"5"}, min_value=0, max_value=100)
+        Number({"5"})
     assert str(valid_err.value) == f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type({5})}]"
 
 
 def test_Number_raisesValidationError_notANumber():
     with pytest.raises(ValidationError) as valid_err:
-        Number("abc", min_value=0, max_value=100)
+        Number("abc")
     assert str(valid_err.value) == f"The argument 'value' is not a valid number. [value=abc]"
 
 
