@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 
 from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction, Client, Activity, \
-    TextLike, ClientLike, TextEqual
+    TextLike, ClientLike, TextEqual, DateGreater, DateLesser
 
 
 def test_Number_validInputType():
@@ -233,3 +233,15 @@ def test_TextEqual():
     assert not filter_.passes(client, "ame")
     assert not filter_.passes(client, String("ame", max_len=20))
     assert not filter_.passes(client, "TestNme")
+
+
+def test_DateGreater():
+    assert not DateGreater("name", "display_name").passes(to_filter=date(2022, 5, 4), filter_value=date(2022, 5, 5))
+    assert DateGreater("name", "display_name").passes(to_filter=date(2022, 5, 5), filter_value=date(2022, 5, 5))
+    assert DateGreater("name", "display_name").passes(to_filter=date(2022, 5, 6), filter_value=date(2022, 5, 5))
+
+
+def test_DateLesser():
+    assert not DateLesser("name", "display_name").passes(to_filter=date(2022, 5, 6), filter_value=date(2022, 5, 5))
+    assert DateLesser("name", "display_name").passes(to_filter=date(2022, 5, 5), filter_value=date(2022, 5, 5))
+    assert DateLesser("name", "display_name").passes(to_filter=date(2022, 5, 4), filter_value=date(2022, 5, 5))
