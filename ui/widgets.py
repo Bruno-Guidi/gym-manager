@@ -76,18 +76,19 @@ class SearchBox(QWidget):
 
 class ConfirmDialog(QDialog):
 
-    def __init__(self, question: str) -> None:
+    def __init__(self, question: str, show_cancel_btn: bool = True) -> None:
         super().__init__()
-        self._setup_ui(question)
+        self._setup_ui(question, show_cancel_btn)
         self.confirmed = False
-        self.yes_btn.clicked.connect(self.accept)
-        self.no_btn.clicked.connect(self.reject)
+        self.ok_btn.clicked.connect(self.accept)
+        if show_cancel_btn:
+            self.cancel_btn.clicked.connect(self.reject)
 
     def accept(self) -> None:
         self.confirmed = True
         super().accept()
 
-    def _setup_ui(self, question: str):
+    def _setup_ui(self, question: str, show_cancel_btn: bool):
         self.resize(300, 120)
 
         self.layout = QVBoxLayout(self)
@@ -98,13 +99,15 @@ class ConfirmDialog(QDialog):
 
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=20)
+        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
 
-        self.yes_btn = QPushButton()
-        self.buttons_layout.addWidget(self.yes_btn)
-        config_btn(self.yes_btn, "Si", width=60)
+        self.ok_btn = QPushButton()
+        self.buttons_layout.addWidget(self.ok_btn)
+        config_btn(self.ok_btn, "Ok", width=100)
 
-        self.no_btn = QPushButton()
-        self.buttons_layout.addWidget(self.no_btn)
-        config_btn(self.no_btn, "No", width=60)
+        self.cancel_btn: QPushButton | None = None
+        if show_cancel_btn:
+            self.cancel_btn = QPushButton()
+            self.buttons_layout.addWidget(self.cancel_btn)
+            config_btn(self.cancel_btn, "Cancelar", width=100)
 
