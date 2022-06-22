@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayo
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.main import AccountingMainUI
 from ui.activity.main import ActivityMainUI
+from ui.booking.main import BookingMainUI
 from ui.client.main import ClientMainUI
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, InscriptionRepo
 from ui.widget_config import config_layout, config_lbl, config_btn
@@ -29,6 +30,11 @@ class Controller:
         self.accounting_main_ui = AccountingMainUI(self.accounting_system)
         self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
         self.accounting_main_ui.show()
+
+    def show_booking_main_ui(self):
+        self.booking_main_ui = BookingMainUI()
+        self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.booking_main_ui.show()
 
 
 class MainUI(QMainWindow):
@@ -80,3 +86,4 @@ class MainUI(QMainWindow):
         self.client_ui_btn.clicked.connect(controller.show_client_main_ui)
         self.activity_ui_btn.clicked.connect(controller.show_activity_main_ui)
         self.accounting_ui_btn.clicked.connect(controller.show_accounting_main_ui)
+        self.booking_ui_btn.clicked.connect(controller.show_booking_main_ui)
