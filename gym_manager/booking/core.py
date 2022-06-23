@@ -149,7 +149,7 @@ class BookingSystem:
     def bookings(self, when: date) -> Iterable[tuple[Booking, int, int]]:
         """Yields bookings and its start and end block number for the given *when*.
         """
-        for booking in self._bookings[when]:
+        for booking in self.repo.all(when):
             yield booking, *self.block_range(booking.start, booking.end)
 
     def out_of_range(self, start_block: Block, duration: Duration) -> bool:
@@ -158,7 +158,7 @@ class BookingSystem:
 
     def booking_available(self, when: date, court: str, start_block: Block, duration: Duration) -> bool:
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self._bookings[when]:
+        for booking in self.repo.all(when):
             if booking.collides(start_block.start, end):
                 return False
         return True
@@ -173,7 +173,7 @@ class BookingSystem:
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start_block.start, duration).time()
-        booking = Booking(court, client, when, start_block.start, end, is_fixed, )
+        booking = Booking(court, client, is_fixed, when, start_block.start, end)
         self.repo.add(booking)
 
         return booking
@@ -184,4 +184,6 @@ class BookingRepo(abc.ABC):
     def add(self, booking: Booking):
         raise NotImplementedError
 
-
+    @abc.abstractmethod
+    def all(self, when: date) -> Generator[Booking, None, None]:
+        raise NotImplementedError
