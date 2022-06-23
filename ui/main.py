@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
 
+from gym_manager.booking.core import BookingSystem
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.main import AccountingMainUI
 from ui.activity.main import ActivityMainUI
@@ -11,10 +12,12 @@ from ui.widget_config import config_layout, config_lbl, config_btn
 
 
 class Controller:
-    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem):
+    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
+                 booking_system: BookingSystem):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
+        self.booking_system = booking_system
 
     def show_client_main_ui(self):
         self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager, self.accounting_system)
@@ -32,16 +35,17 @@ class Controller:
         self.accounting_main_ui.show()
 
     def show_booking_main_ui(self):
-        self.booking_main_ui = BookingMainUI()
+        self.booking_main_ui = BookingMainUI(self.booking_system)
         self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
         self.booking_main_ui.show()
 
 
 class MainUI(QMainWindow):
-    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem):
+    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
+                 booking_system: BookingSystem):
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, activity_manager, accounting_system)
+        self.controller = Controller(client_repo, activity_manager, accounting_system, booking_system)
         self._setup_callbacks(self.controller)
 
     def _setup_ui(self):
