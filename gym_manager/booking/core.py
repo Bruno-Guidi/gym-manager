@@ -82,10 +82,10 @@ class State:
 class Booking:
     court: str
     client: Client
+    is_fixed: bool
     when: date
     start: time
     end: time
-    is_fixed: bool
     state: State = State(BOOKING_TO_HAPPEN)
 
     # noinspection PyChainedComparisons
