@@ -42,13 +42,6 @@ def combine(base_date: date, start: time | None = None, duration: Duration | Non
     return dt
 
 
-class Court:
-
-    def __init__(self, number: int, name: str) -> None:
-        self.number = number
-        self.name = name
-
-
 class Duration:
 
     def __init__(self, minutes: int, as_str: str) -> None:
@@ -87,7 +80,7 @@ class State:
 
 @dataclass
 class Booking:
-    court: Court
+    court: str
     client: Client
     when: date
     start: time
@@ -123,7 +116,7 @@ class BookingSystem:
             self, courts_names: tuple[str], durations: tuple[Duration], start: time, end: time, minute_step: int,
             repo: BookingRepo
     ) -> None:
-        self.courts = (Court(i, name) for i, name in enumerate(courts_names))
+        self._courts = {name: i for i, name in enumerate(courts_names)}
         self.durations = durations
 
         self.start, self.end = start, end
@@ -163,7 +156,7 @@ class BookingSystem:
         end = combine(date.min, start_block.start, duration).time()
         return start_block.start < self.start or end > self.end
 
-    def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
+    def booking_available(self, when: date, court: str, start_block: Block, duration: Duration) -> bool:
         end = combine(date.min, start_block.start, duration).time()
         for booking in self._bookings[when]:
             if booking.collides(start_block.start, end):
@@ -171,7 +164,7 @@ class BookingSystem:
         return True
 
     def book(
-            self, court: Court, client: Client, when: date, start_block: Block, duration: Duration, is_fixed: bool
+            self, court: str, client: Client, when: date, start_block: Block, duration: Duration, is_fixed: bool
     ) -> Booking:
         if self.out_of_range(start_block, duration):
             raise ValueError()
