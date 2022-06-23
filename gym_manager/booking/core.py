@@ -126,6 +126,9 @@ class BookingSystem:
         self._bookings: dict[date, list[Booking]] = {}
         self.repo = repo
 
+    def courts(self) -> Iterable[str]:
+        return self._courts.keys()
+
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *from_* is given, then discard all blocks whose time is lesser than it.
         """
