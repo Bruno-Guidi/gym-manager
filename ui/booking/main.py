@@ -8,13 +8,15 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QCalendarWidget, QVBoxLayout, 
     QSizePolicy, QLabel, QTableWidget, QMenuBar, QStatusBar, QAction, QTableWidgetItem, QDateEdit
 
 from gym_manager.booking.core import BookingSystem
+from gym_manager.core.persistence import ClientRepo
 from ui.booking.operations import BookUI
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, config_date_edit
 
 
 class Controller:
 
-    def __init__(self, booking_system: BookingSystem, main_ui: BookingMainUI) -> None:
+    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, main_ui: BookingMainUI) -> None:
+        self.client_repo = client_repo
         self.booking_system = booking_system
         self.main_ui = main_ui
 
@@ -23,16 +25,16 @@ class Controller:
             print(booking.when, booking.start, booking.end)
 
     def book_ui(self):
-        self._book_ui = BookUI(self.booking_system)
+        self._book_ui = BookUI(self.client_repo, self.booking_system)
         self._book_ui.exec_()
 
 
 class BookingMainUI(QMainWindow):
 
-    def __init__(self, booking_system: BookingSystem) -> None:
+    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(booking_system, self)
+        self.controller = Controller(client_repo, booking_system, self)
         self.book_btn.clicked.connect(self.controller.book_ui)
 
     def _setup_ui(self):

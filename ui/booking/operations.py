@@ -4,18 +4,20 @@ from datetime import date
 
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox, \
-    QCheckBox, QPushButton, QDialog, QDateEdit
+    QCheckBox, QPushButton, QDialog, QDateEdit, QHBoxLayout
 
 from gym_manager.booking.core import BookingSystem
-from gym_manager.core.base import String
+from gym_manager.core.base import String, TextLike
+from gym_manager.core.persistence import ClientRepo
 from ui.widget_config import config_layout, config_lbl, config_line, config_combobox, config_btn, config_checkbox, \
     fill_combobox, config_date_edit
-from ui.widgets import Field
+from ui.widgets import Field, SearchBox
 
 
 class Controller:
 
-    def __init__(self, booking_system: BookingSystem, book_ui: BookUI) -> None:
+    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, book_ui: BookUI) -> None:
+        self.client_repo = client_repo
         self.booking_system = booking_system
         self.book_ui = book_ui
 
@@ -23,13 +25,19 @@ class Controller:
         fill_combobox(book_ui.hour_combobox, self.booking_system.blocks(), lambda block: str(block.start))
         fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
+        self.book_ui.search_btn.clicked.connect(self.search_clients)
+
+    def search_clients(self):
+        clients = self.client_repo.all(1, 20, **self.book_ui.search_box.filters())
+        fill_combobox(self.book_ui.client_combobox, clients, lambda client: client.name.as_primitive())
+
 
 class BookUI(QDialog):
 
-    def __init__(self, booking_system: BookingSystem) -> None:
+    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(booking_system, self)
+        self.controller = Controller(client_repo, booking_system, self)
 
     def _setup_ui(self):
         width, height = 600, 400
@@ -42,6 +50,21 @@ class BookUI(QDialog):
         self.layout = QVBoxLayout(self.widget)
         config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
+        # Utilities.
+        self.utils_layout = QHBoxLayout()
+        self.layout.addLayout(self.utils_layout)
+
+        self.search_box = SearchBox(
+            filters=[TextLike("name", display_name="Nombre", attr="name",
+                              translate_fun=lambda client, value: client.cli_name.contains(value))],
+            parent=self.widget)
+        self.utils_layout.addWidget(self.search_box)
+
+        self.search_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.search_btn)
+        config_btn(self.search_btn, "Busq", font_size=16)
+
+        # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
         config_layout(self.form_layout, spacing=10)
@@ -50,9 +73,9 @@ class BookUI(QDialog):
         self.form_layout.addWidget(self.client_lbl, 0, 0, 1, 1)
         config_lbl(self.client_lbl, "Cliente")
 
-        self.client_field = Field(validatable=String, max_len=5)
-        self.form_layout.addWidget(self.client_field, 0, 1, 1, 1)
-        config_line(self.client_field, height=35)
+        self.client_combobox = QComboBox()
+        self.form_layout.addWidget(self.client_combobox, 0, 1, 1, 1)
+        config_combobox(self.client_combobox, height=35)
 
         self.court_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.court_lbl, 1, 0, 1, 1)
