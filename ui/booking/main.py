@@ -23,7 +23,7 @@ class Controller:
             print(booking.when, booking.start, booking.end)
 
     def book_ui(self):
-        self._book_ui = BookUI()
+        self._book_ui = BookUI(self.booking_system)
         self._book_ui.exec_()
 
 
