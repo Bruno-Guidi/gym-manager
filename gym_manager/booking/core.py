@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-
+import abc
 import itertools
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator
 
 from gym_manager.core.base import Client
+
+
+BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
 
 
 def time_range(start: time, end: time, minute_step: int, reverse: bool = False) -> Generator[time, None, None]:
@@ -63,6 +66,25 @@ class Block:
         self.str_range = f"{start.strftime('%H:%M')} - {end.strftime('%H:%M')}"
 
 
+class State:
+
+    def __init__(self, name: str, updated_by: str | None = None) -> None:
+        self._name = name
+        self._updated_by = updated_by if updated_by is not None else "-"
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def updated_by(self) -> str:
+        return self._updated_by
+
+    def update(self, new_state: str, updated_by: str):
+        self._name = new_state
+        self._updated_by = updated_by
+
+
 @dataclass
 class Booking:
     court: Court
@@ -70,6 +92,24 @@ class Booking:
     when: date
     start: time
     end: time
+    is_fixed: bool
+    state: State = State(BOOKING_TO_HAPPEN)
+
+    # noinspection PyChainedComparisons
+    def collides(self, start: time, end: time) -> bool:
+        """Determines if an hypothetical booking with the given start and end time will collide with this booking.
+
+        There are four possible situations where a collision wont happen:
+        1. start < end < b.start < b.end.
+        2. start < end <= b.start < b.end.
+        3. b.start < b.end < start < end.
+        4. b.start < b.end <= start < end.
+        The remaining possibilities involve a partial or total collision.
+
+        Returns:
+            True if there is a collision, False otherwise.
+        """
+        return not (start < self.start and end <= self.start or start >= self.end and end > self.end)
 
 
 class BookingSystem:
@@ -80,14 +120,18 @@ class BookingSystem:
             yield Block(i, block_start, block_end)
 
     def __init__(
-            self, courts_names: tuple[str], durations: tuple[Duration], start: time, end: time, minute_step: int
+            self, courts_names: tuple[str], durations: tuple[Duration], start: time, end: time, minute_step: int,
+            repo: BookingRepo
     ) -> None:
         self.courts = (Court(i, name) for i, name in enumerate(courts_names))
         self.durations = durations
-        self._bookings: dict[date, list[Booking]] = {}
+
+        self.start, self.end = start, end
         self._blocks: dict[time, Block] = {block.start: block for block
                                            in self.create_blocks(start, end, minute_step)}
-        self.start, self.end = start, end
+
+        self._bookings: dict[date, list[Booking]] = {}
+        self.repo = repo
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *from_* is given, then discard all blocks whose time is lesser than it.
@@ -97,7 +141,7 @@ class BookingSystem:
         else:
             yield from self._blocks.values()
 
-    def range(self, start: time, end: time) -> tuple[int, int]:
+    def block_range(self, start: time, end: time) -> tuple[int, int]:
         """Returns the start and end block number for the given *start* and *end* time.
         """
         if end == self.end:
@@ -113,13 +157,38 @@ class BookingSystem:
         """Yields bookings and its start and end block number for the given *when*.
         """
         for booking in self._bookings[when]:
-            yield booking, *self.range(booking.start, booking.end)
+            yield booking, *self.block_range(booking.start, booking.end)
 
-    def book(self, court: Court, client: Client, when: date, start_block: Block, duration: Duration) -> Booking:
+    def out_of_range(self, start_block: Block, duration: Duration) -> bool:
+        end = combine(date.min, start_block.start, duration).time()
+        return start_block.start < self.start or end > self.end
+
+    def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
+        end = combine(date.min, start_block.start, duration).time()
+        for booking in self._bookings[when]:
+            if booking.collides(start_block.start, end):
+                return False
+        return True
+
+    def book(
+            self, court: Court, client: Client, when: date, start_block: Block, duration: Duration, is_fixed: bool
+    ) -> Booking:
+        if self.out_of_range(start_block, duration):
+            raise ValueError()
+        if not self.booking_available(when, court, start_block, duration):
+            raise ValueError()
+
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start_block.start, duration).time()
-        booking = Booking(court, client, when, start_block.start, end)
+        booking = Booking(court, client, when, start_block.start, end, is_fixed, )
+        self.repo.add(booking)
 
         return booking
+
+
+class BookingRepo(abc.ABC):
+    @abc.abstractmethod
+    def add(self, booking: Booking):
+        raise NotImplementedError
 
 
