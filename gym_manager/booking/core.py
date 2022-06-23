@@ -21,11 +21,11 @@ def time_range(start: time, end: time, minute_step: int, reverse: bool = False) 
 
     if reverse:
         while end_delta >= start_delta:
-            yield end_delta.seconds // 3600, (end_delta.seconds // 60) % 60
+            yield time(end_delta.seconds // 3600, (end_delta.seconds // 60) % 60)
             end_delta -= step_delta
     else:
         while start_delta <= end_delta:
-            yield start_delta.seconds // 3600, (start_delta.seconds // 60) % 60
+            yield time(start_delta.seconds // 3600, (start_delta.seconds // 60) % 60)
             start_delta += step_delta
 
 
