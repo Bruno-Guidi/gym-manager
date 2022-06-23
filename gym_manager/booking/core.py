@@ -113,8 +113,8 @@ class BookingSystem:
             yield Block(i, block_start, block_end)
 
     def __init__(
-            self, courts_names: tuple[str], durations: tuple[Duration], start: time, end: time, minute_step: int,
-            repo: BookingRepo
+            self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
+            minute_step: int, repo: BookingRepo
     ) -> None:
         self._courts = {name: i for i, name in enumerate(courts_names)}
         self.durations = durations
