@@ -160,11 +160,11 @@ class BookingSystem:
         """Yields bookings and its start and end block number for the given *when*.
         """
         if when is not None:
-            for booking in self.repo.all(self.courts, when):
+            for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
                 yield booking, *self.block_range(booking.start, booking.end)
 
         elif len(filters) > 0:
-            for booking in self.repo.all(self.courts, **filters):
+            for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), **filters):
                 yield booking, *self.block_range(booking.start, booking.end)
 
         else:
@@ -176,7 +176,7 @@ class BookingSystem:
 
     def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all(self.courts, when):
+        for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
             if booking.collides(start_block.start, end):
                 return False
         return True
