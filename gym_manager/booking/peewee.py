@@ -1,15 +1,17 @@
 from datetime import date, time, datetime
 from typing import Generator
 
-from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField
+from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField
 
 from gym_manager import peewee
 from gym_manager.booking.core import Booking, BookingRepo, combine, Court, State
+from gym_manager.core.base import Client
 from gym_manager.core.persistence import ClientRepo
 
 
 class BookingTable(Model):
-    when = DateTimeField(primary_key=True)
+    id = IntegerField(primary_key=True)
+    when = DateTimeField()
     court = CharField()
     client = ForeignKeyField(peewee.ClientTable, backref="bookings")
     end = TimeField()
@@ -55,6 +57,7 @@ class SqliteBookingRepo(BookingRepo):
         # Updates the state history.
         StateHistory.create(booking=raw, prev=prev_state.name, current=booking.state.name,
                             updated_by=booking.state.updated_by, when=datetime.now())
+        # Updates the booking.
         raw.is_fixed = booking.is_fixed
         raw.state = booking.state.name
         raw.updated_by = booking.state.updated_by

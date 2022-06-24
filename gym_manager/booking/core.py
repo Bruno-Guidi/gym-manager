@@ -84,13 +84,14 @@ class State:
 
 @dataclass
 class Booking:
+    id: int
     court: Court
     client: Client
     is_fixed: bool
+    state: State
     when: date
     start: time
     end: time
-    state: State = State(BOOKING_TO_HAPPEN)
 
     # noinspection PyChainedComparisons
     def collides(self, start: time, end: time) -> bool:
@@ -181,7 +182,7 @@ class BookingSystem:
         return True
 
     def book(
-            self, court: Court, client: Client, when: date, start_block: Block, duration: Duration, is_fixed: bool
+            self, court: Court, client: Client, is_fixed: bool, when: date, start_block: Block, duration: Duration
     ) -> Booking:
         if self.out_of_range(start_block, duration):
             raise ValueError()
@@ -190,15 +191,14 @@ class BookingSystem:
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start_block.start, duration).time()
-        booking = Booking(court, client, is_fixed, when, start_block.start, end)
-        self.repo.add(booking)
+        booking = self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)
 
         return booking
 
     def cancel(self, booking: Booking, responsible: str, remains_fixed: bool = False):
         prev = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
         booking.is_fixed = remains_fixed
-        self.repo.remove(booking, prev)
+        self.repo.update(booking, prev)
 
 
 class BookingRepo(abc.ABC):
