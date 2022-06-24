@@ -309,7 +309,8 @@ class PreChargeController:
                                       fixed_descr=True)
             self.charge_ui.exec_()
 
-            # self.booking_system.cancel(self.booking, "", remains_fixed)
+            if self.charge_ui.controller.transaction is not None:
+                self.booking_system.register_charge(booking, self.charge_ui.controller.transaction)
             self.pre_charge_ui.booking_combobox.window().close()
 
 

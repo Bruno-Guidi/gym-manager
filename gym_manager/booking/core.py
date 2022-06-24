@@ -7,10 +7,13 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator
 
-from gym_manager.core.base import Client
-
+from gym_manager.core import constants
+from gym_manager.core.base import Client, Activity, String, Transaction
+from gym_manager.core.system import AccountingSystem
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
+
+ONE_WEEK_TD = timedelta(weeks=1)
 
 
 def time_range(start: time, end: time, minute_step: int, reverse: bool = False) -> Generator[time, None, None]:
@@ -124,7 +127,7 @@ class BookingSystem:
 
     def __init__(
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
-            minute_step: int, repo: BookingRepo
+            minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem
     ) -> None:
         self.courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
         self.durations = durations
@@ -134,7 +137,10 @@ class BookingSystem:
                                            in self.create_blocks(start, end, minute_step)}
 
         self._bookings: dict[date, list[Booking]] = {}
+
+        self.activity = activity
         self.repo = repo
+        self.accounting_system = accounting_system
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *from_* is given, then discard all blocks whose time is lesser than it.
@@ -199,6 +205,13 @@ class BookingSystem:
         prev = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
         booking.is_fixed = remains_fixed
         self.repo.update(booking, prev)
+
+    def register_charge(self, booking: Booking, transaction: Transaction):
+        prev = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
+        self.repo.update(booking, prev)
+        if booking.is_fixed:
+            self.repo.create(booking.court, booking.client, booking.is_fixed, State(BOOKING_TO_HAPPEN),
+                             booking.when + ONE_WEEK_TD, booking.start, booking.end)
 
 
 class BookingRepo(abc.ABC):
