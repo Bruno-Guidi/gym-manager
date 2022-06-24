@@ -23,7 +23,7 @@ class Controller:
 
         self.book_ui = book_ui
 
-        fill_combobox(book_ui.court_combobox, self.booking_system.courts(), lambda court_name: court_name)
+        fill_combobox(book_ui.court_combobox, self.booking_system.courts(), lambda court: court.name)
         fill_combobox(book_ui.block_combobox, self.booking_system.blocks(), lambda block: str(block.start))
         fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 

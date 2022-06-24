@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import itertools
+from collections import namedtuple
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator
@@ -40,6 +41,9 @@ def combine(base_date: date, start: time | None = None, duration: Duration | Non
     if duration is not None:
         dt = dt + duration.as_timedelta
     return dt
+
+
+Court = namedtuple("Court", ["name", "id"])
 
 
 class Duration:
@@ -116,6 +120,7 @@ class BookingSystem:
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
             minute_step: int, repo: BookingRepo
     ) -> None:
+        self.courts = (Court(name, i) for i, name in enumerate(courts_names))
         self._courts = {name: i for i, name in enumerate(courts_names)}
         self.durations = durations
 
@@ -125,9 +130,6 @@ class BookingSystem:
 
         self._bookings: dict[date, list[Booking]] = {}
         self.repo = repo
-
-    def courts(self) -> Iterable[str]:
-        return self._courts.keys()
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *from_* is given, then discard all blocks whose time is lesser than it.
