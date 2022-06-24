@@ -16,12 +16,16 @@ def pay_day_passed(last_paid_on: date, today: date) -> bool:
 
 
 class ValidationError(Exception):
+    """Exception raised when a validation fails in Validatable.validate(args) method.
+    """
 
     def __init__(self, cause: str, *args: object) -> None:
         super().__init__(cause, *args)
 
 
 class Validatable(abc.ABC):
+    """Interface used as a base for classes that wrap primive values that should be validated.
+    """
 
     def __init__(self, value: Any, **validate_args):
         self._value = self.validate(value, **validate_args)
@@ -30,6 +34,8 @@ class Validatable(abc.ABC):
         return str(self._value)
 
     def as_primitive(self) -> Any:
+        """Returns the wrapped primitive.
+        """
         return self._value
 
     @abc.abstractmethod
@@ -48,6 +54,8 @@ class Validatable(abc.ABC):
 
 
 class Number(Validatable):
+    """int wrapper that supports min and max optional values.
+    """
 
     def __eq__(self, o) -> bool:
         if isinstance(o, type(self._value)):
@@ -87,9 +95,12 @@ class Number(Validatable):
 
 
 class String(Validatable):
+    """str wrapper that supports empty str and str with a max length.
+    """
 
     def __eq__(self, o: object) -> bool:
         if isinstance(o, String):
+            print("Comparison between String and str", self._value, o)
             return self._value.lower() == o._value.lower()
         if isinstance(o, str):
             return self._value.lower() == o.lower()
@@ -124,6 +135,8 @@ class String(Validatable):
 
 
 class Currency(Validatable):
+    """Decimal wrapper that supports a max currency value.
+    """
 
     def validate(self, value: str, **kwargs) -> Decimal:
         """Validates the given *value*. If the validation succeeds, returns the created Decimal object.
@@ -149,6 +162,9 @@ class Currency(Validatable):
 
 @dataclass
 class Client:
+    """Stores information about a client.
+    """
+
     dni: Number
     name: String = field(compare=False)
     admission: date = field(compare=False)
@@ -163,19 +179,27 @@ class Client:
         self._inscriptions[inscription.activity.id] = inscription
 
     def cancel(self, inscription: Inscription):
+        """Cancels the given *inscription*.
+        """
         self._inscriptions.pop(inscription.activity.id)
 
     def is_signed_up(self, activity: Activity) -> bool:
+        """Returns True if the client is signed up in the *activity*.
+        """
         return activity.id in self._inscriptions
 
     def n_inscriptions(self) -> int:
+        """Returns the number of activities inscriptions that the client has.
+        """
         return len(self._inscriptions)
 
     def inscriptions(self) -> Iterable[Inscription]:
+        """Returns the activities inscriptions.
+        """
         return self._inscriptions.values()
 
     def register_charge(self, activity: Activity, transaction: Transaction):
-        """Registers that the client was charged for the activity.
+        """Registers that the client was charged for the *activity*.
         """
         self._inscriptions[activity.id].register_charge(transaction)
 
@@ -184,6 +208,7 @@ class Client:
 class Activity:
     """Stores general information about an activity.
     """
+
     id: int
     name: String
     price: Currency
@@ -193,8 +218,9 @@ class Activity:
 
 @dataclass
 class Inscription:
-    """Stores information about a customer's inscription in an activity.
+    """Stores information about a client's inscription in an activity.
     """
+
     when: date
     client: Client
     activity: Activity
@@ -225,6 +251,9 @@ class Inscription:
 
 @dataclass
 class Transaction:
+    """Stores information about a transaction.
+    """
+
     id: int
     type: String
     client: Client
@@ -236,6 +265,8 @@ class Transaction:
 
 
 class Filter(abc.ABC):
+    """Filter base class.
+    """
 
     def __init__(self, name: str, display_name: str, translate_fun: Callable[[Any, Any], bool] | None = None) -> None:
         self.name = name
@@ -250,9 +281,15 @@ class Filter(abc.ABC):
 
     @abc.abstractmethod
     def passes(self, to_filter: Any, filter_value: Any) -> bool:
+        """Returns True if *to_filter* passes the implemented filter with the given *filter_value*. *to_filter* is an
+        in memory object.
+        """
         raise NotImplementedError
 
     def passes_in_repo(self, to_filter: Any, filter_value: Any) -> bool:
+        """Returns True if *to_filter* passes the implemented filter with the given *filter_value*. *to_filter* is an
+        object that comes from a repository.
+        """
         if self.translate_fun is None:
             raise AttributeError(f"The filter '{self.name}' of type '{type(self)}' does not have a 'transalte_fun'.")
         return self.translate_fun(to_filter, filter_value)
@@ -267,6 +304,8 @@ class TextLike(Filter):
         self.attr = attr
 
     def passes(self, to_filter: Any, filter_value: str | String) -> bool:
+        """Returns True if the attr *self.attr* of the object *to_filter* contains the *filter_value*.
+        """
         if not hasattr(to_filter, self.attr):
             raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
                                  f"attribute '{self.attr}'.")
@@ -286,6 +325,8 @@ class TextLike(Filter):
 class ClientLike(Filter):
 
     def passes(self, to_filter: Any, filter_value: str) -> bool:
+        """Returns True if the attr *name* of the attr *client* of the object *to_filter* contains the *filter_value*.
+        """
         if not hasattr(to_filter, "client"):
             raise TypeError(f"The argument 'to_filter' must be of a type that has the attribute 'client'. Instead, it "
                             f"is of type '{type(to_filter)}'.")
@@ -298,7 +339,6 @@ class ClientLike(Filter):
 
 
 class TextEqual(Filter):
-
     def __init__(
             self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
     ) -> None:
@@ -306,6 +346,8 @@ class TextEqual(Filter):
         self.attr = attr
 
     def passes(self, to_filter: Any, filter_value: str | String) -> bool:
+        """Returns True if the attr *self.attr* of the object *to_filter* is equal to *filter_value*.
+        """
         if not hasattr(to_filter, self.attr):
             raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
                                  f"attribute '{self.attr}'.")
@@ -323,8 +365,9 @@ class TextEqual(Filter):
 
 
 class DateGreater(Filter):
-
     def passes(self, to_filter: Any, filter_value: date) -> bool:
+        """Returns True if the given *to_filter* date is great or equal to *filter_value*.
+        """
         if not isinstance(filter_value, date):
             raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
                             f"'{type(filter_value)}'.")
@@ -334,6 +377,8 @@ class DateGreater(Filter):
 class DateLesser(Filter):
 
     def passes(self, to_filter: Any, filter_value: date) -> bool:
+        """Returns True if the given *to_filter* date is less or equal to *filter_value*.
+        """
         if not isinstance(filter_value, date):
             raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
                             f"'{type(filter_value)}'.")
