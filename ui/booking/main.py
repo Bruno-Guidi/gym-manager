@@ -7,7 +7,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QCalendarWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QLabel, QTableWidget, QMenuBar, QStatusBar, QAction, QTableWidgetItem, QDateEdit
 
-from gym_manager.booking.core import BookingSystem
+from gym_manager.booking.core import BookingSystem, Booking
 from gym_manager.core.persistence import ClientRepo
 from ui.booking.operations import BookUI
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, config_date_edit
@@ -20,14 +20,39 @@ class Controller:
         self.booking_system = booking_system
         self.main_ui = main_ui
 
+        self.load_bookings()
+
+    def _load_booking(self, booking: Booking, courts: dict[str, int], start: int | None = None, end: int | None = None):
+        if start is None or end is None:
+            start, end = self.booking_system.block_range(booking.start, booking.end)
+
+        item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}")
+        item.setTextAlignment(Qt.AlignCenter)
+        self.main_ui.booking_table.setItem(start, courts[booking.court], item)
+        self.main_ui.booking_table.setSpan(start, courts[booking.court], end - start, 1)
+
     def load_bookings(self):
+        self.main_ui.booking_table.setRowCount(0)  # Clears the table.
+
+        # Loads the hour column.
+        blocks = [block for block in self.booking_system.blocks()]
+        self.main_ui.booking_table.setRowCount(len(blocks))
+        for row, block in enumerate(blocks):
+            item = QTableWidgetItem(block.str_range)
+            item.setTextAlignment(Qt.AlignCenter)
+            self.main_ui.booking_table.setItem(row, 0, item)
+
+        # Loads the bookings for the day.
+        courts = {court.name: court.id for court in self.booking_system.courts}
         for booking, start, end in self.booking_system.bookings(self.main_ui.date_field.date().toPyDate()):
-            print(booking.when, booking.start, booking.end)
+            self._load_booking(booking, courts, start, end)
 
     def book_ui(self):
         self._book_ui = BookUI(self.client_repo, self.booking_system)
         self._book_ui.exec_()
-        self.load_bookings()  # ToDo load only the added booking.
+        if self._book_ui.controller.booking is not None:
+            self._load_booking(self._book_ui.controller.booking, {court.name: court.id
+                                                                  for court in self.booking_system.courts})
 
 
 class BookingMainUI(QMainWindow):
@@ -93,12 +118,12 @@ class BookingMainUI(QMainWindow):
         self.date_hbox.addWidget(self.next_button)
         config_btn(self.next_button, ">", width=30)
 
-        self.bookings = QTableWidget(self.widget)
-        self.vbox.addWidget(self.bookings)
+        self.booking_table = QTableWidget(self.widget)
+        self.vbox.addWidget(self.booking_table)
 
         # height() returns the width of the scrollbar.
-        column_len = (width - self.bookings.verticalScrollBar().height() - 135) // 3
+        column_len = (width - self.booking_table.verticalScrollBar().height() - 135) // 3
         config_table(
-            target=self.bookings,
+            target=self.booking_table,
             columns={"Hora": 126, "Cancha 1": column_len, "Cancha 2": column_len, "Cancha 3 (Singles)": column_len}
         )

@@ -120,7 +120,7 @@ class BookingSystem:
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
             minute_step: int, repo: BookingRepo
     ) -> None:
-        self.courts = (Court(name, i) for i, name in enumerate(courts_names))
+        self.courts = tuple(Court(name, i + 1) for i, name in enumerate(courts_names))
         self._courts = {name: i for i, name in enumerate(courts_names)}
         self.durations = durations
 
