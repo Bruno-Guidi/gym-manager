@@ -62,8 +62,8 @@ class AccountingSystem:
             self,
             transaction_repo: TransactionRepo,
             inscription_repo: InscriptionRepo,
-            transaction_types: list[str],
-            methods: list[str]
+            transaction_types: tuple[str, ...],
+            methods: tuple[str, ...]
     ) -> None:
         self.transaction_repo = transaction_repo
         self.inscription_repo = inscription_repo

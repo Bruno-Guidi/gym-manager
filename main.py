@@ -22,7 +22,8 @@ if __name__ == "__main__":
 
     activity_manager = ActivityManager(activity_repo, inscription_repo)
     accounting_system = AccountingSystem(transaction_repo, inscription_repo,
-                                         transaction_types=["charge", "extract"])
+                                         transaction_types=("charge", "extract"),
+                                         methods=("Efectivo", "Débito", "Crédito"))
 
     activity = activity_manager.create(String("Padel", max_len=consts.ACTIVITY_NAME_CHARS),
                                        Currency("100", max_currency=consts.MAX_CURRENCY),
