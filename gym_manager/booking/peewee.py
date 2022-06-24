@@ -59,10 +59,14 @@ class SqliteBookingRepo(BookingRepo):
         raw.updated_by = booking.state.updated_by
         raw.save()
 
-    def all(self, when: date, courts: dict[str, Court]) -> Generator[Booking, None, None]:
+    def all(self, courts: dict[str, Court], when: date | None = None, **filters) -> Generator[Booking, None, None]:
         year, month, day = when.year, when.month, when.day
-        bookings_q = BookingTable.select().where(year == BookingTable.when.year, month == BookingTable.when.month,
-                                                 day == BookingTable.when.day)
+        bookings_q = BookingTable.select()
+        if when is not None:
+            bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
+                                          day == BookingTable.when.day)
+        for filter_, value in filters.values():
+            bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
         for raw in bookings_q:
             start = time(raw.when.hour, raw.when.minute)
             yield Booking(courts[raw.court], self.client_repo.get(raw.client_id), raw.is_fixed, when, start, raw.end)

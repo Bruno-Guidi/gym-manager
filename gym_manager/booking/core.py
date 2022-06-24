@@ -150,11 +150,19 @@ class BookingSystem:
         else:
             return self._blocks[start].number, self._blocks[end].number
 
-    def bookings(self, when: date) -> Iterable[tuple[Booking, int, int]]:
+    def bookings(self, when: date | None = None, **filters) -> Iterable[tuple[Booking, int, int]]:
         """Yields bookings and its start and end block number for the given *when*.
         """
-        for booking in self.repo.all(when, self.courts):
-            yield booking, *self.block_range(booking.start, booking.end)
+        if when is not None:
+            for booking in self.repo.all(self.courts, when):
+                yield booking, *self.block_range(booking.start, booking.end)
+
+        elif len(filters) > 0:
+            for booking in self.repo.all(self.courts, **filters):
+                yield booking, *self.block_range(booking.start, booking.end)
+
+        else:
+            raise ValueError()
 
     def out_of_range(self, start_block: Block, duration: Duration) -> bool:
         end = combine(date.min, start_block.start, duration).time()
@@ -162,7 +170,7 @@ class BookingSystem:
 
     def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all(when, self.courts):
+        for booking in self.repo.all(self.courts, when):
             if booking.collides(start_block.start, end):
                 return False
         return True
@@ -193,5 +201,5 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, when: date, courts: dict[str, Court]) -> Generator[Booking, None, None]:
+    def all(self, courts: dict[str, Court], when: date | None = None, **filters) -> Generator[Booking, None, None]:
         raise NotImplementedError
