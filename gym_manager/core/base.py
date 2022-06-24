@@ -70,7 +70,9 @@ class Number(Validatable):
             ValidationError if the validation failed.
         """
         if not isinstance(value, (str, int)):
-            raise ValidationError(f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type(value)}]")
+            raise ValidationError(
+                f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type(value)}]"
+            )
         try:
             int_value = int(value)
         except ValueError:
@@ -78,7 +80,9 @@ class Number(Validatable):
         min_value = kwargs['min_value'] if 'min_value' in kwargs else float('-inf')
         max_value = kwargs['max_value'] if 'max_value' in kwargs else float('inf')
         if int_value < min_value or int_value >= max_value:
-            raise ValidationError(f"The argument 'value' must be in the range [{min_value}, {max_value}). [value={value}]")
+            raise ValidationError(
+                f"The argument 'value' must be in the range [{min_value}, {max_value}). [value={value}]"
+            )
         return int_value
 
 
@@ -141,14 +145,6 @@ class Currency(Validatable):
         if value >= kwargs['max_currency']:
             raise ValidationError(f"The argument 'value' must be lesser than {kwargs['max_currency']}. [value={value}]")
         return value
-
-
-class NotSignedUp(KeyError):
-    """Exception thrown when the *client* isn't registered in the *activity*.
-    """
-    def __init__(self, client: Client, activity_id: int, *args: object) -> None:
-        msg = f"The client '{client.dni} - {client.name}' is not signed up in the activity '{activity_id}'"
-        super().__init__(msg, *args)
 
 
 @dataclass
