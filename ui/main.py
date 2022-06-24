@@ -35,7 +35,7 @@ class Controller:
         self.accounting_main_ui.show()
 
     def show_booking_main_ui(self):
-        self.booking_main_ui = BookingMainUI(self.client_repo, self.booking_system)
+        self.booking_main_ui = BookingMainUI(self.client_repo, self.booking_system, self.accounting_system)
         self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
         self.booking_main_ui.show()
 

@@ -8,16 +8,24 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit
 
 from gym_manager.booking.core import BookingSystem, Booking
+from gym_manager.core import constants
+from gym_manager.core.base import String
 from gym_manager.core.persistence import ClientRepo
-from ui.booking.operations import BookUI, CancelUI
+from gym_manager.core.system import AccountingSystem
+from ui.accounting.charge import ChargeUI
+from ui.booking.operations import BookUI, CancelUI, PreChargeUI
 from ui.widget_config import config_layout, config_btn, config_table, config_date_edit
 
 
 class Controller:
 
-    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, main_ui: BookingMainUI) -> None:
+    def __init__(
+            self, client_repo: ClientRepo, booking_system: BookingSystem, accounting_system: AccountingSystem,
+            main_ui: BookingMainUI
+    ) -> None:
         self.client_repo = client_repo
         self.booking_system = booking_system
+        self.accounting_system = accounting_system
         self.main_ui = main_ui
 
         self.load_bookings()
@@ -66,14 +74,21 @@ class Controller:
             for i in range(start, end):  # Undo the spanning.
                 self.main_ui.booking_table.setSpan(i, removed.court.id, 1, 1)
 
+    def charge_ui(self):
+        self._precharge_ui = PreChargeUI(self.booking_system, self.accounting_system)
+        self._precharge_ui.exec_()
+
 
 class BookingMainUI(QMainWindow):
 
-    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
+    def __init__(
+            self, client_repo: ClientRepo, booking_system: BookingSystem, accounting_system: AccountingSystem
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, booking_system, self)
+        self.controller = Controller(client_repo, booking_system, accounting_system, self)
         self.book_btn.clicked.connect(self.controller.book_ui)
+        self.charge_btn.clicked.connect(self.controller.charge_ui)
 
     def _setup_ui(self):
         width, height = 800, 600
@@ -99,9 +114,9 @@ class BookingMainUI(QMainWindow):
         self.vbox.addLayout(self.buttons_hbox)
         config_layout(self.buttons_hbox, spacing=50)
 
-        self.charge_button = QPushButton(self.widget)
-        self.buttons_hbox.addWidget(self.charge_button)
-        config_btn(self.charge_button, "Cobrar turno", font_size=18, width=200)
+        self.charge_btn = QPushButton(self.widget)
+        self.buttons_hbox.addWidget(self.charge_btn)
+        config_btn(self.charge_btn, "Cobrar turno", font_size=18, width=200)
 
         self.book_btn = QPushButton(self.widget)
         self.buttons_hbox.addWidget(self.book_btn)
