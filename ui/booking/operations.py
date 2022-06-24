@@ -14,7 +14,7 @@ from ui.widget_config import config_layout, config_lbl, config_combobox, config_
 from ui.widgets import SearchBox, Dialog
 
 
-class Controller:
+class BookController:
 
     def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, book_ui: BookUI) -> None:
         self.client_repo = client_repo
@@ -60,7 +60,7 @@ class BookUI(QDialog):
     def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, booking_system, self)
+        self.controller = BookController(client_repo, booking_system, self)
 
     def _setup_ui(self):
         width, height = 600, 400
