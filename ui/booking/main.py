@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from datetime import timedelta, date
+from datetime import date
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtWidgets import QMainWindow, QWidget, QCalendarWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QLabel, QTableWidget, QMenuBar, QStatusBar, QAction, QTableWidgetItem, QDateEdit
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
+    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit
 
-from gym_manager.booking.core import BookingSystem, Booking, Court
+from gym_manager.booking.core import BookingSystem, Booking
 from gym_manager.core.persistence import ClientRepo
-from ui.booking.operations import BookUI
-from ui.widget_config import config_layout, config_btn, config_lbl, config_table, config_date_edit
+from ui.booking.operations import BookUI, CancelUI
+from ui.widget_config import config_layout, config_btn, config_table, config_date_edit
 
 
 class Controller:
@@ -21,6 +21,8 @@ class Controller:
         self.main_ui = main_ui
 
         self.load_bookings()
+
+        self.main_ui.cancel_button.clicked.connect(self.cancel_ui)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -53,6 +55,10 @@ class Controller:
         self._book_ui.exec_()
         if self._book_ui.controller.booking is not None:
             self._load_booking(self._book_ui.controller.booking)
+
+    def cancel_ui(self):
+        self._cancel_ui = CancelUI(self.booking_system)
+        self._cancel_ui.exec_()
 
 
 class BookingMainUI(QMainWindow):
