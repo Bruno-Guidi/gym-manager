@@ -214,6 +214,6 @@ class BookingRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, courts: dict[str, Court], states: tuple[State, ...], when: date | None = None, **filters
+            self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
     ) -> Generator[Booking, None, None]:
         raise NotImplementedError

@@ -67,11 +67,11 @@ class SqliteBookingRepo(BookingRepo):
         raw.save()
 
     def all(
-            self, courts: dict[str, Court], states: tuple[State, ...], when: date | None = None, **filters
+            self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
     ) -> Generator[Booking, None, None]:
         bookings_q = BookingTable.select()
         if len(states) > 0:
-            bookings_q = bookings_q.where(BookingTable.state.in_([state.name for state in states]))
+            bookings_q = bookings_q.where(BookingTable.state.in_(states))
         if when is not None:
             year, month, day = when.year, when.month, when.day
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
