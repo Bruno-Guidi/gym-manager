@@ -23,7 +23,8 @@ if __name__ == "__main__":
                                          transaction_types=["charge", "extract"])
 
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo)
-    booking_system = BookingSystem(courts_names=("1", "2", "3"), durations=(Duration(30, "30m"),),
+    booking_system = BookingSystem(courts_names=("1", "2", "3"),
+                                   durations=(Duration(30, "30m"), Duration(60, "1h"), Duration(90, "1h30m")),
                                    start=time(8, 0), end=time(23, 0), minute_step=30, repo=booking_repo)
 
     window = MainUI(client_repo, activity_manager, accounting_system, booking_system)
