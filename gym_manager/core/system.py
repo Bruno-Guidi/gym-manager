@@ -86,7 +86,7 @@ class AccountingSystem:
     def charge(
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,
             description: String
-    ) -> int:
+    ) -> Transaction:
         """Register a new charge transaction of an *activity* done by the *client*.
 
         Raises:
@@ -103,4 +103,4 @@ class AccountingSystem:
             client.register_charge(activity, transaction)
             self.inscription_repo.register_charge(client, activity, transaction)
 
-        return transaction.id
+        return transaction

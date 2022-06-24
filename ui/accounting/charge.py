@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit
     QDateEdit, QComboBox, QTextEdit, QPushButton
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import String, Client, Currency, Activity
+from gym_manager.core.base import String, Client, Currency, Activity, Transaction
 from gym_manager.core.system import AccountingSystem
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox, \
     config_btn
@@ -37,6 +37,7 @@ class Controller:
         if fixed_descr:
             self.descr_field.setEnabled(False)
 
+        self.transaction: Transaction | None = None
         self.client, self.activity = client, activity
         self.accounting_system = accounting_system
 
@@ -46,10 +47,10 @@ class Controller:
         if not all([self.amount_field.valid_value(), self.responsible_field.valid_value(), valid_descr]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            transaction_id = self.accounting_system.charge(
+            self.transaction = self.accounting_system.charge(
                 self.when_field.date().toPyDate(), self.client, self.activity,
                 self.method_field.currentData(Qt.UserRole), self.responsible_field.value(), descr)
-            Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{transaction_id}'.")
+            Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
             self.descr_field.window().close()
 
 
