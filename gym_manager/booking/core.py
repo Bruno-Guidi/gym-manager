@@ -84,7 +84,7 @@ class State:
 
 @dataclass
 class Booking:
-    court: str
+    court: Court
     client: Client
     is_fixed: bool
     when: date
@@ -120,8 +120,7 @@ class BookingSystem:
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
             minute_step: int, repo: BookingRepo
     ) -> None:
-        self.courts = tuple(Court(name, i + 1) for i, name in enumerate(courts_names))
-        self._courts = {name: i for i, name in enumerate(courts_names)}
+        self.courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
         self.durations = durations
 
         self.start, self.end = start, end
@@ -154,22 +153,22 @@ class BookingSystem:
     def bookings(self, when: date) -> Iterable[tuple[Booking, int, int]]:
         """Yields bookings and its start and end block number for the given *when*.
         """
-        for booking in self.repo.all(when):
+        for booking in self.repo.all(when, self.courts):
             yield booking, *self.block_range(booking.start, booking.end)
 
     def out_of_range(self, start_block: Block, duration: Duration) -> bool:
         end = combine(date.min, start_block.start, duration).time()
         return start_block.start < self.start or end > self.end
 
-    def booking_available(self, when: date, court: str, start_block: Block, duration: Duration) -> bool:
+    def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all(when):
+        for booking in self.repo.all(when, self.courts):
             if booking.collides(start_block.start, end):
                 return False
         return True
 
     def book(
-            self, court: str, client: Client, when: date, start_block: Block, duration: Duration, is_fixed: bool
+            self, court: Court, client: Client, when: date, start_block: Block, duration: Duration, is_fixed: bool
     ) -> Booking:
         if self.out_of_range(start_block, duration):
             raise ValueError()
@@ -190,5 +189,5 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, when: date) -> Generator[Booking, None, None]:
+    def all(self, when: date, courts: dict[str, Court]) -> Generator[Booking, None, None]:
         raise NotImplementedError

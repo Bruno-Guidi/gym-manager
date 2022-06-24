@@ -5,7 +5,7 @@ from typing import Generator
 from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField
 
 from gym_manager import peewee
-from gym_manager.booking.core import Booking, BookingRepo, combine
+from gym_manager.booking.core import Booking, BookingRepo, combine, Court
 from gym_manager.core.persistence import ClientRepo
 
 
@@ -32,17 +32,17 @@ class SqliteBookingRepo(BookingRepo):
 
     def add(self, booking: Booking):
         BookingTable.create(when=combine(booking.when, booking.start),
-                            court=booking.court,
+                            court=booking.court.name,
                             client=peewee.ClientTable.get_by_id(booking.client.dni.as_primitive()),
                             end=booking.end,
                             is_fixed=booking.is_fixed,
                             state=booking.state.name,
                             updated_by=booking.state.updated_by)
 
-    def all(self, when: date) -> Generator[Booking, None, None]:
+    def all(self, when: date, courts: dict[str, Court]) -> Generator[Booking, None, None]:
         year, month, day = when.year, when.month, when.day
         bookings_q = BookingTable.select().where(year == BookingTable.when.year, month == BookingTable.when.month,
                                                  day == BookingTable.when.day)
         for raw in bookings_q:
             start = time(raw.when.hour, raw.when.minute)
-            yield Booking(raw.court, self.client_repo.get(raw.client_id), raw.is_fixed, when, start, raw.end)
+            yield Booking(courts[raw.court], self.client_repo.get(raw.client_id), raw.is_fixed, when, start, raw.end)

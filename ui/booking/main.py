@@ -7,7 +7,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QCalendarWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QLabel, QTableWidget, QMenuBar, QStatusBar, QAction, QTableWidgetItem, QDateEdit
 
-from gym_manager.booking.core import BookingSystem, Booking
+from gym_manager.booking.core import BookingSystem, Booking, Court
 from gym_manager.core.persistence import ClientRepo
 from ui.booking.operations import BookUI
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, config_date_edit
@@ -22,14 +22,16 @@ class Controller:
 
         self.load_bookings()
 
-    def _load_booking(self, booking: Booking, courts: dict[str, int], start: int | None = None, end: int | None = None):
+    def _load_booking(
+            self, booking: Booking, start: int | None = None, end: int | None = None
+    ):
         if start is None or end is None:
             start, end = self.booking_system.block_range(booking.start, booking.end)
 
         item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}")
         item.setTextAlignment(Qt.AlignCenter)
-        self.main_ui.booking_table.setItem(start, courts[booking.court], item)
-        self.main_ui.booking_table.setSpan(start, courts[booking.court], end - start, 1)
+        self.main_ui.booking_table.setItem(start, booking.court.id, item)
+        self.main_ui.booking_table.setSpan(start, booking.court.id, end - start, 1)
 
     def load_bookings(self):
         self.main_ui.booking_table.setRowCount(0)  # Clears the table.
@@ -43,16 +45,14 @@ class Controller:
             self.main_ui.booking_table.setItem(row, 0, item)
 
         # Loads the bookings for the day.
-        courts = {court.name: court.id for court in self.booking_system.courts}
         for booking, start, end in self.booking_system.bookings(self.main_ui.date_field.date().toPyDate()):
-            self._load_booking(booking, courts, start, end)
+            self._load_booking(booking, start, end)
 
     def book_ui(self):
         self._book_ui = BookUI(self.client_repo, self.booking_system)
         self._book_ui.exec_()
         if self._book_ui.controller.booking is not None:
-            self._load_booking(self._book_ui.controller.booking, {court.name: court.id
-                                                                  for court in self.booking_system.courts})
+            self._load_booking(self._book_ui.controller.booking)
 
 
 class BookingMainUI(QMainWindow):
