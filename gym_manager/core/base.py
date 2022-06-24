@@ -212,7 +212,7 @@ class Activity:
     id: int
     name: String
     price: Currency
-    pay_once: bool
+    charge_once: bool
     description: String
 
 

@@ -155,7 +155,7 @@ class ActivityTable(Model):
     id = IntegerField(primary_key=True)
     act_name = CharField()
     price = CharField()
-    pay_once = BooleanField()
+    charge_once = BooleanField()
     description = TextField()
 
     class Meta:
@@ -183,17 +183,18 @@ class SqliteActivityRepo(ActivityRepo):
             self.cache[id] = Activity(raw.id,
                                       String(raw.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
                                       Currency(raw.price, max_currency=consts.MAX_CURRENCY),
-                                      raw.pay_once,
+                                      raw.charge_once,
                                       String(raw.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
         return self.cache[id]
 
-    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
+    def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
         """Creates an activity with the given data, and returns it.
         """
-        raw_activity = ActivityTable.create(
-            act_name=name.as_primitive(), price=str(price), pay_once=pay_once, description=description.as_primitive()
-        )
-        return Activity(raw_activity.id, name, price, pay_once, description)
+        raw_activity = ActivityTable.create(act_name=name.as_primitive(),
+                                            price=str(price),
+                                            charge_once=charge_once,
+                                            description=description.as_primitive())
+        return Activity(raw_activity.id, name, price, charge_once, description)
 
     def remove(self, activity: Activity, cascade_removing: bool = False):
         """Tries to remove the given *activity*.
@@ -219,7 +220,7 @@ class SqliteActivityRepo(ActivityRepo):
         ActivityTable.replace(id=activity.id,
                               act_name=activity.name.as_primitive(),
                               price=str(activity.price),
-                              pay_once=activity.pay_once,
+                              charge_once=activity.charge_once,
                               description=activity.description.as_primitive()).execute()
 
     def all(self) -> Generator[Activity, None, None]:
@@ -229,7 +230,7 @@ class SqliteActivityRepo(ActivityRepo):
                     raw_activity.id,
                     String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
                     Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
-                    raw_activity.pay_once,
+                    raw_activity.charge_once,
                     String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
                 )
             yield self.cache[raw_activity.id]

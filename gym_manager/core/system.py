@@ -15,8 +15,8 @@ class ActivityManager:
         self.activity_repo = activity_repo
         self.inscription_repo = inscription_repo
 
-    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
-        return self.activity_repo.create(name, price, pay_once, description)
+    def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
+        return self.activity_repo.create(name, price, charge_once, description)
 
     def update(self, activity: Activity):
         self.activity_repo.update(activity)
@@ -92,7 +92,7 @@ class AccountingSystem:
 
         # For the activities that are not 'charge once', record that the client was charged for it.
         # A 'charge once' activity is, for example, an activity related to bookings.
-        if not activity.pay_once:
+        if not activity.charge_once:
             client.register_charge(activity, transaction)
             self.inscription_repo.register_charge(client, activity, transaction)
 
