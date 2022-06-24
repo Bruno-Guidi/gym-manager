@@ -59,6 +59,12 @@ class Controller:
     def cancel_ui(self):
         self._cancel_ui = CancelUI(self.booking_system)
         self._cancel_ui.exec_()
+        removed = self._cancel_ui.controller.booking
+        if removed is not None:
+            start, end = self.booking_system.block_range(removed.start, removed.end)
+            self.main_ui.booking_table.takeItem(start, removed.court.id)
+            for i in range(start, end):  # Undo the spanning.
+                self.main_ui.booking_table.setSpan(i, removed.court.id, 1, 1)
 
 
 class BookingMainUI(QMainWindow):

@@ -50,11 +50,12 @@ class SqliteBookingRepo(BookingRepo):
                             state=booking.state.name,
                             updated_by=booking.state.updated_by)
 
-    def update(self, booking: Booking, prev_state: State):
+    def remove(self, booking: Booking, prev_state: State):
         raw = BookingTable.get_by_id(combine(booking.when, booking.start))
         # Updates the state history.
         StateHistory.create(booking=raw, prev=prev_state.name, current=booking.state.name,
                             updated_by=booking.state.updated_by, when=datetime.now())
+        raw.is_fixed = booking.is_fixed
         raw.state = booking.state.name
         raw.updated_by = booking.state.updated_by
         raw.save()

@@ -169,16 +169,17 @@ class CancelController:
         self.cancel_ui.end_line.setText(str(booking.end))
 
     def cancel(self):
-        pass
-        # booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
-        #
-        # if booking is None:
-        #     Dialog.info("Error", "Seleccione una reserva.")
-        # else:
-        #     is_fixed = self.cancel_ui.fixed_checkbox.isChecked()
-        #     self.booking = self.booking_system.book(court, booking, when, start_block, duration, is_fixed)
-        #     Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
-        #     self.cancel_ui.booking_combobox.window().close()
+        self.booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
+
+        if self.booking is None:
+            Dialog.info("Error", "Seleccione una reserva.")
+        else:
+            remains_fixed = False
+            if self.booking.is_fixed:
+                remains_fixed = not Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?")
+            self.booking_system.cancel(self.booking, "", remains_fixed)
+            Dialog.info("Éxito", "El turno ha sido cancelado correctamente.")
+            self.cancel_ui.booking_combobox.window().close()
 
 
 class CancelUI(QDialog):

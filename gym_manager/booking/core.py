@@ -108,6 +108,11 @@ class Booking:
         """
         return not (start < self.start and end <= self.start or start >= self.end and end > self.end)
 
+    def update_state(self, new_state: str, updated_by: str) -> State:
+        prev = self.state
+        self.state.update(new_state, updated_by)
+        return prev
+
 
 class BookingSystem:
 
@@ -190,6 +195,11 @@ class BookingSystem:
 
         return booking
 
+    def cancel(self, booking: Booking, responsible: str, remains_fixed: bool = False):
+        prev = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
+        booking.is_fixed = remains_fixed
+        self.repo.remove(booking, prev)
+
 
 class BookingRepo(abc.ABC):
     @abc.abstractmethod
@@ -197,7 +207,7 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update(self, booking: Booking, prev_state: State):
+    def remove(self, booking: Booking, prev_state: State):
         raise NotImplementedError
 
     @abc.abstractmethod
