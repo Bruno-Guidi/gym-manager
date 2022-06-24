@@ -203,13 +203,17 @@ class BookingSystem:
 
 class BookingRepo(abc.ABC):
     @abc.abstractmethod
-    def add(self, booking: Booking):
+    def create(
+            self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
+    ) -> Booking:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def remove(self, booking: Booking, prev_state: State):
+    def update(self, booking: Booking, prev_state: State):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, courts: dict[str, Court], when: date | None = None, **filters) -> Generator[Booking, None, None]:
+    def all(
+            self, courts: dict[str, Court], states: tuple[State, ...], when: date | None = None, **filters
+    ) -> Generator[Booking, None, None]:
         raise NotImplementedError
