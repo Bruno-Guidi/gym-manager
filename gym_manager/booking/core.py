@@ -189,5 +189,9 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def update(self, booking: Booking, prev_state: State):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def all(self, when: date, courts: dict[str, Court]) -> Generator[Booking, None, None]:
         raise NotImplementedError
