@@ -6,12 +6,12 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox, \
     QCheckBox, QPushButton, QDialog, QDateEdit, QHBoxLayout
 
-from gym_manager.booking.core import BookingSystem
-from gym_manager.core.base import String, TextLike
+from gym_manager.booking.core import BookingSystem, Booking
+from gym_manager.core.base import TextLike
 from gym_manager.core.persistence import ClientRepo
-from ui.widget_config import config_layout, config_lbl, config_line, config_combobox, config_btn, config_checkbox, \
+from ui.widget_config import config_layout, config_lbl, config_combobox, config_btn, config_checkbox, \
     fill_combobox, config_date_edit
-from ui.widgets import Field, SearchBox
+from ui.widgets import SearchBox, Dialog
 
 
 class Controller:
@@ -19,17 +19,40 @@ class Controller:
     def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, book_ui: BookUI) -> None:
         self.client_repo = client_repo
         self.booking_system = booking_system
+        self.booking: Booking | None = None
+
         self.book_ui = book_ui
 
         fill_combobox(book_ui.court_combobox, self.booking_system.courts(), lambda court_name: court_name)
-        fill_combobox(book_ui.hour_combobox, self.booking_system.blocks(), lambda block: str(block.start))
+        fill_combobox(book_ui.block_combobox, self.booking_system.blocks(), lambda block: str(block.start))
         fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
         self.book_ui.search_btn.clicked.connect(self.search_clients)
+        self.book_ui.confirm_btn.clicked.connect(self.book)
 
     def search_clients(self):
-        clients = self.client_repo.all(1, 20, **self.book_ui.search_box.filters())
+        clients = self.client_repo.all(1, 20, **self.book_ui.search_box.filters())  # ToDo allow no paginating.
         fill_combobox(self.book_ui.client_combobox, clients, lambda client: client.name.as_primitive())
+
+    def book(self):
+        client = self.book_ui.client_combobox.currentData(Qt.UserRole)
+        court = self.book_ui.court_combobox.currentText()
+        when = self.book_ui.date_edit.date().toPyDate()
+        start_block = self.book_ui.block_combobox.currentData(Qt.UserRole)
+        duration = self.book_ui.duration_combobox.currentData(Qt.UserRole)
+
+        if client is None:
+            Dialog.info("Error", "Seleccione un cliente.")
+        elif self.booking_system.out_of_range(start_block, duration):
+            Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
+                                 f"'{self.booking_system.end}'.")
+        elif not self.booking_system.booking_available(when, court, start_block, duration):
+            Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
+        else:
+            is_fixed = self.book_ui.fixed_checkbox.isChecked()
+            self.booking = self.booking_system.book(court, client, when, start_block, duration, is_fixed)
+            Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
+            self.book_ui.client_combobox.window().close()
 
 
 class BookUI(QDialog):
@@ -97,9 +120,9 @@ class BookUI(QDialog):
         self.form_layout.addWidget(self.hour_lbl, 3, 0, 1, 1)
         config_lbl(self.hour_lbl, "Hora")
 
-        self.hour_combobox = QComboBox(self.widget)
-        self.form_layout.addWidget(self.hour_combobox, 3, 1, 1, 1)
-        config_combobox(self.hour_combobox, height=35)
+        self.block_combobox = QComboBox(self.widget)
+        self.form_layout.addWidget(self.block_combobox, 3, 1, 1, 1)
+        config_combobox(self.block_combobox, height=35)
 
         self.duration_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.duration_lbl, 4, 0, 1, 1)

@@ -27,6 +27,7 @@ class Controller:
     def book_ui(self):
         self._book_ui = BookUI(self.client_repo, self.booking_system)
         self._book_ui.exec_()
+        self.load_bookings()  # ToDo load only the added booking.
 
 
 class BookingMainUI(QMainWindow):
