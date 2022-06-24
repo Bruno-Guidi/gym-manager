@@ -40,12 +40,12 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Client, None, None]:
-        """Returns all the clients in the repository.
+    def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
+        """Retrieve all the clients in the repository.
 
         Args:
             page: page to retrieve.
-            page_len: clients per page.
+            page_len: clients per page. If None, retrieve all clients.
 
         Keyword Args:
             dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to

@@ -42,7 +42,7 @@ class SqliteClientRepo(ClientRepo):
         self.transaction_repo = transaction_repo
         self.cache: dict[Number, Client] = {}
 
-    def from_raw(self, raw) -> Client:
+    def _from_raw(self, raw) -> Client:
         client = Client(Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
                         String(raw.cli_name, max_len=consts.CLIENT_NAME_CHARS),
                         raw.admission,
@@ -63,8 +63,6 @@ class SqliteClientRepo(ClientRepo):
         return client
 
     def get(self, dni: int | Number) -> Client:
-        """Returns the client with the given *dni*.
-        """
         if not isinstance(dni, (Number, int)):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
@@ -74,7 +72,7 @@ class SqliteClientRepo(ClientRepo):
             clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
             inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
             for raw in prefetch(clients_q, inscriptions_q, trans_q):
-                self.cache[dni] = self.from_raw(raw)
+                self.cache[dni] = self._from_raw(raw)
         try:
             return self.cache[dni]
         except KeyError as key_err:
@@ -90,8 +88,6 @@ class SqliteClientRepo(ClientRepo):
         return raw_client is not None and raw_client.is_active
 
     def add(self, client: Client):
-        """Adds the *client* to the repository.
-        """
         if self.is_active(client.dni):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
 
@@ -116,8 +112,6 @@ class SqliteClientRepo(ClientRepo):
         InscriptionTable.delete().where(InscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
-        """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
-        """
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
@@ -125,12 +119,12 @@ class SqliteClientRepo(ClientRepo):
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
 
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Client, None, None]:
-        """Returns all the clients in the repository.
+    def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
+        """Retrieve all the clients in the repository.
 
         Args:
             page: page to retrieve.
-            page_len: clients per page.
+            page_len: clients per page. If None, retrieve all clients.
 
         Keyword Args:
             dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
@@ -140,13 +134,14 @@ class SqliteClientRepo(ClientRepo):
         for filter_, value in filters.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
         clients_q = clients_q.where(ClientTable.is_active == True)
-        clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
+        if page_len is not None:
+            clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
         inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
             # ToDo check cache first.
-            client = self.from_raw(raw_client)
+            client = self._from_raw(raw_client)
             self.cache[client.dni] = client
             yield client
 
@@ -188,8 +183,6 @@ class SqliteActivityRepo(ActivityRepo):
         return self.cache[id]
 
     def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
-        """Creates an activity with the given data, and returns it.
-        """
         raw_activity = ActivityTable.create(act_name=name.as_primitive(),
                                             price=str(price),
                                             charge_once=charge_once,
@@ -215,8 +208,6 @@ class SqliteActivityRepo(ActivityRepo):
         ActivityTable.delete_by_id(activity.id)
 
     def update(self, activity: Activity):
-        """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
-        """
         ActivityTable.replace(id=activity.id,
                               act_name=activity.name.as_primitive(),
                               price=str(activity.price),
@@ -349,8 +340,6 @@ class SqliteInscriptionRepo(InscriptionRepo):
         create_table(InscriptionTable)
 
     def add(self, inscription: Inscription):
-        """Adds the given *inscription* to the repository.
-        """
         InscriptionTable.create(
             when=inscription.when,
             client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
@@ -360,13 +349,11 @@ class SqliteInscriptionRepo(InscriptionRepo):
         )
 
     def remove(self, inscription: Inscription):
-        """Removes the given *inscription* from the repository.
-        """
         InscriptionTable.delete().where((InscriptionTable.client_id == inscription.client.dni.as_primitive())
                                         & (InscriptionTable.activity_id == inscription.activity.id)).execute()
 
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
-        """Registers in the repository that the client was charged for the activity.
+        """Registers in the repository that the *client* was charged for the *activity*.
         """
         raw_inscription = InscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
         raw_transaction = TransactionTable.get_by_id(transaction.id)
