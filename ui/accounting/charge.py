@@ -32,7 +32,7 @@ class Controller:
         self.amount_field.setText(str(activity.price))
         if fixed_amount:
             self.amount_field.setEnabled(False)
-        fill_combobox(method_field, accounting_system.methods(), display=lambda method: method.as_primitive())
+        fill_combobox(method_field, accounting_system.methods, display=lambda method: method.as_primitive())
         self.descr_field.setText(str(descr))
         if fixed_descr:
             self.descr_field.setEnabled(False)
