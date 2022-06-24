@@ -6,7 +6,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox, \
     QCheckBox, QPushButton, QDialog, QDateEdit, QHBoxLayout, QLineEdit
 
-from gym_manager.booking.core import BookingSystem, Booking
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN
 from gym_manager.core import constants
 from gym_manager.core.base import TextLike, ClientLike, String
 from gym_manager.core.persistence import ClientRepo
@@ -161,7 +161,7 @@ class CancelController:
         self.cancel_ui.confirm_btn.clicked.connect(self.cancel)
 
     def search_bookings(self):
-        bookings = self.booking_system.bookings(**self.cancel_ui.search_box.filters())  # ToDo allow no paginating.
+        bookings = self.booking_system.bookings((BOOKING_TO_HAPPEN,), **self.cancel_ui.search_box.filters())  # ToDo allow no paginating.
         fill_combobox(self.cancel_ui.booking_combobox, (booking for booking, _, _ in bookings), booking_summary)
 
     def _update_form(self):
@@ -287,7 +287,7 @@ class PreChargeController:
         self.pre_charge_ui.confirm_btn.clicked.connect(self.charge)
 
     def search_bookings(self):
-        bookings = self.booking_system.bookings(**self.pre_charge_ui.search_box.filters())  # ToDo allow no paginating.
+        bookings = self.booking_system.bookings((BOOKING_TO_HAPPEN,), **self.pre_charge_ui.search_box.filters())  # ToDo allow no paginating.
         fill_combobox(self.pre_charge_ui.booking_combobox, (booking for booking, _, _ in bookings), booking_summary)
 
     def _update_form(self):

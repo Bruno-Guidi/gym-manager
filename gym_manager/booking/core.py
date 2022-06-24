@@ -162,15 +162,15 @@ class BookingSystem:
         else:
             return self._blocks[start].number, self._blocks[end].number
 
-    def bookings(self, when: date | None = None, **filters) -> Iterable[tuple[Booking, int, int]]:
+    def bookings(self, states: tuple[str, ...], when: date | None = None, **filters) -> Iterable[tuple[Booking, int, int]]:
         """Yields bookings and its start and end block number for the given *when*.
         """
         if when is not None:
-            for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
+            for booking in self.repo.all(self.courts, states, when):
                 yield booking, *self.block_range(booking.start, booking.end)
 
         elif len(filters) > 0:
-            for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), **filters):
+            for booking in self.repo.all(self.courts, states, **filters):
                 yield booking, *self.block_range(booking.start, booking.end)
 
         else:

@@ -7,7 +7,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit
 
-from gym_manager.booking.core import BookingSystem, Booking
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID
 from gym_manager.core import constants
 from gym_manager.core.base import String
 from gym_manager.core.persistence import ClientRepo
@@ -55,7 +55,8 @@ class Controller:
             self.main_ui.booking_table.setItem(row, 0, item)
 
         # Loads the bookings for the day.
-        for booking, start, end in self.booking_system.bookings(self.main_ui.date_field.date().toPyDate()):
+        for booking, start, end in self.booking_system.bookings((BOOKING_TO_HAPPEN, BOOKING_PAID),
+                                                                self.main_ui.date_field.date().toPyDate()):
             self._load_booking(booking, start, end)
 
     def book_ui(self):
