@@ -74,13 +74,13 @@ class SqliteClientRepo(ClientRepo):
 
         return client
 
-    def get(self, dni: int | Number) -> Client:
+    def get(self, dni: int | Number, bypass_cache: bool = False) -> Client:
         if not isinstance(dni, (Number, int)):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
             dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
 
-        if dni not in self.cache:
+        if bypass_cache or dni not in self.cache:
             clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
             inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
             # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
