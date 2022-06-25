@@ -110,7 +110,7 @@ class SqliteClientRepo(ClientRepo):
                             admission=client.admission,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
-                            is_active=True).execute()
+                            is_active=client.is_active).execute()
         self.cache[client.dni] = client
 
     def remove(self, client: Client):
