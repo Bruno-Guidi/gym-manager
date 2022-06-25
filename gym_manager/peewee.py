@@ -83,6 +83,8 @@ class SqliteClientRepo(ClientRepo):
         if dni not in self.cache:
             clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
             inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
+            # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
+            # one record.
             for raw in prefetch(clients_q, inscriptions_q, trans_q):
                 self.cache[dni] = self._from_raw(raw)
         try:
