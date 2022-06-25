@@ -4,20 +4,24 @@ from datetime import date
 from typing import Type, Generator
 
 from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField, \
-    CompositeKey, prefetch
+    CompositeKey, prefetch, Proxy
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo, LRUCache
 
-_DATABASE_NAME = r"test.db"
-_DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
+_database_proxy = Proxy()
+
+
+def create_database(url: str):
+    database = SqliteDatabase(url, pragmas={'foreign_keys': 1})
+    _database_proxy.initialize(database)
 
 
 def create_table(table: Type[Model], drop_before: bool = False):
     if drop_before:
-        _DATABASE.drop_tables([table])
-    _DATABASE.create_tables([table])
+        _database_proxy.drop_tables([table])
+    _database_proxy.create_tables([table])
 
 
 class ClientTable(Model):
@@ -29,7 +33,7 @@ class ClientTable(Model):
     is_active = BooleanField()
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
 
 
 class SqliteClientRepo(ClientRepo):
@@ -154,7 +158,7 @@ class ActivityTable(Model):
     description = TextField()
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
 
 
 class SqliteActivityRepo(ActivityRepo):
@@ -243,7 +247,7 @@ class TransactionTable(Model):
     description = CharField()
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
 
 
 class SqliteTransactionRepo(TransactionRepo):
@@ -328,7 +332,7 @@ class InscriptionTable(Model):
     transaction = ForeignKeyField(TransactionTable, backref="inscription_transaction", null=True)
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
         primary_key = CompositeKey("client", "activity")
 
 

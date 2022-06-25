@@ -20,7 +20,7 @@ class BookingTable(Model):
     updated_by = CharField()
 
     class Meta:
-        database = peewee._DATABASE
+        database = peewee._database_proxy
 
 
 class StateHistory(Model):
@@ -31,7 +31,7 @@ class StateHistory(Model):
     when = DateTimeField()
 
     class Meta:
-        database = peewee._DATABASE
+        database = peewee._database_proxy
         primary_key = False
 
 
@@ -39,8 +39,8 @@ class SqliteBookingRepo(BookingRepo):
 
     def __init__(self, client_repo: ClientRepo, drop_table: bool = False) -> None:
         if drop_table:
-            peewee._DATABASE.drop_tables([BookingTable, StateHistory])
-        peewee._DATABASE.create_tables([BookingTable, StateHistory])
+            peewee._database_proxy.drop_tables([BookingTable, StateHistory])
+        peewee._database_proxy.create_tables([BookingTable, StateHistory])
         self.client_repo = client_repo
 
     def create(

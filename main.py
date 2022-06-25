@@ -14,6 +14,8 @@ from ui.main import MainUI
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
+    peewee.create_database("test.db")
+
     activity_repo = peewee.SqliteActivityRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
