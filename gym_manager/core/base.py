@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
@@ -34,7 +35,7 @@ class Validatable(abc.ABC):
         return str(self._value)
 
     def __repr__(self) -> str:
-        return f"{type(self)}(value={self._value})"
+        return f"{type(self).__name__}(value={self._value})"
 
     def as_primitive(self) -> Any:
         """Returns the wrapped primitive.
@@ -62,6 +63,9 @@ class Number(Validatable):
 
     def __eq__(self, o) -> bool:
         if isinstance(o, type(self._value)):
+            logger = logging.getLogger("__main__").getChild(f"{type(self).__name__}")
+            logger.warning(f"Comparing '{repr(self)}' with '{repr(o)}'")
+
             return self._value == o
         return self._value == o._value
 
