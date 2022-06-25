@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import date
 from typing import Type, Generator
 
@@ -9,6 +10,9 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo, LRUCache
+
+
+logger = logging.getLogger(__name__)
 
 _database_proxy = Proxy()
 
@@ -148,10 +152,13 @@ class SqliteClientRepo(ClientRepo):
         inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
-            # ToDo check cache first.
-            client = self._from_raw(raw_client)
-            self.cache[client.dni] = client
-            yield client
+            if raw_client.dni not in self.cache:
+                logger.getChild(type(self).__name__).info(
+                    f"Client with [dni={raw_client.dni}] not in cache. The client will be created from raw data."
+                )
+                client = self._from_raw(raw_client)
+                self.cache[client.dni] = client
+            yield self.cache[raw_client.dni]
 
 
 class ActivityTable(Model):
