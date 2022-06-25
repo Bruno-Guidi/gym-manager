@@ -33,6 +33,9 @@ class Validatable(abc.ABC):
     def __str__(self) -> str:
         return str(self._value)
 
+    def __repr__(self) -> str:
+        return f"{type(self)}(value={self._value})"
+
     def as_primitive(self) -> Any:
         """Returns the wrapped primitive.
         """
@@ -59,7 +62,6 @@ class Number(Validatable):
 
     def __eq__(self, o) -> bool:
         if isinstance(o, type(self._value)):
-            print("Comparison between Number and int", self._value, o)
             return self._value == o
         return self._value == o._value
 
