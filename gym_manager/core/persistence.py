@@ -1,8 +1,45 @@
 import abc
+from collections import OrderedDict
 from datetime import date
-from typing import Generator
+from typing import Generator, Type, Any
 
 from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Transaction
+
+
+class LRUCache:
+
+    def __init__(self, key_type: Type, value_type: Type,  max_len: int) -> None:
+        self.key_type = key_type
+        self.value_type = value_type
+
+        self.max_len = max_len
+        self._cache = OrderedDict()
+
+    def __len__(self) -> int:
+        return len(self._cache)
+
+    def __getitem__(self, key: Any) -> Any:
+        if not isinstance(key, self.key_type):
+            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if key not in self._cache.keys():
+            raise KeyError(f"The LRUCache does not contains the key '{key}'.")
+
+        self._cache.move_to_end(key, last=False)
+        return self._cache[key]
+
+    def __setitem__(self, key: Any, value: Any):
+        if not isinstance(key, self.key_type):
+            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if not isinstance(value, self.value_type):
+            raise TypeError(f"The LRUCache expected a '{self.value_type}' as value, but received a '{type(value)}'.")
+
+        self._cache[key] = value
+        self._cache.move_to_end(key, last=False)
+        if len(self._cache) > self.max_len:  # Removes the LRU key in case the cache len is exceeded.
+            self._cache.popitem(last=True)
+
+    def __iter__(self):
+        yield from iter(self._cache.keys())
 
 
 class ClientRepo(abc.ABC):
