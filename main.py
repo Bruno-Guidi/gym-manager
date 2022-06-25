@@ -1,3 +1,4 @@
+import logging
 import sys
 from datetime import time
 
@@ -12,6 +13,11 @@ from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.main import MainUI
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.NOTSET)
+
+    peewee_logger = logging.getLogger("peewee")
+    peewee_logger.setLevel(logging.WARNING)
+
     app = QApplication(sys.argv)
 
     peewee.create_database("test.db")
