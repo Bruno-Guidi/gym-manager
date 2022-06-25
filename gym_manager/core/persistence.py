@@ -48,6 +48,13 @@ class LRUCache:
     def __iter__(self):
         yield from iter(self._cache.keys())
 
+    def move_to_front(self, key: Any):
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
+        if key not in self._cache.keys():
+            raise KeyError(f"The LRUCache does not contains the key '{key}'.")
+        self._cache.move_to_end(key, last=False)
+
 
 class ClientRepo(abc.ABC):
     """Clients repository interface.

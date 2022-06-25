@@ -118,4 +118,16 @@ def test_LRUCache_multipleKeyTypes():
     assert len(cache) == 2 and cache[1] == 3 and cache[Number(1)] == 3
 
 
+def test_LRUCache_moveToFront():
+    max_len = 3
+    cache = LRUCache(key_types=(int,), value_type=int, max_len=max_len)
+
+    cache[1] = 1
+    cache[2] = 2
+    cache[3] = 3
+
+    cache.move_to_front(2)
+
+    assert [2, 3, 1] == [key for key in cache]
+
 
