@@ -40,7 +40,7 @@ class SqliteClientRepo(ClientRepo):
         create_table(ClientTable)
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
-        self.cache: LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
+        self.cache = LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
 
     def _from_raw(self, raw) -> Client:
         client = Client(Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
