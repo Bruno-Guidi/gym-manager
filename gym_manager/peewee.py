@@ -24,6 +24,10 @@ def create_table(table: Type[Model], drop_before: bool = False):
     _database_proxy.create_tables([table])
 
 
+def client_name_like(client, filter_value) -> bool:
+    return client.cli_name.contains(filter_value)
+
+
 class ClientTable(Model):
     dni = IntegerField(primary_key=True)
     cli_name = CharField()
