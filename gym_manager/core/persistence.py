@@ -38,6 +38,13 @@ class LRUCache:
         if len(self._cache) > self.max_len:  # Removes the LRU key in case the cache len is exceeded.
             self._cache.popitem(last=True)
 
+    def pop(self, key: Any):
+        if not isinstance(key, self.key_type):
+            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if key not in self._cache.keys():
+            raise KeyError(f"The LRUCache does not contains the key '{key}'.")
+        self._cache.pop(key)
+
     def __iter__(self):
         yield from iter(self._cache.keys())
 

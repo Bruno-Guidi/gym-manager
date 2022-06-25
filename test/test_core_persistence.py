@@ -69,3 +69,41 @@ def test_LRUCache_getItem_maxLenIsNeverExceeded():
     assert len(cache) <= max_len
     cache[4] = 4
     assert len(cache) <= max_len
+
+
+def test_LRUCache_getItem_correctlyReturned():
+    max_len = 3
+    cache = LRUCache(key_type=int, value_type=int, max_len=max_len)
+
+    cache[1] = 1
+    assert cache[1] == 1
+
+    cache[1] = 3
+    assert cache[1] == 3
+
+
+def test_LRUCache_pop_raisesTypeError():
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
+    with pytest.raises(TypeError):
+        cache.pop("abc")
+
+
+def test_LRUCache_pop_raisesKeyError():
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
+    with pytest.raises(KeyError):
+        cache.pop(2)
+
+
+def test_LRUCache_pop_lenReduced():
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
+    cache[1] = 1
+    cache[2] = 2
+    assert len(cache) == 2
+
+    cache.pop(1)
+    assert len(cache) == 1
+
+    cache.pop(2)
+    assert len(cache) == 0
+
+
