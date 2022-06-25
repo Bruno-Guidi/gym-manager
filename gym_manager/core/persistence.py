@@ -8,8 +8,8 @@ from gym_manager.core.base import Client, Activity, Currency, String, Number, In
 
 class LRUCache:
 
-    def __init__(self, key_type: Type, value_type: Type,  max_len: int) -> None:
-        self.key_type = key_type
+    def __init__(self, key_types: tuple[Type, ...], value_type: Type, max_len: int) -> None:
+        self.key_types = key_types
         self.value_type = value_type
 
         self.max_len = max_len
@@ -19,8 +19,8 @@ class LRUCache:
         return len(self._cache)
 
     def __getitem__(self, key: Any) -> Any:
-        if not isinstance(key, self.key_type):
-            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
         if key not in self._cache.keys():
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
 
@@ -28,8 +28,8 @@ class LRUCache:
         return self._cache[key]
 
     def __setitem__(self, key: Any, value: Any):
-        if not isinstance(key, self.key_type):
-            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
         if not isinstance(value, self.value_type):
             raise TypeError(f"The LRUCache expected a '{self.value_type}' as value, but received a '{type(value)}'.")
 
@@ -39,8 +39,8 @@ class LRUCache:
             self._cache.popitem(last=True)
 
     def pop(self, key: Any):
-        if not isinstance(key, self.key_type):
-            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
         if key not in self._cache.keys():
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
         self._cache.pop(key)

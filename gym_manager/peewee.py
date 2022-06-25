@@ -8,7 +8,7 @@ from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, Bo
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo, LRUCache
 
 _DATABASE_NAME = r"test.db"
 _DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
@@ -36,11 +36,11 @@ class SqliteClientRepo(ClientRepo):
     """Clients repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo) -> None:
+    def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
         create_table(ClientTable)
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
-        self.cache: dict[Number, Client] = {}
+        self.cache: LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
 
     def _from_raw(self, raw) -> Client:
         client = Client(Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
