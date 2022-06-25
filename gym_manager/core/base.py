@@ -7,6 +7,9 @@ from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Callable
 
+
+logger = logging.getLogger(__name__)
+
 ONE_MONTH_TD = timedelta(days=30)
 
 
@@ -63,8 +66,7 @@ class Number(Validatable):
 
     def __eq__(self, o) -> bool:
         if isinstance(o, type(self._value)):
-            logger = logging.getLogger("__main__").getChild(f"{type(self).__name__}")
-            logger.warning(f"Comparing '{repr(self)}' with '{repr(o)}'")
+            logger.getChild(type(self).__name__).warning(f"Comparing '{repr(self)}' with '{repr(o)}'")
 
             return self._value == o
         return self._value == o._value
