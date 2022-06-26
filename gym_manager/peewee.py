@@ -49,9 +49,12 @@ class SqliteClientRepo(ClientRepo):
     """
 
     def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
+        """If cache_len == 0, then there won't be any caching.
+        """
         create_table(ClientTable)
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
+        self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
 
     def _from_raw(self, raw) -> Client:
@@ -74,24 +77,29 @@ class SqliteClientRepo(ClientRepo):
 
         return client
 
-    def get(self, dni: int | Number, bypass_cache: bool = False) -> Client:
+    def get(self, dni: int | Number) -> Client:
         if not isinstance(dni, (Number, int)):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
             dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
             logger.getChild(type(self).__name__).warning(f"Converting raw dni [dni={dni}] from int to Number.")
 
-        if bypass_cache or dni not in self.cache:
-            clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
-            inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
-            # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
-            # one record.
-            for raw in prefetch(clients_q, inscriptions_q, trans_q):
-                self.cache[dni] = self._from_raw(raw)
-        try:
+        if self._do_caching and dni in self.cache:
             return self.cache[dni]
-        except KeyError as key_err:
-            raise KeyError(f"There is no client with the 'dni'={str(dni)}.") from key_err
+
+        # If there is no caching or if the client isn't in the cache, query the db.
+        clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
+        inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
+        # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
+        # one record.
+        for raw in prefetch(clients_q, inscriptions_q, trans_q):
+            client = self._from_raw(raw)
+            if self._do_caching:
+                self.cache[dni] = client
+            return client
+
+        # This is only reached if the previous query doesn't return anything.
+        raise KeyError(f"There is no client with the 'dni'={str(dni)}.")
 
     def is_active(self, dni: Number) -> bool:
         """Checks if there is an active client with the given *dni*.
@@ -120,7 +128,8 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=client.is_active).execute()
-        self.cache[client.dni] = client
+        if self._do_caching:
+            self.cache[client.dni] = client
 
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its inscriptions.
@@ -131,19 +140,23 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=False).execute()
-        self.cache.pop(client.dni)
+        if self._do_caching:
+            self.cache.pop(client.dni)
         InscriptionTable.delete().where(InscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
         if id(self.cache[client.dni]) != id(client):
             raise ValueError(f"The client with [dni={client.dni}] has a in memory object that is not the cached object.")
-        self.cache.move_to_front(client.dni)
+
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
+
+        if self._do_caching:
+            self.cache.move_to_front(client.dni)
 
     def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
         """Retrieve all the clients in the repository.
@@ -166,13 +179,18 @@ class SqliteClientRepo(ClientRepo):
         inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
 
         for raw_client in prefetch(clients_q, inscription_q, transactions_q):
-            if raw_client.dni not in self.cache:
-                logger.getChild(type(self).__name__).info(
-                    f"Client with [dni={raw_client.dni}] not in cache. The client will be created from raw data."
-                )
+            client: Client
+            if self._do_caching and raw_client.dni in self.cache:
+                client = self.cache[raw_client.dni]
+            else:
+                # If there is no caching or if the client isn't in the cache, creates the client from the db record.
                 client = self._from_raw(raw_client)
-                self.cache[client.dni] = client
-            yield self.cache[raw_client.dni]
+                if self._do_caching:
+                    self.cache[client.dni] = client
+                    logger.getChild(type(self).__name__).info(
+                        f"Client with [dni={raw_client.dni}] not in cache. The client will be created from raw data."
+                    )
+            yield client
 
 
 class ActivityTable(Model):
