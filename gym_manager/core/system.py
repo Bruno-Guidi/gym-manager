@@ -6,6 +6,8 @@ from gym_manager.core import constants
 from gym_manager.core.base import String, Transaction, Client, Activity, Inscription, Currency
 from gym_manager.core.persistence import TransactionRepo, InscriptionRepo, ActivityRepo
 
+logger = logging.getLogger(__name__)
+
 
 class ActivityManager:
     """Provides an API to do activity related things.
@@ -38,14 +40,20 @@ class ActivityManager:
     def n_inscriptions(self, activity: Activity) -> int:
         return self.activity_repo.n_inscriptions(activity)
 
-    def sign_on(self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None):
+    def sign_on(
+            self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None
+    ) -> Inscription:
         """Signs on the *client* in the *activity*. If *transaction* is given, then associate it to the inscription.
         """
         inscription = Inscription(when, client, activity, transaction)
         self.inscription_repo.add(inscription)
         client.sign_on(inscription)
-        logging.info(f"'Client' [{client.dni}] signed up in the 'activity' [{activity.name}] with 'payment' "
-                     f"{'None' if transaction is None else transaction.id}")
+
+        logger.getChild(type(self).__name__).info(
+            f"Client with [dni={client.dni}] signed up in the activity with [activity_id={activity.id}], with the "
+            f"payment [payment={'None' if transaction is None else transaction.id}].")
+
+        return inscription
 
     def unsubscribe(self, inscription: Inscription):
         inscription.client.cancel(inscription)
