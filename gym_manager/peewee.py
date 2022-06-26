@@ -409,7 +409,7 @@ class SqliteInscriptionRepo(InscriptionRepo):
     """
 
     def __init__(self) -> None:
-        create_table(InscriptionTable)  # ToDo Change like client.
+        InscriptionTable._meta.database.create_tables([InscriptionTable])
 
     def add(self, inscription: Inscription):
         InscriptionTable.create(
@@ -427,7 +427,7 @@ class SqliteInscriptionRepo(InscriptionRepo):
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
         """Registers in the repository that the *client* was charged for the *activity*.
         """
-        raw_inscription = InscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
-        raw_transaction = TransactionTable.get_by_id(transaction.id)
-        raw_inscription.transaction = raw_transaction
-        raw_inscription.save()
+        inscription_record = InscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
+        trans_record = TransactionTable.get_by_id(transaction.id)
+        inscription_record.transaction = trans_record
+        inscription_record.save()
