@@ -31,7 +31,6 @@ class ActivityManager:
             f"Clients with [dni={unsubscribed}] where unsubscribed after activity [activity_id={activity.id}] was "
             f"removed.")
 
-
     def activities(self, **active_filters) -> Iterable[Activity]:
         """Retrieves existing activities.
 
