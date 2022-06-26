@@ -28,7 +28,7 @@ def test_allClients():
                    String("DirC", max_len=20), is_active=True)
     client_repo.add(cli_c)
 
-    assert [cli_a, cli_b, cli_c] == [cli for cli in client_repo.all(page=1)]
+    assert [cli for cli in client_repo.all(page=1)] == [cli_a, cli_b, cli_c]
 
 
 def test_allClients_withFilters():
@@ -107,7 +107,7 @@ def test_addClient_withInactiveClient():
     peewee.create_database(":memory:")
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
-    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo, cache_len=0)
     inscription_repo = peewee.SqliteInscriptionRepo()
 
     # This client is inactive. To make things easy, the client is created with is_active=False since the beginning.
@@ -121,6 +121,23 @@ def test_addClient_withInactiveClient():
     other_cli_c = Client(Number(3), new_name, date(2022, 6, 2), String("TelC", max_len=20), String("DirC", max_len=20),
                          is_active=True)
     client_repo.add(other_cli_c)
-    # Queries the client again, bypassing the cache, to see if the client data is updated.
-    other_cli_c = client_repo.get(other_cli_c.dni, bypass_cache=True)
+    # Queries the client again, to see if the client data is updated.
+    other_cli_c = client_repo.get(other_cli_c.dni)
     assert client_repo.is_active(other_cli_c.dni) and other_cli_c.name == new_name
+
+
+def test_clientRemoving():
+    peewee.create_database(":memory:")
+
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo, cache_len=0)
+    inscription_repo = peewee.SqliteInscriptionRepo()
+
+    # This client is inactive. To make things easy, the client is created with is_active=False since the beginning.
+    cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 6, 2), String("TelC", max_len=20),
+                   String("DirC", max_len=20), is_active=True)
+    client_repo.add(cli_c)
+
+    client_repo.remove(cli_c)
+
+    assert not client_repo.is_active(cli_c.dni)
