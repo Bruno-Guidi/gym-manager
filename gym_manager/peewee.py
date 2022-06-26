@@ -70,7 +70,7 @@ class SqliteClientRepo(ClientRepo):
             activity = self.activity_repo.get(inscription_record.activity_id)
             trans_record, transaction = inscription_record.transaction, None
             if trans_record is not None:
-                transaction = self.transaction_repo.from_raw_data(
+                transaction = self.transaction_repo.from_record(
                     trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
                     trans_record.method, trans_record.responsible, trans_record.description
                 )
@@ -320,24 +320,28 @@ class SqliteTransactionRepo(TransactionRepo):
     """Transaction repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self) -> None:
-        create_table(TransactionTable)  # ToDo Change like client.
-        self.client_repo: ClientRepo | None = None
-        self.cache: dict[int, Transaction] = {}
+    def __init__(self, cache_len: int = 50) -> None:
+        TransactionTable._meta.database.create_tables([TransactionTable])
 
-    def from_raw_data(self, id, type, client: Client, when, amount, method, responsible, description):
+        self.client_repo: ClientRepo | None = None
+
+        self._do_caching = cache_len > 0
+        self.cache = LRUCache(key_types=(int, ), value_type=Transaction, max_len=cache_len)
+
+    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
         """Creates a Transaction with the given data.
         """
-        if id not in self.cache:
-            transaction = Transaction(id,
-                                      String(type, max_len=consts.TRANSACTION_TYPE_CHARS),
-                                      client,
-                                      when, Currency(amount, max_currency=consts.MAX_CURRENCY),
-                                      String(method, max_len=consts.TRANSACTION_METHOD_CHARS),
-                                      String(responsible, max_len=consts.TRANSACTION_RESP_CHARS),
-                                      String(description, max_len=consts.TRANSACTION_DESCR_CHARS))
+        if self._do_caching and id in self.cache:
+            return self.cache[id]
+
+        transaction = Transaction(id, String(type, max_len=consts.TRANSACTION_TYPE_CHARS), client, when,
+                                  Currency(amount, max_currency=consts.MAX_CURRENCY),
+                                  String(method, max_len=consts.TRANSACTION_METHOD_CHARS),
+                                  String(responsible, max_len=consts.TRANSACTION_RESP_CHARS),
+                                  String(description, max_len=consts.TRANSACTION_DESCR_CHARS))
+        if self._do_caching:
             self.cache[id] = transaction
-        return self.cache[id]
+        return transaction
 
     def create(
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
@@ -351,7 +355,7 @@ class SqliteTransactionRepo(TransactionRepo):
         if self.client_repo is None:
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
-        transaction = TransactionTable.create(
+        record = TransactionTable.create(
             type=type.as_primitive(),
             client=ClientTable.get_by_id(client.dni.as_primitive()),
             when=when,
@@ -361,7 +365,11 @@ class SqliteTransactionRepo(TransactionRepo):
             description=description.as_primitive()
         )
 
-        return Transaction(transaction.id, type, client, when, amount, method, responsible, description)
+        transaction = Transaction(record.id, type, client, when, amount, method, responsible, description)
+        if self._do_caching:
+            self.cache[record.id] = transaction
+
+        return transaction
 
     def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
@@ -380,15 +388,9 @@ class SqliteTransactionRepo(TransactionRepo):
         for filter_, value in filters.values():
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
-        for raw_transaction in transactions_q.paginate(page, page_len):
-            yield Transaction(raw_transaction.id,
-                              String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
-                              self.client_repo.get(raw_transaction.client_id),
-                              raw_transaction.when,
-                              Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
-                              String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),
-                              String(raw_transaction.responsible, max_len=consts.TRANSACTION_RESP_CHARS),
-                              String(raw_transaction.description, max_len=consts.TRANSACTION_DESCR_CHARS))
+        for record in transactions_q.paginate(page, page_len):
+            yield self.from_record(record.id, record.type, self.client_repo.get(record.client_id), record.when,
+                                   record.amount, record.method, record.responsible, record.description)
 
 
 class InscriptionTable(Model):

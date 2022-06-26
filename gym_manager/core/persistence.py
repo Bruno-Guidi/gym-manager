@@ -182,7 +182,7 @@ class TransactionRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def from_raw_data(self, id, type, client: Client, when, amount, method, responsible, description):
+    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
         """Creates a Transaction with the given data.
         """
         raise NotImplementedError
