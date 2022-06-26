@@ -79,6 +79,7 @@ class SqliteClientRepo(ClientRepo):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
             dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+            logger.getChild(type(self).__name__).warning(f"Converting raw dni [dni={dni}] from int to Number.")
 
         if bypass_cache or dni not in self.cache:
             clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
@@ -104,6 +105,14 @@ class SqliteClientRepo(ClientRepo):
     def add(self, client: Client):
         if self.is_active(client.dni):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
+
+        if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()):
+            # The client doesn't exist in the table.
+            logger.getChild(type(self).__name__).info(f"Adding new client [client={repr(client)}].")
+        else:
+            # The client exists in the table. Because previous check of self.is_active(args) failed, we can assume that
+            # the client is inactive.
+            logger.getChild(type(self).__name__).info(f"Activating existing client [client={repr(client)}].")
 
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
