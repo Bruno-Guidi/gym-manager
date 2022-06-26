@@ -56,7 +56,7 @@ class ActivityManager:
         return inscription
 
     def unsubscribe(self, inscription: Inscription):
-        inscription.client.cancel(inscription)
+        inscription.client.cancel(inscription.activity)
         self.inscription_repo.remove(inscription)
         logging.info(f"'Client' [{inscription.client.dni}] unsubscribed from the 'activity' "
                      f"[{inscription.activity.name}].")

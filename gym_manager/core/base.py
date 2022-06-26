@@ -186,10 +186,10 @@ class Client:
         """
         self._inscriptions[inscription.activity.id] = inscription
 
-    def cancel(self, inscription: Inscription):
-        """Cancels the given *inscription*.
+    def cancel(self, activity: Activity):
+        """Cancels the given *activity*.
         """
-        self._inscriptions.pop(inscription.activity.id)
+        self._inscriptions.pop(activity.id)
 
     def is_signed_up(self, activity: Activity) -> bool:
         """Returns True if the client is signed up in the *activity*.
