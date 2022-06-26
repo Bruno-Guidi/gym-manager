@@ -24,8 +24,13 @@ class ActivityManager:
         self.activity_repo.update(activity)
 
     def remove(self, activity: Activity):
-        activity.unsubscribe_clients()
+        unsubscribed = [client.dni for client in activity.unsubscribe_clients()]
         self.activity_repo.remove(activity, cascade_removing=True)
+
+        logger.getChild(type(self).__name__).info(
+            f"Clients with [dni={unsubscribed}] where unsubscribed after activity [activity_id={activity.id}] was "
+            f"removed.")
+
 
     def activities(self, **active_filters) -> Iterable[Activity]:
         """Retrieves existing activities.
