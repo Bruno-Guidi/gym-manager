@@ -164,3 +164,33 @@ def test_allActivities():
 
     filters = {"filter1": (TextLike("dummy", "dummy", attr="name"), "fut")}
     assert [act for act in activity_manager.activities(**filters)] == [act1, act2]
+
+
+def test_removeActivity():
+    peewee.create_database(":memory:")
+
+    # System objects.
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    inscription_repo = peewee.SqliteInscriptionRepo()
+
+    activity_manager = ActivityManager(activity_repo, inscription_repo)
+
+    # Test setup.
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+
+    cli = Client(Number(3), String("TestCli", max_len=20), date(2022, 6, 2), String("Tel", max_len=20),
+                 String("Dir", max_len=20), is_active=True)
+    client_repo.add(cli)
+    activity_manager.sign_on(date(2022, 7, 9), cli, act1)
+
+    # Feature to test.
+    activity_manager.remove(act1)
+    with pytest.raises(KeyError):
+        activity_repo.get(act1.id)  # The activity is no longer in the repo.
+        assert not cli.is_signed_up(act1)  # The client is no longer signed up in the nonexistent activity.
+
+
+def test_unsubscribe():
+    pass
