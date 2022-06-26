@@ -222,6 +222,14 @@ class Activity:
     price: Currency = field(compare=False)
     charge_once: bool = field(compare=False)
     description: String = field(compare=False)
+    _clients: dict[Number, Client] = field(compare=False, init=False, default_factory=dict)
+
+    def sign_up_client(self, client: Client):
+        self._clients[client.dni] = client
+
+    def unsubscribe_clients(self):
+        for client in self._clients.values():
+            client.cancel(self)
 
 
 @dataclass
