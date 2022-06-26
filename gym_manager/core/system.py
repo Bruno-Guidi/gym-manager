@@ -24,6 +24,7 @@ class ActivityManager:
         self.activity_repo.update(activity)
 
     def remove(self, activity: Activity):
+        activity.unsubscribe_clients()
         self.activity_repo.remove(activity, cascade_removing=True)
 
     def activities(self, **active_filters) -> Iterable[Activity]:
@@ -47,6 +48,7 @@ class ActivityManager:
         """
         inscription = Inscription(when, client, activity, transaction)
         self.inscription_repo.add(inscription)
+        activity.sign_up_client(client)
         client.sign_on(inscription)
 
         logger.getChild(type(self).__name__).info(
