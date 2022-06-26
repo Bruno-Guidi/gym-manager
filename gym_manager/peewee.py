@@ -4,8 +4,8 @@ import logging
 from datetime import date
 from typing import Type, Generator
 
-from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField, \
-    CompositeKey, prefetch, Proxy
+from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
+                    CompositeKey, prefetch, Proxy)
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
@@ -47,6 +47,7 @@ class SqliteClientRepo(ClientRepo):
     """Clients repository implementation based on Sqlite and peewee ORM.
     """
 
+    # noinspection PyProtectedMember
     def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
         """If cache_len == 0, then there won't be any caching.
         """
@@ -174,7 +175,7 @@ class SqliteClientRepo(ClientRepo):
         clients_q = ClientTable.select()
         for filter_, value in filters.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
-        clients_q = clients_q.where(ClientTable.is_active == True)
+        clients_q = clients_q.where(ClientTable.is_active)
         if page_len is not None:
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
@@ -210,12 +211,14 @@ class SqliteActivityRepo(ActivityRepo):
     """Activities repository implementation based on Sqlite and peewee ORM.
     """
 
+    # noinspection PyProtectedMember
     def __init__(self, cache_len: int = 50) -> None:
         ActivityTable._meta.database.create_tables([ActivityTable])
 
         self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(int,), value_type=Activity, max_len=cache_len)
 
+    # noinspection PyShadowingBuiltins
     def get(self, id: int) -> Activity:
         """Retrieves the activity with the given *id* in the repository, if it exists.
 
@@ -291,9 +294,8 @@ class SqliteActivityRepo(ActivityRepo):
                                     String(record.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
                 if self._do_caching:
                     self.cache[activity.id] = activity
-                    logger.getChild(type(self).__name__).info(
-                        f"Activity with [activity.id={record.id}] not in cache. The activity will be created from raw data."
-                    )
+                    logger.getChild(type(self).__name__).info(f"Activity with [activity.id={record.id}] not in cache. "
+                                                              f"The activity will be created from raw data.")
             yield activity
 
     def n_inscriptions(self, activity: Activity) -> int:
@@ -320,14 +322,16 @@ class SqliteTransactionRepo(TransactionRepo):
     """Transaction repository implementation based on Sqlite and peewee ORM.
     """
 
+    # noinspection PyProtectedMember
     def __init__(self, cache_len: int = 50) -> None:
         TransactionTable._meta.database.create_tables([TransactionTable])
 
         self.client_repo: ClientRepo | None = None
 
         self._do_caching = cache_len > 0
-        self.cache = LRUCache(key_types=(int, ), value_type=Transaction, max_len=cache_len)
+        self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
 
+    # noinspection PyShadowingBuiltins
     def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
         """Creates a Transaction with the given data.
         """
@@ -343,6 +347,7 @@ class SqliteTransactionRepo(TransactionRepo):
             self.cache[id] = transaction
         return transaction
 
+    # noinspection PyShadowingBuiltins
     def create(
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
             description: String
@@ -408,6 +413,7 @@ class SqliteInscriptionRepo(InscriptionRepo):
     """Inscriptions repository implementation based on Sqlite and peewee ORM.
     """
 
+    # noinspection PyProtectedMember
     def __init__(self) -> None:
         InscriptionTable._meta.database.create_tables([InscriptionTable])
 
