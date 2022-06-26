@@ -218,10 +218,10 @@ class Activity:
     """
 
     id: int
-    name: String
-    price: Currency
-    charge_once: bool
-    description: String
+    name: String = field(compare=False)
+    price: Currency = field(compare=False)
+    charge_once: bool = field(compare=False)
+    description: String = field(compare=False)
 
 
 @dataclass
