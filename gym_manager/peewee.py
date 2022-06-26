@@ -115,7 +115,7 @@ class SqliteClientRepo(ClientRepo):
         if self.is_active(client.dni):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
 
-        if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()):
+        if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()) is None:
             # The client doesn't exist in the table.
             logger.getChild(type(self).__name__).info(f"Adding new client [client={repr(client)}].")
         else:
