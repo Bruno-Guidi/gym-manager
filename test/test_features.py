@@ -4,7 +4,8 @@ from decimal import Decimal
 import pytest
 
 from gym_manager import peewee
-from gym_manager.core.base import Client, Number, String, TextLike
+from gym_manager.core.base import Client, Number, String, TextLike, Currency
+from gym_manager.core.system import ActivityManager
 
 MAX_CURRENCY = Decimal("9999.99")
 
@@ -141,3 +142,25 @@ def test_clientRemoving():
     client_repo.remove(cli_c)
 
     assert not client_repo.is_active(cli_c.dni)
+
+
+def test_allActivities():
+    peewee.create_database(":memory:")
+
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(cache_len=0), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    inscription_repo = peewee.SqliteInscriptionRepo()
+
+    activity_manager = ActivityManager(activity_repo, inscription_repo)
+
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+    act2 = activity_manager.create(String("Futsal", max_len=20), Currency("200.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+    act3 = activity_manager.create(String("Act1", max_len=20), Currency("300.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+
+    assert [act for act in activity_manager.activities()] == [act1, act2, act3]
+
+    filters = {"filter1": (TextLike("dummy", "dummy", attr="name"), "fut")}
+    assert [act for act in activity_manager.activities(**filters)] == [act1, act2]
