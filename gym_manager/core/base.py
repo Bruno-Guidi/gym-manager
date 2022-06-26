@@ -227,9 +227,12 @@ class Activity:
     def sign_up_client(self, client: Client):
         self._clients[client.dni] = client
 
-    def unsubscribe_clients(self):
+    def unsubscribe_clients(self) -> list[Client]:
+        unsubscribed = []
         for client in self._clients.values():
             client.cancel(self)
+            unsubscribed.append(client)
+        return unsubscribed
 
 
 @dataclass
