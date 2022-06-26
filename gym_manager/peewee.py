@@ -210,9 +210,11 @@ class SqliteActivityRepo(ActivityRepo):
     """Activities repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self) -> None:
-        create_table(ActivityTable)  # ToDo Change like client.
-        self.cache: dict[int, Activity] = {}
+    def __init__(self, cache_len: int = 50) -> None:
+        ActivityTable._meta.database.create_tables([ActivityTable])
+
+        self._do_caching = cache_len > 0
+        self.cache = LRUCache(key_types=(int,), value_type=Activity, max_len=cache_len)
 
     def get(self, id: int) -> Activity:
         """Retrieves the activity with the given *id* in the repository, if it exists.
@@ -220,23 +222,31 @@ class SqliteActivityRepo(ActivityRepo):
         Raises:
             KeyError if there is no activity with the given *id*.
         """
-        if id not in self.cache:
-            raw = ActivityTable.get_or_none(ActivityTable.id == id)
-            if raw is None:
-                raise KeyError(f"There is no activity with the id '{id}'")
-            self.cache[id] = Activity(raw.id,
-                                      String(raw.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                                      Currency(raw.price, max_currency=consts.MAX_CURRENCY),
-                                      raw.charge_once,
-                                      String(raw.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
-        return self.cache[id]
+        if self._do_caching and id in self.cache:
+            return self.cache[id]
+
+        activity: Activity
+        for record in ActivityTable.select().where(ActivityTable.id == id):
+            activity = Activity(record.id,
+                                String(record.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
+                                Currency(record.price, max_currency=consts.MAX_CURRENCY),
+                                record.charge_once,
+                                String(record.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
+            if self._do_caching:
+                self.cache[id] = activity
+            return activity
+
+        raise KeyError(f"There is no activity with the id '{id}'")
 
     def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
-        raw_activity = ActivityTable.create(act_name=name.as_primitive(),
-                                            price=str(price),
-                                            charge_once=charge_once,
-                                            description=description.as_primitive())
-        return Activity(raw_activity.id, name, price, charge_once, description)
+        record = ActivityTable.create(act_name=name.as_primitive(),
+                                      price=str(price),
+                                      charge_once=charge_once,
+                                      description=description.as_primitive())
+        activity = Activity(record.id, name, price, charge_once, description)
+        if self._do_caching:
+            self.cache[record.id] = activity
+        return activity
 
     def remove(self, activity: Activity, cascade_removing: bool = False):
         """Tries to remove the given *activity*.
@@ -249,11 +259,13 @@ class SqliteActivityRepo(ActivityRepo):
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
         """
-        inscriptions = self.n_inscriptions(activity)
-        if not cascade_removing and inscriptions > 0:
-            raise Exception(f"The activity '{activity.name}' can not be removed because it has {inscriptions} "
-                            f"registered clients and 'cascade_removing' was set to False.")
+        n_inscriptions = self.n_inscriptions(activity)
+        if not cascade_removing and n_inscriptions > 0:
+            raise Exception(f"The activity [activity={activity}] can not be removed because it has {n_inscriptions} "
+                            f"registered clients and [cascade_removing={cascade_removing}]")
 
+        if self._do_caching:
+            self.cache.pop(activity.id)
         ActivityTable.delete_by_id(activity.id)
 
     def update(self, activity: Activity):
@@ -263,17 +275,26 @@ class SqliteActivityRepo(ActivityRepo):
                               charge_once=activity.charge_once,
                               description=activity.description.as_primitive()).execute()
 
+        if self._do_caching:
+            self.cache.move_to_front(activity.id)
+
     def all(self) -> Generator[Activity, None, None]:
-        for raw_activity in ActivityTable.select():
-            if raw_activity.id not in self.cache:
-                self.cache[raw_activity.id] = Activity(
-                    raw_activity.id,
-                    String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                    Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
-                    raw_activity.charge_once,
-                    String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
-                )
-            yield self.cache[raw_activity.id]
+        for record in ActivityTable.select():
+            activity: Activity
+            if self._do_caching and record.id in self.cache:
+                activity = self.cache[record.id]
+            else:
+                activity = Activity(record.id,
+                                    String(record.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
+                                    Currency(record.price, max_currency=consts.MAX_CURRENCY),
+                                    record.charge_once,
+                                    String(record.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
+                if self._do_caching:
+                    self.cache[activity.id] = activity
+                    logger.getChild(type(self).__name__).info(
+                        f"Activity with [activity.id={record.id}] not in cache. The activity will be created from raw data."
+                    )
+            yield activity
 
     def n_inscriptions(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
