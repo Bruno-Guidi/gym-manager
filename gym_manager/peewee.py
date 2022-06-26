@@ -209,7 +209,7 @@ class SqliteActivityRepo(ActivityRepo):
     """
 
     def __init__(self) -> None:
-        create_table(ActivityTable)
+        create_table(ActivityTable)  # ToDo Change like client.
         self.cache: dict[int, Activity] = {}
 
     def get(self, id: int) -> Activity:
@@ -298,7 +298,7 @@ class SqliteTransactionRepo(TransactionRepo):
     """
 
     def __init__(self) -> None:
-        create_table(TransactionTable)
+        create_table(TransactionTable)  # ToDo Change like client.
         self.client_repo: ClientRepo | None = None
         self.cache: dict[int, Transaction] = {}
 
@@ -384,7 +384,7 @@ class SqliteInscriptionRepo(InscriptionRepo):
     """
 
     def __init__(self) -> None:
-        create_table(InscriptionTable)
+        create_table(InscriptionTable)  # ToDo Change like client.
 
     def add(self, inscription: Inscription):
         InscriptionTable.create(
