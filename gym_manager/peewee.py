@@ -51,7 +51,7 @@ class SqliteClientRepo(ClientRepo):
     def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
         """If cache_len == 0, then there won't be any caching.
         """
-        create_table(ClientTable)
+        ClientTable._meta.database.create_tables([ClientTable])
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
         self._do_caching = cache_len > 0
