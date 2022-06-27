@@ -3,7 +3,7 @@ from collections import OrderedDict
 from datetime import date
 from typing import Generator, Type, Any
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Transaction
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction
 
 
 class LRUCache:
@@ -80,7 +80,7 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def remove(self, client: Client):
-        """Marks the given *client* as inactive, and delete its inscriptions.
+        """Marks the given *client* as inactive, and delete its subscriptions.
         """
         raise NotImplementedError
 
@@ -149,30 +149,30 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def n_inscriptions(self, activity: Activity) -> int:
-        """Returns the number of clients registered in the given *activity*.
+    def n_subscribers(self, activity: Activity) -> int:
+        """Returns the number of clients subscribed in the given *activity*.
         """
         raise NotImplementedError
 
 
-class InscriptionRepo(abc.ABC):
-    """Repository interface for client's activities inscriptions.
+class SubscriptionRepo(abc.ABC):
+    """Repository interface for client's activities subscriptions.
     """
     @abc.abstractmethod
-    def add(self, inscription: Inscription):
-        """Adds the given *inscription* to the repository.
+    def add(self, subscription: Subscription):
+        """Adds the given *subscription* to the repository.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def remove(self, inscription: Inscription):
-        """Removes the given *inscription* from the repository.
+    def remove(self, subscription: Subscription):
+        """Removes the given *subscription* from the repository.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
-        """Registers in the repository that the client was charged for the activity.
+        """Registers in the repository that the client was charged for the activity subscription.
         """
         raise NotImplementedError
 
