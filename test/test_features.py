@@ -5,7 +5,7 @@ import pytest
 
 from gym_manager import peewee
 from gym_manager.core.base import Client, Number, String, TextLike, Currency
-from gym_manager.core.system import ActivityManager
+from gym_manager.core.system import ActivityManager, remove_client
 
 MAX_CURRENCY = Decimal("9999.99")
 
@@ -130,18 +130,36 @@ def test_addClient_withInactiveClient():
 def test_clientRemoving():
     peewee.create_database(":memory:")
 
+    # System objects.
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo, cache_len=0)
     sub_repo = peewee.SqliteSubscriptionRepo()
+    activity_manager = ActivityManager(activity_repo, sub_repo)
+
+    # Set up.
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+    act2 = activity_manager.create(String("Futsal", max_len=20), Currency("200.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+    act3 = activity_manager.create(String("Act1", max_len=20), Currency("300.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
 
     # This client is inactive. To make things easy, the client is created with is_active=False since the beginning.
     cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 6, 2), String("TelC", max_len=20),
                    String("DirC", max_len=20), is_active=True)
     client_repo.add(cli_c)
+    activity_manager.subscribe(date(2022, 5, 5), cli_c, act1)
+    activity_manager.subscribe(date(2022, 5, 5), cli_c, act2)
+    activity_manager.subscribe(date(2022, 5, 5), cli_c, act3)
 
-    client_repo.remove(cli_c)
+    # First assert that the clients are correctly subscribed.
+    assert (activity_manager.n_subscribers(act1) == 1 and activity_manager.n_subscribers(act2) == 1
+            and activity_manager.n_subscribers(act3) == 1)
 
-    assert not client_repo.is_active(cli_c.dni)
+    # Then remove the client and assert that it is no longer active, and that the subscriptions where cancelled.
+    remove_client(cli_c, client_repo)
+    assert (not client_repo.is_active(cli_c.dni) and activity_manager.n_subscribers(act1) == 0
+            and activity_manager.n_subscribers(act2) == 0 and activity_manager.n_subscribers(act3) == 0)
 
 
 def test_allActivities():
