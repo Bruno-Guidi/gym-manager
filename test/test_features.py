@@ -210,5 +210,26 @@ def test_removeActivity():
         assert not cli.is_subscribed(act1)  # The client is no longer signed up in the nonexistent activity.
 
 
-def test_unsubscribe():
-    pass
+def test_cancelSubscription():
+    peewee.create_database(":memory:")
+
+    # System objects.
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    sub_repo = peewee.SqliteSubscriptionRepo()
+
+    activity_manager = ActivityManager(activity_repo, sub_repo)
+
+    # Test setup.
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+
+    cli = Client(Number(3), String("TestCli", max_len=20), date(2022, 6, 2), String("Tel", max_len=20),
+                 String("Dir", max_len=20), is_active=True)
+    client_repo.add(cli)
+    sub = activity_manager.subscribe(date(2022, 7, 9), cli, act1)
+
+    # Feature to test.
+    activity_manager.cancel(sub)
+
+    assert not cli.is_subscribed(act1) and activity_manager.n_subscribers(act1) == 0
