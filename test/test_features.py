@@ -127,7 +127,7 @@ def test_addClient_withInactiveClient():
     assert client_repo.is_active(other_cli_c.dni) and other_cli_c.name == new_name
 
 
-def test_clientRemoving():
+def test_removeClient():
     peewee.create_database(":memory:")
 
     # System objects.
