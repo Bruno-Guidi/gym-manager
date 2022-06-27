@@ -61,7 +61,7 @@ class ActivityManager:
 
         return sub
 
-    def unsubscribe(self, subscription: Subscription):  # ToDo change signature.
+    def cancel(self, subscription: Subscription):
         subscription.client.unsubscribe(subscription.activity)
         self.sub_repo.remove(subscription)
         logging.info(f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' "

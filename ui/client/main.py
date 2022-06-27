@@ -347,7 +347,7 @@ class ClientRow(QWidget):
             unsubscribe = Dialog.confirm(f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
                                          f"actividad {inscription.activity.name}?")
             if unsubscribe:
-                self.activity_manager.unsubscribe(inscription)
+                self.activity_manager.cancel(inscription)
                 self.inscription_table.removeRow(self.inscription_table.currentRow())
 
     def _load_inscription(self, row: int, inscription: Subscription):
