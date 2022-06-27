@@ -5,7 +5,7 @@ import pytest
 
 from gym_manager import peewee
 from gym_manager.core.base import Client, Number, String, TextLike, Currency
-from gym_manager.core.system import ActivityManager, remove_client, AccountingSystem
+from gym_manager.core.system import ActivityManager, AccountingSystem
 
 MAX_CURRENCY = Decimal("9999.99")
 
