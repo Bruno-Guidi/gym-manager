@@ -21,12 +21,6 @@ def create_database(url: str):
     _database_proxy.initialize(database)
 
 
-def create_table(table: Type[Model], drop_before: bool = False):
-    if drop_before:
-        _database_proxy.drop_tables([table])
-    _database_proxy.create_tables([table])
-
-
 def client_name_like(client, filter_value) -> bool:
     return client.cli_name.contains(filter_value)
 
