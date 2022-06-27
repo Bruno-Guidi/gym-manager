@@ -191,8 +191,8 @@ class Client:
         """
         self._subscriptions.pop(activity.id)
 
-    def is_signed_up(self, activity: Activity) -> bool:
-        """Returns True if the client is signed up in the *activity*.
+    def is_subscribed(self, activity: Activity) -> bool:
+        """Returns True if the client subscribed to the *activity*.
         """
         return activity.id in self._subscriptions
 
