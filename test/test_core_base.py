@@ -153,31 +153,31 @@ def test_Currency_raisesValidationError_maxCurrencyExceeded():
 
 
 # noinspection PyTypeChecker
-def test_Inscription_payDayPassed():
-    inscription = Subscription(date(2022, 8, 8), client=None, activity=None)
+def test_Subscription_payDayPassed():
+    subscription = Subscription(date(2022, 8, 8), client=None, activity=None)
 
-    # The client wasn't charged for the activity after he signed up. 06/09/2022 is the 30st day after the inscription
-    # date, so the inscription charge day hasn't passed yet.
-    assert not inscription.charge_day_passed(today=date(2022, 9, 6))
+    # The client wasn't charged for the activity after he signed up. 06/09/2022 is the 30st day after the subscription
+    # date, so the subscription charge day hasn't passed yet.
+    assert not subscription.charge_day_passed(today=date(2022, 9, 6))
 
-    # The client wasn't charged for the activity after he signed up. 07/09/2022 is the 31st day after the inscription
-    # date, so the inscription charge day has passed.
-    assert inscription.charge_day_passed(today=date(2022, 9, 7))
+    # The client wasn't charged for the activity after he signed up. 07/09/2022 is the 31st day after the subscription
+    # date, so the subscription charge day has passed.
+    assert subscription.charge_day_passed(today=date(2022, 9, 7))
 
-    # The client is charged for the inscription.
-    inscription.transaction = Transaction(1, type=None, client=None, when=date(2022, 9, 7), amount=None, method=None,
+    # The client is charged for the subscription.
+    subscription.transaction = Transaction(1, type=None, client=None, when=date(2022, 9, 7), amount=None, method=None,
                                           responsible=None, description=None)
 
-    assert not inscription.charge_day_passed(today=date(2022, 9, 7))
-    assert not inscription.charge_day_passed(today=date(2022, 10, 6))  # Only 30 days have passed since the charge.
-    assert inscription.charge_day_passed(today=date(2022, 10, 7))  # 31 days have passed since the charge.
+    assert not subscription.charge_day_passed(today=date(2022, 9, 7))
+    assert not subscription.charge_day_passed(today=date(2022, 10, 6))  # Only 30 days have passed since the charge.
+    assert subscription.charge_day_passed(today=date(2022, 10, 7))  # 31 days have passed since the charge.
 
 
 # noinspection PyTypeChecker
-def test_Inscription_registerCharge_raisesValueError():
+def test_Subscription_registerCharge_raisesValueError():
     client = Client(Number(1), name=None, admission=None, telephone=None, direction=None, is_active=True)
     other_client = Client(Number(2), name=None, admission=None, telephone=None, direction=None, is_active=True)
-    activity = Activity(0, String("name", max_len=20), price=None, pay_once=True, description=None)
+    activity = Activity(0, String("name", max_len=20), price=None, charge_once=True, description=None)
 
     with pytest.raises(ValueError):
         trans = Transaction(1, type=None, client=other_client, when=None, amount=None, method=None, responsible=None,
