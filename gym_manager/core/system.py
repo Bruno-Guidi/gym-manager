@@ -3,8 +3,8 @@ from datetime import date
 from typing import Iterable
 
 from gym_manager.core import constants
-from gym_manager.core.base import String, Transaction, Client, Activity, Inscription, Currency
-from gym_manager.core.persistence import TransactionRepo, InscriptionRepo, ActivityRepo
+from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency
+from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +13,9 @@ class ActivityManager:
     """Provides an API to do activity related things.
     """
 
-    def __init__(self, activity_repo: ActivityRepo, inscription_repo: InscriptionRepo):
+    def __init__(self, activity_repo: ActivityRepo, sub_repo: SubscriptionRepo):
         self.activity_repo = activity_repo
-        self.inscription_repo = inscription_repo
+        self.sub_repo = sub_repo
 
     def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
         return self.activity_repo.create(name, price, charge_once, description)
@@ -42,30 +42,30 @@ class ActivityManager:
             if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
                 yield activity
 
-    def n_inscriptions(self, activity: Activity) -> int:
-        return self.activity_repo.n_inscriptions(activity)
+    def n_subscribers(self, activity: Activity) -> int:
+        return self.activity_repo.n_subscribers(activity)
 
-    def sign_on(
+    def subscribe(
             self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None
-    ) -> Inscription:
-        """Signs on the *client* in the *activity*. If *transaction* is given, then associate it to the inscription.
+    ) -> Subscription:
+        """Subscribes the *client* in the *activity*. If *transaction* is given, then associate it to the subscription.
         """
-        inscription = Inscription(when, client, activity, transaction)
-        self.inscription_repo.add(inscription)
-        activity.sign_up_client(client)
-        client.sign_on(inscription)
+        sub = Subscription(when, client, activity, transaction)
+        self.sub_repo.add(sub)
+        activity.subscribe(client)
+        client.add(sub)
 
         logger.getChild(type(self).__name__).info(
-            f"Client with [dni={client.dni}] signed up in the activity with [activity_id={activity.id}], with the "
+            f"Client with [dni={client.dni}] subscribed in the activity with [activity_id={activity.id}], with the "
             f"payment [payment={'None' if transaction is None else transaction.id}].")
 
-        return inscription
+        return sub
 
-    def unsubscribe(self, inscription: Inscription):
-        inscription.client.cancel(inscription.activity)
-        self.inscription_repo.remove(inscription)
-        logging.info(f"'Client' [{inscription.client.dni}] unsubscribed from the 'activity' "
-                     f"[{inscription.activity.name}].")
+    def unsubscribe(self, subscription: Subscription):  # ToDo change signature.
+        subscription.client.unsubscribe(subscription.activity)
+        self.sub_repo.remove(subscription)
+        logging.info(f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' "
+                     f"[{subscription.activity.name}].")
 
 
 class AccountingSystem:
@@ -75,12 +75,12 @@ class AccountingSystem:
     def __init__(
             self,
             transaction_repo: TransactionRepo,
-            inscription_repo: InscriptionRepo,
+            sub_repo: SubscriptionRepo,
             transaction_types: tuple[str, ...],
             methods: tuple[str, ...]
     ) -> None:
         self.transaction_repo = transaction_repo
-        self.inscription_repo = inscription_repo
+        self.sub_repo = sub_repo
         self.transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
                                   for name in transaction_types}
         self.methods = tuple(String(name, max_len=constants.TRANSACTION_METHOD_CHARS) for name in methods)
@@ -98,7 +98,7 @@ class AccountingSystem:
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,
             description: String
     ) -> Transaction:
-        """Charges the *client* for its *activity* inscription.
+        """Charges the *client* for its *activity* subscription.
         """
         transaction = self.transaction_repo.create(
             self.transaction_types["charge"], client, when, activity.price, method, responsible, description
@@ -108,6 +108,6 @@ class AccountingSystem:
         # A 'charge once' activity is, for example, an activity related to bookings.
         if not activity.charge_once:
             client.register_charge(activity, transaction)
-            self.inscription_repo.register_charge(client, activity, transaction)
+            self.sub_repo.register_charge(client, activity, transaction)
 
         return transaction

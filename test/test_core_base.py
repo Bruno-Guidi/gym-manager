@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from gym_manager.core.base import ValidationError, Number, String, Currency, Inscription, Transaction, Client, Activity, \
+from gym_manager.core.base import ValidationError, Number, String, Currency, Subscription, Transaction, Client, Activity, \
     TextLike, ClientLike, TextEqual, DateGreater, DateLesser
 
 
@@ -154,7 +154,7 @@ def test_Currency_raisesValidationError_maxCurrencyExceeded():
 
 # noinspection PyTypeChecker
 def test_Inscription_payDayPassed():
-    inscription = Inscription(date(2022, 8, 8), client=None, activity=None)
+    inscription = Subscription(date(2022, 8, 8), client=None, activity=None)
 
     # The client wasn't charged for the activity after he signed up. 06/09/2022 is the 30st day after the inscription
     # date, so the inscription charge day hasn't passed yet.
@@ -182,12 +182,12 @@ def test_Inscription_registerCharge_raisesValueError():
     with pytest.raises(ValueError):
         trans = Transaction(1, type=None, client=other_client, when=None, amount=None, method=None, responsible=None,
                             description=None)
-        Inscription(when=None, client=client, activity=activity).register_charge(trans)
+        Subscription(when=None, client=client, activity=activity).register_charge(trans)
 
     with pytest.raises(ValueError):
         trans = Transaction(1, type=None, client=client, when=None, amount=None, method=None, responsible=None,
                             description=None)
-        Inscription(when=None, client=other_client, activity=activity).register_charge(trans)
+        Subscription(when=None, client=other_client, activity=activity).register_charge(trans)
 
 
 # noinspection PyTypeChecker

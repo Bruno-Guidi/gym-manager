@@ -26,7 +26,7 @@ if __name__ == "__main__":
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
-    inscription_repo = peewee.SqliteInscriptionRepo()
+    inscription_repo = peewee.SqliteSubscriptionRepo()
 
     activity_manager = ActivityManager(activity_repo, inscription_repo)
     accounting_system = AccountingSystem(transaction_repo, inscription_repo,

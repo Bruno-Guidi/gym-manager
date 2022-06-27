@@ -75,7 +75,7 @@ class SqliteClientRepo(ClientRepo):
                     trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
                     trans_record.method, trans_record.responsible, trans_record.description
                 )
-            client.sign_on(Subscription(sub_record.when, client, activity, transaction))
+            client.add(Subscription(sub_record.when, client, activity, transaction))
 
         return client
 

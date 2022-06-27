@@ -29,7 +29,7 @@ class Controller:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
             activity: Activity = self.combobox.currentData(Qt.UserRole)
-            self.activity_manager.sign_on(self.when_field.date().toPyDate(), self.client, activity)
+            self.activity_manager.subscribe(self.when_field.date().toPyDate(), self.client, activity)
             Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
                                  f"'{activity.name}'.")
             self.combobox.window().close()

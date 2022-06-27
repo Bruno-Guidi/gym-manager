@@ -210,7 +210,7 @@ class ActivityRow(QWidget):
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
 
     def remove(self):
-        inscriptions, delete = self.activity_manager.n_inscriptions(self.activity), False
+        inscriptions, delete = self.activity_manager.n_subscribers(self.activity), False
         if inscriptions > 0:
             delete = Dialog.confirm(f"La actividad '{self.activity.name}' tiene {inscriptions} clientes inscriptos. "
                                     f"¿Desea eliminarla igual?")

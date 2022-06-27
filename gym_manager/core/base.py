@@ -179,37 +179,37 @@ class Client:
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
     is_active: bool = field(compare=False)
-    _inscriptions: dict[int, Inscription] = field(default_factory=dict, compare=False, init=False)
+    _subscriptions: dict[int, Subscription] = field(default_factory=dict, compare=False, init=False)
 
-    def sign_on(self, inscription: Inscription):
-        """Registers the given *inscription*.
+    def add(self, subscription: Subscription):
+        """Registers the given *subscription*.
         """
-        self._inscriptions[inscription.activity.id] = inscription
+        self._subscriptions[subscription.activity.id] = subscription
 
-    def cancel(self, activity: Activity):
-        """Cancels the given *activity*.
+    def unsubscribe(self, activity: Activity):
+        """Unsubscribes the client from the given *activity*.
         """
-        self._inscriptions.pop(activity.id)
+        self._subscriptions.pop(activity.id)
 
     def is_signed_up(self, activity: Activity) -> bool:
         """Returns True if the client is signed up in the *activity*.
         """
-        return activity.id in self._inscriptions
+        return activity.id in self._subscriptions
 
-    def n_inscriptions(self) -> int:
-        """Returns the number of activities inscriptions that the client has.
+    def n_subscriptions(self) -> int:
+        """Returns the number of activities subscriptions that the client has.
         """
-        return len(self._inscriptions)
+        return len(self._subscriptions)
 
-    def inscriptions(self) -> Iterable[Inscription]:
-        """Returns the activities inscriptions.
+    def subscriptions(self) -> Iterable[Subscription]:
+        """Returns the activities subscriptions.
         """
-        return self._inscriptions.values()
+        return self._subscriptions.values()
 
     def register_charge(self, activity: Activity, transaction: Transaction):
-        """Registers that the client was charged for the *activity*.
+        """Registers that the client was charged for the *activity* subscription.
         """
-        self._inscriptions[activity.id].register_charge(transaction)
+        self._subscriptions[activity.id].register_charge(transaction)
 
 
 @dataclass
@@ -224,20 +224,20 @@ class Activity:
     description: String = field(compare=False)
     _clients: dict[Number, Client] = field(compare=False, init=False, default_factory=dict)
 
-    def sign_up_client(self, client: Client):
+    def subscribe(self, client: Client):
         self._clients[client.dni] = client
 
     def unsubscribe_clients(self) -> list[Client]:
         unsubscribed = []
         for client in self._clients.values():
-            client.cancel(self)
+            client.unsubscribe(self)
             unsubscribed.append(client)
         return unsubscribed
 
 
 @dataclass
-class Inscription:
-    """Stores information about a client's inscription in an activity.
+class Subscription:
+    """Stores information about a client's subscription in an activity.
     """
 
     when: date
@@ -246,7 +246,7 @@ class Inscription:
     transaction: Transaction | None = None
 
     def charge_day_passed(self, today: date) -> bool:
-        """Checks if the charge day for the inscription has passed.
+        """Checks if the charge day for the subscription has passed.
 
         If *today* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged for the
         activity after he signed up) then the charge day passed.
@@ -257,7 +257,7 @@ class Inscription:
         return pay_day_passed(self.transaction.when, today)
 
     def register_charge(self, transaction: Transaction):
-        """Updates the inscription with the given *transaction*.
+        """Updates the subscription with the given *transaction*.
 
         Raises
             ValueError if the client of the *transaction* isn't *self.client*.
