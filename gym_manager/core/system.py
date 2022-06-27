@@ -1,12 +1,21 @@
+from __future__ import annotations
+
 import logging
 from datetime import date
 from typing import Iterable
 
 from gym_manager.core import constants
 from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency
-from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo
+from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, ClientRepo
 
 logger = logging.getLogger(__name__)
+
+
+def remove_client(client: Client, client_repo: ClientRepo, activity_manager: ActivityManager):
+    """Removes the given *client* and its subscriptions.
+    """
+    activity_manager.cancel(client.subscriptions())
+    client_repo.remove(client)
 
 
 class ActivityManager:
@@ -61,11 +70,11 @@ class ActivityManager:
 
         return sub
 
-    def cancel(self, subscription: Subscription):
-        subscription.client.unsubscribe(subscription.activity)
-        self.sub_repo.remove(subscription)
-        logging.info(f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' "
-                     f"[{subscription.activity.name}].")
+    def cancel(self, *subscriptions):
+        for sub in subscriptions:
+            sub.client.unsubscribe(sub.activity)
+            self.sub_repo.remove(sub)
+            logging.info(f"'Client' [{sub.client.dni}] unsubscribed from the 'activity' [{sub.activity.name}].")
 
 
 class AccountingSystem:
