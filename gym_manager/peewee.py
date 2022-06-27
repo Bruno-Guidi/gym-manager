@@ -8,8 +8,8 @@ from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, B
                     CompositeKey, prefetch, Proxy)
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo, LRUCache
+from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache
 
 logger = logging.getLogger(__name__)
 
@@ -67,15 +67,15 @@ class SqliteClientRepo(ClientRepo):
                         String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS),
                         raw.is_active)
 
-        for inscription_record in raw.inscriptions:
-            activity = self.activity_repo.get(inscription_record.activity_id)
-            trans_record, transaction = inscription_record.transaction, None
+        for sub_record in raw.subscriptions:
+            activity = self.activity_repo.get(sub_record.activity_id)
+            trans_record, transaction = sub_record.transaction, None
             if trans_record is not None:
                 transaction = self.transaction_repo.from_record(
                     trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
                     trans_record.method, trans_record.responsible, trans_record.description
                 )
-            client.sign_on(Inscription(inscription_record.when, client, activity, transaction))
+            client.sign_on(Subscription(sub_record.when, client, activity, transaction))
 
         return client
 
@@ -91,10 +91,10 @@ class SqliteClientRepo(ClientRepo):
 
         # If there is no caching or if the client isn't in the cache, query the db.
         clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
-        inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
+        subs_q, trans_q = SubscriptionTable.select(), TransactionTable.select()
         # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
         # one record.
-        for record in prefetch(clients_q, inscriptions_q, trans_q):
+        for record in prefetch(clients_q, subs_q, trans_q):
             client = self._from_record(record)
             if self._do_caching:
                 self.cache[dni] = client
@@ -134,7 +134,7 @@ class SqliteClientRepo(ClientRepo):
             self.cache[client.dni] = client
 
     def remove(self, client: Client):
-        """Marks the given *client* as inactive, and delete its inscriptions.
+        """Marks the given *client* as inactive, and delete its subscriptions.
         """
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
@@ -144,7 +144,7 @@ class SqliteClientRepo(ClientRepo):
                             is_active=False).execute()
         if self._do_caching:
             self.cache.pop(client.dni)
-        InscriptionTable.delete().where(InscriptionTable.client_id == client.dni.as_primitive()).execute()
+        SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
         if id(self.cache[client.dni]) != id(client):
@@ -179,9 +179,9 @@ class SqliteClientRepo(ClientRepo):
         if page_len is not None:
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
-        inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
+        subs_q, trans_q = SubscriptionTable.select(), TransactionTable.select()
 
-        for record in prefetch(clients_q, inscription_q, transactions_q):
+        for record in prefetch(clients_q, subs_q, trans_q):
             client: Client
             if self._do_caching and record.dni in self.cache:
                 client = self.cache[record.dni]
@@ -262,10 +262,10 @@ class SqliteActivityRepo(ActivityRepo):
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
         """
-        n_inscriptions = self.n_inscriptions(activity)
-        if not cascade_removing and n_inscriptions > 0:
-            raise Exception(f"The activity [activity={activity}] can not be removed because it has {n_inscriptions} "
-                            f"registered clients and [cascade_removing={cascade_removing}]")
+        n_subs = self.n_subscribers(activity)
+        if not cascade_removing and n_subs > 0:
+            raise Exception(f"The activity [activity={activity}] can not be removed because it has {n_subs} "
+                            f"subscribed clients and [cascade_removing={cascade_removing}]")
 
         if self._do_caching:
             self.cache.pop(activity.id)
@@ -298,10 +298,10 @@ class SqliteActivityRepo(ActivityRepo):
                                                               f"The activity will be created from raw data.")
             yield activity
 
-    def n_inscriptions(self, activity: Activity) -> int:
+    def n_subscribers(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
         """
-        return InscriptionTable.select().where(InscriptionTable.activity == activity.id).count()
+        return SubscriptionTable.select().where(SubscriptionTable.activity == activity.id).count()
 
 
 class TransactionTable(Model):
@@ -398,42 +398,42 @@ class SqliteTransactionRepo(TransactionRepo):
                                    record.amount, record.method, record.responsible, record.description)
 
 
-class InscriptionTable(Model):
+class SubscriptionTable(Model):
     when = DateField()
-    client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
-    activity = ForeignKeyField(ActivityTable, backref="inscriptions", on_delete="CASCADE")
-    transaction = ForeignKeyField(TransactionTable, backref="inscription_transaction", null=True)
+    client = ForeignKeyField(ClientTable, backref="subscriptions", on_delete="CASCADE")
+    activity = ForeignKeyField(ActivityTable, backref="subscriptions", on_delete="CASCADE")
+    transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions", null=True)
 
     class Meta:
         database = _database_proxy
         primary_key = CompositeKey("client", "activity")
 
 
-class SqliteInscriptionRepo(InscriptionRepo):
-    """Inscriptions repository implementation based on Sqlite and peewee ORM.
+class SqliteSubscriptionRepo(SubscriptionRepo):
+    """Subscriptions repository implementation based on Sqlite and peewee ORM.
     """
 
     # noinspection PyProtectedMember
     def __init__(self) -> None:
-        InscriptionTable._meta.database.create_tables([InscriptionTable])
+        SubscriptionTable._meta.database.create_tables([SubscriptionTable])
 
-    def add(self, inscription: Inscription):
-        InscriptionTable.create(
-            when=inscription.when,
-            client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
-            activity=ActivityTable.get_by_id(inscription.activity.id),
-            transaction=None if inscription.transaction is None else TransactionTable.get_by_id(
-                inscription.transaction.id)
+    def add(self, subscription: Subscription):
+        SubscriptionTable.create(
+            when=subscription.when,
+            client=ClientTable.get_by_id(subscription.client.dni.as_primitive()),
+            activity=ActivityTable.get_by_id(subscription.activity.id),
+            transaction=None if subscription.transaction is None else TransactionTable.get_by_id(
+                subscription.transaction.id)
         )
 
-    def remove(self, inscription: Inscription):
-        InscriptionTable.delete().where((InscriptionTable.client_id == inscription.client.dni.as_primitive())
-                                        & (InscriptionTable.activity_id == inscription.activity.id)).execute()
+    def remove(self, subscription: Subscription):
+        SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.dni.as_primitive())
+                                         & (SubscriptionTable.activity_id == subscription.activity.id)).execute()
 
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
         """Registers in the repository that the *client* was charged for the *activity*.
         """
-        inscription_record = InscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
+        sub_record = SubscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
         trans_record = TransactionTable.get_by_id(transaction.id)
-        inscription_record.transaction = trans_record
-        inscription_record.save()
+        sub_record.transaction = trans_record
+        sub_record.save()
