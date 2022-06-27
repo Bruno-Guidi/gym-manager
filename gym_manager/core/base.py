@@ -222,20 +222,6 @@ class Activity:
     price: Currency = field(compare=False)
     charge_once: bool = field(compare=False)
     description: String = field(compare=False)
-    _clients: dict[Number, Client] = field(compare=False, init=False, default_factory=dict)
-
-    def subscribe(self, client: Client):
-        self._clients[client.dni] = client
-
-    def unsubscribe(self, client: Client):
-        self._clients.pop(client.dni)
-
-    def unsubscribe_clients(self) -> list[Client]:
-        unsubscribed = []
-        for client in self._clients.values():
-            client.unsubscribe(self)
-            unsubscribed.append(client)
-        return unsubscribed
 
 
 @dataclass

@@ -14,8 +14,6 @@ logger = logging.getLogger(__name__)
 def remove_client(client: Client, client_repo: ClientRepo):
     """Removes the given *client* and its subscriptions.
     """
-    for sub in client.subscriptions():
-        sub.activity.unsubscribe(client)
     client_repo.remove(client)
 
 
@@ -34,12 +32,7 @@ class ActivityManager:
         self.activity_repo.update(activity)
 
     def remove(self, activity: Activity):
-        unsubscribed = [client.dni for client in activity.unsubscribe_clients()]
         self.activity_repo.remove(activity, cascade_removing=True)
-
-        logger.getChild(type(self).__name__).info(
-            f"Clients with [dni={unsubscribed}] where unsubscribed after activity [activity_id={activity.id}] was "
-            f"removed.")
 
     def activities(self, **active_filters) -> Iterable[Activity]:
         """Retrieves existing activities.
@@ -62,7 +55,6 @@ class ActivityManager:
         """
         sub = Subscription(when, client, activity, transaction)
         self.sub_repo.add(sub)
-        activity.subscribe(client)
         client.add(sub)
 
         logger.getChild(type(self).__name__).info(
