@@ -15,7 +15,7 @@ def test_allClients():
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
     cli_a = Client(Number(1), String("TestCliA", max_len=20), date(2022, 5, 9), String("TelA", max_len=20),
                    String("DirA", max_len=20), is_active=True)
@@ -37,7 +37,7 @@ def test_allClients_withFilters():
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
     cli_a = Client(Number(1), String("TestCliA", max_len=20), date(2022, 5, 9), String("TelA", max_len=20),
                    String("DirA", max_len=20), is_active=True)
@@ -66,7 +66,7 @@ def test_allClients_paginated():
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
     cli_a = Client(Number(1), String("TestCliA", max_len=20), date(2022, 5, 9), String("TelA", max_len=20),
                    String("DirA", max_len=20), is_active=True)
@@ -89,7 +89,7 @@ def test_addClient_raisesKeyError_withActiveClient():
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
     cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 6, 2), String("TelC", max_len=20),
                    String("DirC", max_len=20), is_active=True)
@@ -109,7 +109,7 @@ def test_addClient_withInactiveClient():
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo, cache_len=0)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
     # This client is inactive. To make things easy, the client is created with is_active=False since the beginning.
     cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 6, 2), String("TelC", max_len=20),
@@ -132,7 +132,7 @@ def test_clientRemoving():
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo, cache_len=0)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
     # This client is inactive. To make things easy, the client is created with is_active=False since the beginning.
     cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 6, 2), String("TelC", max_len=20),
@@ -149,9 +149,9 @@ def test_allActivities():
 
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(cache_len=0), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
-    activity_manager = ActivityManager(activity_repo, inscription_repo)
+    activity_manager = ActivityManager(activity_repo, sub_repo)
 
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
                                    charge_once=False, description=String("Descr", max_len=20))
@@ -172,9 +172,9 @@ def test_removeActivity():
     # System objects.
     activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    sub_repo = peewee.SqliteSubscriptionRepo()
 
-    activity_manager = ActivityManager(activity_repo, inscription_repo)
+    activity_manager = ActivityManager(activity_repo, sub_repo)
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
