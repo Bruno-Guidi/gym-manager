@@ -170,7 +170,12 @@ class BookingSystem:
     def bookings(
             self, states: tuple[str, ...], when: date | None = None, **filters
     ) -> Iterable[tuple[Booking, int, int]]:
-        """Yields bookings with its start and end block number for the given *when*.
+        """Retrieves bookings with its start and end block number.
+
+        Args:
+            states: allows filtering of bookings depending on their states.
+            when: if given, filter bookings of that day. This filtering has priority over filtering with kwargs.
+            **filters: if given, and *when* is None, filter bookings that pass the Filter implementations received.
         """
         if when is not None:
             for booking in self.repo.all(self.courts, states, when):
