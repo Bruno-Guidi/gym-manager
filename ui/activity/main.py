@@ -55,7 +55,7 @@ class ActivityRow(QWidget):
 
             self.pay_once_checkbox = QCheckBox()
             self.pay_once_layout.addWidget(self.pay_once_checkbox)
-            config_checkbox(self.pay_once_checkbox, checked=activity.pay_once, width=pay_once_width)
+            config_checkbox(self.pay_once_checkbox, checked=activity.charge_once, width=pay_once_width)
 
             # Save and delete buttons.
             self.save_btn = QPushButton(self.widget)
@@ -118,7 +118,7 @@ class ActivityRow(QWidget):
 
         self.pay_once_summary = QLabel(self.widget)
         self.pay_once_layout.addWidget(self.pay_once_summary, alignment=Qt.AlignTop)
-        pay_once_text = "Si" if self.activity.pay_once else "No"
+        pay_once_text = "Si" if self.activity.charge_once else "No"
         config_lbl(self.pay_once_summary, pay_once_text, width=pay_once_width, height=30, alignment=Qt.AlignVCenter)
 
         self.pay_once_lbl: QLabel | None = None
@@ -196,7 +196,7 @@ class ActivityRow(QWidget):
             # Updates activity object.
             self.activity.name = self.name_field.value()
             self.activity.price = self.price_field.value()
-            self.activity.pay_once = self.pay_once_checkbox.isChecked()
+            self.activity.charge_once = self.pay_once_checkbox.isChecked()
             self.activity.description = descr
 
             self.activity_manager.update(self.activity)
@@ -204,13 +204,13 @@ class ActivityRow(QWidget):
             # Updates ui.
             self.name_summary.setText(str(self.activity.name))
             self.price_summary.setText(str(self.activity.price))
-            self.pay_once_summary.setText("Si" if self.activity.pay_once else "No")
+            self.pay_once_summary.setText("Si" if self.activity.charge_once else "No")
             self.description_text.setText(str(self.activity.description))
 
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
 
     def remove(self):
-        inscriptions, delete = self.activity_manager.n_inscriptions(self.activity), False
+        inscriptions, delete = self.activity_manager.n_subscribers(self.activity), False
         if inscriptions > 0:
             delete = Dialog.confirm(f"La actividad '{self.activity.name}' tiene {inscriptions} clientes inscriptos. "
                                     f"¿Desea eliminarla igual?")

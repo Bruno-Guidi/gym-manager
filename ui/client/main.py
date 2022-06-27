@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import Client, String, Number, Inscription, TextLike
+from gym_manager.core.base import Client, String, Number, Subscription, TextLike
 from gym_manager.core.persistence import ClientRepo
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.charge import ChargeUI
@@ -27,7 +27,7 @@ class ClientRow(QWidget):
     ):
         super().__init__()
         self.client = client
-        self.inscriptions: dict[int, Inscription] = {}
+        self.inscriptions: dict[int, Subscription] = {}
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
@@ -347,10 +347,10 @@ class ClientRow(QWidget):
             unsubscribe = Dialog.confirm(f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
                                          f"actividad {inscription.activity.name}?")
             if unsubscribe:
-                self.activity_manager.unsubscribe(inscription)
+                self.activity_manager.cancel(inscription)
                 self.inscription_table.removeRow(self.inscription_table.currentRow())
 
-    def _load_inscription(self, row: int, inscription: Inscription):
+    def _load_inscription(self, row: int, inscription: Subscription):
         self.inscriptions[row] = inscription
         self.inscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
 
@@ -377,9 +377,9 @@ class ClientRow(QWidget):
 
     # noinspection PyUnresolvedReferences
     def load_inscriptions(self):
-        self.inscription_table.setRowCount(self.client.n_inscriptions())
+        self.inscription_table.setRowCount(self.client.n_subscriptions())
 
-        for row, inscription in enumerate(self.client.inscriptions()):
+        for row, inscription in enumerate(self.client.subscriptions()):
             self._load_inscription(row, inscription)
 
     def transactions(self):

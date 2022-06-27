@@ -1,8 +1,59 @@
 import abc
+from collections import OrderedDict
 from datetime import date
-from typing import Generator
+from typing import Generator, Type, Any
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Inscription, Transaction
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction
+
+
+class LRUCache:
+
+    def __init__(self, key_types: tuple[Type, ...], value_type: Type, max_len: int) -> None:
+        self.key_types = key_types
+        self.value_type = value_type
+
+        self.max_len = max_len
+        self._cache = OrderedDict()
+
+    def __len__(self) -> int:
+        return len(self._cache)
+
+    def __getitem__(self, key: Any) -> Any:
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
+        if key not in self._cache.keys():
+            raise KeyError(f"The LRUCache does not contains the key '{key}'.")
+
+        self._cache.move_to_end(key, last=False)
+        return self._cache[key]
+
+    def __setitem__(self, key: Any, value: Any):
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
+        if not isinstance(value, self.value_type):
+            raise TypeError(f"The LRUCache expected a '{self.value_type}' as value, but received a '{type(value)}'.")
+
+        self._cache[key] = value
+        self._cache.move_to_end(key, last=False)
+        if len(self._cache) > self.max_len:  # Removes the LRU key in case the cache len is exceeded.
+            self._cache.popitem(last=True)
+
+    def pop(self, key: Any):
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
+        if key not in self._cache.keys():
+            raise KeyError(f"The LRUCache does not contains the key '{key}'.")
+        self._cache.pop(key)
+
+    def __iter__(self):
+        yield from iter(self._cache.keys())
+
+    def move_to_front(self, key: Any):
+        if not isinstance(key, self.key_types):
+            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
+        if key not in self._cache.keys():
+            raise KeyError(f"The LRUCache does not contains the key '{key}'.")
+        self._cache.move_to_end(key, last=False)
 
 
 class ClientRepo(abc.ABC):
@@ -29,7 +80,7 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def remove(self, client: Client):
-        """Marks the given *client* as inactive, and delete its inscriptions.
+        """Marks the given *client* as inactive, and delete its subscriptions.
         """
         raise NotImplementedError
 
@@ -40,12 +91,12 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Client, None, None]:
-        """Returns all the clients in the repository.
+    def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
+        """Retrieve all the clients in the repository.
 
         Args:
             page: page to retrieve.
-            page_len: clients per page.
+            page_len: clients per page. If None, retrieve all clients.
 
         Keyword Args:
             dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
@@ -68,7 +119,7 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
+    def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
         """Creates an activity with the given data, and returns it.
         """
         raise NotImplementedError
@@ -98,30 +149,30 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def n_inscriptions(self, activity: Activity) -> int:
-        """Returns the number of clients registered in the given *activity*.
+    def n_subscribers(self, activity: Activity) -> int:
+        """Returns the number of clients subscribed in the given *activity*.
         """
         raise NotImplementedError
 
 
-class InscriptionRepo(abc.ABC):
-    """Repository interface for client's activities inscriptions.
+class SubscriptionRepo(abc.ABC):
+    """Repository interface for client's activities subscriptions.
     """
     @abc.abstractmethod
-    def add(self, inscription: Inscription):
-        """Adds the given *inscription* to the repository.
+    def add(self, subscription: Subscription):
+        """Adds the given *subscription* to the repository.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def remove(self, inscription: Inscription):
-        """Removes the given *inscription* from the repository.
+    def remove(self, subscription: Subscription):
+        """Removes the given *subscription* from the repository.
         """
         raise NotImplementedError
 
     @abc.abstractmethod
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
-        """Registers in the repository that the client was charged for the activity.
+        """Registers in the repository that the client was charged for the activity subscription.
         """
         raise NotImplementedError
 
@@ -131,7 +182,7 @@ class TransactionRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def from_raw_data(self, id, type, client: Client, when, amount, method, responsible, description):
+    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
         """Creates a Transaction with the given data.
         """
         raise NotImplementedError

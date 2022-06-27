@@ -7,7 +7,7 @@ from ui.accounting.main import AccountingMainUI
 from ui.activity.main import ActivityMainUI
 from ui.booking.main import BookingMainUI
 from ui.client.main import ClientMainUI
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, InscriptionRepo
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, SubscriptionRepo
 from ui.widget_config import config_layout, config_lbl, config_btn
 
 

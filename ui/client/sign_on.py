@@ -21,7 +21,7 @@ class Controller:
 
         self.combobox = combobox
         self.when_field = when_field
-        it = itertools.filterfalse(lambda activity: self.client.is_signed_up(activity), activity_manager.activities())
+        it = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity), activity_manager.activities())
         fill_combobox(combobox, it, lambda activity: str(activity.name))
 
     def sign_on(self):
@@ -29,7 +29,7 @@ class Controller:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
             activity: Activity = self.combobox.currentData(Qt.UserRole)
-            self.activity_manager.sign_on(self.when_field.date().toPyDate(), self.client, activity)
+            self.activity_manager.subscribe(self.when_field.date().toPyDate(), self.client, activity)
             Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
                                  f"'{activity.name}'.")
             self.combobox.window().close()

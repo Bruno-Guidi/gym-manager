@@ -1,19 +1,26 @@
+from __future__ import annotations
+
 import logging
 from datetime import date
-from typing import Iterable, Generator
+from typing import Iterable
 
-from gym_manager.core import constants as consts
-from gym_manager.core.base import String, Transaction, Client, Activity, Inscription, Currency
-from gym_manager.core.persistence import TransactionRepo, InscriptionRepo, ActivityRepo
+from gym_manager.core import constants
+from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency
+from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, ClientRepo
+
+logger = logging.getLogger(__name__)
 
 
 class ActivityManager:
-    def __init__(self, activity_repo: ActivityRepo, inscription_repo: InscriptionRepo):
-        self.activity_repo = activity_repo
-        self.inscription_repo = inscription_repo
+    """Provides an API to do activity related things.
+    """
 
-    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
-        return self.activity_repo.create(name, price, pay_once, description)
+    def __init__(self, activity_repo: ActivityRepo, sub_repo: SubscriptionRepo):
+        self.activity_repo = activity_repo
+        self.sub_repo = sub_repo
+
+    def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
+        return self.activity_repo.create(name, price, charge_once, description)
 
     def update(self, activity: Activity):
         self.activity_repo.update(activity)
@@ -21,65 +28,64 @@ class ActivityManager:
     def remove(self, activity: Activity):
         self.activity_repo.remove(activity, cascade_removing=True)
 
-    def activities(self, **active_filters) -> Generator[Activity, None, None]:
-        """Yields all existing activities.
+    def activities(self, **active_filters) -> Iterable[Activity]:
+        """Retrieves existing activities.
 
         Keyword Args:
-            name: If given, filter activities that fulfill the condition kwargs['name'] like %activity.name%.
+            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
+                apply to the filter.
         """
         for activity in self.activity_repo.all():
             if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
                 yield activity
 
-    def n_inscriptions(self, activity: Activity) -> int:
-        return self.activity_repo.n_inscriptions(activity)
+    def n_subscribers(self, activity: Activity) -> int:
+        return self.activity_repo.n_subscribers(activity)
 
-    def sign_on(self, when: date, client: Client, activity: Activity, payment: Transaction | None = None):
-        """Signs on a client in an activity.
+    def subscribe(
+            self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None
+    ) -> Subscription:
+        """Subscribes the *client* in the *activity*. If *transaction* is given, then associate it to the subscription.
         """
-        inscription = Inscription(when, client, activity, payment)
-        self.inscription_repo.add(inscription)
-        client.sign_on(inscription)
-        logging.info(f"'Client' [{client.dni}] signed up in the 'activity' [{activity.name}] with 'payment' "
-                     f"{'None' if payment is None else payment.id}")
+        sub = Subscription(when, client, activity, transaction)
+        self.sub_repo.add(sub)
+        client.add(sub)
 
-    def unsubscribe(self, inscription: Inscription):
-        inscription.client.cancel(inscription)
-        self.inscription_repo.remove(inscription)
-        logging.info(f"'Client' [{inscription.client.dni}] unsubscribed from the 'activity' "
-                     f"[{inscription.activity.name}].")
+        logger.getChild(type(self).__name__).info(
+            f"Client with [dni={client.dni}] subscribed in the activity with [activity_id={activity.id}], with the "
+            f"payment [payment={'None' if transaction is None else transaction.id}].")
+
+        return sub
+
+    def cancel(self, subscription: Subscription):
+        subscription.client.unsubscribe(subscription.activity)
+        self.sub_repo.remove(subscription)
+        logging.info(f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
 
 
 class AccountingSystem:
+    """Provides an API to do accounting related things.
+    """
 
     def __init__(
             self,
             transaction_repo: TransactionRepo,
-            inscription_repo: InscriptionRepo,
-            transaction_types: list[str]
+            sub_repo: SubscriptionRepo,
+            transaction_types: tuple[str, ...],
+            methods: tuple[str, ...]
     ) -> None:
         self.transaction_repo = transaction_repo
-        self.inscription_repo = inscription_repo
-        self.transaction_types = {name: String(name, max_len=consts.TRANSACTION_TYPE_CHARS)
+        self.sub_repo = sub_repo
+        self.transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
                                   for name in transaction_types}
-
-    def methods(self) -> Iterable[String]:
-        methods = [String("Efectivo", max_len=consts.TRANSACTION_METHOD_CHARS),
-                   String("Débito", max_len=consts.TRANSACTION_METHOD_CHARS),
-                   String("Crédito", max_len=consts.TRANSACTION_METHOD_CHARS)]
-        for m in methods:
-            yield m
+        self.methods = tuple(String(name, max_len=constants.TRANSACTION_METHOD_CHARS) for name in methods)
 
     def transactions(self, page: int = 1, page_len: int = 15, **filters) -> Iterable[Transaction]:
-        """Returns transactions.
+        """Retrieves transactions.
 
         Keyword Args:
-            client: allows filtering by client name.
-            type: allows filtering by transaction type.
-            from_date: allows filtering transactions whose *when* is after the given date (inclusive).
-            to_date: allows filtering transactions whose *when* is before the given date (inclusive).
-            method: allows filtering by transaction method.
-            responsible: allows filtering by transaction responsible.
+            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
+                apply to the filter.
         """
         yield from self.transaction_repo.all(page, page_len, **filters)
 
@@ -87,20 +93,16 @@ class AccountingSystem:
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,
             description: String
     ) -> Transaction:
-        """Register a new charge transaction of an *activity* done by the *client*.
-
-        Raises:
-            NotRegistered if *client* doesn't do the *activity*.
+        """Charges the *client* for its *activity* subscription.
         """
-        # Creates the transaction.
-        trans_type = self.transaction_types["charge"]
-        transaction = self.transaction_repo.create(trans_type, client, when, activity.price, method, responsible,
-                                                   description)
+        transaction = self.transaction_repo.create(
+            self.transaction_types["charge"], client, when, activity.price, method, responsible, description
+        )
 
         # For the activities that are not 'charge once', record that the client was charged for it.
         # A 'charge once' activity is, for example, an activity related to bookings.
-        if not activity.pay_once:
+        if not activity.charge_once:
             client.register_charge(activity, transaction)
-            self.inscription_repo.register_charge(client, activity, transaction)
+            self.sub_repo.register_charge(client, activity, transaction)
 
         return transaction

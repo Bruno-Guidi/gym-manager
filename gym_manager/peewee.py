@@ -1,23 +1,28 @@
 from __future__ import annotations
 
+import logging
 from datetime import date
 from typing import Type, Generator
 
-from peewee import SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField, \
-    CompositeKey, prefetch
+from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
+                    CompositeKey, prefetch, Proxy)
 
-from gym_manager.core import constants as consts
-from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Inscription
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, InscriptionRepo
+from gym_manager.core import constants
+from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache
 
-_DATABASE_NAME = r"test.db"
-_DATABASE = SqliteDatabase(_DATABASE_NAME, pragmas={'foreign_keys': 1})
+logger = logging.getLogger(__name__)
+
+_database_proxy = Proxy()
 
 
-def create_table(table: Type[Model], drop_before: bool = False):
-    if drop_before:
-        _DATABASE.drop_tables([table])
-    _DATABASE.create_tables([table])
+def create_database(url: str):
+    database = SqliteDatabase(url, pragmas={'foreign_keys': 1})
+    _database_proxy.initialize(database)
+
+
+def client_name_like(client, filter_value) -> bool:
+    return client.cli_name.contains(filter_value)
 
 
 class ClientTable(Model):
@@ -29,56 +34,68 @@ class ClientTable(Model):
     is_active = BooleanField()
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
 
 
 class SqliteClientRepo(ClientRepo):
     """Clients repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo) -> None:
-        create_table(ClientTable)
+    # noinspection PyProtectedMember
+    def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
+        """If cache_len == 0, then there won't be any caching.
+        """
+        ClientTable._meta.database.create_tables([ClientTable])
+
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
-        self.cache: dict[Number, Client] = {}
 
-    def from_raw(self, raw) -> Client:
-        client = Client(Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
-                        String(raw.cli_name, max_len=consts.CLIENT_NAME_CHARS),
+        self._do_caching = cache_len > 0
+        self.cache = LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
+
+    def _from_record(self, raw) -> Client:
+        client = Client(Number(raw.dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI),
+                        String(raw.cli_name, max_len=constants.CLIENT_NAME_CHARS),
                         raw.admission,
-                        String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
-                        String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS),
+                        String(raw.telephone, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS),
+                        String(raw.direction, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS),
                         raw.is_active)
 
-        for raw_inscription in raw.inscriptions:
-            activity = self.activity_repo.get(raw_inscription.activity_id)
-            raw_trans, transaction = raw_inscription.transaction, None
-            if raw_trans is not None:
-                transaction = self.transaction_repo.from_raw_data(
-                    raw_trans.id, raw_trans.type, client, raw_trans.when, raw_trans.amount, raw_trans.method,
-                    raw_trans.responsible, raw_trans.description
+        for sub_record in raw.subscriptions:
+            activity = self.activity_repo.get(sub_record.activity_id)
+            trans_record, transaction = sub_record.transaction, None
+            if trans_record is not None:
+                transaction = self.transaction_repo.from_record(
+                    trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
+                    trans_record.method, trans_record.responsible, trans_record.description
                 )
-            client.sign_on(Inscription(raw_inscription.when, client, activity, transaction))
+            client.add(Subscription(sub_record.when, client, activity, transaction))
 
         return client
 
     def get(self, dni: int | Number) -> Client:
-        """Returns the client with the given *dni*.
-        """
         if not isinstance(dni, (Number, int)):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
-            dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+            dni = Number(dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI)
+            logger.getChild(type(self).__name__).warning(f"Converting raw dni [dni={dni}] from int to Number.")
 
-        if dni not in self.cache:
-            clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
-            inscriptions_q, trans_q = InscriptionTable.select(), TransactionTable.select()
-            for raw in prefetch(clients_q, inscriptions_q, trans_q):
-                self.cache[dni] = self.from_raw(raw)
-        try:
+        if self._do_caching and dni in self.cache:
             return self.cache[dni]
-        except KeyError as key_err:
-            raise KeyError(f"There is no client with the 'dni'={str(dni)}.") from key_err
+
+        # If there is no caching or if the client isn't in the cache, query the db.
+        clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
+        subs_q, trans_q = SubscriptionTable.select(), TransactionTable.select()
+        # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
+        # one record.
+        for record in prefetch(clients_q, subs_q, trans_q):
+            client = self._from_record(record)
+            if self._do_caching:
+                self.cache[dni] = client
+            return client
+
+        # This is only reached if the previous query doesn't return anything.
+        raise KeyError(f"There is no client with [dni={dni}].")
 
     def is_active(self, dni: Number) -> bool:
         """Checks if there is an active client with the given *dni*.
@@ -86,25 +103,32 @@ class SqliteClientRepo(ClientRepo):
         if not isinstance(dni, Number):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
-        raw_client = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
-        return raw_client is not None and raw_client.is_active
+        record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
+        return record is not None and record.is_active
 
     def add(self, client: Client):
-        """Adds the *client* to the repository.
-        """
         if self.is_active(client.dni):
             raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
+
+        if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()) is None:
+            # The client doesn't exist in the table.
+            logger.getChild(type(self).__name__).info(f"Adding new client [client={repr(client)}].")
+        else:
+            # The client exists in the table. Because previous check of self.is_active(args) failed, we can assume that
+            # the client is inactive.
+            logger.getChild(type(self).__name__).info(f"Activating existing client [client={repr(client)}].")
 
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
-                            is_active=True).execute()
-        self.cache[client.dni] = client
+                            is_active=client.is_active).execute()
+        if self._do_caching:
+            self.cache[client.dni] = client
 
     def remove(self, client: Client):
-        """Marks the given *client* as inactive, and delete its inscriptions.
+        """Marks the given *client* as inactive, and delete its subscriptions.
         """
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
@@ -112,12 +136,15 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=False).execute()
-        self.cache.pop(client.dni)
-        InscriptionTable.delete().where(InscriptionTable.client_id == client.dni.as_primitive()).execute()
+        if self._do_caching:
+            self.cache.pop(client.dni)
+        SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
-        """Updates the client in the repository whose dni is *client.dni*, with the data of *client*.
-        """
+        if id(self.cache[client.dni]) != id(client):
+            raise ValueError(
+                f"The client with [dni={client.dni}] has a in memory object that is not the cached object.")
+
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
@@ -125,12 +152,15 @@ class SqliteClientRepo(ClientRepo):
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
 
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Client, None, None]:
-        """Returns all the clients in the repository.
+        if self._do_caching:
+            self.cache.move_to_front(client.dni)
+
+    def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
+        """Retrieve all the clients in the repository.
 
         Args:
             page: page to retrieve.
-            page_len: clients per page.
+            page_len: clients per page. If None, retrieve all clients.
 
         Keyword Args:
             dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
@@ -139,15 +169,24 @@ class SqliteClientRepo(ClientRepo):
         clients_q = ClientTable.select()
         for filter_, value in filters.values():
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
-        clients_q = clients_q.where(ClientTable.is_active == True)
-        clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
+        clients_q = clients_q.where(ClientTable.is_active)
+        if page_len is not None:
+            clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
-        inscription_q, transactions_q = InscriptionTable.select(), TransactionTable.select()
+        subs_q, trans_q = SubscriptionTable.select(), TransactionTable.select()
 
-        for raw_client in prefetch(clients_q, inscription_q, transactions_q):
-            # ToDo check cache first.
-            client = self.from_raw(raw_client)
-            self.cache[client.dni] = client
+        for record in prefetch(clients_q, subs_q, trans_q):
+            client: Client
+            if self._do_caching and record.dni in self.cache:
+                client = self.cache[record.dni]
+            else:
+                # If there is no caching or if the client isn't in the cache, creates the client from the db record.
+                client = self._from_record(record)
+                if self._do_caching:
+                    self.cache[client.dni] = client
+                    logger.getChild(type(self).__name__).info(
+                        f"Client with [dni={record.dni}] not in cache. The client will be created from raw data."
+                    )
             yield client
 
 
@@ -155,45 +194,56 @@ class ActivityTable(Model):
     id = IntegerField(primary_key=True)
     act_name = CharField()
     price = CharField()
-    pay_once = BooleanField()
+    charge_once = BooleanField()
     description = TextField()
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
 
 
 class SqliteActivityRepo(ActivityRepo):
     """Activities repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self) -> None:
-        create_table(ActivityTable)
-        self.cache: dict[int, Activity] = {}
+    # noinspection PyProtectedMember
+    def __init__(self, cache_len: int = 50) -> None:
+        ActivityTable._meta.database.create_tables([ActivityTable])
 
+        self._do_caching = cache_len > 0
+        self.cache = LRUCache(key_types=(int,), value_type=Activity, max_len=cache_len)
+
+    # noinspection PyShadowingBuiltins
     def get(self, id: int) -> Activity:
         """Retrieves the activity with the given *id* in the repository, if it exists.
 
         Raises:
             KeyError if there is no activity with the given *id*.
         """
-        if id not in self.cache:
-            raw = ActivityTable.get_or_none(ActivityTable.id == id)
-            if raw is None:
-                raise KeyError(f"There is no activity with the id '{id}'")
-            self.cache[id] = Activity(raw.id,
-                                      String(raw.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                                      Currency(raw.price, max_currency=consts.MAX_CURRENCY),
-                                      raw.pay_once,
-                                      String(raw.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
-        return self.cache[id]
+        if self._do_caching and id in self.cache:
+            return self.cache[id]
 
-    def create(self, name: String, price: Currency, pay_once: bool, description: String) -> Activity:
-        """Creates an activity with the given data, and returns it.
-        """
-        raw_activity = ActivityTable.create(
-            act_name=name.as_primitive(), price=str(price), pay_once=pay_once, description=description.as_primitive()
-        )
-        return Activity(raw_activity.id, name, price, pay_once, description)
+        activity: Activity
+        for record in ActivityTable.select().where(ActivityTable.id == id):
+            activity = Activity(record.id,
+                                String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+                                Currency(record.price, max_currency=constants.MAX_CURRENCY),
+                                record.charge_once,
+                                String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
+            if self._do_caching:
+                self.cache[id] = activity
+            return activity
+
+        raise KeyError(f"There is no activity with the id '{id}'")
+
+    def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
+        record = ActivityTable.create(act_name=name.as_primitive(),
+                                      price=str(price),
+                                      charge_once=charge_once,
+                                      description=description.as_primitive())
+        activity = Activity(record.id, name, price, charge_once, description)
+        if self._do_caching:
+            self.cache[record.id] = activity
+        return activity
 
     def remove(self, activity: Activity, cascade_removing: bool = False):
         """Tries to remove the given *activity*.
@@ -206,38 +256,46 @@ class SqliteActivityRepo(ActivityRepo):
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
         """
-        inscriptions = self.n_inscriptions(activity)
-        if not cascade_removing and inscriptions > 0:
-            raise Exception(f"The activity '{activity.name}' can not be removed because it has {inscriptions} "
-                            f"registered clients and 'cascade_removing' was set to False.")
+        n_subs = self.n_subscribers(activity)
+        if not cascade_removing and n_subs > 0:
+            raise Exception(f"The activity [activity={activity}] can not be removed because it has {n_subs} "
+                            f"subscribed clients and [cascade_removing={cascade_removing}]")
 
+        if self._do_caching:
+            self.cache.pop(activity.id)
         ActivityTable.delete_by_id(activity.id)
 
     def update(self, activity: Activity):
-        """Updates the activity in the repository whose id is *activity.id*, with the data of *activity*.
-        """
         ActivityTable.replace(id=activity.id,
                               act_name=activity.name.as_primitive(),
                               price=str(activity.price),
-                              pay_once=activity.pay_once,
+                              charge_once=activity.charge_once,
                               description=activity.description.as_primitive()).execute()
 
-    def all(self) -> Generator[Activity, None, None]:
-        for raw_activity in ActivityTable.select():
-            if raw_activity.id not in self.cache:
-                self.cache[raw_activity.id] = Activity(
-                    raw_activity.id,
-                    String(raw_activity.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                    Currency(raw_activity.price, max_currency=consts.MAX_CURRENCY),
-                    raw_activity.pay_once,
-                    String(raw_activity.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
-                )
-            yield self.cache[raw_activity.id]
+        if self._do_caching:
+            self.cache.move_to_front(activity.id)
 
-    def n_inscriptions(self, activity: Activity) -> int:
+    def all(self) -> Generator[Activity, None, None]:
+        for record in ActivityTable.select():
+            activity: Activity
+            if self._do_caching and record.id in self.cache:
+                activity = self.cache[record.id]
+            else:
+                activity = Activity(record.id,
+                                    String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+                                    Currency(record.price, max_currency=constants.MAX_CURRENCY),
+                                    record.charge_once,
+                                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
+                if self._do_caching:
+                    self.cache[activity.id] = activity
+                    logger.getChild(type(self).__name__).info(f"Activity with [activity.id={record.id}] not in cache. "
+                                                              f"The activity will be created from raw data.")
+            yield activity
+
+    def n_subscribers(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
         """
-        return InscriptionTable.select().where(InscriptionTable.activity == activity.id).count()
+        return SubscriptionTable.select().where(SubscriptionTable.activity == activity.id).count()
 
 
 class TransactionTable(Model):
@@ -251,32 +309,39 @@ class TransactionTable(Model):
     description = CharField()
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
 
 
 class SqliteTransactionRepo(TransactionRepo):
     """Transaction repository implementation based on Sqlite and peewee ORM.
     """
 
-    def __init__(self) -> None:
-        create_table(TransactionTable)
-        self.client_repo: ClientRepo | None = None
-        self.cache: dict[int, Transaction] = {}
+    # noinspection PyProtectedMember
+    def __init__(self, cache_len: int = 50) -> None:
+        TransactionTable._meta.database.create_tables([TransactionTable])
 
-    def from_raw_data(self, id, type, client: Client, when, amount, method, responsible, description):
+        self.client_repo: ClientRepo | None = None
+
+        self._do_caching = cache_len > 0
+        self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
+
+    # noinspection PyShadowingBuiltins
+    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
         """Creates a Transaction with the given data.
         """
-        if id not in self.cache:
-            transaction = Transaction(id,
-                                      String(type, max_len=consts.TRANSACTION_TYPE_CHARS),
-                                      client,
-                                      when, Currency(amount, max_currency=consts.MAX_CURRENCY),
-                                      String(method, max_len=consts.TRANSACTION_METHOD_CHARS),
-                                      String(responsible, max_len=consts.TRANSACTION_RESP_CHARS),
-                                      String(description, max_len=consts.TRANSACTION_DESCR_CHARS))
-            self.cache[id] = transaction
-        return self.cache[id]
+        if self._do_caching and id in self.cache:
+            return self.cache[id]
 
+        transaction = Transaction(id, String(type, max_len=constants.TRANSACTION_TYPE_CHARS), client, when,
+                                  Currency(amount, max_currency=constants.MAX_CURRENCY),
+                                  String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
+                                  String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
+                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS))
+        if self._do_caching:
+            self.cache[id] = transaction
+        return transaction
+
+    # noinspection PyShadowingBuiltins
     def create(
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
             description: String
@@ -289,7 +354,7 @@ class SqliteTransactionRepo(TransactionRepo):
         if self.client_repo is None:
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
-        transaction = TransactionTable.create(
+        record = TransactionTable.create(
             type=type.as_primitive(),
             client=ClientTable.get_by_id(client.dni.as_primitive()),
             when=when,
@@ -299,7 +364,11 @@ class SqliteTransactionRepo(TransactionRepo):
             description=description.as_primitive()
         )
 
-        return Transaction(transaction.id, type, client, when, amount, method, responsible, description)
+        transaction = Transaction(record.id, type, client, when, amount, method, responsible, description)
+        if self._do_caching:
+            self.cache[record.id] = transaction
+
+        return transaction
 
     def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
         """Retrieves the transactions in the repository.
@@ -318,56 +387,47 @@ class SqliteTransactionRepo(TransactionRepo):
         for filter_, value in filters.values():
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
-        for raw_transaction in transactions_q.paginate(page, page_len):
-            yield Transaction(raw_transaction.id,
-                              String(raw_transaction.type, max_len=consts.TRANSACTION_TYPE_CHARS),
-                              self.client_repo.get(raw_transaction.client_id),
-                              raw_transaction.when,
-                              Currency(raw_transaction.amount, max_currency=consts.MAX_CURRENCY),
-                              String(raw_transaction.method, max_len=consts.TRANSACTION_METHOD_CHARS),
-                              String(raw_transaction.responsible, max_len=consts.TRANSACTION_RESP_CHARS),
-                              String(raw_transaction.description, max_len=consts.TRANSACTION_DESCR_CHARS))
+        for record in transactions_q.paginate(page, page_len):
+            yield self.from_record(record.id, record.type, self.client_repo.get(record.client_id), record.when,
+                                   record.amount, record.method, record.responsible, record.description)
 
 
-class InscriptionTable(Model):
+class SubscriptionTable(Model):
     when = DateField()
-    client = ForeignKeyField(ClientTable, backref="inscriptions", on_delete="CASCADE")
-    activity = ForeignKeyField(ActivityTable, backref="inscriptions", on_delete="CASCADE")
-    transaction = ForeignKeyField(TransactionTable, backref="inscription_transaction", null=True)
+    client = ForeignKeyField(ClientTable, backref="subscriptions", on_delete="CASCADE")
+    activity = ForeignKeyField(ActivityTable, backref="subscriptions", on_delete="CASCADE")
+    transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions", null=True)
 
     class Meta:
-        database = _DATABASE
+        database = _database_proxy
         primary_key = CompositeKey("client", "activity")
 
 
-class SqliteInscriptionRepo(InscriptionRepo):
-    """Inscriptions repository implementation based on Sqlite and peewee ORM.
+class SqliteSubscriptionRepo(SubscriptionRepo):
+    """Subscriptions repository implementation based on Sqlite and peewee ORM.
     """
 
+    # noinspection PyProtectedMember
     def __init__(self) -> None:
-        create_table(InscriptionTable)
+        SubscriptionTable._meta.database.create_tables([SubscriptionTable])
 
-    def add(self, inscription: Inscription):
-        """Adds the given *inscription* to the repository.
-        """
-        InscriptionTable.create(
-            when=inscription.when,
-            client=ClientTable.get_by_id(inscription.client.dni.as_primitive()),
-            activity=ActivityTable.get_by_id(inscription.activity.id),
-            transaction=None if inscription.transaction is None else TransactionTable.get_by_id(
-                inscription.transaction.id)
+    def add(self, subscription: Subscription):
+        SubscriptionTable.create(
+            when=subscription.when,
+            client=ClientTable.get_by_id(subscription.client.dni.as_primitive()),
+            activity=ActivityTable.get_by_id(subscription.activity.id),
+            transaction=None if subscription.transaction is None else TransactionTable.get_by_id(
+                subscription.transaction.id)
         )
 
-    def remove(self, inscription: Inscription):
-        """Removes the given *inscription* from the repository.
-        """
-        InscriptionTable.delete().where((InscriptionTable.client_id == inscription.client.dni.as_primitive())
-                                        & (InscriptionTable.activity_id == inscription.activity.id)).execute()
+    def remove(self, subscription: Subscription):
+        SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.dni.as_primitive())
+                                         & (SubscriptionTable.activity_id == subscription.activity.id)).execute()
 
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
-        """Registers in the repository that the client was charged for the activity.
+        """Registers in the repository that the *client* was charged for the *activity*.
         """
-        raw_inscription = InscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
-        raw_transaction = TransactionTable.get_by_id(transaction.id)
-        raw_inscription.transaction = raw_transaction
-        raw_inscription.save()
+        sub_record = SubscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
+        trans_record = TransactionTable.get_by_id(transaction.id)
+        sub_record.transaction = trans_record
+        sub_record.save()
