@@ -1,11 +1,11 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
 
 from gym_manager import peewee
 from gym_manager.core.base import Client, Number, String, TextLike, Currency
-from gym_manager.core.system import ActivityManager, remove_client
+from gym_manager.core.system import ActivityManager, remove_client, AccountingSystem
 
 MAX_CURRENCY = Decimal("9999.99")
 
@@ -233,3 +233,116 @@ def test_cancelSubscription():
     activity_manager.cancel(sub)
 
     assert not cli.is_subscribed(act1) and activity_manager.n_subscribers(act1) == 0
+
+
+def test_chargeActivity_onSubDate():
+    peewee.create_database(":memory:")
+
+    # System objects.
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    transaction_repo.client_repo = client_repo
+    sub_repo = peewee.SqliteSubscriptionRepo()
+
+    activity_manager = ActivityManager(activity_repo, sub_repo)
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+
+    # Test setup.
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+
+    cli = Client(Number(3), String("TestCli", max_len=20), date(2022, 6, 2), String("Tel", max_len=20),
+                 String("Dir", max_len=20), is_active=True)
+    client_repo.add(cli)
+    sub_date = date(2022, 7, 9)
+    sub = activity_manager.subscribe(sub_date, cli, act1)
+
+    # Feature to test.
+    accounting_manager.charge(sub_date, cli, act1, String("dummy_method", max_len=20),
+                              String("dummy_method", max_len=20), String("dummy_descr", max_len=20))
+    assert not sub.charge_day_passed(sub_date) and sub.transaction.when == sub_date
+
+
+def test_chargeActivity_after30DaysOfSub():
+    peewee.create_database(":memory:")
+
+    # System objects.
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    transaction_repo.client_repo = client_repo
+    sub_repo = peewee.SqliteSubscriptionRepo()
+
+    activity_manager = ActivityManager(activity_repo, sub_repo)
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+
+    # Test setup.
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+
+    cli = Client(Number(3), String("TestCli", max_len=20), date(2022, 6, 2), String("Tel", max_len=20),
+                 String("Dir", max_len=20), is_active=True)
+    client_repo.add(cli)
+    sub_date = date(2022, 7, 9)
+    sub = activity_manager.subscribe(sub_date, cli, act1)
+
+    # Feature to test.
+    charge_day = sub_date + timedelta(days=30)
+    accounting_manager.charge(charge_day, cli, act1, String("dummy_method", max_len=20),
+                              String("dummy_method", max_len=20), String("dummy_descr", max_len=20))
+    assert not sub.charge_day_passed(sub_date) and sub.transaction.when == charge_day
+
+
+def test_chargeActivity_after60DaysOfSub():
+    peewee.create_database(":memory:")
+
+    # System objects.
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    transaction_repo.client_repo = client_repo
+    sub_repo = peewee.SqliteSubscriptionRepo()
+
+    activity_manager = ActivityManager(activity_repo, sub_repo)
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+
+    # Test setup.
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=False, description=String("Descr", max_len=20))
+
+    cli = Client(Number(3), String("TestCli", max_len=20), date(2022, 6, 2), String("Tel", max_len=20),
+                 String("Dir", max_len=20), is_active=True)
+    client_repo.add(cli)
+    sub_date = date(2022, 7, 9)
+    sub = activity_manager.subscribe(sub_date, cli, act1)
+
+    # Feature to test.
+    charge_day = sub_date + timedelta(days=60)
+    accounting_manager.charge(charge_day, cli, act1, String("dummy_method", max_len=20),
+                              String("dummy_method", max_len=20), String("dummy_descr", max_len=20))
+    assert not sub.charge_day_passed(sub_date) and sub.transaction.when == charge_day
+
+
+def test_chargeActivity_chargeOnceActivity():
+    peewee.create_database(":memory:")
+
+    # System objects.
+    activity_repo, transaction_repo = peewee.SqliteActivityRepo(), peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    transaction_repo.client_repo = client_repo
+    sub_repo = peewee.SqliteSubscriptionRepo()
+
+    activity_manager = ActivityManager(activity_repo, sub_repo)
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+
+    # Test setup.
+    act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
+                                   charge_once=True, description=String("Descr", max_len=20))
+
+    cli = Client(Number(3), String("TestCli", max_len=20), date(2022, 6, 2), String("Tel", max_len=20),
+                 String("Dir", max_len=20), is_active=True)
+    client_repo.add(cli)
+
+    # Feature to test.
+    accounting_manager.charge(date(2022, 6, 6), cli, act1, String("dummy_method", max_len=20),
+                              String("dummy_method", max_len=20), String("dummy_descr", max_len=20))
+    assert not cli.is_subscribed(act1)
+
