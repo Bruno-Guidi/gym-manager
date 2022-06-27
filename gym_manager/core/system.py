@@ -11,12 +11,6 @@ from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, Acti
 logger = logging.getLogger(__name__)
 
 
-def remove_client(client: Client, client_repo: ClientRepo):
-    """Removes the given *client* and its subscriptions.
-    """
-    client_repo.remove(client)
-
-
 class ActivityManager:
     """Provides an API to do activity related things.
     """

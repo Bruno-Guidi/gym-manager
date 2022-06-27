@@ -157,7 +157,7 @@ def test_removeClient():
             and activity_manager.n_subscribers(act3) == 1)
 
     # Then remove the client and assert that it is no longer active, and that the subscriptions where cancelled.
-    remove_client(cli_c, client_repo)
+    client_repo.remove(cli_c)
     assert (not client_repo.is_active(cli_c.dni) and activity_manager.n_subscribers(act1) == 0
             and activity_manager.n_subscribers(act2) == 0 and activity_manager.n_subscribers(act3) == 0)
 
