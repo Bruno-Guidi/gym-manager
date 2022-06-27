@@ -227,6 +227,9 @@ class Activity:
     def subscribe(self, client: Client):
         self._clients[client.dni] = client
 
+    def unsubscribe(self, client: Client):
+        self._clients.pop(client.dni)
+
     def unsubscribe_clients(self) -> list[Client]:
         unsubscribed = []
         for client in self._clients.values():

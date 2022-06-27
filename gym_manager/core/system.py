@@ -11,10 +11,11 @@ from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, Acti
 logger = logging.getLogger(__name__)
 
 
-def remove_client(client: Client, client_repo: ClientRepo, activity_manager: ActivityManager):
+def remove_client(client: Client, client_repo: ClientRepo):
     """Removes the given *client* and its subscriptions.
     """
-    activity_manager.cancel(client.subscriptions())
+    for sub in client.subscriptions():
+        sub.activity.unsubscribe(client)
     client_repo.remove(client)
 
 
@@ -70,11 +71,10 @@ class ActivityManager:
 
         return sub
 
-    def cancel(self, *subscriptions):
-        for sub in subscriptions:
-            sub.client.unsubscribe(sub.activity)
-            self.sub_repo.remove(sub)
-            logging.info(f"'Client' [{sub.client.dni}] unsubscribed from the 'activity' [{sub.activity.name}].")
+    def cancel(self, subscription: Subscription):
+        subscription.client.unsubscribe(subscription.activity)
+        self.sub_repo.remove(subscription)
+        logging.info(f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
 
 
 class AccountingSystem:
