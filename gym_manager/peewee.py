@@ -7,7 +7,7 @@ from typing import Type, Generator
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
                     CompositeKey, prefetch, Proxy)
 
-from gym_manager.core import constants as consts
+from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache
 
@@ -60,11 +60,11 @@ class SqliteClientRepo(ClientRepo):
         self.cache = LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
 
     def _from_record(self, raw) -> Client:
-        client = Client(Number(raw.dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI),
-                        String(raw.cli_name, max_len=consts.CLIENT_NAME_CHARS),
+        client = Client(Number(raw.dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI),
+                        String(raw.cli_name, max_len=constants.CLIENT_NAME_CHARS),
                         raw.admission,
-                        String(raw.telephone, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS),
-                        String(raw.direction, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS),
+                        String(raw.telephone, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS),
+                        String(raw.direction, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS),
                         raw.is_active)
 
         for sub_record in raw.subscriptions:
@@ -83,7 +83,7 @@ class SqliteClientRepo(ClientRepo):
         if not isinstance(dni, (Number, int)):
             raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
         if isinstance(dni, int):
-            dni = Number(dni, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+            dni = Number(dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI)
             logger.getChild(type(self).__name__).warning(f"Converting raw dni [dni={dni}] from int to Number.")
 
         if self._do_caching and dni in self.cache:
@@ -231,10 +231,10 @@ class SqliteActivityRepo(ActivityRepo):
         activity: Activity
         for record in ActivityTable.select().where(ActivityTable.id == id):
             activity = Activity(record.id,
-                                String(record.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                                Currency(record.price, max_currency=consts.MAX_CURRENCY),
+                                String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+                                Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                 record.charge_once,
-                                String(record.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
+                                String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
             if self._do_caching:
                 self.cache[id] = activity
             return activity
@@ -288,10 +288,10 @@ class SqliteActivityRepo(ActivityRepo):
                 activity = self.cache[record.id]
             else:
                 activity = Activity(record.id,
-                                    String(record.act_name, max_len=consts.ACTIVITY_NAME_CHARS),
-                                    Currency(record.price, max_currency=consts.MAX_CURRENCY),
+                                    String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+                                    Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                     record.charge_once,
-                                    String(record.description, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
+                                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
                 if self._do_caching:
                     self.cache[activity.id] = activity
                     logger.getChild(type(self).__name__).info(f"Activity with [activity.id={record.id}] not in cache. "
@@ -338,11 +338,11 @@ class SqliteTransactionRepo(TransactionRepo):
         if self._do_caching and id in self.cache:
             return self.cache[id]
 
-        transaction = Transaction(id, String(type, max_len=consts.TRANSACTION_TYPE_CHARS), client, when,
-                                  Currency(amount, max_currency=consts.MAX_CURRENCY),
-                                  String(method, max_len=consts.TRANSACTION_METHOD_CHARS),
-                                  String(responsible, max_len=consts.TRANSACTION_RESP_CHARS),
-                                  String(description, max_len=consts.TRANSACTION_DESCR_CHARS))
+        transaction = Transaction(id, String(type, max_len=constants.TRANSACTION_TYPE_CHARS), client, when,
+                                  Currency(amount, max_currency=constants.MAX_CURRENCY),
+                                  String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
+                                  String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
+                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS))
         if self._do_caching:
             self.cache[id] = transaction
         return transaction
