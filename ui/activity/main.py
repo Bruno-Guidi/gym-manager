@@ -55,7 +55,8 @@ class ActivityRow(QWidget):
 
             self.charge_once_checkbox = QCheckBox()
             self.charge_once_layout.addWidget(self.charge_once_checkbox)
-            config_checkbox(self.charge_once_checkbox, checked=activity.charge_once, width=charge_once_width)
+            config_checkbox(self.charge_once_checkbox, checked=activity.charge_once, width=charge_once_width,
+                            enabled=not activity.locked)
 
             # Save and delete buttons.
             self.save_btn = QPushButton(self.widget)
@@ -198,7 +199,6 @@ class ActivityRow(QWidget):
         else:
             # Updates activity object.
             self.activity.price = self.price_field.value()
-            self.activity.charge_once = self.charge_once_checkbox.isChecked()
             self.activity.description = descr
 
             self.activity_manager.update(self.activity)
