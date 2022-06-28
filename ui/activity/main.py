@@ -229,40 +229,40 @@ class ActivityRow(QWidget):
 
 
 class MainController:
-    def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget, search_box: SearchBox,
-                 name_width: int, price_width: int, pay_once_width: int):
+    def __init__(
+            self, activity_manager: ActivityManager, main_ui: ActivityMainUI, name_width: int, price_width: int,
+            pay_once_width: int
+    ):
+        self.main_ui = main_ui
+
         self.activity_manager = activity_manager
         self.opened_now: ActivityRow | None = None
 
-        self.activity_list = activity_list
-        self.search_box = search_box
+        self.name_width, self.price_width, self.pay_once_width = name_width, price_width, pay_once_width
 
-        self.name_width = name_width
-        self.price_width = price_width
-        self.pay_once_width = pay_once_width
-
-        for activity in self.activity_manager.activities(**self.search_box.filters()):
+        for activity in self.activity_manager.activities(**self.main_ui.search_box.filters()):
             self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
 
     def _add_activity(self, activity: Activity, check_filters: bool):
-        if check_filters and not self.search_box.passes_filters(activity):
+        if check_filters and not self.main_ui.search_box.passes_filters(activity):
             return
 
-        item = QListWidgetItem(self.activity_list)
-        self.activity_list.addItem(item)
-        row = ActivityRow(activity, self.activity_manager, item, self, self.name_width, self.price_width,
-                          self.pay_once_width, height=50)
-        self.activity_list.setItemWidget(item, row)
+        row_height = 50
+        item = QListWidgetItem(self.main_ui.activity_list)
+        self.main_ui.activity_list.addItem(item)
+        row = ActivityRow(item, self, self.name_width, self.price_width, self.pay_once_width, row_height, activity,
+                          self.activity_manager)
+        self.main_ui.activity_list.setItemWidget(item, row)
 
     def create_activity(self):
-        self.add_ui = CreateUI(self.activity_manager)
-        self.add_ui.exec_()
-        if self.add_ui.controller.activity is not None:
-            self._add_activity(self.add_ui.controller.activity, check_filters=True)
+        self._create_ui = CreateUI(self.activity_manager)
+        self._create_ui.exec_()
+        if self._create_ui.controller.activity is not None:
+            self._add_activity(self._create_ui.controller.activity, check_filters=True)
 
     def search(self):
-        self.activity_list.clear()
-        for activity in self.activity_manager.activities(**self.search_box.filters()):
+        self.main_ui.activity_list.clear()
+        for activity in self.activity_manager.activities(**self.main_ui.search_box.filters()):
             self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
 
 
