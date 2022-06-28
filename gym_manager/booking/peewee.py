@@ -1,4 +1,4 @@
-from datetime import date, time, datetime
+from datetime import date, time
 from typing import Generator
 
 from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField
@@ -7,6 +7,7 @@ from gym_manager import peewee
 from gym_manager.booking.core import Booking, BookingRepo, combine, Court, State
 from gym_manager.core.base import Client
 from gym_manager.core.persistence import ClientRepo
+from gym_manager.peewee import TransactionTable
 
 
 class BookingTable(Model):
@@ -18,6 +19,7 @@ class BookingTable(Model):
     is_fixed = BooleanField()
     state = CharField()
     updated_by = CharField()
+    transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_booking", null=True)
 
     class Meta:
         database = peewee._database_proxy
@@ -44,13 +46,12 @@ class SqliteBookingRepo(BookingRepo):
 
     def update(self, booking: Booking, prev_state: State):
         raw = BookingTable.get_by_id(booking.id)
-        # Updates the state history.
-        StateHistory.create(booking=raw, prev=prev_state.name, current=booking.state.name,
-                            updated_by=booking.state.updated_by, when=datetime.now())
         # Updates the booking.
         raw.is_fixed = booking.is_fixed
         raw.state = booking.state.name
         raw.updated_by = booking.state.updated_by
+        if booking.transaction is not None:
+            raw.transaction = TransactionTable.get_by_id(booking.transaction.id)
         raw.save()
 
     def all(
