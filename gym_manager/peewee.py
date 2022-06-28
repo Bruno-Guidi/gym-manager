@@ -192,6 +192,7 @@ class ActivityTable(Model):
     price = CharField()
     charge_once = BooleanField()
     description = TextField()
+    locked = BooleanField()
 
     class Meta:
         database = DATABASE_PROXY
@@ -223,18 +224,22 @@ class SqliteActivityRepo(ActivityRepo):
             activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                 Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                 record.charge_once,
-                                String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
+                                String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
+                                record.locked)
             if self._do_caching:
                 self.cache[name] = activity
             return activity
 
         raise KeyError(f"There is no activity with the id '{name}'")
 
-    def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
+    def create(
+            self, name: String, price: Currency, charge_once: bool, description: String, locked: bool = False
+    ) -> Activity:
         record = ActivityTable.create(act_name=name.as_primitive(),
                                       price=str(price),
                                       charge_once=charge_once,
-                                      description=description.as_primitive())
+                                      description=description.as_primitive(),
+                                      locked=locked)
         activity = Activity(name, price, charge_once, description)
         if self._do_caching:
             self.cache[record.act_name] = activity
@@ -266,7 +271,8 @@ class SqliteActivityRepo(ActivityRepo):
         ActivityTable.replace(act_name=activity.name.as_primitive(),
                               price=str(activity.price),
                               charge_once=activity.charge_once,
-                              description=activity.description.as_primitive()).execute()
+                              description=activity.description.as_primitive(),
+                              locked=activity.locked).execute()
 
         if self._do_caching:
             self.cache.move_to_front(activity.name)
@@ -280,7 +286,8 @@ class SqliteActivityRepo(ActivityRepo):
                 activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                     Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                     record.charge_once,
-                                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
+                                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
+                                    record.locked)
                 if self._do_caching:
                     self.cache[activity.name] = activity
                     logger.getChild(type(self).__name__).info(f"Activity with [activity.name={record.act_name}] not in "
