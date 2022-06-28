@@ -198,9 +198,12 @@ class BookingSystem:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
         duration *duration*. Otherwise, return False.
         """
+        if self.out_of_range(start_block, duration):
+            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
+                                   duration=duration, start=self.start, end=self.end)
         end = combine(date.min, start_block.start, duration).time()
         for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
-            if booking.collides(start_block.start, end):
+            if booking.court == court and booking.collides(start_block.start, end):
                 return False
         return True
 
