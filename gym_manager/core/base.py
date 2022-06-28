@@ -77,7 +77,9 @@ class Number(Validatable):
             logger.getChild(type(self).__name__).warning(f"Comparing '{repr(self)}' with '{repr(other)}'")
 
             return self._value == other
-        return self._value == other._value
+        if isinstance(other, type(self)):
+            return self._value == other._value
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(self._value)
@@ -118,7 +120,9 @@ class String(Validatable):
         if isinstance(other, type(self._value)):
             logger.getChild(type(self).__name__).warning(f"Comparing '{repr(self)}' with '{repr(other)}'")
             return self._value == other
-        return self._value.lower() == other._value.lower()
+        if isinstance(other, type(self)):
+            return self._value.lower() == other._value.lower()
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(self._value)
