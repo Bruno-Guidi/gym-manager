@@ -3,8 +3,9 @@ from decimal import Decimal
 
 import pytest
 
-from gym_manager.core.base import ValidationError, Number, String, Currency, Subscription, Transaction, Client, Activity, \
-    TextLike, ClientLike, TextEqual, DateGreater, DateLesser
+from gym_manager.core.base import ValidationError, Number, String, Currency, Subscription, Transaction, Client, \
+    Activity, \
+    TextLike, ClientLike, TextEqual, DateGreater, DateLesser, OperationalError
 
 
 def test_Number_validInputType():
@@ -174,20 +175,20 @@ def test_Subscription_payDayPassed():
 
 
 # noinspection PyTypeChecker
-def test_Subscription_registerCharge_raisesValueError():
+def test_Client_registerCharge_raisesOperationalError():
     client = Client(Number(1), name=None, admission=None, telephone=None, direction=None, is_active=True)
     other_client = Client(Number(2), name=None, admission=None, telephone=None, direction=None, is_active=True)
     activity = Activity(String("name", max_len=20), price=None, charge_once=True, description=None)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(OperationalError):
         trans = Transaction(1, type=None, client=other_client, when=None, amount=None, method=None, responsible=None,
                             description=None)
-        Subscription(when=None, client=client, activity=activity).register_charge(trans)
+        client.register_charge(activity, trans)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(OperationalError):
         trans = Transaction(1, type=None, client=client, when=None, amount=None, method=None, responsible=None,
                             description=None)
-        Subscription(when=None, client=other_client, activity=activity).register_charge(trans)
+        other_client.register_charge(activity, trans)
 
 
 # noinspection PyTypeChecker
