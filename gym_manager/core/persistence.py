@@ -110,7 +110,7 @@ class ActivityRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def get(self, id: int) -> Activity:
+    def get(self, name: str | String) -> Activity:
         """Retrieves the activity with the given *id* in the repository, if it exists.
 
         Raises:
