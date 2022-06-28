@@ -340,6 +340,11 @@ class CreateController:
         self.activity: Activity | None = None
         self.activity_manager = activity_manager
 
+        # noinspection PyUnresolvedReferences
+        self.create_ui.ok_btn.clicked.connect(self.create_activity)
+        # noinspection PyUnresolvedReferences
+        self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+
     # noinspection PyTypeChecker
     def create_activity(self):
         valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
@@ -360,9 +365,6 @@ class CreateUI(QDialog):
         super().__init__()
         self._setup_ui()
         self.controller = CreateController(self, activity_manager)
-
-        self.ok_btn.clicked.connect(self.controller.create_activity)
-        self.cancel_btn.clicked.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -409,7 +411,7 @@ class CreateUI(QDialog):
 
         self.pay_once_checkbox = QCheckBox()
         self.pay_once_layout.addWidget(self.pay_once_checkbox)
-        config_checkbox(self.pay_once_checkbox)
+        config_checkbox(self.pay_once_checkbox, checked=False)
 
         # Description.
         self.description_layout = QHBoxLayout()
