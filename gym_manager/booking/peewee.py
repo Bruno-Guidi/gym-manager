@@ -76,6 +76,6 @@ class SqliteBookingRepo(BookingRepo):
             if trans_record is not None:
                 transaction = self.transaction_repo.from_record(
                     trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
-                    trans_record.responsible, trans_record.description
+                    trans_record.method, trans_record.responsible, trans_record.description
                 )
             yield Booking(raw.id, courts[raw.court], client, raw.is_fixed, state, raw.when, start, raw.end, transaction)
