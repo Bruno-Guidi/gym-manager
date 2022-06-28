@@ -1,12 +1,12 @@
 from datetime import date, time
 from typing import Generator
 
-from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField
+from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch
 
 from gym_manager import peewee
 from gym_manager.booking.core import Booking, BookingRepo, combine, Court, State
 from gym_manager.core.base import Client
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.persistence import ClientRepo, TransactionRepo
 from gym_manager.peewee import TransactionTable
 
 
@@ -27,10 +27,11 @@ class BookingTable(Model):
 
 class SqliteBookingRepo(BookingRepo):
 
-    def __init__(self, client_repo: ClientRepo) -> None:
+    def __init__(self, client_repo: ClientRepo, transaction_repo: TransactionRepo) -> None:
         BookingTable._meta.database.create_tables([BookingTable])
 
         self.client_repo = client_repo
+        self.transaction_repo = transaction_repo
 
     def create(
             self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
@@ -67,8 +68,14 @@ class SqliteBookingRepo(BookingRepo):
         for filter_, value in filters.values():
             bookings_q = bookings_q.join(peewee.ClientTable)
             bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
-        for raw in bookings_q:
+        for raw in prefetch(bookings_q, TransactionTable.select()):
             start = time(raw.when.hour, raw.when.minute)
             state = State(raw.state, raw.updated_by)
-            yield Booking(raw.id, courts[raw.court], self.client_repo.get(raw.client_id), raw.is_fixed, state, raw.when,
-                          start, raw.end)
+            client = self.client_repo.get(raw.client_id)
+            trans_record, transaction = raw.transaction, None
+            if trans_record is not None:
+                transaction = self.transaction_repo.from_record(
+                    trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
+                    trans_record.responsible, trans_record.description
+                )
+            yield Booking(raw.id, courts[raw.court], client, raw.is_fixed, state, raw.when, start, raw.end, transaction)
