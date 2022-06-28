@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date
 
 from PyQt5.QtCore import Qt
@@ -14,44 +16,48 @@ from ui.widgets import Field, valid_text_value, Dialog
 
 class Controller:
     def __init__(
-            self, client_field: QLineEdit, when_field: QDateEdit, amount_field: Field, method_field: QComboBox,
-            responsible_field: Field, descr_field: QTextEdit,
+            self, charge_ui: ChargeUI,
             client: Client, activity: Activity, descr: String, accounting_system: AccountingSystem,
             fixed_amount: bool = False, fixed_descr: bool = False,
 
     ) -> None:
-        # This fields are the ones that could be edited depending on the context.
-        self.when_field = when_field
-        self.amount_field = amount_field
-        self.method_field = method_field
-        self.responsible_field = responsible_field
-        self.descr_field = descr_field
+        self.charge_ui = charge_ui
 
-        client_field.setText(str(client.name))
-        self.when_field.setDate(date.today())
-        self.amount_field.setText(str(activity.price))
+        # Sets ui fields.
+        self.charge_ui.client_field.setText(str(client.name))
+        self.charge_ui.when_field.setDate(date.today())
+        self.charge_ui.amount_field.setText(str(activity.price))
         if fixed_amount:
-            self.amount_field.setEnabled(False)
-        fill_combobox(method_field, accounting_system.methods, display=lambda method: method.as_primitive())
-        self.descr_field.setText(str(descr))
+            self.charge_ui.amount_field.setEnabled(False)
+        fill_combobox(self.charge_ui.method_field, accounting_system.methods,
+                      display=lambda method: method.as_primitive())
+        self.charge_ui.descr_field.setText(str(descr))
         if fixed_descr:
-            self.descr_field.setEnabled(False)
+            self.charge_ui.descr_field.setEnabled(False)
 
         self.transaction: Transaction | None = None
         self.client, self.activity = client, activity
         self.accounting_system = accounting_system
 
+        # Sets callbacks
+        self.charge_ui.ok_btn.clicked.connect(self.charge)
+        self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
+
     # noinspection PyTypeChecker
     def charge(self):
-        valid_descr, descr = valid_text_value(self.descr_field, optional=False, max_len=consts.TRANSACTION_DESCR_CHARS)
-        if not all([self.amount_field.valid_value(), self.responsible_field.valid_value(), valid_descr]):
+        valid_descr, descr = valid_text_value(self.charge_ui.descr_field, optional=False,
+                                              max_len=consts.TRANSACTION_DESCR_CHARS)
+        valid_fields = all([self.charge_ui.amount_field.valid_value(), self.charge_ui.responsible_field.valid_value(),
+                            valid_descr])
+        if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             self.transaction = self.accounting_system.charge(
-                self.when_field.date().toPyDate(), self.client, self.activity,
-                self.method_field.currentData(Qt.UserRole), self.responsible_field.value(), descr)
+                self.charge_ui.when_field.date().toPyDate(), self.client, self.activity,
+                self.charge_ui.method_field.currentData(Qt.UserRole), self.charge_ui.responsible_field.value(), descr
+            )
             Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
-            self.descr_field.window().close()
+            self.charge_ui.descr_field.window().close()
 
 
 class ChargeUI(QDialog):
@@ -61,12 +67,7 @@ class ChargeUI(QDialog):
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(self.client_field, self.when_field, self.amount_field, self.method_field,
-                                     self.responsible_field, self.descr_field, client, activity, descr,
-                                     accounting_system, fixed_amount, fixed_descr)
-
-        self.ok_btn.clicked.connect(self.controller.charge)
-        self.cancel_btn.clicked.connect(self.reject)
+        self.controller = Controller(self, client, activity, descr, accounting_system, fixed_amount, fixed_descr)
 
     def _setup_ui(self):
         self.resize(400, 300)
