@@ -243,6 +243,11 @@ class MainController:
         for activity in self.activity_manager.activities(**self.main_ui.search_box.filters()):
             self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
 
+        # noinspection PyUnresolvedReferences
+        self.main_ui.create_client_btn.clicked.connect(self.create_activity)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.search_btn.clicked.connect(self.search)
+
     def _add_activity(self, activity: Activity, check_filters: bool):
         if check_filters and not self.main_ui.search_box.passes_filters(activity):
             return
@@ -273,9 +278,6 @@ class ActivityMainUI(QMainWindow):
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
         self.controller = MainController(activity_manager, self, name_width, price_width, pay_once_width)
-
-        self.create_client_btn.clicked.connect(self.controller.create_activity)
-        self.search_btn.clicked.connect(self.controller.search)
 
     def _setup_ui(self, name_width: int, price_width: int, pay_once_width: int):
         self.resize(800, 600)
