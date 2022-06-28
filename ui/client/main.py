@@ -10,7 +10,7 @@ from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, String, Number, Subscription, TextLike
 from gym_manager.core.persistence import ClientRepo
 from gym_manager.core.system import ActivityManager, AccountingSystem
-from ui.accounting.charge import ChargeUI
+from ui.accounting.operations import ChargeUI
 from ui.accounting.main import AccountingMainUI
 from ui.client.create import CreateUI
 from ui.client.sign_on import SignOn
