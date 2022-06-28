@@ -15,21 +15,16 @@ BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "
 ONE_WEEK_TD = timedelta(weeks=1)
 
 
-def time_range(start: time, end: time, minute_step: int, reverse: bool = False) -> Generator[time, None, None]:
+def time_range(start: time, end: time, minute_step: int) -> Generator[time, None, None]:
     """Generates all the times between *start* and *end* (inclusive), with steps of *minute_step* minutes.
     """
     step_delta = timedelta(hours=0, minutes=minute_step)
     start_delta = timedelta(hours=start.hour, minutes=start.minute)
     end_delta = timedelta(hours=end.hour, minutes=end.minute)
 
-    if reverse:
-        while end_delta >= start_delta:
-            yield time(end_delta.seconds // 3600, (end_delta.seconds // 60) % 60)
-            end_delta -= step_delta
-    else:
-        while start_delta <= end_delta:
-            yield time(start_delta.seconds // 3600, (start_delta.seconds // 60) % 60)
-            start_delta += step_delta
+    while start_delta <= end_delta:
+        yield time(start_delta.seconds // 3600, (start_delta.seconds // 60) % 60)
+        start_delta += step_delta
 
 
 def combine(base_date: date, start: time | None = None, duration: Duration | None = None) -> datetime:
