@@ -142,10 +142,6 @@ class SqliteClientRepo(ClientRepo):
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
-        if id(self.cache[client.dni]) != id(client):
-            raise ValueError(
-                f"The client with [dni={client.dni}] has a in memory object that is not the cached object.")
-
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
