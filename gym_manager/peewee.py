@@ -8,7 +8,8 @@ from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, B
                     CompositeKey, prefetch, Proxy)
 
 from gym_manager.core import constants
-from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription
+from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
+    OperationalError
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache
 
 logger = logging.getLogger(__name__)
@@ -141,10 +142,6 @@ class SqliteClientRepo(ClientRepo):
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
-        if id(self.cache[client.dni]) != id(client):
-            raise ValueError(
-                f"The client with [dni={client.dni}] has a in memory object that is not the cached object.")
-
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
@@ -256,8 +253,10 @@ class SqliteActivityRepo(ActivityRepo):
         """
         n_subs = self.n_subscribers(activity)
         if not cascade_removing and n_subs > 0:
-            raise Exception(f"The activity [activity={activity}] can not be removed because it has {n_subs} "
-                            f"subscribed clients and [cascade_removing={cascade_removing}]")
+            raise OperationalError(
+                "An activity with active subscriptions cannot be removed, unless 'cascade_removing' is given",
+                activity=activity, cascade_removing=cascade_removing, subscriptions=n_subs
+            )
 
         if self._do_caching:
             self.cache.pop(activity.name)
@@ -284,8 +283,8 @@ class SqliteActivityRepo(ActivityRepo):
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
                 if self._do_caching:
                     self.cache[activity.name] = activity
-                    logger.getChild(type(self).__name__).info(f"Activity with [activity.id={record.id}] not in cache. "
-                                                              f"The activity will be created from raw data.")
+                    logger.getChild(type(self).__name__).info(f"Activity with [activity.name={record.act_name}] not in "
+                                                              f"cache. The activity will be created from raw data.")
             yield activity
 
     def n_subscribers(self, activity: Activity) -> int:

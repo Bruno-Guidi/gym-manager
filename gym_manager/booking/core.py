@@ -133,6 +133,9 @@ class BookingSystem:
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
             minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem
     ) -> None:
+        if end < start:
+            raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
+
         self._courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
         self.durations = durations
 
@@ -159,6 +162,9 @@ class BookingSystem:
 
     def block_range(self, start: time, end: time) -> tuple[int, int]:
         """Returns the start and end block number for the given *start* and *end* time.
+
+        Raises:
+            OperationalError if given start or end are not valid.
         """
         if start < self.start or end > self.end:
             raise OperationalError("Invalid start and/or end time", valid_start=self.start, valid_end=self.end,
@@ -181,6 +187,9 @@ class BookingSystem:
             states: allows filtering of bookings depending on their states.
             when: if given, filter bookings of that day. This filtering has priority over filtering with kwargs.
             **filters: if given, and *when* is None, filter bookings that pass the Filter implementations received.
+
+        Raises:
+            OperationalError if given both when and filters are missing.
         """
         if when is not None:
             for booking in self.repo.all(self._courts.values(), states, when):
@@ -189,7 +198,8 @@ class BookingSystem:
             for booking in self.repo.all(self._courts.values(), states, **filters):
                 yield booking, *self.block_range(booking.start, booking.end)
         else:
-            raise ValueError()
+            raise OperationalError("Both 'when' and 'filters' arguments cannot be missing when querying bookings",
+                                   when=when, filters=filters)
 
     def out_of_range(self, start_block: Block, duration: Duration) -> bool:
         """Returns True if a booking that starts at *start_block* and has the duration *duration* is out of the time
@@ -201,6 +211,9 @@ class BookingSystem:
     def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
         duration *duration*. Otherwise, return False.
+
+        Raises:
+            OperationalError if the booking time is out of range.
         """
         if self.out_of_range(start_block, duration):
             raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
@@ -214,10 +227,17 @@ class BookingSystem:
     def book(
             self, court: Court, client: Client, is_fixed: bool, when: date, start_block: Block, duration: Duration
     ) -> Booking:
+        """Creates a Booking with the given data.
+
+        Raises:
+            OperationalError if the booking time is out of range, or if there is no available time for the booking.
+        """
         if self.out_of_range(start_block, duration):
-            raise ValueError()
+            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
+                                   duration=duration, start=self.start, end=self.end)
         if not self.booking_available(when, court, start_block, duration):
-            raise ValueError()
+            raise OperationalError("There is no available time for the booking.", start=start_block.start,
+                                   duration=duration)
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start_block.start, duration).time()

@@ -5,7 +5,7 @@ from datetime import date
 from typing import Iterable
 
 from gym_manager.core import constants
-from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency
+from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency, OperationalError
 from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, ClientRepo
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,12 @@ class ActivityManager:
             self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None
     ) -> Subscription:
         """Subscribes the *client* in the *activity*. If *transaction* is given, then associate it to the subscription.
+
+        Raises:
+            OperationalError if the activity is a charge_once activity.
         """
+        if activity.charge_once:
+            raise OperationalError("Subscriptions to 'charge_once' activities are not allowed.", activity=activity)
         sub = Subscription(when, client, activity, transaction)
         self.sub_repo.add(sub)
         client.add(sub)
