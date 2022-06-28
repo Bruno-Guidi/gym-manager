@@ -117,7 +117,7 @@ def test_BookingSystem_outOfRange():
 
 
 # noinspection PyTypeChecker
-def test_BookingSystem_bookingAvailable():
+def test_BookingSystem_bookingAvailable_False():
     duration2h, duration3h, duration4h, duration5h = Duration(120, ""), Duration(180, ""), \
                                                      Duration(240, ""), Duration(300, "")
     repo = MockBookingRepo([Booking(0, Court("1", 0), client=None, is_fixed=None, state=None,
@@ -149,6 +149,44 @@ def test_BookingSystem_bookingAvailable():
     assert not booking_system.booking_available(when=None, court=Court("1", 0),
                                                 start_block=Block(0, time(9, 0), time(10, 0)),
                                                 duration=duration2h)
+
+
+# noinspection PyTypeChecker
+def test_BookingSystem_bookingAvailable_True():
+    """This tests covers the same cases that the previous tests, but the existing bookings are for the court "2", so
+    the method should always return True.
+    """
+    duration2h, duration3h, duration4h, duration5h = Duration(120, ""), Duration(180, ""), \
+                                                     Duration(240, ""), Duration(300, "")
+    repo = MockBookingRepo([Booking(0, Court("2", 0), client=None, is_fixed=None, state=None,
+                                    when=None, start=time(9, 0), end=time(10, 0)),
+                            Booking(1, Court("2", 0), client=None, is_fixed=None, state=None,
+                                    when=None, start=time(11, 00), end=time(12, 0))])
+    booking_system = BookingSystem(courts_names=(), durations=(), start=time(8, 0), end=time(13, 0), minute_step=60,
+                                   activity=None, repo=repo, accounting_system=None)
+
+    # booking starts before an existing booking and ends after another one.
+    assert booking_system.booking_available(when=None, court=Court("1", 0),
+                                            start_block=Block(0, time(8, 0), time(9, 0)),
+                                            duration=duration5h)
+
+    # booking starts before an existing booking and ends at the middle another one.
+    assert booking_system.booking_available(when=None, court=Court("1", 0),
+                                            start_block=Block(0, time(8, 0), time(9, 0)),
+                                            duration=duration3h)
+    assert booking_system.booking_available(when=None, court=Court("1", 0),
+                                            start_block=Block(0, time(8, 0), time(9, 0)),
+                                            duration=duration4h)
+
+    # booking starts at the middle of an existing booking and ends after another one.
+    assert booking_system.booking_available(when=None, court=Court("1", 0),
+                                            start_block=Block(0, time(9, 0), time(10, 0)),
+                                            duration=duration4h)
+
+    # booking starts at the middle of an existing booking and ends at the middle another one.
+    assert booking_system.booking_available(when=None, court=Court("1", 0),
+                                            start_block=Block(0, time(9, 0), time(10, 0)),
+                                            duration=duration2h)
 
 
 def test_BookingSystem_cancel():
