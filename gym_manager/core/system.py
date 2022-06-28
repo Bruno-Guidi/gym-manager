@@ -46,6 +46,9 @@ class ActivityManager:
             self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None
     ) -> Subscription:
         """Subscribes the *client* in the *activity*. If *transaction* is given, then associate it to the subscription.
+
+        Raises:
+            OperationalError if the activity is a charge_once activity.
         """
         if activity.charge_once:
             raise OperationalError("Subscriptions to 'charge_once' activities are not allowed.", activity=activity)

@@ -221,6 +221,9 @@ class Client:
 
     def register_charge(self, activity: Activity, transaction: Transaction):
         """Registers that the client was charged for the *activity* subscription.
+
+        Raises:
+            OperationalError if the client being charged is not the client that is subscribed.
         """
         if self != transaction.client:
             raise OperationalError("A client is being charged for an activity to which he is not subscribed.",
@@ -262,9 +265,6 @@ class Subscription:
 
     def register_charge(self, transaction: Transaction):
         """Updates the subscription with the given *transaction*.
-
-        Raises
-            ValueError if the client of the *transaction* isn't *self.client*.
         """
         self.transaction = transaction
 
