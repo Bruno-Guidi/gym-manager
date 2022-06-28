@@ -16,7 +16,7 @@ from ui.widgets import Field, valid_text_value, SearchBox, Dialog
 class ActivityRow(QWidget):
     def __init__(
             self, activity: Activity, activity_manager: ActivityManager, item: QListWidgetItem,
-            main_ui_controller: Controller, name_width: int, price_width: int, pay_once_width: int, height: int
+            main_ui_controller: MainController, name_width: int, price_width: int, pay_once_width: int, height: int
     ):
         super().__init__()
         self.activity = activity
@@ -226,7 +226,7 @@ class ActivityRow(QWidget):
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
 
 
-class Controller:
+class MainController:
     def __init__(self, activity_manager: ActivityManager, activity_list: QListWidget, search_box: SearchBox,
                  name_width: int, price_width: int, pay_once_width: int):
         self.activity_manager = activity_manager
@@ -270,8 +270,8 @@ class ActivityMainUI(QMainWindow):
         super().__init__(parent=None)
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
-        self.controller = Controller(activity_manager, self.activity_list, self.search_box, name_width, price_width,
-                                     pay_once_width)
+        self.controller = MainController(activity_manager, self.activity_list, self.search_box, name_width, price_width,
+                                         pay_once_width)
 
         self.create_client_btn.clicked.connect(self.controller.create_activity)
         self.search_btn.clicked.connect(self.controller.search)
