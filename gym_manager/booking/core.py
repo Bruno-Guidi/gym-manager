@@ -59,6 +59,9 @@ class Block:
         self.end = end
         self.str_range = f"{start.strftime('%H:%M')} - {end.strftime('%H:%M')}"
 
+    def __eq__(self, other: Block) -> bool:
+        return self.start == other.start and self.end == other.end
+
 
 class State:
 
@@ -145,8 +148,10 @@ class BookingSystem:
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
         """
+        if start < self.start:
+            start = self.start
         if start is not None:
-            yield from itertools.dropwhile(lambda block_start: block_start < start, self._blocks.values())
+            yield from itertools.dropwhile(lambda block: block.start < start, self._blocks.values())
         else:
             yield from self._blocks.values()
 
