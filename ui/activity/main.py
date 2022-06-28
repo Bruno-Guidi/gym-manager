@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QMessageBox, \
-    QTextEdit, QCheckBox, QDialog
+    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QCheckBox, QDialog
 
 from gym_manager.core import constants as consts
-from gym_manager.core.system import ActivityManager
 from gym_manager.core.base import String, Activity, Currency, TextLike
+from gym_manager.core.system import ActivityManager
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
 from ui.widgets import Field, valid_text_value, SearchBox, Dialog
 
