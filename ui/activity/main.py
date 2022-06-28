@@ -269,11 +269,10 @@ class MainController:
 class ActivityMainUI(QMainWindow):
 
     def __init__(self, activity_manager: ActivityManager) -> None:
-        super().__init__(parent=None)
+        super().__init__()
         name_width, price_width, pay_once_width = 175, 90, 100
         self._setup_ui(name_width, price_width, pay_once_width)
-        self.controller = MainController(activity_manager, self.activity_list, self.search_box, name_width, price_width,
-                                         pay_once_width)
+        self.controller = MainController(activity_manager, self, name_width, price_width, pay_once_width)
 
         self.create_client_btn.clicked.connect(self.controller.create_activity)
         self.search_btn.clicked.connect(self.controller.search)
