@@ -36,7 +36,8 @@ if __name__ == "__main__":
     activity = activity_manager.create(String("Padel", max_len=consts.ACTIVITY_NAME_CHARS),
                                        Currency("100", max_currency=consts.MAX_CURRENCY),
                                        charge_once=True,
-                                       description=String("", optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
+                                       description=String("", optional=True, max_len=consts.ACTIVITY_DESCR_CHARS),
+                                       locked=True)
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo)
     booking_system = BookingSystem(courts_names=("1", "2", "3"),
                                    durations=(Duration(30, "30m"), Duration(60, "1h"), Duration(90, "1h30m")),

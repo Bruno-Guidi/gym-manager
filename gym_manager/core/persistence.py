@@ -119,7 +119,9 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
+    def create(
+            self, name: String, price: Currency, charge_once: bool, description: String, locked: bool = False
+    ) -> Activity:
         """Creates an activity with the given data, and returns it.
         """
         raise NotImplementedError
