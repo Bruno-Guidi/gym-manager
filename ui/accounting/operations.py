@@ -14,7 +14,7 @@ from ui.widget_config import config_layout, config_lbl, config_line, config_date
 from ui.widgets import Field, valid_text_value, Dialog
 
 
-class Controller:
+class ChargeController:
     def __init__(
             self, charge_ui: ChargeUI, client: Client, activity: Activity, descr: String,
             accounting_system: AccountingSystem, fixed_amount: bool = False, fixed_descr: bool = False,
@@ -68,7 +68,7 @@ class ChargeUI(QDialog):
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(self, client, activity, descr, accounting_system, fixed_amount, fixed_descr)
+        self.controller = ChargeController(self, client, activity, descr, accounting_system, fixed_amount, fixed_descr)
 
     def _setup_ui(self):
         self.resize(400, 300)
