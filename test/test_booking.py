@@ -47,9 +47,21 @@ def test_Booking_collides():
 
 
 def test_BookingSystem_blocks():
-    # start under booking system start
-    # start over booking system end
-    pass
+    # noinspection PyTypeChecker
+    booking_system = BookingSystem(courts_names=(), durations=(), start=time(8, 0), end=time(12, 0), minute_step=60,
+                                   activity=None, repo=None, accounting_system=None)
+
+    # start is under the booking system start.
+    expected = [Block(0, time(8, 0), end=time(9, 0)), Block(0, time(9, 0), end=time(10, 0)),
+                Block(0, time(10, 0), end=time(11, 0)), Block(0, time(11, 0), end=time(12, 0))]
+    assert expected == [b for b in booking_system.blocks(start=time(7, 0))]
+
+    # start is over the booking system start.
+    expected = [Block(0, time(10, 0), end=time(11, 0)), Block(0, time(11, 0), end=time(12, 0))]
+    assert expected == [b for b in booking_system.blocks(start=time(9, 30))]
+
+    # start is over the booking system end
+    assert [] == [b for b in booking_system.blocks(start=time(12, 30))]
 
 
 def test_BookingSystem_blockRange():
