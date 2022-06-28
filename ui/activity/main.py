@@ -38,7 +38,7 @@ class ActivityRow(QWidget):
 
             self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
-            config_line(self.name_field, str(activity.name), width=name_width)
+            config_line(self.name_field, str(activity.name), width=name_width, enabled=False)
 
             # Price.
             self.price_lbl = QLabel(self.widget)
@@ -198,7 +198,6 @@ class ActivityRow(QWidget):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             # Updates activity object.
-            self.activity.name = self.name_field.value()  # TODO Block edition
             self.activity.price = self.price_field.value()
             self.activity.charge_once = self.pay_once_checkbox.isChecked()
             self.activity.description = descr
@@ -206,7 +205,6 @@ class ActivityRow(QWidget):
             self.activity_manager.update(self.activity)
 
             # Updates ui.
-            self.name_summary.setText(str(self.activity.name))
             self.price_summary.setText(str(self.activity.price))
             self.pay_once_summary.setText("Si" if self.activity.charge_once else "No")
             self.description_text.setText(str(self.activity.description))
