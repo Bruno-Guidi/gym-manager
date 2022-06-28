@@ -14,14 +14,16 @@ from ui.widgets import Field, valid_text_value, SearchBox, Dialog
 
 class ActivityRow(QWidget):
     def __init__(
-            self, activity: Activity, activity_manager: ActivityManager, item: QListWidgetItem,
-            main_ui_controller: MainController, name_width: int, price_width: int, pay_once_width: int, height: int
+            self, item: QListWidgetItem, main_ui_controller: MainController, name_width: int, price_width: int,
+            pay_once_width: int, height: int, activity: Activity, activity_manager: ActivityManager
     ):
         super().__init__()
-        self.activity = activity
-        self.activity_manager = activity_manager
+
         self.item = item
         self.main_ui_controller = main_ui_controller
+
+        self.activity = activity
+        self.activity_manager = activity_manager
 
         self._setup_ui(height, name_width, price_width, pay_once_width)
 
@@ -77,6 +79,7 @@ class ActivityRow(QWidget):
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
+        # noinspection PyUnresolvedReferences
         self.detail_btn.clicked.connect(self.hide_detail)
         self.is_hidden = False
 
@@ -170,7 +173,9 @@ class ActivityRow(QWidget):
         # Creates the hidden widgets in case it is the first time the detail button is clicked.
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
+            # noinspection PyUnresolvedReferences
             self.save_btn.clicked.connect(self.save_changes)
+            # noinspection PyUnresolvedReferences
             self.remove_btn.clicked.connect(self.remove)
             self.hidden_ui_loaded, self.previous_height = True, 350
 
@@ -193,7 +198,7 @@ class ActivityRow(QWidget):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             # Updates activity object.
-            self.activity.name = self.name_field.value()
+            self.activity.name = self.name_field.value()  # TODO Block edition
             self.activity.price = self.price_field.value()
             self.activity.charge_once = self.pay_once_checkbox.isChecked()
             self.activity.description = descr
