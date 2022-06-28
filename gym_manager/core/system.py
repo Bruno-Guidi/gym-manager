@@ -20,7 +20,12 @@ class ActivityManager:
         self.sub_repo = sub_repo
 
     def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
-        return self.activity_repo.create(name, price, charge_once, description)
+        activity: Activity
+        try:
+            activity = self.activity_repo.get(name)
+        except KeyError:
+            activity = self.activity_repo.create(name, price, charge_once, description)
+        return activity
 
     def update(self, activity: Activity):
         self.activity_repo.update(activity)
