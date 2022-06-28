@@ -133,6 +133,9 @@ class BookingSystem:
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
             minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem
     ) -> None:
+        if end < start:
+            raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
+
         self._courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
         self.durations = durations
 
