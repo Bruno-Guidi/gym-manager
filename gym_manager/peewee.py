@@ -8,7 +8,8 @@ from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, B
                     CompositeKey, prefetch, Proxy)
 
 from gym_manager.core import constants
-from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription
+from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
+    OperationalError
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache
 
 logger = logging.getLogger(__name__)
@@ -256,8 +257,10 @@ class SqliteActivityRepo(ActivityRepo):
         """
         n_subs = self.n_subscribers(activity)
         if not cascade_removing and n_subs > 0:
-            raise Exception(f"The activity [activity={activity}] can not be removed because it has {n_subs} "
-                            f"subscribed clients and [cascade_removing={cascade_removing}]")
+            raise OperationalError(
+                "An activity with active subscriptions cannot be removed, unless 'cascade_removing' is given",
+                activity=activity, cascade_removing=cascade_removing, subscriptions=n_subs
+            )
 
         if self._do_caching:
             self.cache.pop(activity.name)
