@@ -16,7 +16,7 @@ ONE_WEEK_TD = timedelta(weeks=1)
 
 
 def time_range(start: time, end: time, minute_step: int, reverse: bool = False) -> Generator[time, None, None]:
-    """Generates all the times between *start* and *end*, with steps of *minute_step* minutes.
+    """Generates all the times between *start* and *end* (inclusive), with steps of *minute_step* minutes.
     """
     step_delta = timedelta(hours=0, minutes=minute_step)
     start_delta = timedelta(hours=start.hour, minutes=start.minute)
