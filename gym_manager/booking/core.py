@@ -133,7 +133,7 @@ class BookingSystem:
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
             minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem
     ) -> None:
-        self.courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
+        self._courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
         self.durations = durations
 
         self.start, self.end = start, end
@@ -145,6 +145,9 @@ class BookingSystem:
         self.activity = activity
         self.repo = repo
         self.accounting_system = accounting_system
+
+    def courts(self) -> Iterable[Court]:
+        return self._courts.values()
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
@@ -180,10 +183,10 @@ class BookingSystem:
             **filters: if given, and *when* is None, filter bookings that pass the Filter implementations received.
         """
         if when is not None:
-            for booking in self.repo.all(self.courts.values(), states, when):
+            for booking in self.repo.all(self._courts.values(), states, when):
                 yield booking, *self.block_range(booking.start, booking.end)
         elif len(filters) > 0:
-            for booking in self.repo.all(self.courts.values(), states, **filters):
+            for booking in self.repo.all(self._courts.values(), states, **filters):
                 yield booking, *self.block_range(booking.start, booking.end)
         else:
             raise ValueError()
@@ -203,7 +206,7 @@ class BookingSystem:
             raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
                                    duration=duration, start=self.start, end=self.end)
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all(self.courts.values(), (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
+        for booking in self.repo.all(self._courts.values(), (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
             if booking.court == court and booking.collides(start_block.start, end):
                 return False
         return True
