@@ -92,6 +92,7 @@ class Booking:
     when: date
     start: time
     end: time
+    transaction: Transaction | None = None
 
     # noinspection PyChainedComparisons
     def collides(self, start: time, end: time) -> bool:
