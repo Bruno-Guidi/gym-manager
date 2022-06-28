@@ -36,24 +36,24 @@ class SqliteBookingRepo(BookingRepo):
     def create(
             self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
     ) -> Booking:
-        raw = BookingTable.create(when=combine(when, start),
-                                  court=court.name,
-                                  client=peewee.ClientTable.get_by_id(client.dni.as_primitive()),
-                                  end=end,
-                                  is_fixed=is_fixed,
-                                  state=state.name,
-                                  updated_by=state.updated_by)
-        return Booking(raw.id, court, client, is_fixed, state, when, start, end)
+        record = BookingTable.create(when=combine(when, start),
+                                     court=court.name,
+                                     client=peewee.ClientTable.get_by_id(client.dni.as_primitive()),
+                                     end=end,
+                                     is_fixed=is_fixed,
+                                     state=state.name,
+                                     updated_by=state.updated_by)
+        return Booking(record.id, court, client, is_fixed, state, when, start, end)
 
     def update(self, booking: Booking, prev_state: State):
-        raw = BookingTable.get_by_id(booking.id)
+        record = BookingTable.get_by_id(booking.id)
         # Updates the booking.
-        raw.is_fixed = booking.is_fixed
-        raw.state = booking.state.name
-        raw.updated_by = booking.state.updated_by
+        record.is_fixed = booking.is_fixed
+        record.state = booking.state.name
+        record.updated_by = booking.state.updated_by
         if booking.transaction is not None:
-            raw.transaction = TransactionTable.get_by_id(booking.transaction.id)
-        raw.save()
+            record.transaction = TransactionTable.get_by_id(booking.transaction.id)
+        record.save()
 
     def all(
             self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
@@ -68,14 +68,18 @@ class SqliteBookingRepo(BookingRepo):
         for filter_, value in filters.values():
             bookings_q = bookings_q.join(peewee.ClientTable)
             bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
-        for raw in prefetch(bookings_q, TransactionTable.select()):
-            start = time(raw.when.hour, raw.when.minute)
-            state = State(raw.state, raw.updated_by)
-            client = self.client_repo.get(raw.client_id)
-            trans_record, transaction = raw.transaction, None
+
+        for record in prefetch(bookings_q, TransactionTable.select()):
+            start = time(record.when.hour, record.when.minute)
+            state = State(record.state, record.updated_by)
+            client = self.client_repo.get(record.client_id)
+
+            trans_record, transaction = record.transaction, None
             if trans_record is not None:
                 transaction = self.transaction_repo.from_record(
                     trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
                     trans_record.method, trans_record.responsible, trans_record.description
                 )
-            yield Booking(raw.id, courts[raw.court], client, raw.is_fixed, state, raw.when, start, raw.end, transaction)
+
+            yield Booking(record.id, courts[record.court], client, record.is_fixed, state, record.when, start,
+                          record.end, transaction)
