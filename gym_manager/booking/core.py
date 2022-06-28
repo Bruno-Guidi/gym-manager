@@ -7,8 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator
 
-from gym_manager.core import constants
-from gym_manager.core.base import Client, Activity, String, Transaction
+from gym_manager.core.base import Client, Activity, Transaction, OperationalError
 from gym_manager.core.system import AccountingSystem
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
@@ -16,21 +15,16 @@ BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "
 ONE_WEEK_TD = timedelta(weeks=1)
 
 
-def time_range(start: time, end: time, minute_step: int, reverse: bool = False) -> Generator[time, None, None]:
-    """Generates all the times between *start* and *end*, with steps of *minute_step* minutes.
+def time_range(start: time, end: time, minute_step: int) -> Generator[time, None, None]:
+    """Generates all the times between *start* and *end* (inclusive), with steps of *minute_step* minutes.
     """
     step_delta = timedelta(hours=0, minutes=minute_step)
     start_delta = timedelta(hours=start.hour, minutes=start.minute)
     end_delta = timedelta(hours=end.hour, minutes=end.minute)
 
-    if reverse:
-        while end_delta >= start_delta:
-            yield time(end_delta.seconds // 3600, (end_delta.seconds // 60) % 60)
-            end_delta -= step_delta
-    else:
-        while start_delta <= end_delta:
-            yield time(start_delta.seconds // 3600, (start_delta.seconds // 60) % 60)
-            start_delta += step_delta
+    while start_delta <= end_delta:
+        yield time(start_delta.seconds // 3600, (start_delta.seconds // 60) % 60)
+        start_delta += step_delta
 
 
 def combine(base_date: date, start: time | None = None, duration: Duration | None = None) -> datetime:
@@ -65,6 +59,9 @@ class Block:
         self.end = end
         self.str_range = f"{start.strftime('%H:%M')} - {end.strftime('%H:%M')}"
 
+    def __eq__(self, other: Block) -> bool:
+        return self.start == other.start and self.end == other.end
+
 
 class State:
 
@@ -95,10 +92,11 @@ class Booking:
     when: date
     start: time
     end: time
+    transaction: Transaction | None = None
 
     # noinspection PyChainedComparisons
     def collides(self, start: time, end: time) -> bool:
-        """Determines if an hypothetical booking with the given start and end time will collide with this booking.
+        """Determines if a hypothetical booking with the given start and end time will collide with this booking.
 
         There are four possible situations where a collision wont happen:
         1. start < end < b.start < b.end.
@@ -113,15 +111,21 @@ class Booking:
         return not (start < self.start and end <= self.start or start >= self.end and end > self.end)
 
     def update_state(self, new_state: str, updated_by: str) -> State:
-        prev = self.state
+        """Updates the current state of the booking, and return the previous one.
+        """
+        prev_state = self.state
         self.state.update(new_state, updated_by)
-        return prev
+        return prev_state
 
 
 class BookingSystem:
+    """API to do booking related things.
+    """
 
     @classmethod
     def create_blocks(cls, start: time, end: time, minute_step: int) -> Iterable[Block]:
+        """Create blocks from *start* to *end*, with a difference of *minute_step* between each block.
+        """
         for i, (block_start, block_end) in enumerate(itertools.pairwise(time_range(start, end, minute_step))):
             yield Block(i, block_start, block_end)
 
@@ -129,7 +133,7 @@ class BookingSystem:
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
             minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem
     ) -> None:
-        self.courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
+        self._courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
         self.durations = durations
 
         self.start, self.end = start, end
@@ -142,17 +146,23 @@ class BookingSystem:
         self.repo = repo
         self.accounting_system = accounting_system
 
+    def courts(self) -> Iterable[Court]:
+        return self._courts.values()
+
     def blocks(self, start: time | None = None) -> Iterable[Block]:
-        """Yields booking blocks. If *from_* is given, then discard all blocks whose time is lesser than it.
+        """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
         """
-        if start is not None:
-            yield from itertools.dropwhile(lambda block_start: block_start < start, self._blocks.values())
-        else:
+        if start is None or start < self.start:
             yield from self._blocks.values()
+        else:
+            yield from itertools.dropwhile(lambda block: block.start < start, self._blocks.values())
 
     def block_range(self, start: time, end: time) -> tuple[int, int]:
         """Returns the start and end block number for the given *start* and *end* time.
         """
+        if start < self.start or end > self.end:
+            raise OperationalError("Invalid start and/or end time", valid_start=self.start, valid_end=self.end,
+                                   start=start, end=end)
         if end == self.end:
             # Because there is no Block whose start time is equal to *self.end*, if *self._blocks* is indexed with
             # *end*, a KeyError will be raised. This is the case when a Booking ends in the last valid booking hour.
@@ -162,28 +172,42 @@ class BookingSystem:
         else:
             return self._blocks[start].number, self._blocks[end].number
 
-    def bookings(self, states: tuple[str, ...], when: date | None = None, **filters) -> Iterable[tuple[Booking, int, int]]:
-        """Yields bookings and its start and end block number for the given *when*.
+    def bookings(
+            self, states: tuple[str, ...], when: date | None = None, **filters
+    ) -> Iterable[tuple[Booking, int, int]]:
+        """Retrieves bookings with its start and end block number.
+
+        Args:
+            states: allows filtering of bookings depending on their states.
+            when: if given, filter bookings of that day. This filtering has priority over filtering with kwargs.
+            **filters: if given, and *when* is None, filter bookings that pass the Filter implementations received.
         """
         if when is not None:
-            for booking in self.repo.all(self.courts, states, when):
+            for booking in self.repo.all(self._courts.values(), states, when):
                 yield booking, *self.block_range(booking.start, booking.end)
-
         elif len(filters) > 0:
-            for booking in self.repo.all(self.courts, states, **filters):
+            for booking in self.repo.all(self._courts.values(), states, **filters):
                 yield booking, *self.block_range(booking.start, booking.end)
-
         else:
             raise ValueError()
 
     def out_of_range(self, start_block: Block, duration: Duration) -> bool:
+        """Returns True if a booking that starts at *start_block* and has the duration *duration* is out of the time
+        range that is valid, False otherwise.
+        """
         end = combine(date.min, start_block.start, duration).time()
         return start_block.start < self.start or end > self.end
 
     def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
+        """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
+        duration *duration*. Otherwise, return False.
+        """
+        if self.out_of_range(start_block, duration):
+            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
+                                   duration=duration, start=self.start, end=self.end)
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
-            if booking.collides(start_block.start, end):
+        for booking in self.repo.all(self._courts.values(), (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
+            if booking.court == court and booking.collides(start_block.start, end):
                 return False
         return True
 
@@ -202,13 +226,13 @@ class BookingSystem:
         return booking
 
     def cancel(self, booking: Booking, responsible: str, remains_fixed: bool = False):
-        prev = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
+        prev_state = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
         booking.is_fixed = remains_fixed
-        self.repo.update(booking, prev)
+        self.repo.update(booking, prev_state)
 
     def register_charge(self, booking: Booking, transaction: Transaction):
-        prev = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
-        self.repo.update(booking, prev)
+        prev_state = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
+        self.repo.update(booking, prev_state)
         if booking.is_fixed:
             self.repo.create(booking.court, booking.client, booking.is_fixed, State(BOOKING_TO_HAPPEN),
                              booking.when + ONE_WEEK_TD, booking.start, booking.end)
@@ -227,6 +251,6 @@ class BookingRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
+            self, existing_courts: Iterable[Court], states: tuple[str, ...], when: date | None = None, **filters
     ) -> Generator[Booking, None, None]:
         raise NotImplementedError

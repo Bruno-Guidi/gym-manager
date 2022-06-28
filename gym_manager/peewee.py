@@ -13,12 +13,12 @@ from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRe
 
 logger = logging.getLogger(__name__)
 
-_database_proxy = Proxy()
+DATABASE_PROXY = Proxy()
 
 
 def create_database(url: str):
     database = SqliteDatabase(url, pragmas={'foreign_keys': 1})
-    _database_proxy.initialize(database)
+    DATABASE_PROXY.initialize(database)
 
 
 def client_name_like(client, filter_value) -> bool:
@@ -34,7 +34,7 @@ class ClientTable(Model):
     is_active = BooleanField()
 
     class Meta:
-        database = _database_proxy
+        database = DATABASE_PROXY
 
 
 class SqliteClientRepo(ClientRepo):
@@ -198,7 +198,7 @@ class ActivityTable(Model):
     description = TextField()
 
     class Meta:
-        database = _database_proxy
+        database = DATABASE_PROXY
 
 
 class SqliteActivityRepo(ActivityRepo):
@@ -309,7 +309,7 @@ class TransactionTable(Model):
     description = CharField()
 
     class Meta:
-        database = _database_proxy
+        database = DATABASE_PROXY
 
 
 class SqliteTransactionRepo(TransactionRepo):
@@ -399,7 +399,7 @@ class SubscriptionTable(Model):
     transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions", null=True)
 
     class Meta:
-        database = _database_proxy
+        database = DATABASE_PROXY
         primary_key = CompositeKey("client", "activity")
 
 

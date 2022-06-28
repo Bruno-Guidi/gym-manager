@@ -37,7 +37,7 @@ if __name__ == "__main__":
     #                                    Currency("100", max_currency=consts.MAX_CURRENCY),
     #                                    charge_once=True,
     #                                    description=String("", optional=True, max_len=consts.ACTIVITY_DESCR_CHARS))
-    booking_repo = booking_peewee.SqliteBookingRepo(client_repo)
+    booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo)
     booking_system = BookingSystem(courts_names=("1", "2", "3"),
                                    durations=(Duration(30, "30m"), Duration(60, "1h"), Duration(90, "1h30m")),
                                    start=time(8, 0), end=time(23, 0), minute_step=30,

@@ -1,12 +1,16 @@
-from datetime import date, time, datetime
-from typing import Generator
+import logging
+from datetime import date, time
+from typing import Generator, Iterable
 
-from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField
+from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch
 
 from gym_manager import peewee
 from gym_manager.booking.core import Booking, BookingRepo, combine, Court, State
 from gym_manager.core.base import Client
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache
+from gym_manager.peewee import TransactionTable
+
+logger = logging.getLogger(__name__)
 
 
 class BookingTable(Model):
@@ -18,56 +22,50 @@ class BookingTable(Model):
     is_fixed = BooleanField()
     state = CharField()
     updated_by = CharField()
+    transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_booking", null=True)
 
     class Meta:
-        database = peewee._database_proxy
-
-
-class StateHistory(Model):
-    booking = ForeignKeyField(BookingTable, backref="state_history")
-    prev = CharField()
-    current = CharField()
-    updated_by = CharField()
-    when = DateTimeField()
-
-    class Meta:
-        database = peewee._database_proxy
-        primary_key = False
+        database = peewee.DATABASE_PROXY
 
 
 class SqliteBookingRepo(BookingRepo):
 
-    def __init__(self, client_repo: ClientRepo, drop_table: bool = False) -> None:
-        if drop_table:
-            peewee._database_proxy.drop_tables([BookingTable, StateHistory])
-        peewee._database_proxy.create_tables([BookingTable, StateHistory])
+    def __init__(self, client_repo: ClientRepo, transaction_repo: TransactionRepo, cache_len: int = 100) -> None:
+        BookingTable._meta.database.create_tables([BookingTable])
+
         self.client_repo = client_repo
+        self.transaction_repo = transaction_repo
+
+        self._do_caching = cache_len > 0
+        self.cache = LRUCache((int,), Booking, max_len=cache_len)
 
     def create(
             self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
     ) -> Booking:
-        raw = BookingTable.create(when=combine(when, start),
-                                  court=court.name,
-                                  client=peewee.ClientTable.get_by_id(client.dni.as_primitive()),
-                                  end=end,
-                                  is_fixed=is_fixed,
-                                  state=state.name,
-                                  updated_by=state.updated_by)
-        return Booking(raw.id, court, client, is_fixed, state, when, start, end)
+        record = BookingTable.create(when=combine(when, start),
+                                     court=court.name,
+                                     client=peewee.ClientTable.get_by_id(client.dni.as_primitive()),
+                                     end=end,
+                                     is_fixed=is_fixed,
+                                     state=state.name,
+                                     updated_by=state.updated_by)
+
+        booking = Booking(record.id, court, client, is_fixed, state, when, start, end)
+        self.cache[booking.id] = booking
+        return booking
 
     def update(self, booking: Booking, prev_state: State):
-        raw = BookingTable.get_by_id(booking.id)
-        # Updates the state history.
-        StateHistory.create(booking=raw, prev=prev_state.name, current=booking.state.name,
-                            updated_by=booking.state.updated_by, when=datetime.now())
+        record = BookingTable.get_by_id(booking.id)
         # Updates the booking.
-        raw.is_fixed = booking.is_fixed
-        raw.state = booking.state.name
-        raw.updated_by = booking.state.updated_by
-        raw.save()
+        record.is_fixed = booking.is_fixed
+        record.state = booking.state.name
+        record.updated_by = booking.state.updated_by
+        if booking.transaction is not None:
+            record.transaction = TransactionTable.get_by_id(booking.transaction.id)
+        record.save()
 
     def all(
-            self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
+            self, existing_courts: Iterable[Court], states: tuple[str, ...], when: date | None = None, **filters
     ) -> Generator[Booking, None, None]:
         bookings_q = BookingTable.select()
         if len(states) > 0:
@@ -76,11 +74,32 @@ class SqliteBookingRepo(BookingRepo):
             year, month, day = when.year, when.month, when.day
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
                                           day == BookingTable.when.day)
-        # for filter_, value in filters.values():
-        #     bookings_q = bookings_q.join(peewee.ClientTable)
-        #     bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
-        for raw in bookings_q:
-            start = time(raw.when.hour, raw.when.minute)
-            state = State(raw.state, raw.updated_by)
-            yield Booking(raw.id, courts[raw.court], self.client_repo.get(raw.client_id), raw.is_fixed, state, raw.when,
-                          start, raw.end)
+        for filter_, value in filters.values():
+            bookings_q = bookings_q.join(peewee.ClientTable)
+            bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
+
+        for record in prefetch(bookings_q, TransactionTable.select()):
+            booking: Booking
+            if self._do_caching and record.id in self.cache:
+                booking = self.cache[record.id]
+            else:
+                start = time(record.when.hour, record.when.minute)
+                state = State(record.state, record.updated_by)
+                client = self.client_repo.get(record.client_id)
+
+                trans_record, transaction = record.transaction, None
+                if trans_record is not None:
+                    transaction = self.transaction_repo.from_record(
+                        trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
+                        trans_record.method, trans_record.responsible, trans_record.description
+                    )
+
+                court_dict = {court.name: court for court in existing_courts}
+                booking = Booking(record.id, court_dict[record.court], client, record.is_fixed, state, record.when,
+                                  start, record.end, transaction)
+                if self._do_caching:
+                    self.cache[record.id] = booking
+                    logger.getChild(type(self).__name__).info(
+                        f"Booking with [id={record.id}] not in cache. The booking will be created from raw data."
+                    )
+            yield booking
