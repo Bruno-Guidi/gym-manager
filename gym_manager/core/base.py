@@ -264,8 +264,9 @@ class Subscription:
             ValueError if the client of the *transaction* isn't *self.client*.
         """
         if self.client != transaction.client:
-            raise ValueError(f"The client '{transaction.client.name}' is being charged for the activity "
-                             f"'{self.activity.name}' that should be charged to the client '{self.client.name}'.")
+            raise OperationalError("A client is being charged for an activity to which he is not subscribed.",
+                                   charged_client=transaction.client, client_to_charge=self.client,
+                                   activity=self.activity)
         self.transaction = transaction
 
 
