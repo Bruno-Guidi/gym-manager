@@ -22,7 +22,7 @@ class BookingTable(Model):
     transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_booking", null=True)
 
     class Meta:
-        database = peewee._database_proxy
+        database = peewee.DATABASE_PROXY
 
 
 class SqliteBookingRepo(BookingRepo):
