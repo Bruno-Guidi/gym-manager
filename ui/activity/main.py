@@ -332,38 +332,34 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addWidget(self.activity_list)
 
 
-class Controller:
+class CreateController:
 
-    def __init__(
-            self, name_field: Field, price_field: Field, pay_once_checkbox: QCheckBox, description_text: QTextEdit,
-            activity_manager: ActivityManager
-    ) -> None:
-        self.name_field = name_field
-        self.price_field = price_field
-        self.pay_once_checkbox = pay_once_checkbox
-        self.description_text = description_text
+    def __init__(self, create_ui: CreateUI, activity_manager: ActivityManager) -> None:
+        self.create_ui = create_ui
 
         self.activity: Activity | None = None
         self.activity_manager = activity_manager
 
     # noinspection PyTypeChecker
     def create_activity(self):
-        valid_descr, descr = valid_text_value(self.description_text, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
-        if all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
-            self.activity = self.activity_manager.create(self.name_field.value(), self.price_field.value(),
-                                                         self.pay_once_checkbox.isChecked(), descr)
-            Dialog.info("Éxito", f"La categoría '{self.name_field.value()}' fue creada correctamente.")
-            self.name_field.window().close()
+        valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
+                                              max_len=consts.ACTIVITY_DESCR_CHARS)
+        if all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(), valid_descr]):
+            self.activity = self.activity_manager.create(
+                self.create_ui.name_field.value(), self.create_ui.price_field.value(),
+                self.create_ui.pay_once_checkbox.isChecked(), descr
+            )
+            Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
+            self.create_ui.name_field.window().close()
         else:
             Dialog.info("Error", "Hay datos que no son válidos.")
 
 
 class CreateUI(QDialog):
     def __init__(self, activity_manager: ActivityManager) -> None:
-        super().__init__(parent=None)
+        super().__init__()
         self._setup_ui()
-        self.controller = Controller(self.name_field, self.price_field, self.pay_once_checkbox, self.description_text,
-                                     activity_manager)
+        self.controller = CreateController(self, activity_manager)
 
         self.ok_btn.clicked.connect(self.controller.create_activity)
         self.cancel_btn.clicked.connect(self.reject)
@@ -413,6 +409,7 @@ class CreateUI(QDialog):
 
         self.pay_once_checkbox = QCheckBox()
         self.pay_once_layout.addWidget(self.pay_once_checkbox)
+        config_checkbox(self.pay_once_checkbox)
 
         # Description.
         self.description_layout = QHBoxLayout()
