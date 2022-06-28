@@ -23,24 +23,12 @@ class BookingTable(Model):
         database = peewee._database_proxy
 
 
-class StateHistory(Model):
-    booking = ForeignKeyField(BookingTable, backref="state_history")
-    prev = CharField()
-    current = CharField()
-    updated_by = CharField()
-    when = DateTimeField()
-
-    class Meta:
-        database = peewee._database_proxy
-        primary_key = False
-
-
 class SqliteBookingRepo(BookingRepo):
 
     def __init__(self, client_repo: ClientRepo, drop_table: bool = False) -> None:
         if drop_table:
-            peewee._database_proxy.drop_tables([BookingTable, StateHistory])
-        peewee._database_proxy.create_tables([BookingTable, StateHistory])
+            peewee._database_proxy.drop_tables([BookingTable])
+        peewee._database_proxy.create_tables([BookingTable])
         self.client_repo = client_repo
 
     def create(
