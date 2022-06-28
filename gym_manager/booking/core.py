@@ -189,7 +189,8 @@ class BookingSystem:
             for booking in self.repo.all(self._courts.values(), states, **filters):
                 yield booking, *self.block_range(booking.start, booking.end)
         else:
-            raise ValueError()
+            raise OperationalError("Both 'when' and 'filters' arguments cannot be missing when querying bookings",
+                                   when=when, filters=filters)
 
     def out_of_range(self, start_block: Block, duration: Duration) -> bool:
         """Returns True if a booking that starts at *start_block* and has the duration *duration* is out of the time
