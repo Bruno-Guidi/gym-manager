@@ -284,8 +284,8 @@ class SqliteActivityRepo(ActivityRepo):
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
                 if self._do_caching:
                     self.cache[activity.name] = activity
-                    logger.getChild(type(self).__name__).info(f"Activity with [activity.id={record.id}] not in cache. "
-                                                              f"The activity will be created from raw data.")
+                    logger.getChild(type(self).__name__).info(f"Activity with [activity.name={record.act_name}] not in "
+                                                              f"cache. The activity will be created from raw data.")
             yield activity
 
     def n_subscribers(self, activity: Activity) -> int:
