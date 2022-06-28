@@ -216,9 +216,11 @@ class BookingSystem:
             self, court: Court, client: Client, is_fixed: bool, when: date, start_block: Block, duration: Duration
     ) -> Booking:
         if self.out_of_range(start_block, duration):
-            raise ValueError()
+            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
+                                   duration=duration, start=self.start, end=self.end)
         if not self.booking_available(when, court, start_block, duration):
-            raise ValueError()
+            raise OperationalError("There is no available time for the booking.", start=start_block.start,
+                                   duration=duration)
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start_block.start, duration).time()
