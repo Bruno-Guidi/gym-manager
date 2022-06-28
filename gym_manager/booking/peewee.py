@@ -76,9 +76,9 @@ class SqliteBookingRepo(BookingRepo):
             year, month, day = when.year, when.month, when.day
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
                                           day == BookingTable.when.day)
-        # for filter_, value in filters.values():
-        #     bookings_q = bookings_q.join(peewee.ClientTable)
-        #     bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
+        for filter_, value in filters.values():
+            bookings_q = bookings_q.join(peewee.ClientTable)
+            bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
         for raw in bookings_q:
             start = time(raw.when.hour, raw.when.minute)
             state = State(raw.state, raw.updated_by)
