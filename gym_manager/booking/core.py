@@ -148,12 +148,10 @@ class BookingSystem:
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
         """
-        if start < self.start:
-            start = self.start
-        if start is not None:
-            yield from itertools.dropwhile(lambda block: block.start < start, self._blocks.values())
-        else:
+        if start is None or start < self.start:
             yield from self._blocks.values()
+        else:
+            yield from itertools.dropwhile(lambda block: block.start < start, self._blocks.values())
 
     def block_range(self, start: time, end: time) -> tuple[int, int]:
         """Returns the start and end block number for the given *start* and *end* time.
