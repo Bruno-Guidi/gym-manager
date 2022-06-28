@@ -207,7 +207,7 @@ class Client:
     def is_subscribed(self, activity: Activity) -> bool:
         """Returns True if the client subscribed to the *activity*.
         """
-        return activity in self._subscriptions
+        return activity.name in self._subscriptions
 
     def n_subscriptions(self) -> int:
         """Returns the number of activities subscriptions that the client has.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Type, Generator
+from typing import Generator
 
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
                     CompositeKey, prefetch, Proxy)
@@ -191,8 +191,7 @@ class SqliteClientRepo(ClientRepo):
 
 
 class ActivityTable(Model):
-    id = IntegerField(primary_key=True)
-    act_name = CharField()
+    act_name = CharField(primary_key=True)
     price = CharField()
     charge_once = BooleanField()
     description = TextField()
@@ -210,39 +209,38 @@ class SqliteActivityRepo(ActivityRepo):
         ActivityTable._meta.database.create_tables([ActivityTable])
 
         self._do_caching = cache_len > 0
-        self.cache = LRUCache(key_types=(int,), value_type=Activity, max_len=cache_len)
+        self.cache = LRUCache(key_types=(str, String), value_type=Activity, max_len=cache_len)
 
     # noinspection PyShadowingBuiltins
-    def get(self, id: int) -> Activity:
-        """Retrieves the activity with the given *id* in the repository, if it exists.
+    def get(self, name: str | String) -> Activity:
+        """Retrieves the activity with the given *name* in the repository, if it exists.
 
         Raises:
             KeyError if there is no activity with the given *id*.
         """
-        if self._do_caching and id in self.cache:
-            return self.cache[id]
+        if self._do_caching and name in self.cache:
+            return self.cache[name]
 
         activity: Activity
-        for record in ActivityTable.select().where(ActivityTable.id == id):
-            activity = Activity(record.id,
-                                String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+        for record in ActivityTable.select().where(ActivityTable.act_name == name):
+            activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                 Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                 record.charge_once,
                                 String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
             if self._do_caching:
-                self.cache[id] = activity
+                self.cache[name] = activity
             return activity
 
-        raise KeyError(f"There is no activity with the id '{id}'")
+        raise KeyError(f"There is no activity with the id '{name}'")
 
     def create(self, name: String, price: Currency, charge_once: bool, description: String) -> Activity:
         record = ActivityTable.create(act_name=name.as_primitive(),
                                       price=str(price),
                                       charge_once=charge_once,
                                       description=description.as_primitive())
-        activity = Activity(record.id, name, price, charge_once, description)
+        activity = Activity(name, price, charge_once, description)
         if self._do_caching:
-            self.cache[record.id] = activity
+            self.cache[record.act_name] = activity
         return activity
 
     def remove(self, activity: Activity, cascade_removing: bool = False):
@@ -262,32 +260,30 @@ class SqliteActivityRepo(ActivityRepo):
                             f"subscribed clients and [cascade_removing={cascade_removing}]")
 
         if self._do_caching:
-            self.cache.pop(activity.id)
-        ActivityTable.delete_by_id(activity.id)
+            self.cache.pop(activity.name)
+        ActivityTable.delete_by_id(activity.name)
 
     def update(self, activity: Activity):
-        ActivityTable.replace(id=activity.id,
-                              act_name=activity.name.as_primitive(),
+        ActivityTable.replace(act_name=activity.name.as_primitive(),
                               price=str(activity.price),
                               charge_once=activity.charge_once,
                               description=activity.description.as_primitive()).execute()
 
         if self._do_caching:
-            self.cache.move_to_front(activity.id)
+            self.cache.move_to_front(activity.name)
 
     def all(self) -> Generator[Activity, None, None]:
         for record in ActivityTable.select():
             activity: Activity
-            if self._do_caching and record.id in self.cache:
-                activity = self.cache[record.id]
+            if self._do_caching and record.act_name in self.cache:
+                activity = self.cache[record.act_name]
             else:
-                activity = Activity(record.id,
-                                    String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+                activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                     Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                     record.charge_once,
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS))
                 if self._do_caching:
-                    self.cache[activity.id] = activity
+                    self.cache[activity.name] = activity
                     logger.getChild(type(self).__name__).info(f"Activity with [activity.id={record.id}] not in cache. "
                                                               f"The activity will be created from raw data.")
             yield activity
@@ -295,7 +291,7 @@ class SqliteActivityRepo(ActivityRepo):
     def n_subscribers(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
         """
-        return SubscriptionTable.select().where(SubscriptionTable.activity == activity.id).count()
+        return SubscriptionTable.select().where(SubscriptionTable.activity == activity.name).count()
 
 
 class TransactionTable(Model):
@@ -415,19 +411,19 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         SubscriptionTable.create(
             when=subscription.when,
             client=ClientTable.get_by_id(subscription.client.dni.as_primitive()),
-            activity=ActivityTable.get_by_id(subscription.activity.id),
+            activity=ActivityTable.get_by_id(subscription.activity.name),
             transaction=None if subscription.transaction is None else TransactionTable.get_by_id(
                 subscription.transaction.id)
         )
 
     def remove(self, subscription: Subscription):
         SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.dni.as_primitive())
-                                         & (SubscriptionTable.activity_id == subscription.activity.id)).execute()
+                                         & (SubscriptionTable.activity_id == subscription.activity.name)).execute()
 
     def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
         """Registers in the repository that the *client* was charged for the *activity*.
         """
-        sub_record = SubscriptionTable.get_by_id((client.dni.as_primitive(), activity.id))
+        sub_record = SubscriptionTable.get_by_id((client.dni.as_primitive(), activity.name))
         trans_record = TransactionTable.get_by_id(transaction.id)
         sub_record.transaction = trans_record
         sub_record.save()
