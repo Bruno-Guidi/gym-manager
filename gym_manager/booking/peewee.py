@@ -1,5 +1,5 @@
 from datetime import date, time
-from typing import Generator
+from typing import Generator, Iterable
 
 from peewee import Model, DateTimeField, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch
 
@@ -56,7 +56,7 @@ class SqliteBookingRepo(BookingRepo):
         record.save()
 
     def all(
-            self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
+            self, existing_courts: Iterable[Court], states: tuple[str, ...], when: date | None = None, **filters
     ) -> Generator[Booking, None, None]:
         bookings_q = BookingTable.select()
         if len(states) > 0:
@@ -81,5 +81,6 @@ class SqliteBookingRepo(BookingRepo):
                     trans_record.method, trans_record.responsible, trans_record.description
                 )
 
-            yield Booking(record.id, courts[record.court], client, record.is_fixed, state, record.when, start,
+            court_dict = {court.name: court for court in existing_courts}
+            yield Booking(record.id, court_dict[record.court], client, record.is_fixed, state, record.when, start,
                           record.end, transaction)

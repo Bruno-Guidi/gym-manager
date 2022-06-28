@@ -1,5 +1,5 @@
 from datetime import time, date
-from typing import Generator
+from typing import Generator, Iterable
 
 import pytest
 
@@ -20,7 +20,7 @@ class MockBookingRepo(BookingRepo):
         pass
 
     def all(
-            self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
+            self, existing_courts: Iterable[Court], states: tuple[str, ...], when: date | None = None, **filters
     ) -> Generator[Booking, None, None]:
         yield from self.bookings
 

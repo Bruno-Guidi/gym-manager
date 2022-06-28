@@ -180,10 +180,10 @@ class BookingSystem:
             **filters: if given, and *when* is None, filter bookings that pass the Filter implementations received.
         """
         if when is not None:
-            for booking in self.repo.all(self.courts, states, when):
+            for booking in self.repo.all(self.courts.values(), states, when):
                 yield booking, *self.block_range(booking.start, booking.end)
         elif len(filters) > 0:
-            for booking in self.repo.all(self.courts, states, **filters):
+            for booking in self.repo.all(self.courts.values(), states, **filters):
                 yield booking, *self.block_range(booking.start, booking.end)
         else:
             raise ValueError()
@@ -203,7 +203,7 @@ class BookingSystem:
             raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
                                    duration=duration, start=self.start, end=self.end)
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all(self.courts, (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
+        for booking in self.repo.all(self.courts.values(), (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
             if booking.court == court and booking.collides(start_block.start, end):
                 return False
         return True
@@ -248,6 +248,6 @@ class BookingRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, courts: dict[str, Court], states: tuple[str, ...], when: date | None = None, **filters
+            self, existing_courts: Iterable[Court], states: tuple[str, ...], when: date | None = None, **filters
     ) -> Generator[Booking, None, None]:
         raise NotImplementedError
