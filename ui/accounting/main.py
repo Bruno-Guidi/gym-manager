@@ -23,9 +23,14 @@ class Controller:
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
 
+        # If a client is given, set the filter with it.
         if client is not None:
             self.main_ui.search_box.set_filter("client", client.name.as_primitive())
         self.load_transactions()
+
+        # Sets callbacks
+        # noinspection PyUnresolvedReferences
+        self.main_ui.search_btn.clicked.connect(self.load_transactions)
 
     def load_transactions(self):
         self.main_ui.transaction_table.setRowCount(0)
