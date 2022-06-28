@@ -19,6 +19,14 @@ def pay_day_passed(last_paid_on: date, today: date) -> bool:
     return today - ONE_MONTH_TD >= last_paid_on
 
 
+class OperationalError(Exception):
+    """Exception raised when there is an error while doing a system operation.
+    """
+    def __init__(self, cause: str, **involved_things) -> None:
+        super().__init__(cause)
+        self.involved_things = involved_things
+
+
 class ValidationError(Exception):
     """Exception raised when a validation fails in Validatable.validate(args) method.
     """
