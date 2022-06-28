@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator
 
-from gym_manager.core.base import Client, Activity, Transaction
+from gym_manager.core.base import Client, Activity, Transaction, OperationalError
 from gym_manager.core.system import AccountingSystem
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
@@ -158,6 +158,9 @@ class BookingSystem:
     def block_range(self, start: time, end: time) -> tuple[int, int]:
         """Returns the start and end block number for the given *start* and *end* time.
         """
+        if start < self.start or end > self.end:
+            raise OperationalError("Invalid start and/or end time", valid_start=self.start, valid_end=self.end,
+                                   start=start, end=end)
         if end == self.end:
             # Because there is no Block whose start time is equal to *self.end*, if *self._blocks* is indexed with
             # *end*, a KeyError will be raised. This is the case when a Booking ends in the last valid booking hour.

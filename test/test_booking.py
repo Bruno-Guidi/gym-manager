@@ -1,6 +1,9 @@
 from datetime import time
 
+import pytest
+
 from gym_manager.booking.core import time_range, Booking, Court, BookingSystem, Block
+from gym_manager.core.base import OperationalError
 
 
 def test_timeRange():
@@ -52,8 +55,8 @@ def test_BookingSystem_blocks():
                                    activity=None, repo=None, accounting_system=None)
 
     # start is under the booking system start.
-    expected = [Block(0, time(8, 0), end=time(9, 0)), Block(0, time(9, 0), end=time(10, 0)),
-                Block(0, time(10, 0), end=time(11, 0)), Block(0, time(11, 0), end=time(12, 0))]
+    expected = [Block(0, time(8, 0), end=time(9, 0)), Block(1, time(9, 0), end=time(10, 0)),
+                Block(2, time(10, 0), end=time(11, 0)), Block(3, time(11, 0), end=time(12, 0))]
     assert expected == [b for b in booking_system.blocks(start=time(7, 0))]
 
     # start is over the booking system start.
@@ -65,10 +68,17 @@ def test_BookingSystem_blocks():
 
 
 def test_BookingSystem_blockRange():
-    # booking start == booking system start
-    # booking end == booking system end
-    # booking start and/or end out of range
-    pass
+    # noinspection PyTypeChecker
+    booking_system = BookingSystem(courts_names=(), durations=(), start=time(8, 0), end=time(12, 0), minute_step=60,
+                                   activity=None, repo=None, accounting_system=None)
+
+    # start and end in range.
+    assert booking_system.block_range(time(8, 0), time(12, 0)) == (0, 4)
+    with pytest.raises(OperationalError):
+        # start out of range.
+        booking_system.block_range(time(7, 0), time(12, 0))
+        # end out of range.
+        booking_system.block_range(time(8, 0), time(12, 30))
 
 
 def test_BookingSystem_bookings():
