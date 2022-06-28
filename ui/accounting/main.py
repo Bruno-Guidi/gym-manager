@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date
 
 from PyQt5.QtCore import QRect, Qt
@@ -14,24 +16,20 @@ from ui.widgets import SearchBox
 class Controller:
 
     def __init__(
-            self, accounting_system: AccountingSystem, transaction_table: QTableWidget, from_line: QDateEdit,
-            to_line: QDateEdit, search_box: SearchBox, client: Client | None = None
+            self, main_ui: AccountingMainUI, accounting_system: AccountingSystem, client: Client | None = None
     ) -> None:
-        self.transaction_table = transaction_table
-        self.from_line = from_line
-        self.to_line = to_line
-        self.search_box = search_box
+        self.main_ui = main_ui
 
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
 
         if client is not None:
-            self.search_box.set_filter("client", client.name.as_primitive())
-        self.load_transactions(client=client)
+            self.main_ui.search_box.set_filter("client", client.name.as_primitive())
+        self.load_transactions()
 
-    def load_transactions(self, **kwargs):
-        self.transaction_table.setRowCount(0)
-        self.transaction_table.setRowCount(self.page_len)
+    def load_transactions(self):
+        self.main_ui.transaction_table.setRowCount(0)
+        self.main_ui.transaction_table.setRowCount(self.page_len)
 
         from_date_filter = DateGreater("from", display_name="Desde",
                                        translate_fun=lambda trans, when: trans.when >= when)
@@ -39,19 +37,19 @@ class Controller:
                                     translate_fun=lambda trans, when: trans.when <= when)
         transactions = self.accounting_system.transactions(
             self.current_page, self.page_len,
-            from_date=(from_date_filter, self.from_line.date().toPyDate()),
-            to_date=(to_date_filter, self.to_line.date().toPyDate()),
-            **self.search_box.filters()
+            from_date=(from_date_filter, self.main_ui.from_line.date().toPyDate()),
+            to_date=(to_date_filter, self.main_ui.to_line.date().toPyDate()),
+            **self.main_ui.search_box.filters()
         )
         for row, transaction in enumerate(transactions):
-            self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
-            self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
-            self.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
-            self.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
-            self.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
-            self.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
-            self.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
-            self.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
+            self.main_ui.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
+            self.main_ui.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
+            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
+            self.main_ui.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
+            self.main_ui.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
+            self.main_ui.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
+            self.main_ui.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
+            self.main_ui.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
 
 
 class AccountingMainUI(QMainWindow):
@@ -59,8 +57,7 @@ class AccountingMainUI(QMainWindow):
     def __init__(self, accounting_system: AccountingSystem, client: Client | None = None) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(accounting_system, self.transaction_table, self.from_line, self.to_line,
-                                     self.search_box, client)
+        self.controller = Controller(self, accounting_system, client)
 
         self.search_btn.clicked.connect(self.controller.load_transactions)
 
