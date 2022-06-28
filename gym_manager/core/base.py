@@ -72,12 +72,14 @@ class Number(Validatable):
     """int wrapper that supports min and max optional values.
     """
 
-    def __eq__(self, o) -> bool:
-        if isinstance(o, type(self._value)):
-            logger.getChild(type(self).__name__).warning(f"Comparing '{repr(self)}' with '{repr(o)}'")
+    def __eq__(self, other: int | Number) -> bool:
+        if isinstance(other, type(self._value)):
+            logger.getChild(type(self).__name__).warning(f"Comparing '{repr(self)}' with '{repr(other)}'")
 
-            return self._value == o
-        return self._value == o._value
+            return self._value == other
+        if isinstance(other, type(self)):
+            return self._value == other._value
+        return NotImplemented
 
     def __hash__(self) -> int:
         return hash(self._value)
@@ -114,13 +116,16 @@ class String(Validatable):
     """str wrapper that supports empty str and str with a max length.
     """
 
-    def __eq__(self, o: object) -> bool:
-        if isinstance(o, String):
-            print("Comparison between String and str", self._value, o)
-            return self._value.lower() == o._value.lower()
-        if isinstance(o, str):
-            return self._value.lower() == o.lower()
+    def __eq__(self, other: str | String) -> bool:
+        if isinstance(other, type(self._value)):
+            logger.getChild(type(self).__name__).warning(f"Comparing '{repr(self)}' with '{repr(other)}'")
+            return self._value == other
+        if isinstance(other, type(self)):
+            return self._value.lower() == other._value.lower()
         return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self._value)
 
     def validate(self, value: str, **kwargs) -> str:
         """Validates the given *value*. If the validation succeeds, return the given *value*.
@@ -187,22 +192,22 @@ class Client:
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
     is_active: bool = field(compare=False)
-    _subscriptions: dict[int, Subscription] = field(default_factory=dict, compare=False, init=False)
+    _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
 
     def add(self, subscription: Subscription):
         """Registers the given *subscription*.
         """
-        self._subscriptions[subscription.activity.id] = subscription
+        self._subscriptions[subscription.activity.name] = subscription
 
     def unsubscribe(self, activity: Activity):
         """Unsubscribes the client from the given *activity*.
         """
-        self._subscriptions.pop(activity.id)
+        self._subscriptions.pop(activity.name)
 
     def is_subscribed(self, activity: Activity) -> bool:
         """Returns True if the client subscribed to the *activity*.
         """
-        return activity.id in self._subscriptions
+        return activity.name in self._subscriptions
 
     def n_subscriptions(self) -> int:
         """Returns the number of activities subscriptions that the client has.
@@ -217,7 +222,7 @@ class Client:
     def register_charge(self, activity: Activity, transaction: Transaction):
         """Registers that the client was charged for the *activity* subscription.
         """
-        self._subscriptions[activity.id].register_charge(transaction)
+        self._subscriptions[activity.name].register_charge(transaction)
 
 
 @dataclass
@@ -225,8 +230,7 @@ class Activity:
     """Stores general information about an activity.
     """
 
-    id: int
-    name: String = field(compare=False)
+    name: String
     price: Currency = field(compare=False)
     charge_once: bool = field(compare=False)
     description: String = field(compare=False)

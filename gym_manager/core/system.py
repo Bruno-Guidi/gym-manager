@@ -52,7 +52,7 @@ class ActivityManager:
         client.add(sub)
 
         logger.getChild(type(self).__name__).info(
-            f"Client with [dni={client.dni}] subscribed in the activity with [activity_id={activity.id}], with the "
+            f"Client with [dni={client.dni}] subscribed in the activity with [activity_id={activity.name}], with the "
             f"payment [payment={'None' if transaction is None else transaction.id}].")
 
         return sub

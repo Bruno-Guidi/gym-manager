@@ -177,7 +177,7 @@ def test_Subscription_payDayPassed():
 def test_Subscription_registerCharge_raisesValueError():
     client = Client(Number(1), name=None, admission=None, telephone=None, direction=None, is_active=True)
     other_client = Client(Number(2), name=None, admission=None, telephone=None, direction=None, is_active=True)
-    activity = Activity(0, String("name", max_len=20), price=None, charge_once=True, description=None)
+    activity = Activity(String("name", max_len=20), price=None, charge_once=True, description=None)
 
     with pytest.raises(ValueError):
         trans = Transaction(1, type=None, client=other_client, when=None, amount=None, method=None, responsible=None,

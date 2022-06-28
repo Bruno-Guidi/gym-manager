@@ -206,7 +206,7 @@ def test_removeActivity():
     # Feature to test.
     activity_manager.remove(act1)
     with pytest.raises(KeyError):
-        activity_repo.get(act1.id)  # The activity is no longer in the repo.
+        activity_repo.get(act1.name)  # The activity is no longer in the repo.
         assert not cli.is_subscribed(act1)  # The client is no longer signed up in the nonexistent activity.
 
 
