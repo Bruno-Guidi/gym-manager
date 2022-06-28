@@ -25,10 +25,9 @@ class BookingTable(Model):
 
 class SqliteBookingRepo(BookingRepo):
 
-    def __init__(self, client_repo: ClientRepo, drop_table: bool = False) -> None:
-        if drop_table:
-            peewee._database_proxy.drop_tables([BookingTable])
-        peewee._database_proxy.create_tables([BookingTable])
+    def __init__(self, client_repo: ClientRepo) -> None:
+        BookingTable._meta.database.create_tables([BookingTable])
+
         self.client_repo = client_repo
 
     def create(
