@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QLabel
 
 from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, BOOKING_CANCELLED
+from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, ONE_MONTH_TD
 from gym_manager.core.persistence import ClientRepo
 from gym_manager.core.system import AccountingSystem
@@ -188,21 +189,20 @@ class HistoryController:
         to_date_filter = DateLesser("to", display_name="Hasta",
                                     translate_fun=lambda trans, when: trans.when <= when)
         bookings = self.booking_system.bookings(
-            (BOOKING_CANCELLED, BOOKING_PAID),
+            states=(BOOKING_CANCELLED, BOOKING_PAID),
             from_date=(from_date_filter, self.history_ui.from_date_edit.date().toPyDate()),
             to_date=(to_date_filter, self.history_ui.to_date_edit.date().toPyDate()),
             **self.history_ui.search_box.filters()
         )
         for row, (booking, _, _) in enumerate(bookings):
-            print(row, booking.client.name)
-            # self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
-            # self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
-            # self.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
-            # self.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
-            # self.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
-            # self.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
-            # self.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
-            # self.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
+            self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
+            self.history_ui.booking_table.setItem(row, 1,
+                                                  QTableWidgetItem(str(booking.when.strftime(constants.DATE_FORMAT))))
+            self.history_ui.booking_table.setItem(row, 2, QTableWidgetItem(str(booking.court.name)))
+            self.history_ui.booking_table.setItem(row, 3, QTableWidgetItem(str(booking.start)))
+            self.history_ui.booking_table.setItem(row, 4, QTableWidgetItem(str(booking.end)))
+            self.history_ui.booking_table.setItem(row, 5, QTableWidgetItem(str(booking.state.name)))
+            self.history_ui.booking_table.setItem(row, 6, QTableWidgetItem(str(booking.state.updated_by)))
 
 
 class HistoryUI(QMainWindow):
@@ -275,9 +275,8 @@ class HistoryUI(QMainWindow):
         self.layout.addWidget(self.booking_table)
         config_table(
             target=self.booking_table, allow_resizing=True,
-            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120,
-                     "Responsable": 175,
-                     "Descripción": 200}
+            columns={"Cliente": 175, "Fecha": 100, "Cancha": 100, "Inicio": 120, "Fin": 120, "Estado": 100,
+                     "Responsable": 175}
         )
 
         # Index.
