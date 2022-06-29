@@ -6,7 +6,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox, \
     QCheckBox, QPushButton, QDialog, QDateEdit, QHBoxLayout, QLineEdit
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, current_block_start
 from gym_manager.core import constants
 from gym_manager.core.base import TextLike, ClientLike, String
 from gym_manager.core.persistence import ClientRepo
@@ -31,7 +31,9 @@ class BookController:
         self.book_ui = book_ui
 
         fill_combobox(book_ui.court_combobox, self.booking_system.courts(), lambda court: court.name)
-        fill_combobox(book_ui.block_combobox, self.booking_system.blocks(), lambda block: str(block.start))
+        fill_combobox(book_ui.block_combobox,
+                      self.booking_system.blocks(start=current_block_start(self.booking_system.blocks())),
+                      lambda block: str(block.start))
         fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
         # noinspection PyUnresolvedReferences
