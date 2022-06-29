@@ -312,7 +312,7 @@ class CancelUI(QDialog):
 class PreChargeController:
 
     def __init__(
-            self, booking_system: BookingSystem, accounting_system: AccountingSystem, pre_charge_ui: PreChargeUI
+            self, pre_charge_ui: PreChargeUI, booking_system: BookingSystem, accounting_system: AccountingSystem
     ) -> None:
         self.booking_system = booking_system
         self.accounting_system = accounting_system
@@ -320,21 +320,29 @@ class PreChargeController:
 
         self.pre_charge_ui = pre_charge_ui
 
+        # noinspection PyUnresolvedReferences
         self.pre_charge_ui.search_btn.clicked.connect(self.search_bookings)
+        # noinspection PyUnresolvedReferences
         self.pre_charge_ui.booking_combobox.currentIndexChanged.connect(self._update_form)
+        # noinspection PyUnresolvedReferences
         self.pre_charge_ui.confirm_btn.clicked.connect(self.charge)
 
     def search_bookings(self):
-        bookings = self.booking_system.bookings((BOOKING_TO_HAPPEN,),
-                                                **self.pre_charge_ui.search_box.filters())  # ToDo allow no paginating.
-        fill_combobox(self.pre_charge_ui.booking_combobox, (booking for booking, _, _ in bookings), booking_summary)
+        if self.pre_charge_ui.search_box.is_empty():
+            Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
+        else:
+            bookings = self.booking_system.bookings(states=(BOOKING_TO_HAPPEN,),
+                                                    **self.pre_charge_ui.search_box.filters())
+            fill_combobox(self.pre_charge_ui.booking_combobox, (booking for booking, _, _ in bookings), booking_summary)
 
     def _update_form(self):
         booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
+        self.pre_charge_ui.client_line.setText(str(booking.client.name))
         self.pre_charge_ui.court_line.setText(booking.court.name)
         self.pre_charge_ui.date_line.setText(str(booking.when))
         self.pre_charge_ui.start_line.setText(str(booking.start))
         self.pre_charge_ui.end_line.setText(str(booking.end))
+        self.pre_charge_ui.fixed_checkbox.setChecked(booking.is_fixed)
 
     def charge(self):
         booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
@@ -358,10 +366,10 @@ class PreChargeUI(QDialog):
     def __init__(self, booking_system: BookingSystem, accounting_system: AccountingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = PreChargeController(booking_system, accounting_system, self)
+        self.controller = PreChargeController(self, booking_system, accounting_system)
 
     def _setup_ui(self):
-        width, height = 600, 400
+        width, height = 600, 500
         self.resize(width, height)
 
         self.central_widget = QWidget(self)
@@ -390,45 +398,53 @@ class PreChargeUI(QDialog):
         self.layout.addLayout(self.form_layout)
         config_layout(self.form_layout, spacing=10)
 
-        self.client_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.client_lbl, 0, 0, 1, 1)
-        config_lbl(self.client_lbl, "Cliente")
+        self.booking_lbl = QLabel(self.widget)
+        self.form_layout.addWidget(self.booking_lbl, 0, 0, 1, 1)
+        config_lbl(self.booking_lbl, "Reserva")
 
         self.booking_combobox = QComboBox()
         self.form_layout.addWidget(self.booking_combobox, 0, 1, 1, 1)
         config_combobox(self.booking_combobox, height=35)
 
+        self.client_lbl = QLabel(self.widget)
+        self.form_layout.addWidget(self.client_lbl, 1, 0, 1, 1)
+        config_lbl(self.client_lbl, "Cliente")
+
+        self.client_line = QLineEdit(self.widget)
+        self.form_layout.addWidget(self.client_line, 1, 1, 1, 1)
+        config_line(self.client_line, height=35, enabled=False)
+
         self.court_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.court_lbl, 1, 0, 1, 1)
+        self.form_layout.addWidget(self.court_lbl, 2, 0, 1, 1)
         config_lbl(self.court_lbl, "Cancha")
 
         self.court_line = QLineEdit(self.widget)
-        self.form_layout.addWidget(self.court_line, 1, 1, 1, 1)
-        config_line(self.court_line, height=35)
+        self.form_layout.addWidget(self.court_line, 2, 1, 1, 1)
+        config_line(self.court_line, height=35, enabled=False)
 
         self.date_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.date_lbl, 2, 0, 1, 1)
+        self.form_layout.addWidget(self.date_lbl, 3, 0, 1, 1)
         config_lbl(self.date_lbl, "Fecha")
 
         self.date_line = QLineEdit(self.widget)
-        self.form_layout.addWidget(self.date_line, 2, 1, 1, 1)
-        config_line(self.date_line, height=35)
+        self.form_layout.addWidget(self.date_line, 3, 1, 1, 1)
+        config_line(self.date_line, height=35, enabled=False)
 
         self.block_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.block_lbl, 3, 0, 1, 1)
-        config_lbl(self.block_lbl, "Hora")
+        self.form_layout.addWidget(self.block_lbl, 4, 0, 1, 1)
+        config_lbl(self.block_lbl, "Inicio")
 
         self.start_line = QLineEdit(self.widget)
-        self.form_layout.addWidget(self.start_line, 3, 1, 1, 1)
-        config_line(self.start_line, height=35)
+        self.form_layout.addWidget(self.start_line, 4, 1, 1, 1)
+        config_line(self.start_line, height=35, enabled=False)
 
         self.duration_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.duration_lbl, 4, 0, 1, 1)
-        config_lbl(self.duration_lbl, "Duración")
+        self.form_layout.addWidget(self.duration_lbl, 5, 0, 1, 1)
+        config_lbl(self.duration_lbl, "Fin")
 
         self.end_line = QLineEdit(self.widget)
-        self.form_layout.addWidget(self.end_line, 4, 1, 1, 1)
-        config_line(self.end_line, height=35)
+        self.form_layout.addWidget(self.end_line, 5, 1, 1, 1)
+        config_line(self.end_line, height=35, enabled=False)
 
         self.fixed_checkbox = QCheckBox()
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
