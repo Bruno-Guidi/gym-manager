@@ -86,8 +86,12 @@ class SearchBox(QWidget):
 class Dialog(QDialog):
 
     @classmethod
-    def confirm(cls, question: str) -> bool:
+    def confirm(cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None) -> bool:
         dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True)
+        if ok_btn_text is not None:
+            dialog.ok_btn.setText(ok_btn_text)
+        if cancel_btn_text is not None:
+            dialog.cancel_btn.setText(cancel_btn_text)
         dialog.exec_()
         return dialog.confirmed
 

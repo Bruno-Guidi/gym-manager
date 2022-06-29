@@ -14,7 +14,7 @@ from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ChargeUI
 from ui.widget_config import config_layout, config_lbl, config_combobox, config_btn, config_checkbox, \
     fill_combobox, config_date_edit, config_line
-from ui.widgets import SearchBox, Dialog
+from ui.widgets import SearchBox, Dialog, Field
 
 
 def booking_summary(booking: Booking):
@@ -182,18 +182,28 @@ class CancelController:
         self.cancel_ui.date_line.setText(str(booking.when))
         self.cancel_ui.start_line.setText(str(booking.start))
         self.cancel_ui.end_line.setText(str(booking.end))
+        self.cancel_ui.fixed_checkbox.setChecked(booking.is_fixed)
 
     def cancel(self):
         self.booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
 
         if self.booking is None:
             Dialog.info("Error", "Seleccione una reserva.")
+        elif not self.cancel_ui.responsible_field.valid_value():
+            Dialog.info("Error", "El campo responsable no es válido.")
         else:
-            remains_fixed = False
+            cancel_fixed = False
             if self.booking.is_fixed:
-                remains_fixed = not Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?")
-            self.booking_system.cancel(self.booking, "", remains_fixed)
-            Dialog.info("Éxito", "El turno ha sido cancelado correctamente.")
+                cancel_fixed = Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?",
+                                              ok_btn_text="Si", cancel_btn_text="No")
+            self.booking_system.cancel(self.booking, self.cancel_ui.responsible_field.value().as_primitive(),
+                                       cancel_fixed)
+            msg: str
+            if self.booking.is_fixed and cancel_fixed:
+                msg = "El turno fijo ha sido cancelado correctamente."
+            else:
+                msg = "El turno ha sido cancelado correctamente."
+            Dialog.info("Éxito", msg)
             self.cancel_ui.booking_combobox.window().close()
 
 
@@ -286,6 +296,14 @@ class CancelUI(QDialog):
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
         config_checkbox(self.fixed_checkbox, checked=False, text="Turno fijo", enabled=False)
 
+        self.responsible_lbl = QLabel(self.widget)
+        self.form_layout.addWidget(self.responsible_lbl, 6, 0, 1, 1)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = Field(String, self.widget, max_len=constants.TRANSACTION_RESP_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 6, 1, 1, 1)
+        config_line(self.responsible_field, height=35)
+
         self.confirm_btn = QPushButton(self.widget)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
         config_btn(self.confirm_btn, "Eliminar", font_size=18, width=200)
@@ -307,7 +325,8 @@ class PreChargeController:
         self.pre_charge_ui.confirm_btn.clicked.connect(self.charge)
 
     def search_bookings(self):
-        bookings = self.booking_system.bookings((BOOKING_TO_HAPPEN,), **self.pre_charge_ui.search_box.filters())  # ToDo allow no paginating.
+        bookings = self.booking_system.bookings((BOOKING_TO_HAPPEN,),
+                                                **self.pre_charge_ui.search_box.filters())  # ToDo allow no paginating.
         fill_combobox(self.pre_charge_ui.booking_combobox, (booking for booking, _, _ in bookings), booking_summary)
 
     def _update_form(self):
@@ -418,5 +437,3 @@ class PreChargeUI(QDialog):
         self.confirm_btn = QPushButton(self.widget)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
         config_btn(self.confirm_btn, "Siguiente", font_size=18, width=200)
-
-
