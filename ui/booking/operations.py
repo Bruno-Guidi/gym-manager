@@ -23,18 +23,20 @@ def booking_summary(booking: Booking):
 
 class BookController:
 
-    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, book_ui: BookUI) -> None:
+    def __init__(self, book_ui: BookUI, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
         self.client_repo = client_repo
         self.booking_system = booking_system
         self.booking: Booking | None = None
 
         self.book_ui = book_ui
 
-        fill_combobox(book_ui.court_combobox, self.booking_system._courts.values(), lambda court: court.name)
+        fill_combobox(book_ui.court_combobox, self.booking_system.courts(), lambda court: court.name)
         fill_combobox(book_ui.block_combobox, self.booking_system.blocks(), lambda block: str(block.start))
         fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
+        # noinspection PyUnresolvedReferences
         self.book_ui.search_btn.clicked.connect(self.search_clients)
+        # noinspection PyUnresolvedReferences
         self.book_ui.confirm_btn.clicked.connect(self.book)
 
     def search_clients(self):
@@ -70,7 +72,7 @@ class BookUI(QDialog):
     def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = BookController(client_repo, booking_system, self)
+        self.controller = BookController(self, client_repo, booking_system)
 
     def _setup_ui(self):
         width, height = 600, 400
