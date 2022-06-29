@@ -38,8 +38,11 @@ class BookController:
         self.book_ui.confirm_btn.clicked.connect(self.book)
 
     def search_clients(self):
-        clients = self.client_repo.all(1, 20, **self.book_ui.search_box.filters())  # ToDo allow no paginating.
-        fill_combobox(self.book_ui.client_combobox, clients, lambda client: client.name.as_primitive())
+        if self.book_ui.search_box.is_empty():
+            Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
+        else:
+            clients = self.client_repo.all(page=1, **self.book_ui.search_box.filters())
+            fill_combobox(self.book_ui.client_combobox, clients, lambda client: client.name.as_primitive())
 
     def book(self):
         client = self.book_ui.client_combobox.currentData(Qt.UserRole)
