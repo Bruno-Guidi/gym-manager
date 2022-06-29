@@ -79,6 +79,9 @@ class SearchBox(QWidget):
         selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
         return selected.passes(to_filter, self.search_field.text())
 
+    def is_empty(self) -> bool:
+        return len(self.search_field.text()) == 0 or self.search_field.text().isspace()
+
 
 class Dialog(QDialog):
 
