@@ -18,7 +18,7 @@ from ui.widgets import SearchBox, Dialog, Field
 
 
 def booking_summary(booking: Booking):
-    return f"{booking.client.name.as_primitive()} - {booking.when} - {booking.court.name} - {booking.state.name}"
+    return f"{booking.client.name.as_primitive()} - {booking.when.strftime(constants.DATE_FORMAT)} - {booking.court.name}"
 
 
 class BookController:
