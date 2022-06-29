@@ -33,6 +33,10 @@ class Controller:
         self.main_ui.cancel_button.clicked.connect(self.cancel_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.see_history_action.triggered.connect(self.history_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.book_btn.clicked.connect(self.book_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_btn.clicked.connect(self.charge_ui)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -95,8 +99,6 @@ class BookingMainUI(QMainWindow):
         super().__init__()
         self._setup_ui()
         self.controller = Controller(self, client_repo, booking_system, accounting_system)
-        self.book_btn.clicked.connect(self.controller.book_ui)
-        self.charge_btn.clicked.connect(self.controller.charge_ui)
 
     def _setup_ui(self):
         width, height = 800, 600
