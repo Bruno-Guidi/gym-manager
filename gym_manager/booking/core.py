@@ -40,6 +40,13 @@ def combine(base_date: date, start: time | None = None, duration: Duration | Non
     return dt
 
 
+def current_block_start(blocks: Iterable[Block]) -> time:
+    """Returns the start time of the first block whose start time hasn't passed yet.
+    """
+    for block in itertools.dropwhile(lambda b: b.start < datetime.now().time(), blocks):
+        return block.start
+
+
 Court = namedtuple("Court", ["name", "id"])
 
 
@@ -245,9 +252,9 @@ class BookingSystem:
 
         return booking
 
-    def cancel(self, booking: Booking, responsible: str, remains_fixed: bool = False):
+    def cancel(self, booking: Booking, responsible: str, cancel_fixed: bool = False):
         prev_state = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
-        booking.is_fixed = remains_fixed
+        # booking.is_fixed = cancel_fixed  # ToDo fixed booking handling.
         self.repo.update(booking, prev_state)
 
     def register_charge(self, booking: Booking, transaction: Transaction):

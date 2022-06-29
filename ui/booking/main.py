@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QLabel
 
 from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, BOOKING_CANCELLED
+from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, ONE_MONTH_TD
 from gym_manager.core.persistence import ClientRepo
 from gym_manager.core.system import AccountingSystem
@@ -19,8 +20,8 @@ from ui.widgets import SearchBox
 class Controller:
 
     def __init__(
-            self, client_repo: ClientRepo, booking_system: BookingSystem, accounting_system: AccountingSystem,
-            main_ui: BookingMainUI
+            self, main_ui: BookingMainUI, client_repo: ClientRepo, booking_system: BookingSystem,
+            accounting_system: AccountingSystem
     ) -> None:
         self.client_repo = client_repo
         self.booking_system = booking_system
@@ -29,8 +30,14 @@ class Controller:
 
         self.load_bookings()
 
+        # noinspection PyUnresolvedReferences
         self.main_ui.cancel_button.clicked.connect(self.cancel_ui)
+        # noinspection PyUnresolvedReferences
         self.main_ui.see_history_action.triggered.connect(self.history_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.book_btn.clicked.connect(self.book_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_btn.clicked.connect(self.charge_ui)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -60,12 +67,14 @@ class Controller:
             self._load_booking(booking, start, end)
 
     def book_ui(self):
+        # noinspection PyAttributeOutsideInit
         self._book_ui = BookUI(self.client_repo, self.booking_system)
         self._book_ui.exec_()
         if self._book_ui.controller.booking is not None:
             self._load_booking(self._book_ui.controller.booking)
 
     def cancel_ui(self):
+        # noinspection PyAttributeOutsideInit
         self._cancel_ui = CancelUI(self.booking_system)
         self._cancel_ui.exec_()
         removed = self._cancel_ui.controller.booking
@@ -76,10 +85,12 @@ class Controller:
                 self.main_ui.booking_table.setSpan(i, removed.court.id, 1, 1)
 
     def charge_ui(self):
+        # noinspection PyAttributeOutsideInit
         self._precharge_ui = PreChargeUI(self.booking_system, self.accounting_system)
         self._precharge_ui.exec_()
 
     def history_ui(self):
+        # noinspection PyAttributeOutsideInit
         self._history_ui = HistoryUI(self.booking_system)
         self._history_ui.setWindowModality(Qt.ApplicationModal)
         self._history_ui.show()
@@ -92,9 +103,7 @@ class BookingMainUI(QMainWindow):
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, booking_system, accounting_system, self)
-        self.book_btn.clicked.connect(self.controller.book_ui)
-        self.charge_btn.clicked.connect(self.controller.charge_ui)
+        self.controller = Controller(self, client_repo, booking_system, accounting_system)
 
     def _setup_ui(self):
         width, height = 800, 600
@@ -110,46 +119,46 @@ class BookingMainUI(QMainWindow):
 
         self.widget = QWidget(self.central_widget)
         self.widget.setGeometry(QRect(0, 0, width, height))
-        self.vbox = QVBoxLayout(self.widget)
-        config_layout(self.vbox, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10, spacing=10)
+        self.layout = QVBoxLayout(self.widget)
+        config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10, spacing=10)
 
-        self.buttons_hbox = QHBoxLayout()
-        self.vbox.addLayout(self.buttons_hbox)
-        config_layout(self.buttons_hbox, spacing=50)
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        config_layout(self.buttons_layout, spacing=50)
 
         self.charge_btn = QPushButton(self.widget)
-        self.buttons_hbox.addWidget(self.charge_btn)
+        self.buttons_layout.addWidget(self.charge_btn)
         config_btn(self.charge_btn, "Cobrar turno", font_size=18, width=200)
 
         self.book_btn = QPushButton(self.widget)
-        self.buttons_hbox.addWidget(self.book_btn)
+        self.buttons_layout.addWidget(self.book_btn)
         config_btn(self.book_btn, "Reservar turno", font_size=18, width=200)
 
         self.cancel_button = QPushButton(self.widget)
-        self.buttons_hbox.addWidget(self.cancel_button)
+        self.buttons_layout.addWidget(self.cancel_button)
         config_btn(self.cancel_button, "Cancelar turno", font_size=18, width=200)
 
         self.spacer_item = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
-        self.vbox.addItem(self.spacer_item)
+        self.layout.addItem(self.spacer_item)
 
-        self.date_hbox = QHBoxLayout()
-        self.vbox.addLayout(self.date_hbox)
-        config_layout(self.date_hbox)
+        self.date_layout = QHBoxLayout()
+        self.layout.addLayout(self.date_layout)
+        config_layout(self.date_layout)
 
         self.prev_button = QPushButton(self.widget)
-        self.date_hbox.addWidget(self.prev_button)
+        self.date_layout.addWidget(self.prev_button)
         config_btn(self.prev_button, "<", width=30)
 
         self.date_field = QDateEdit(self.widget)
-        self.date_hbox.addWidget(self.date_field)
+        self.date_layout.addWidget(self.date_field)
         config_date_edit(self.date_field, date.today(), font_size=18, layout_direction=Qt.RightToLeft)
 
         self.next_button = QPushButton(self.widget)
-        self.date_hbox.addWidget(self.next_button)
+        self.date_layout.addWidget(self.next_button)
         config_btn(self.next_button, ">", width=30)
 
         self.booking_table = QTableWidget(self.widget)
-        self.vbox.addWidget(self.booking_table)
+        self.layout.addWidget(self.booking_table)
 
         # height() returns the width of the scrollbar.
         column_len = (width - self.booking_table.verticalScrollBar().height() - 135) // 3
@@ -161,12 +170,15 @@ class BookingMainUI(QMainWindow):
 
 class HistoryController:
 
-    def __init__(self, booking_system: BookingSystem, history_ui: HistoryUI) -> None:
+    def __init__(self, history_ui: HistoryUI, booking_system: BookingSystem) -> None:
         self.booking_system = booking_system
         self.history_ui = history_ui
         self.current_page, self.page_len = 1, 20
 
         self.load_bookings()
+
+        # noinspection PyUnresolvedReferences
+        self.history_ui.search_btn.clicked.connect(self.load_bookings)
 
     def load_bookings(self):
         self.history_ui.booking_table.setRowCount(0)
@@ -177,21 +189,20 @@ class HistoryController:
         to_date_filter = DateLesser("to", display_name="Hasta",
                                     translate_fun=lambda trans, when: trans.when <= when)
         bookings = self.booking_system.bookings(
-            (BOOKING_CANCELLED, BOOKING_PAID),
+            states=(BOOKING_CANCELLED, BOOKING_PAID),
             from_date=(from_date_filter, self.history_ui.from_date_edit.date().toPyDate()),
             to_date=(to_date_filter, self.history_ui.to_date_edit.date().toPyDate()),
             **self.history_ui.search_box.filters()
         )
         for row, (booking, _, _) in enumerate(bookings):
-            print(row, booking.client.name)
-            # self.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
-            # self.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
-            # self.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
-            # self.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
-            # self.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
-            # self.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
-            # self.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
-            # self.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
+            self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
+            self.history_ui.booking_table.setItem(row, 1,
+                                                  QTableWidgetItem(str(booking.when.strftime(constants.DATE_FORMAT))))
+            self.history_ui.booking_table.setItem(row, 2, QTableWidgetItem(str(booking.court.name)))
+            self.history_ui.booking_table.setItem(row, 3, QTableWidgetItem(str(booking.start)))
+            self.history_ui.booking_table.setItem(row, 4, QTableWidgetItem(str(booking.end)))
+            self.history_ui.booking_table.setItem(row, 5, QTableWidgetItem(str(booking.state.name)))
+            self.history_ui.booking_table.setItem(row, 6, QTableWidgetItem(str(booking.state.updated_by)))
 
 
 class HistoryUI(QMainWindow):
@@ -199,9 +210,7 @@ class HistoryUI(QMainWindow):
     def __init__(self, booking_system: BookingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = HistoryController(booking_system, self)
-
-        self.search_btn.clicked.connect(self.controller.load_bookings)
+        self.controller = HistoryController(self, booking_system)
 
     def _setup_ui(self):
         self.resize(800, 600)
@@ -212,12 +221,12 @@ class HistoryUI(QMainWindow):
         self.widget = QWidget(self.central_widget)
         self.widget.setGeometry(QRect(0, 0, 800, 600))
 
-        self.main_layout = QVBoxLayout(self.widget)
-        config_layout(self.main_layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
+        self.layout = QVBoxLayout(self.widget)
+        config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
 
         # Utilities.
         self.utils_layout = QHBoxLayout()
-        self.main_layout.addLayout(self.utils_layout)
+        self.layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         self.search_box = SearchBox(
@@ -261,19 +270,18 @@ class HistoryUI(QMainWindow):
         self.utils_layout.addWidget(self.search_btn)
         config_btn(self.search_btn, "Busq", font_size=16)
 
-        # Transactions.
+        # Bookings.
         self.booking_table = QTableWidget(self.widget)
-        self.main_layout.addWidget(self.booking_table)
+        self.layout.addWidget(self.booking_table)
         config_table(
             target=self.booking_table, allow_resizing=True,
-            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120,
-                     "Responsable": 175,
-                     "Descripción": 200}
+            columns={"Cliente": 175, "Fecha": 100, "Cancha": 100, "Inicio": 120, "Fin": 120, "Estado": 100,
+                     "Responsable": 175}
         )
 
         # Index.
         self.index_layout = QHBoxLayout()
-        self.main_layout.addLayout(self.index_layout)
+        self.layout.addLayout(self.index_layout)
         config_layout(self.index_layout, left_margin=100, right_margin=100)
 
         self.prev_btn = QPushButton(self.widget)
