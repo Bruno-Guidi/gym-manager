@@ -278,7 +278,7 @@ class CancelUI(QDialog):
 
         self.block_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.block_lbl, 4, 0, 1, 1)
-        config_lbl(self.block_lbl, "Hora")
+        config_lbl(self.block_lbl, "Inicio")
 
         self.start_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.start_line, 4, 1, 1, 1)
@@ -286,7 +286,7 @@ class CancelUI(QDialog):
 
         self.duration_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.duration_lbl, 5, 0, 1, 1)
-        config_lbl(self.duration_lbl, "Duración")
+        config_lbl(self.duration_lbl, "Fin")
 
         self.end_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.end_line, 5, 1, 1, 1)
