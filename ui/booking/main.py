@@ -19,8 +19,8 @@ from ui.widgets import SearchBox
 class Controller:
 
     def __init__(
-            self, client_repo: ClientRepo, booking_system: BookingSystem, accounting_system: AccountingSystem,
-            main_ui: BookingMainUI
+            self, main_ui: BookingMainUI, client_repo: ClientRepo, booking_system: BookingSystem,
+            accounting_system: AccountingSystem
     ) -> None:
         self.client_repo = client_repo
         self.booking_system = booking_system
@@ -29,7 +29,9 @@ class Controller:
 
         self.load_bookings()
 
+        # noinspection PyUnresolvedReferences
         self.main_ui.cancel_button.clicked.connect(self.cancel_ui)
+        # noinspection PyUnresolvedReferences
         self.main_ui.see_history_action.triggered.connect(self.history_ui)
 
     def _load_booking(
@@ -92,7 +94,7 @@ class BookingMainUI(QMainWindow):
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(client_repo, booking_system, accounting_system, self)
+        self.controller = Controller(self, client_repo, booking_system, accounting_system)
         self.book_btn.clicked.connect(self.controller.book_ui)
         self.charge_btn.clicked.connect(self.controller.charge_ui)
 
@@ -110,46 +112,46 @@ class BookingMainUI(QMainWindow):
 
         self.widget = QWidget(self.central_widget)
         self.widget.setGeometry(QRect(0, 0, width, height))
-        self.vbox = QVBoxLayout(self.widget)
-        config_layout(self.vbox, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10, spacing=10)
+        self.layout = QVBoxLayout(self.widget)
+        config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10, spacing=10)
 
-        self.buttons_hbox = QHBoxLayout()
-        self.vbox.addLayout(self.buttons_hbox)
-        config_layout(self.buttons_hbox, spacing=50)
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        config_layout(self.buttons_layout, spacing=50)
 
         self.charge_btn = QPushButton(self.widget)
-        self.buttons_hbox.addWidget(self.charge_btn)
+        self.buttons_layout.addWidget(self.charge_btn)
         config_btn(self.charge_btn, "Cobrar turno", font_size=18, width=200)
 
         self.book_btn = QPushButton(self.widget)
-        self.buttons_hbox.addWidget(self.book_btn)
+        self.buttons_layout.addWidget(self.book_btn)
         config_btn(self.book_btn, "Reservar turno", font_size=18, width=200)
 
         self.cancel_button = QPushButton(self.widget)
-        self.buttons_hbox.addWidget(self.cancel_button)
+        self.buttons_layout.addWidget(self.cancel_button)
         config_btn(self.cancel_button, "Cancelar turno", font_size=18, width=200)
 
         self.spacer_item = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
-        self.vbox.addItem(self.spacer_item)
+        self.layout.addItem(self.spacer_item)
 
-        self.date_hbox = QHBoxLayout()
-        self.vbox.addLayout(self.date_hbox)
-        config_layout(self.date_hbox)
+        self.date_layout = QHBoxLayout()
+        self.layout.addLayout(self.date_layout)
+        config_layout(self.date_layout)
 
         self.prev_button = QPushButton(self.widget)
-        self.date_hbox.addWidget(self.prev_button)
+        self.date_layout.addWidget(self.prev_button)
         config_btn(self.prev_button, "<", width=30)
 
         self.date_field = QDateEdit(self.widget)
-        self.date_hbox.addWidget(self.date_field)
+        self.date_layout.addWidget(self.date_field)
         config_date_edit(self.date_field, date.today(), font_size=18, layout_direction=Qt.RightToLeft)
 
         self.next_button = QPushButton(self.widget)
-        self.date_hbox.addWidget(self.next_button)
+        self.date_layout.addWidget(self.next_button)
         config_btn(self.next_button, ">", width=30)
 
         self.booking_table = QTableWidget(self.widget)
-        self.vbox.addWidget(self.booking_table)
+        self.layout.addWidget(self.booking_table)
 
         # height() returns the width of the scrollbar.
         column_len = (width - self.booking_table.verticalScrollBar().height() - 135) // 3
