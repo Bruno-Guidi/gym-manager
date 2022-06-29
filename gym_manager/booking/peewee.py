@@ -74,8 +74,8 @@ class SqliteBookingRepo(BookingRepo):
             year, month, day = when.year, when.month, when.day
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
                                           day == BookingTable.when.day)
+        bookings_q = bookings_q.join(peewee.ClientTable)
         for filter_, value in filters.values():
-            bookings_q = bookings_q.join(peewee.ClientTable)
             bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
         for record in prefetch(bookings_q, TransactionTable.select()):
