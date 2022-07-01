@@ -262,6 +262,7 @@ class MainController:
                           self.activity_manager)
         self.main_ui.activity_list.setItemWidget(item, row)
 
+    # noinspection PyAttributeOutsideInit
     def create_activity(self):
         self._create_ui = CreateUI(self.activity_manager)
         self._create_ui.exec_()
