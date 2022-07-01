@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import TypeAlias, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, \
@@ -14,11 +15,14 @@ from ui.widget_config import config_layout, config_lbl, config_line, config_date
 from ui.widgets import Field, valid_text_value, Dialog
 
 
+InvalidDateFn: TypeAlias = Callable[[date], bool]
+
+
 class ChargeController:
     def __init__(
             self, charge_ui: ChargeUI, client: Client, activity: Activity, descr: String,
             accounting_system: AccountingSystem, fixed_amount: bool = False, fixed_descr: bool = False,
-
+            invalid_date_fn: InvalidDateFn | None = None, validation_msg: str | None = None, **invalid_date_kwargs
     ) -> None:
         self.charge_ui = charge_ui
 
@@ -38,6 +42,12 @@ class ChargeController:
         self.client, self.activity = client, activity
         self.accounting_system = accounting_system
 
+        # Function used to do an extra validation to the transaction date, that can't be done with the information
+        # available in this context.
+        self.invalid_date_fn = invalid_date_fn
+        self.validation_msg = validation_msg
+        self.invalid_date_kwargs = invalid_date_kwargs
+
         # Sets callbacks
         # noinspection PyUnresolvedReferences
         self.charge_ui.ok_btn.clicked.connect(self.charge)
@@ -45,6 +55,7 @@ class ChargeController:
         self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
 
     # noinspection PyTypeChecker
+    # noinspection PyArgumentList
     def charge(self):
         valid_descr, descr = valid_text_value(self.charge_ui.descr_text, optional=False,
                                               max_len=consts.TRANSACTION_DESCR_CHARS)
@@ -53,22 +64,30 @@ class ChargeController:
         if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            self.transaction = self.accounting_system.charge(
-                self.charge_ui.when_date_edit.date().toPyDate(), self.client, self.activity,
-                self.charge_ui.method_combobox.currentData(Qt.UserRole), self.charge_ui.responsible_field.value(), descr
-            )
-            Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
-            self.charge_ui.descr_text.window().close()
+            transaction_date = self.charge_ui.when_date_edit.date().toPyDate()
+            if self.invalid_date_fn is not None and self.invalid_date_fn(transaction_date, **self.invalid_date_kwargs):
+                Dialog.info("Error", self.validation_msg)
+            else:
+                self.transaction = self.accounting_system.charge(
+                    transaction_date, self.client, self.activity,
+                    self.charge_ui.method_combobox.currentData(Qt.UserRole),
+                    self.charge_ui.responsible_field.value(),
+                    descr
+                )
+                Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
+                self.charge_ui.descr_text.window().close()
 
 
 class ChargeUI(QDialog):
     def __init__(
             self, accounting_system: AccountingSystem, client: Client, activity: Activity, descr: String,
-            fixed_amount: bool = False, fixed_descr: bool = False
+            fixed_amount: bool = False, fixed_descr: bool = False, invalid_date_fn: InvalidDateFn | None = None,
+            validation_msg: str | None = None, **invalid_date_kwargs
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = ChargeController(self, client, activity, descr, accounting_system, fixed_amount, fixed_descr)
+        self.controller = ChargeController(self, client, activity, descr, accounting_system, fixed_amount, fixed_descr,
+                                           invalid_date_fn, validation_msg, **invalid_date_kwargs)
 
     def _setup_ui(self):
         self.resize(400, 300)
