@@ -13,7 +13,7 @@ from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.operations import ChargeUI
 from ui.accounting.main import AccountingMainUI
 from ui.client.operations import CreateUI
-from ui.client.sign_on import SignOn
+from ui.client.operations import SubscribeUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
 from ui.widgets import Field, SearchBox, Dialog
@@ -336,7 +336,7 @@ class ClientRow(QWidget):
 
     # noinspection PyAttributeOutsideInit
     def subscribe(self):
-        self.subscribe_ui = SignOn(self.activity_manager, self.client)
+        self.subscribe_ui = SubscribeUI(self.activity_manager, self.client)
         self.subscribe_ui.exec_()
         self.load_subscriptions()  # ToDo. Load only the new inscription.
 
