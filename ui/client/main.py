@@ -139,6 +139,7 @@ class ClientRow(QWidget):
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
+        # noinspection PyUnresolvedReferences
         self.detail_btn.clicked.connect(self.hide_detail)
         self.is_hidden = False
 
