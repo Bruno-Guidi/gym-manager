@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import itertools
 from datetime import date
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QDateEdit, QPushButton
+from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QDateEdit, QPushButton, QComboBox
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import String, Number, Client
+from gym_manager.core.base import String, Number, Client, Activity
 from gym_manager.core.persistence import ClientRepo
-from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_btn
+from gym_manager.core.system import ActivityManager
+from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_btn, fill_combobox, \
+    config_combobox
 from ui.widgets import Field, Dialog
 
 
@@ -126,6 +129,81 @@ class CreateUI(QDialog):
         self.dir_field = Field(validatable=String, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
         self.dir_layout.addWidget(self.dir_field)
         config_line(self.dir_field, place_holder="Dirección", font_size=16)
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
+
+        self.ok_btn = QPushButton()
+        self.buttons_layout.addWidget(self.ok_btn)
+        config_btn(self.ok_btn, "Ok", width=100)
+
+        self.cancel_btn = QPushButton()
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", width=100)
+
+
+class Controller:
+
+    def __init__(
+            self, activity_manager: ActivityManager, client: Client, combobox: QComboBox, when_field: QDateEdit
+    ) -> None:
+        self.activity_manager = activity_manager
+        self.client = client
+
+        self.combobox = combobox
+        self.when_field = when_field
+        it = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity), activity_manager.activities())
+        fill_combobox(combobox, it, lambda activity: str(activity.name))
+
+    def sign_on(self):
+        if self.combobox.count() == 0:
+            Dialog.info("Error", "No hay actividades disponibles.")
+        else:
+            activity: Activity = self.combobox.currentData(Qt.UserRole)
+            self.activity_manager.subscribe(self.when_field.date().toPyDate(), self.client, activity)
+            Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
+                                 f"'{activity.name}'.")
+            self.combobox.window().close()
+
+
+class SignOn(QDialog):
+    def __init__(self, activity_manager: ActivityManager, client: Client) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = Controller(activity_manager, client, self.activity_combobox, self.when_field)
+        self.ok_btn.clicked.connect(self.controller.sign_on)
+        self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self):
+        self.resize(400, 300)
+
+        self.layout = QVBoxLayout(self)
+
+        # Activity.
+        self.activity_layout = QHBoxLayout()
+        self.layout.addLayout(self.activity_layout)
+
+        self.name_lbl = QLabel()
+        self.activity_layout.addWidget(self.name_lbl)
+        config_lbl(self.name_lbl, "Actividad", font_size=16, width=120)
+
+        self.activity_combobox = QComboBox()
+        self.activity_layout.addWidget(self.activity_combobox)
+        config_combobox(self.activity_combobox, font_size=16)
+
+        # When.
+        self.when_layout = QHBoxLayout()
+        self.layout.addLayout(self.when_layout)
+
+        self.when_lbl = QLabel()
+        self.when_layout.addWidget(self.when_lbl)
+        config_lbl(self.when_lbl, "Fecha", font_size=16, width=120)
+
+        self.when_field = QDateEdit()
+        self.when_layout.addWidget(self.when_field)
+        config_date_edit(self.when_field, date.today(), font_size=16)
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
