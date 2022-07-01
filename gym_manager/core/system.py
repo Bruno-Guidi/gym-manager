@@ -55,10 +55,15 @@ class ActivityManager:
         """Subscribes the *client* in the *activity*. If *transaction* is given, then associate it to the subscription.
 
         Raises:
-            OperationalError if the activity is a charge_once activity.
+            OperationalError if the activity is a charge_once activity, or if the date of the subscription is lesser
+             than the admission date of the client.
         """
         if activity.charge_once:
             raise OperationalError("Subscriptions to 'charge_once' activities are not allowed.", activity=activity)
+        if client.admission > when:
+            raise OperationalError("Subscription date cannot be lesser than client's admission date",
+                                   subscription_date=when, client_admission_date=client.admission)
+
         sub = Subscription(when, client, activity, transaction)
         self.sub_repo.add(sub)
         client.add(sub)

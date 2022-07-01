@@ -166,12 +166,17 @@ class SubscribeController:
         if self.subscribe_ui.activity_combobox.count() == 0:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
-            activity: Activity = self.subscribe_ui.activity_combobox.currentData(Qt.UserRole)
-            self.subscription = self.activity_manager.subscribe(self.subscribe_ui.when_date_edit.date().toPyDate(),
-                                                                self.client, activity)
-            Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
-                                 f"'{activity.name}'.")
-            self.subscribe_ui.activity_combobox.window().close()
+            sub_date = self.subscribe_ui.when_date_edit.date().toPyDate()
+            if self.client.admission > sub_date:
+                Dialog.info("Error", "La fecha de inscripción a la actividad no puede ser previa a la fecha de ingreso"
+                                     " al sistema del cliente.")
+            else:
+                activity: Activity = self.subscribe_ui.activity_combobox.currentData(Qt.UserRole)
+                self.subscription = self.activity_manager.subscribe(self.subscribe_ui.when_date_edit.date().toPyDate(),
+                                                                    self.client, activity)
+                Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
+                                     f"'{activity.name}'.")
+                self.subscribe_ui.activity_combobox.window().close()
 
 
 class SubscribeUI(QDialog):
