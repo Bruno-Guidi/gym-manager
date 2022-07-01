@@ -12,7 +12,7 @@ from gym_manager.core.persistence import ClientRepo
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.operations import ChargeUI
 from ui.accounting.main import AccountingMainUI
-from ui.client.create import CreateUI
+from ui.client.operations import CreateUI
 from ui.client.sign_on import SignOn
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
