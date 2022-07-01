@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QDateEdit, QPushButton, QComboBox
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import String, Number, Client, Activity
+from gym_manager.core.base import String, Number, Client, Activity, Subscription
 from gym_manager.core.persistence import ClientRepo
 from gym_manager.core.system import ActivityManager
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_btn, fill_combobox, \
@@ -149,6 +149,7 @@ class SubscribeController:
     def __init__(self, subscribe_ui: SubscribeUI, activity_manager: ActivityManager, client: Client) -> None:
         self.activity_manager = activity_manager
         self.client = client
+        self.subscription: Subscription | None = None
 
         self.subscribe_ui = subscribe_ui
 
@@ -166,7 +167,8 @@ class SubscribeController:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
             activity: Activity = self.subscribe_ui.activity_combobox.currentData(Qt.UserRole)
-            self.activity_manager.subscribe(self.subscribe_ui.when_date_edit.date().toPyDate(), self.client, activity)
+            self.subscription = self.activity_manager.subscribe(self.subscribe_ui.when_date_edit.date().toPyDate(),
+                                                                self.client, activity)
             Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
                                  f"'{activity.name}'.")
             self.subscribe_ui.activity_combobox.window().close()

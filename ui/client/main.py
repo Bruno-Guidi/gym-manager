@@ -338,7 +338,11 @@ class ClientRow(QWidget):
     def subscribe(self):
         self.subscribe_ui = SubscribeUI(self.activity_manager, self.client)
         self.subscribe_ui.exec_()
-        self.load_subscriptions()  # ToDo. Load only the new inscription.
+
+        if self.subscribe_ui.controller.subscription is not None:
+            row = self.subscription_table.rowCount()
+            self.subscription_table.setRowCount(row + 1)
+            self._load_subscription(row, self.subscribe_ui.controller.subscription)
 
     def unsubscribe(self):
         if self.subscription_table.currentRow() == -1:
