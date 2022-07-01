@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import date
 
 from PyQt5.QtCore import Qt
@@ -10,47 +12,47 @@ from ui.widget_config import config_layout, config_lbl, config_line, config_date
 from ui.widgets import Field, Dialog
 
 
-class Controller:
+class CreateController:
 
     def __init__(
-            self, name_field: Field, dni_field: Field, admission_field: QDateEdit, tel_field: Field, dir_field: Field,
-            client_repo: ClientRepo
+            self, create_ui: CreateUI, client_repo: ClientRepo
     ) -> None:
-        self.name_field = name_field
-        self.dni_field = dni_field
-        self.admission_field = admission_field
-        self.tel_field = tel_field
-        self.dir_field = dir_field
+        self.create_ui = create_ui
 
         self.client: Client | None = None
         self.client_repo = client_repo
 
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.create_ui.ok_btn.clicked.connect(self.create_client)
+        # noinspection PyUnresolvedReferences
+        self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+
     # noinspection PyTypeChecker
     def create_client(self):
-        valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.tel_field.valid_value(),
-                     self.dir_field.valid_value()])
-        if not valid:
+        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.dni_field.valid_value(),
+                            self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value()])
+        if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.client_repo.is_active(self.dni_field.value()):
-            Dialog.info("Error", f"Ya existe un cliente activo con el dni '{self.dni_field.value().as_primitive()}'.")
+        elif self.client_repo.is_active(self.create_ui.dni_field.value()):
+            Dialog.info("Error", f"Ya existe un cliente activo con el dni '{self.create_ui.dni_field.value().as_primitive()}'.")
         else:
-            self.client = Client(self.dni_field.value(), self.name_field.value(), self.admission_field.date().toPyDate(),
-                                 self.tel_field.value(), self.dir_field.value(), is_active=True)
+            self.client = Client(self.create_ui.dni_field.value(),
+                                 self.create_ui.name_field.value(),
+                                 self.create_ui.admission_date_field.date().toPyDate(),
+                                 self.create_ui.tel_field.value(),
+                                 self.create_ui.dir_field.value(),
+                                 is_active=True)
             self.client_repo.add(self.client)
-            Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue creado correctamente.")
-            self.dni_field.window().close()
+            Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
+            self.create_ui.dni_field.window().close()
 
 
 class CreateUI(QDialog):
     def __init__(self, client_repo: ClientRepo) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(
-            self.name_field, self.dni_field, self.admission_field, self.tel_field, self.dir_field, client_repo
-        )
-
-        self.ok_btn.clicked.connect(self.controller.create_client)
-        self.cancel_btn.clicked.connect(self.reject)
+        self.controller = CreateController(self, client_repo)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -95,9 +97,9 @@ class CreateUI(QDialog):
         self.admission_layout.addWidget(self.admission_lbl)
         config_lbl(self.admission_lbl, "Ingreso", font_size=16, width=120)
 
-        self.admission_field = QDateEdit()
-        self.admission_layout.addWidget(self.admission_field)
-        config_date_edit(self.admission_field, date.today(), font_size=16, height=30)
+        self.admission_date_field = QDateEdit()
+        self.admission_layout.addWidget(self.admission_date_field)
+        config_date_edit(self.admission_date_field, date.today(), font_size=16, height=30)
 
         # Telephone.
         self.tel_layout = QHBoxLayout()
