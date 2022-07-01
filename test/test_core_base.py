@@ -5,7 +5,24 @@ import pytest
 
 from gym_manager.core.base import ValidationError, Number, String, Currency, Subscription, Transaction, Client, \
     Activity, \
-    TextLike, ClientLike, TextEqual, DateGreater, DateLesser, OperationalError, NumberEqual
+    TextLike, ClientLike, TextEqual, DateGreater, DateLesser, OperationalError, NumberEqual, invalid_sub_charge_date
+
+
+# noinspection PyTypeChecker
+def test_invalidSubChargeDate():
+    # Subscription without previous charge transaction.
+    sub = Subscription(when=date(2022, 6, 6), activity=None, client=None)
+    assert invalid_sub_charge_date(sub, date(2022, 6, 5))
+    assert not invalid_sub_charge_date(sub, date(2022, 6, 6))
+    assert not invalid_sub_charge_date(sub, date(2022, 6, 7))
+
+    # Subscription with previous charge transaction.
+    trans = Transaction(1, type=None, client=None, when=date(2022, 6, 20), amount=None, method=None, responsible=None,
+                        description=None)
+    sub = Subscription(when=date(2022, 6, 6), activity=None, client=None, transaction=trans)
+    assert invalid_sub_charge_date(sub, date(2022, 6, 19))
+    assert not invalid_sub_charge_date(sub, date(2022, 6, 20))
+    assert not invalid_sub_charge_date(sub, date(2022, 6, 21))
 
 
 def test_Number_validInputType():

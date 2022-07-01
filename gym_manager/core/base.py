@@ -19,6 +19,13 @@ def pay_day_passed(last_paid_on: date, today: date) -> bool:
     return today - ONE_MONTH_TD >= last_paid_on
 
 
+def invalid_sub_charge_date(subscription: Subscription, charge_date: date) -> bool:
+    previous_charge = subscription.transaction
+    return (charge_date < subscription.when  # The charging is being made after the subscription was made.
+            # The charging is being made after the previous charge was made.
+            or (previous_charge is not None and charge_date < previous_charge.when))
+
+
 class OperationalError(Exception):
     """Exception raised when there is an error while doing a system operation.
     """
