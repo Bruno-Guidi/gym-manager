@@ -236,10 +236,11 @@ class ClientRow(QWidget):
 
         self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
 
+    # noinspection PyUnresolvedReferences
     def _setup_callbacks(self):
         self.save_btn.clicked.connect(self.save_changes)
         self.remove_btn.clicked.connect(self.remove)
-        self.subscribe_btn.clicked.connect(self.sign_on)
+        self.subscribe_btn.clicked.connect(self.subscribe)
         self.unsubscribe_btn.clicked.connect(self.unsubscribe)
         self.charge_activity_btn.clicked.connect(self.charge)
         self.transactions_btn.clicked.connect(self.transactions)
@@ -284,7 +285,7 @@ class ClientRow(QWidget):
             self._setup_hidden_ui()
             self._setup_callbacks()
             self.hidden_ui_loaded, self.previous_height = True, 350
-            self.load_inscriptions()
+            self.load_subscriptions()
 
         # Hides previously opened detail.
         if self.main_ui_controller.opened_now is None:
@@ -332,10 +333,10 @@ class ClientRow(QWidget):
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
-    def sign_on(self):
-        self.sign_on_ui = SignOn(self.activity_manager, self.client)
-        self.sign_on_ui.exec_()
-        self.load_inscriptions()  # ToDo. Load only the new inscription.
+    def subscribe(self):
+        self.subscribe_ui = SignOn(self.activity_manager, self.client)
+        self.subscribe_ui.exec_()
+        self.load_subscriptions()  # ToDo. Load only the new inscription.
 
     def unsubscribe(self):
         if self.subscription_table.currentRow() == -1:
@@ -348,17 +349,18 @@ class ClientRow(QWidget):
                 self.activity_manager.cancel(inscription)
                 self.subscription_table.removeRow(self.subscription_table.currentRow())
 
-    def _load_inscription(self, row: int, inscription: Subscription):
-        self.subscriptions[row] = inscription
-        self.subscription_table.setItem(row, 0, QTableWidgetItem(str(inscription.activity.name)))
+    def _load_subscription(self, row: int, subscription: Subscription):
+        self.subscriptions[row] = subscription
+        self.subscription_table.setItem(row, 0, QTableWidgetItem(str(subscription.activity.name)))
 
-        when = "Sin pagar" if inscription.transaction is None else str(inscription.transaction.when)
+        when = "Sin pagar" if subscription.transaction is None else str(subscription.transaction.when)
         self.subscription_table.setItem(row, 1, QTableWidgetItem(when))
 
-        transaction_id = "-" if inscription.transaction is None else str(inscription.transaction.id)
+        # noinspection PyUnresolvedReferences
+        transaction_id = "-" if subscription.transaction is None else str(subscription.transaction.id)
         self.subscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
 
-        expired = "Si" if inscription.charge_day_passed(date.today()) else "No"
+        expired = "Si" if subscription.charge_day_passed(date.today()) else "No"
         self.subscription_table.setItem(row, 3, QTableWidgetItem(expired))
 
     def charge(self):
@@ -370,15 +372,15 @@ class ClientRow(QWidget):
             self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True,
                                       fixed_descr=True)
             self.charge_ui.exec_()
-            self._load_inscription(self.subscription_table.currentRow(),
-                                   self.subscriptions[self.subscription_table.currentRow()])
+            self._load_subscription(self.subscription_table.currentRow(),
+                                    self.subscriptions[self.subscription_table.currentRow()])
 
     # noinspection PyUnresolvedReferences
-    def load_inscriptions(self):
+    def load_subscriptions(self):
         self.subscription_table.setRowCount(self.client.n_subscriptions())
 
-        for row, inscription in enumerate(self.client.subscriptions()):
-            self._load_inscription(row, inscription)
+        for row, subscription in enumerate(self.client.subscriptions()):
+            self._load_subscription(row, subscription)
 
     def transactions(self):
         self.accounting_main_ui = AccountingMainUI(self.accounting_system, self.client)
