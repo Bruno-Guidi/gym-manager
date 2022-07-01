@@ -66,7 +66,6 @@ class MainUI(QMainWindow):
         super().__init__()
         self._setup_ui()
         self.controller = Controller(self, client_repo, activity_manager, accounting_system, booking_system)
-        self._setup_callbacks(self.controller)
 
     def _setup_ui(self):
         width, height = 800, 600
