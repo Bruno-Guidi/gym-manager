@@ -344,11 +344,12 @@ class ClientRow(QWidget):
         if self.subscription_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad")
         else:
-            inscription = self.subscriptions[self.subscription_table.currentRow()]
-            unsubscribe = Dialog.confirm(f"¿Desea cancelar la inscripción del cliente {self.client.name} en la "
-                                         f"actividad {inscription.activity.name}?")
+            subscription = self.subscriptions[self.subscription_table.currentRow()]
+            unsubscribe = Dialog.confirm(f"¿Desea cancelar la subscripcion del cliente {self.client.name} en la "
+                                         f"actividad {subscription.activity.name}?")
             if unsubscribe:
-                self.activity_manager.cancel(inscription)
+                self.activity_manager.cancel(subscription)
+                self.subscriptions.pop(self.subscription_table.currentRow())
                 self.subscription_table.removeRow(self.subscription_table.currentRow())
 
     def _load_subscription(self, row: int, subscription: Subscription):
