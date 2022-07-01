@@ -155,12 +155,18 @@ class SubscribeController:
         it = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity), activity_manager.activities())
         fill_combobox(self.subscribe_ui.activity_combobox, it, lambda activity: str(activity.name))
 
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.subscribe_ui.ok_btn.clicked.connect(self.subscribe)
+        # noinspection PyUnresolvedReferences
+        self.subscribe_ui.cancel_btn.clicked.connect(self.subscribe_ui.reject)
+
     def subscribe(self):
         if self.subscribe_ui.activity_combobox.count() == 0:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
             activity: Activity = self.subscribe_ui.activity_combobox.currentData(Qt.UserRole)
-            self.activity_manager.subscribe(self.subscribe_ui.when_field.date().toPyDate(), self.client, activity)
+            self.activity_manager.subscribe(self.subscribe_ui.when_date_edit.date().toPyDate(), self.client, activity)
             Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
                                  f"'{activity.name}'.")
             self.subscribe_ui.activity_combobox.window().close()
@@ -171,8 +177,6 @@ class SubscribeUI(QDialog):
         super().__init__()
         self._setup_ui()
         self.controller = SubscribeController(self, activity_manager, client)
-        self.ok_btn.clicked.connect(self.controller.subscribe)
-        self.cancel_btn.clicked.connect(self.reject)
 
     def _setup_ui(self):
         self.resize(400, 300)
@@ -199,9 +203,9 @@ class SubscribeUI(QDialog):
         self.when_layout.addWidget(self.when_lbl)
         config_lbl(self.when_lbl, "Fecha", font_size=16, width=120)
 
-        self.when_field = QDateEdit()
-        self.when_layout.addWidget(self.when_field)
-        config_date_edit(self.when_field, date.today(), font_size=16)
+        self.when_date_edit = QDateEdit()
+        self.when_layout.addWidget(self.when_date_edit)
+        config_date_edit(self.when_date_edit, date.today(), font_size=16)
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
