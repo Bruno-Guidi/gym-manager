@@ -14,8 +14,10 @@ from ui.widget_config import config_layout, config_lbl, config_btn
 
 
 class Controller:
-    def __init__(self, main_ui: MainUI, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
-                 booking_system: BookingSystem):
+    def __init__(
+            self, main_ui: MainUI, client_repo: ClientRepo, activity_manager: ActivityManager,
+            accounting_system: AccountingSystem, booking_system: BookingSystem
+    ):
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
