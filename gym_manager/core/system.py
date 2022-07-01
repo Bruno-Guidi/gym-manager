@@ -6,7 +6,7 @@ from typing import Iterable
 
 from gym_manager.core import constants
 from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency, OperationalError
-from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, ClientRepo
+from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo
 
 logger = logging.getLogger(__name__)
 

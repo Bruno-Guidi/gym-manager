@@ -105,8 +105,10 @@ class Dialog(QDialog):
         super().__init__()
         self._setup_ui(title, text, show_cancel_btn)
         self.confirmed = False
+        # noinspection PyUnresolvedReferences
         self.ok_btn.clicked.connect(self.accept)
         if self.cancel_btn is not None:
+            # noinspection PyUnresolvedReferences
             self.cancel_btn.clicked.connect(self.reject)
 
     def accept(self) -> None:

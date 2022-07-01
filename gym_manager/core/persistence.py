@@ -183,12 +183,14 @@ class TransactionRepo(abc.ABC):
     """Transaction repository interface.
     """
 
+    # noinspection PyShadowingBuiltins
     @abc.abstractmethod
     def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
         """Creates a Transaction with the given data.
         """
         raise NotImplementedError
 
+    # noinspection PyShadowingBuiltins
     @abc.abstractmethod
     def create(
             self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
