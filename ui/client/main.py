@@ -7,16 +7,20 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
     QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import Client, String, Number, Subscription, TextLike
+from gym_manager.core.base import Client, String, Number, Subscription, TextLike, invalid_sub_charge_date
 from gym_manager.core.persistence import ClientRepo
 from gym_manager.core.system import ActivityManager, AccountingSystem
-from ui.accounting.operations import ChargeUI
 from ui.accounting.main import AccountingMainUI
+from ui.accounting.operations import ChargeUI
 from ui.client.operations import CreateUI
 from ui.client.operations import SubscribeUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
 from ui.widgets import Field, SearchBox, Dialog
+
+
+def invalid_date(transaction_date: date, **kwargs) -> bool:
+    return invalid_sub_charge_date(kwargs['subscription'], transaction_date)
 
 
 class ClientRow(QWidget):
@@ -375,13 +379,16 @@ class ClientRow(QWidget):
         if self.subscription_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad")
         else:
-            activity = self.subscriptions[self.subscription_table.currentRow()].activity
+            subscription = self.subscriptions[self.subscription_table.currentRow()]
+            activity = subscription.activity
             descr = String(f"Cobro por actividad {activity.name}", max_len=consts.TRANSACTION_DESCR_CHARS)
+            msg = (f"La fecha de cobro no puede ser previa a la fecha {subscription.when} de inscripción del cliente a"
+                   f" la actividad.")
             self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True,
-                                      fixed_descr=True)
+                                      fixed_descr=True, invalid_date_fn=invalid_date, validation_msg=msg,
+                                      subscription=subscription)
             self.charge_ui.exec_()
-            self._load_subscription(self.subscription_table.currentRow(),
-                                    self.subscriptions[self.subscription_table.currentRow()])
+            self._load_subscription(self.subscription_table.currentRow(), subscription)
 
     def load_subscriptions(self):
         self.subscription_table.setRowCount(self.client.n_subscriptions())
@@ -390,7 +397,7 @@ class ClientRow(QWidget):
             self._load_subscription(row, subscription)
 
     # noinspection PyAttributeOutsideInit
-    def transactions(self):  # ToDo filter by dni.
+    def transactions(self):
         self.accounting_main_ui = AccountingMainUI(self.accounting_system, self.client)
         self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
         self.accounting_main_ui.show()
