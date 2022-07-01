@@ -144,36 +144,34 @@ class CreateUI(QDialog):
         config_btn(self.cancel_btn, "Cancelar", width=100)
 
 
-class Controller:
+class SubscribeController:
 
-    def __init__(
-            self, activity_manager: ActivityManager, client: Client, combobox: QComboBox, when_field: QDateEdit
-    ) -> None:
+    def __init__(self, subscribe_ui: SubscribeUI, activity_manager: ActivityManager, client: Client) -> None:
         self.activity_manager = activity_manager
         self.client = client
 
-        self.combobox = combobox
-        self.when_field = when_field
-        it = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity), activity_manager.activities())
-        fill_combobox(combobox, it, lambda activity: str(activity.name))
+        self.subscribe_ui = subscribe_ui
 
-    def sign_on(self):
-        if self.combobox.count() == 0:
+        it = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity), activity_manager.activities())
+        fill_combobox(self.subscribe_ui.activity_combobox, it, lambda activity: str(activity.name))
+
+    def subscribe(self):
+        if self.subscribe_ui.activity_combobox.count() == 0:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
-            activity: Activity = self.combobox.currentData(Qt.UserRole)
-            self.activity_manager.subscribe(self.when_field.date().toPyDate(), self.client, activity)
+            activity: Activity = self.subscribe_ui.activity_combobox.currentData(Qt.UserRole)
+            self.activity_manager.subscribe(self.subscribe_ui.when_field.date().toPyDate(), self.client, activity)
             Dialog.info("Éxito", f"El cliente '{self.client.name}' fue registrado correctamente en la actividad "
                                  f"'{activity.name}'.")
-            self.combobox.window().close()
+            self.subscribe_ui.activity_combobox.window().close()
 
 
-class SignOn(QDialog):
+class SubscribeUI(QDialog):
     def __init__(self, activity_manager: ActivityManager, client: Client) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(activity_manager, client, self.activity_combobox, self.when_field)
-        self.ok_btn.clicked.connect(self.controller.sign_on)
+        self.controller = SubscribeController(self, activity_manager, client)
+        self.ok_btn.clicked.connect(self.controller.subscribe)
         self.cancel_btn.clicked.connect(self.reject)
 
     def _setup_ui(self):
