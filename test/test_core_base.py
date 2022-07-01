@@ -5,7 +5,7 @@ import pytest
 
 from gym_manager.core.base import ValidationError, Number, String, Currency, Subscription, Transaction, Client, \
     Activity, \
-    TextLike, ClientLike, TextEqual, DateGreater, DateLesser, OperationalError
+    TextLike, ClientLike, TextEqual, DateGreater, DateLesser, OperationalError, NumberEqual
 
 
 def test_Number_validInputType():
@@ -189,6 +189,19 @@ def test_Client_registerCharge_raisesOperationalError():
         trans = Transaction(1, type=None, client=client, when=None, amount=None, method=None, responsible=None,
                             description=None)
         other_client.register_charge(activity, trans)
+
+
+# noinspection PyTypeChecker
+def test_NumberEqual():
+    client = Client(Number(1), String("TestName", max_len=20), admission=None, telephone=None, direction=None,
+                    is_active=True)
+
+    filter_ = NumberEqual("name", "display_name", "dni")
+    assert filter_.passes(client, Number(1))
+    assert filter_.passes(client, 1)
+
+    assert not filter_.passes(client, -1)
+    assert not filter_.passes(client, 2)
 
 
 # noinspection PyTypeChecker

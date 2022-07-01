@@ -316,6 +316,33 @@ class Filter(abc.ABC):
         return self.translate_fun(to_filter, filter_value)
 
 
+class NumberEqual(Filter):
+
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
+    def passes(self, to_filter: Any, filter_value: Any) -> bool:
+        """Returns True if the attr *self.attr* of the object *to_filter* is equal to *filter_value*.
+        """
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
+
+        if not isinstance(filter_value, (int, Number)):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be an "
+                            f"'int' or 'Number', but received a '{type(filter_value)}'.")
+
+        attr_value = getattr(to_filter, self.attr)
+        if not isinstance(attr_value, Number):
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the attribute '{self.attr}' to be a "
+                            f"'Number', not a '{type(attr_value)}'.")
+
+        return attr_value == filter_value
+
+
 class TextLike(Filter):
 
     def __init__(
