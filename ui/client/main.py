@@ -385,7 +385,7 @@ class ClientRow(QWidget):
             self._load_subscription(row, subscription)
 
     # noinspection PyAttributeOutsideInit
-    def transactions(self):
+    def transactions(self):  # ToDo filter by dni.
         self.accounting_main_ui = AccountingMainUI(self.accounting_system, self.client)
         self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
         self.accounting_main_ui.show()
