@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
     QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
 
 from gym_manager.core.system import AccountingSystem
-from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike
+from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
+    NumberEqual
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox
@@ -25,7 +26,7 @@ class Controller:
 
         # If a client is given, set the filter with it.
         if client is not None:
-            self.main_ui.search_box.set_filter("client", client.name.as_primitive())
+            self.main_ui.search_box.set_filter("client_dni", str(client.dni))
         self.load_transactions()
 
         # Sets callbacks
@@ -82,8 +83,10 @@ class AccountingMainUI(QMainWindow):
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         self.search_box = SearchBox(
-            filters=[ClientLike("client", display_name="Cliente",
+            filters=[ClientLike("client_name", display_name="Nombre cliente",
                                 translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
+                     NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                                 translate_fun=lambda trans, value: trans.client.dni == value),
                      TextEqual("type", display_name="Tipo", attr="type",
                                translate_fun=lambda trans, value: trans.type == value),
                      TextEqual("method", display_name="Método", attr="method",
