@@ -394,8 +394,9 @@ class SqliteTransactionRepo(TransactionRepo):
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
         for record in transactions_q.paginate(page, page_len):
-            yield self.from_record(record.id, record.type, self.client_repo.get(record.client_id), record.when,
-                                   record.amount, record.method, record.responsible, record.description)
+            client = None if record.client is None else self.client_repo.get(record.client_id)
+            yield self.from_record(record.id, record.type, record.when, client, record.amount, record.method,
+                                   record.responsible, record.description)
 
 
 class SubscriptionTable(Model):
