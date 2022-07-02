@@ -434,13 +434,13 @@ class Controller:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_client_btn.clicked.connect(self.create_client)
+        self.main_ui.create_client_btn.clicked.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.search_btn.clicked.connect(self.fill_client_table)
         # noinspection PyUnresolvedReferences
         self.main_ui.clear_filter_btn.clicked.connect(self.clear_and_fill)
 
-    def add_client(
+    def _add_client(
             self, client: Client, check_filters: bool, set_to_current: bool = False, check_limit: bool = False
     ):
         if check_limit and len(self.main_ui.client_list) == self.page_len:
@@ -473,18 +473,18 @@ class Controller:
             clients = self.client_repo.all(self.current_page, self.page_len, ((filter_, filter_value), ))
 
         for client in clients:
-            self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
+            self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     def clear_and_fill(self):
         self.main_ui.filter_line_edit.clear()
         self.fill_client_table()
 
     # noinspection PyAttributeOutsideInit
-    def create_client(self):
-        self.create_ui = CreateUI(self.client_repo)
-        self.create_ui.exec_()
-        if self.create_ui.controller.client is not None:
-            self.add_client(self.create_ui.controller.client, check_filters=True, set_to_current=True, check_limit=True)
+    def create_ui(self):
+        self._create_ui = CreateUI(self.client_repo)
+        self._create_ui.exec_()
+        if self._create_ui.controller.client is not None:
+            self._add_client(self._create_ui.controller.client, check_filters=True, set_to_current=True, check_limit=True)
 
 
 class ClientMainUI(QMainWindow):
@@ -514,6 +514,7 @@ class ClientMainUI(QMainWindow):
         self.layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
+        # Filtering functionalities.
         self.filter_combobox = QComboBox(self.widget)
         self.utils_layout.addWidget(self.filter_combobox)
         config_combobox(self.filter_combobox)
