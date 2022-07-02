@@ -11,7 +11,7 @@ from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
     OperationalError
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache, \
-    BalanceRepo
+    BalanceRepo, FilterValuePair
 
 logger = logging.getLogger(__name__)
 
@@ -153,19 +153,18 @@ class SqliteClientRepo(ClientRepo):
         if self._do_caching:
             self.cache.move_to_front(client.dni)
 
-    def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+    ) -> Generator[Client, None, None]:
         """Retrieve all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page. If None, retrieve all clients.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                filter.
+            filters: filters to apply.
         """
         clients_q = ClientTable.select()
-        for filter_, value in filters.values():
+        for filter_, value in filters:
             clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
         clients_q = clients_q.where(ClientTable.is_active)
         if page_len is not None:
