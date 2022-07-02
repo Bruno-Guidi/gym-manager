@@ -29,6 +29,9 @@ def transactions_fn(page: int, page_len: int | None = None, **filter_values) -> 
 
 class Mock(BalanceRepo):
 
+    def balance_done(self, when: date) -> bool:
+        return False
+
     def add_all(self, when: date, transactions: list[Transaction]):
         pass
 
