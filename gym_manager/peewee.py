@@ -335,11 +335,14 @@ class SqliteTransactionRepo(TransactionRepo):
         if self._do_caching and id in self.cache:
             return self.cache[id]
 
-        transaction = Transaction(id, String(type, max_len=constants.TRANSACTION_TYPE_CHARS), client, when,
+        transaction = Transaction(id,
+                                  String(type, max_len=constants.TRANSACTION_TYPE_CHARS),
+                                  when,
                                   Currency(amount, max_currency=constants.MAX_CURRENCY),
                                   String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
                                   String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
-                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS))
+                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS),
+                                  client)
         if self._do_caching:
             self.cache[id] = transaction
         return transaction
@@ -367,7 +370,7 @@ class SqliteTransactionRepo(TransactionRepo):
             description=description.as_primitive()
         )
 
-        transaction = Transaction(record.id, type, client, when, amount, method, responsible, description)
+        transaction = Transaction(record.id, type, when, amount, method, responsible, description, client)
         if self._do_caching:
             self.cache[record.id] = transaction
 

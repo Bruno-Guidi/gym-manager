@@ -368,13 +368,13 @@ def test_generateBalance():
     def transactions_gen() -> Iterable[Transaction]:
         # noinspection PyTypeChecker
         to_yield = [
-            Transaction(4, trans_charge, None, date(2022, 6, 6), Currency("100.99"), trans_cash, None, None),
-            Transaction(5, trans_charge, None, date(2022, 6, 6), Currency("100.0001"), trans_cash, None, None),
-            Transaction(1, trans_charge, None, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
-            Transaction(6, trans_charge, None, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
-            Transaction(3, trans_extract, None, date(2022, 6, 6), Currency("100"), trans_cash, None, None),
-            Transaction(7, trans_extract, None, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
-            Transaction(2, trans_extract, None, date(2022, 6, 6), Currency("0.0005"), trans_credit, None, None)
+            Transaction(4, trans_charge, date(2022, 6, 6), Currency("100.99"), trans_cash, None, None),
+            Transaction(5, trans_charge, date(2022, 6, 6), Currency("100.0001"), trans_cash, None, None),
+            Transaction(1, trans_charge, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(6, trans_charge, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(3, trans_extract, date(2022, 6, 6), Currency("100"), trans_cash, None, None),
+            Transaction(7, trans_extract, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(2, trans_extract, date(2022, 6, 6), Currency("0.0005"), trans_credit, None, None)
         ]
         for t in to_yield:
             yield t
