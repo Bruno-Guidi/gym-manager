@@ -131,6 +131,14 @@ class AccountingSystem:
         return transaction
 
 
+def register_extraction(
+        when: date, amount: Currency, method: String, responsible: String, description: String,
+        transaction_repo: TransactionRepo
+) -> Transaction:
+    transaction_type = String("Extracción", max_len=constants.TRANSACTION_TYPE_CHARS)
+    return transaction_repo.create(transaction_type, when, amount, method, responsible, description)
+
+
 def generate_balance(
         transactions: Iterable[Transaction],
         transaction_types: Iterable[String],
