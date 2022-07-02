@@ -7,8 +7,9 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, \
     QDateEdit, QComboBox, QTextEdit, QPushButton, QGridLayout
 
-from gym_manager.core import constants as consts
+from gym_manager.core import constants as consts, system
 from gym_manager.core.base import String, Client, Currency, Activity, Transaction
+from gym_manager.core.persistence import TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox, \
     config_btn
@@ -189,14 +190,49 @@ class ChargeUI(QDialog):
 
 
 class ExtractController:
-    def __init__(self):
-        pass
+    def __init__(
+            self, extract_ui: ExtractUI, transaction_methods: tuple[String, ...], transaction_repo: TransactionRepo
+    ):
+        self.extract_ui = extract_ui
+        self.transaction_repo = transaction_repo
+
+        # Loads info into the ui.
+        fill_combobox(self.extract_ui.method_combobox, transaction_methods, display=lambda method: str(method))
+
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.extract_ui.confirm_btn.clicked.connect(self.confirm_extraction)
+        # noinspection PyUnresolvedReferences
+        self.extract_ui.cancel_btn.clicked.connect(self.extract_ui.reject)
+
+    def confirm_extraction(self):
+        valid_descr, descr = valid_text_value(self.extract_ui.descr_text, max_len=consts.TRANSACTION_DESCR_CHARS)
+        valid_fields = all([
+            self.extract_ui.amount_field.valid_value(), self.extract_ui.responsible_field.valid_value(), valid_descr
+        ])
+        if self.extract_ui.method_combobox.currentIndex() == -1:
+            Dialog.info("Error", "Seleccione un método.")
+        elif not valid_fields:
+            Dialog.info("Error", "Hay campos que no son válidos.")
+        else:
+            # noinspection PyTypeChecker
+            extraction = system.register_extraction(self.extract_ui.when_date_edit.date().toPyDate(),
+                                                    self.extract_ui.amount_field.value(),
+                                                    self.extract_ui.method_combobox.currentData(Qt.UserRole),
+                                                    self.extract_ui.responsible_field.value(),
+                                                    self.extract_ui.descr_text,
+                                                    self.transaction_repo)
+            Dialog.info("Éxito", f"Se ha registrado una extracción con número de identificación '{extraction.id}'.")
+            self.extract_ui.descr_text.window().close()
 
 
 class ExtractUI(QDialog):
-    def __init__(self):
+    def __init__(
+            self, transaction_methods: tuple[String, ...], transaction_repo: TransactionRepo
+    ):
         super().__init__()
         self._setup_ui()
+        self.controller = ExtractController(self, transaction_methods, transaction_repo)
 
     def _setup_ui(self):
         self.layout = QVBoxLayout(self)
@@ -254,11 +290,10 @@ class ExtractUI(QDialog):
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
 
-        self.ok_btn = QPushButton()
-        self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Confirmar")
+        self.confirm_btn = QPushButton()
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar")
 
         self.cancel_btn = QPushButton()
         self.buttons_layout.addWidget(self.cancel_btn)
         config_btn(self.cancel_btn, "Cancelar")
-
