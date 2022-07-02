@@ -5,7 +5,7 @@ from typing import TypeAlias, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, \
-    QDateEdit, QComboBox, QTextEdit, QPushButton
+    QDateEdit, QComboBox, QTextEdit, QPushButton, QGridLayout
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Client, Currency, Activity, Transaction
@@ -13,7 +13,6 @@ from gym_manager.core.system import AccountingSystem
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox, \
     config_btn
 from ui.widgets import Field, valid_text_value, Dialog
-
 
 InvalidDateFn: TypeAlias = Callable[[date], bool]
 
@@ -187,3 +186,79 @@ class ChargeUI(QDialog):
         self.cancel_btn = QPushButton()
         self.buttons_layout.addWidget(self.cancel_btn)
         config_btn(self.cancel_btn, "Cancelar", width=100)
+
+
+class ExtractController:
+    def __init__(self):
+        pass
+
+
+class ExtractUI(QDialog):
+    def __init__(self):
+        super().__init__()
+        self._setup_ui()
+
+    def _setup_ui(self):
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+
+        # Date.
+        self.when_lbl = QLabel()
+        self.form_layout.addWidget(self.when_lbl, 0, 0)
+        config_lbl(self.when_lbl, "Fecha")
+
+        self.when_date_edit = QDateEdit()
+        self.form_layout.addWidget(self.when_date_edit, 0, 1)
+        config_date_edit(self.when_date_edit, date.today(), calendar=False)
+
+        # Amount.
+        self.amount_lbl = QLabel()
+        self.form_layout.addWidget(self.amount_lbl, 1, 0)
+        config_lbl(self.amount_lbl, "Monto")
+
+        self.amount_field = Field(Currency)
+        self.form_layout.addWidget(self.amount_field, 1, 1)
+        config_line(self.amount_field, place_holder="000.00")
+
+        # Method.
+        self.method_lbl = QLabel(self)
+        self.form_layout.addWidget(self.method_lbl, 2, 0)
+        config_lbl(self.method_lbl, "Método")
+
+        self.method_combobox = QComboBox()
+        self.form_layout.addWidget(self.method_combobox, 2, 1)
+        config_combobox(self.method_combobox)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 3, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = Field(String, max_len=consts.CLIENT_NAME_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 3, 1)
+        config_line(self.responsible_field, place_holder="Responsable")
+
+        # Description.
+        self.descr_lbl = QLabel(self)
+        self.form_layout.addWidget(self.descr_lbl, 4, 0)
+        config_lbl(self.descr_lbl, "Descripción")
+
+        self.descr_text = QTextEdit()
+        self.form_layout.addWidget(self.descr_text, 4, 1)
+        config_line(self.descr_text, place_holder="Descripción")
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+
+        self.ok_btn = QPushButton()
+        self.buttons_layout.addWidget(self.ok_btn)
+        config_btn(self.ok_btn, "Confirmar")
+
+        self.cancel_btn = QPushButton()
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar")
+
