@@ -6,13 +6,14 @@ from typing import Iterable, Protocol
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem, QGridLayout, QMenuBar, QAction
+    QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu
 
 from gym_manager.core import system
 from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
     NumberEqual, Transaction, String
 from gym_manager.core.persistence import BalanceRepo
 from gym_manager.core.system import AccountingSystem
+from ui.accounting.operations import ExtractUI
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox, Dialog
@@ -37,7 +38,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.search_btn.clicked.connect(self.load_transactions)
         # noinspection PyUnresolvedReferences
-        self.main_ui.daily_balance.triggered.connect(self.daily_balance)
+        self.main_ui.generate_balance_action.triggered.connect(self.daily_balance)
 
     def load_transactions(self):
         self.main_ui.transaction_table.setRowCount(0)
@@ -72,6 +73,10 @@ class MainController:
         self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
         self.daily_balance_ui.show()
 
+    def extraction(self):
+        self.extract_ui = ExtractUI(self.accounting_system.methods, self.accounting_system.transaction_repo)
+        self.extract_ui.exec_()
+
 
 class AccountingMainUI(QMainWindow):
 
@@ -91,11 +96,17 @@ class AccountingMainUI(QMainWindow):
         self.widget = QWidget(self.central_widget)
         self.widget.setGeometry(QRect(0, 0, 800, 600))
 
+        # Menu bar.
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
         self.menu_bar.setGeometry(QtCore.QRect(0, 0, 800, 20))
-        self.daily_balance = QAction("Caja diaria", self)
-        self.menu_bar.addAction(self.daily_balance)
+
+        # Balance menu bar.
+        self.daily_balance_menu = QMenu("Caja diaria", self)
+        self.menu_bar.addMenu(self.daily_balance_menu)
+
+        self.generate_balance_action = QAction("Cerrar caja", self)
+        self.daily_balance_menu.addAction(self.generate_balance_action)
 
         self.main_layout = QVBoxLayout(self.widget)
         config_layout(self.main_layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
