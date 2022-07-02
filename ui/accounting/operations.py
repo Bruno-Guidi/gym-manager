@@ -206,7 +206,7 @@ class ExtractController:
         self.extract_ui.cancel_btn.clicked.connect(self.extract_ui.reject)
 
     def confirm_extraction(self):
-        valid_descr, descr = valid_text_value(self.extract_ui.descr_text, max_len=consts.TRANSACTION_DESCR_CHARS)
+        valid_descr, description = valid_text_value(self.extract_ui.descr_text, max_len=consts.TRANSACTION_DESCR_CHARS)
         valid_fields = all([
             self.extract_ui.amount_field.valid_value(), self.extract_ui.responsible_field.valid_value(), valid_descr
         ])
@@ -220,7 +220,7 @@ class ExtractController:
                                                     self.extract_ui.amount_field.value(),
                                                     self.extract_ui.method_combobox.currentData(Qt.UserRole),
                                                     self.extract_ui.responsible_field.value(),
-                                                    self.extract_ui.descr_text,
+                                                    description,
                                                     self.transaction_repo)
             Dialog.info("Éxito", f"Se ha registrado una extracción con número de identificación '{extraction.id}'.")
             self.extract_ui.descr_text.window().close()
