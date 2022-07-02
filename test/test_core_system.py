@@ -243,9 +243,11 @@ def test_chargeActivity_onSubDate():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge", ), ("dummy_method", ))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
@@ -271,9 +273,11 @@ def test_chargeActivity_after30DaysOfSub():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge", ), ("dummy_method", ))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
@@ -300,9 +304,11 @@ def test_chargeActivity_after60DaysOfSub():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge", ), ("dummy_method", ))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
@@ -329,9 +335,11 @@ def test_chargeActivity_chargeOnceActivity():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge", ), ("dummy_method", ))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
