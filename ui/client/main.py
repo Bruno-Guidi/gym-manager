@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Iterable
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit
+    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit, QComboBox, \
+    QLineEdit
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, String, Number, Subscription, TextLike, invalid_sub_charge_date
@@ -15,8 +17,8 @@ from ui.accounting.operations import ChargeUI
 from ui.client.operations import CreateUI
 from ui.client.operations import SubscribeUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
-    config_date_edit
-from ui.widgets import Field, SearchBox, Dialog
+    config_date_edit, config_combobox, fill_combobox
+from ui.widgets import Field, Dialog
 
 
 def invalid_date(transaction_date: date, **kwargs) -> bool:
@@ -423,6 +425,11 @@ class Controller:
         self.tel_width = tel_width
         self.dir_width = dir_width
 
+        # Filters.
+        filters = (TextLike("name", display_name="Nombre", attr="name",
+                            translate_fun=lambda client, value: client.cli_name.contains(value)), )
+        fill_combobox(self.main_ui.filter_combobox, filters, display=lambda filter: filter.display_name)
+
         self.load_clients()
 
         # Sets callbacks.
@@ -434,11 +441,12 @@ class Controller:
     def add_client(
             self, client: Client, check_filters: bool, set_to_current: bool = False, check_limit: bool = False
     ):
-        if check_filters and not self.main_ui.search_box.passes_filters(client):
-            return
-
         if check_limit and len(self.main_ui.client_list) == self.page_len:
             self.main_ui.client_list.takeItem(len(self.main_ui.client_list) - 1)
+
+        filter_, value = self.main_ui.filter_combobox.currentData(Qt.UserRole), self.main_ui.filter_line_edit.text()
+        if check_filters and not filter_.passes(client, value):
+            return
 
         item = QListWidgetItem(self.main_ui.client_list)
         self.main_ui.client_list.addItem(item)
@@ -454,7 +462,15 @@ class Controller:
     def load_clients(self):
         self.main_ui.client_list.clear()
 
-        clients = self.client_repo.all(self.current_page, self.page_len, **self.main_ui.search_box.filters())
+        clients: Iterable
+        filter_value = self.main_ui.filter_line_edit.text()
+        if len(filter_value) == 0 or filter_value.isspace():
+            clients = self.client_repo.all(self.current_page, self.page_len)
+        else:
+            # noinspection PyShadowingBuiltins
+            filter = self.main_ui.filter_combobox.currentData(Qt.UserRole)
+            clients = self.client_repo.all(self.current_page, self.page_len, ((filter, filter_value), ))
+
         for client in clients:
             self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
@@ -493,15 +509,17 @@ class ClientMainUI(QMainWindow):
         self.layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox(
-            filters=[TextLike("name", display_name="Nombre", attr="name",
-                              translate_fun=lambda client, value: client.cli_name.contains(value))],
-            parent=self.widget)
-        self.utils_layout.addWidget(self.search_box)
+        self.filter_combobox = QComboBox(self.widget)
+        self.utils_layout.addWidget(self.filter_combobox)
+        config_combobox(self.filter_combobox)
+
+        self.filter_line_edit = QLineEdit(self.widget)
+        self.utils_layout.addWidget(self.filter_line_edit)
+        config_line(self.filter_line_edit, place_holder="Búsqueda")
 
         self.search_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        config_btn(self.search_btn, "B")
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
