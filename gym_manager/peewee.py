@@ -279,8 +279,18 @@ class SqliteActivityRepo(ActivityRepo):
         if self._do_caching:
             self.cache.move_to_front(activity.name)
 
-    def all(self) -> Generator[Activity, None, None]:
-        for record in ActivityTable.select():
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+    ) -> Generator[Activity, None, None]:
+        activities_q = ActivityTable.select()
+        if filters is not None:
+            for filter_, value in filters:
+                activities_q = activities_q.where(filter_.passes_in_repo(ActivityTable, value))
+
+        if page_len is not None:
+            activities_q = activities_q.order_by(ActivityTable.act_name).paginate(page, page_len)
+
+        for record in activities_q:
             activity: Activity
             if self._do_caching and record.act_name in self.cache:
                 activity = self.cache[record.act_name]

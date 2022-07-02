@@ -149,7 +149,9 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self) -> Generator[Activity, None, None]:
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+    ) -> Generator[Activity, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod
