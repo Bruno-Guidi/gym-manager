@@ -14,7 +14,7 @@ from ui.widget_config import config_layout, config_btn, config_lbl, config_table
 from ui.widgets import SearchBox
 
 
-class Controller:
+class MainController:
 
     def __init__(
             self, main_ui: AccountingMainUI, accounting_system: AccountingSystem, client: Client | None = None
@@ -63,7 +63,7 @@ class AccountingMainUI(QMainWindow):
     def __init__(self, accounting_system: AccountingSystem, client: Client | None = None) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(self, accounting_system, client)
+        self.controller = MainController(self, accounting_system, client)
 
     def _setup_ui(self):
         self.resize(800, 600)
