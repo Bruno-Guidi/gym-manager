@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Iterable, Protocol
 
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem
+    QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem, QGridLayout, QMenuBar, QAction
+from PyQt5.uic.properties import QtCore
 
-from gym_manager.core.system import AccountingSystem
+from gym_manager.core import system
 from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
-    NumberEqual
+    NumberEqual, Transaction, String
+from gym_manager.core.system import AccountingSystem
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
 from ui.widgets import SearchBox
@@ -32,6 +35,8 @@ class MainController:
         # Sets callbacks
         # noinspection PyUnresolvedReferences
         self.main_ui.search_btn.clicked.connect(self.load_transactions)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.daily_balance.triggered.connect(self.history_ui)
 
     def load_transactions(self):
         self.main_ui.transaction_table.setRowCount(0)
@@ -57,6 +62,11 @@ class MainController:
             self.main_ui.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
             self.main_ui.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
 
+    def daily_balance(self):
+        # noinspection PyAttributeOutsideInit
+        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transactions)
+        self.daily_balance_ui.show()
+
 
 class AccountingMainUI(QMainWindow):
 
@@ -73,6 +83,12 @@ class AccountingMainUI(QMainWindow):
 
         self.widget = QWidget(self.central_widget)
         self.widget.setGeometry(QRect(0, 0, 800, 600))
+
+        self.menu_bar = QMenuBar(self)
+        self.setMenuBar(self.menu_bar)
+        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 800, 20))
+        self.daily_balance = QAction("Caja diaria", self)
+        self.menu_bar.addAction(self.daily_balance)
 
         self.main_layout = QVBoxLayout(self.widget)
         config_layout(self.main_layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
@@ -122,7 +138,8 @@ class AccountingMainUI(QMainWindow):
 
         self.to_date_edit = QDateEdit()
         self.to_layout.addWidget(self.to_date_edit)
-        config_date_edit(self.to_date_edit, date.today(), calendar=True, layout_direction=Qt.LayoutDirection.RightToLeft)
+        config_date_edit(self.to_date_edit, date.today(), calendar=True,
+                         layout_direction=Qt.LayoutDirection.RightToLeft)
 
         self.utils_layout.addItem(QSpacerItem(30, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
@@ -155,3 +172,82 @@ class AccountingMainUI(QMainWindow):
         self.next_btn = QPushButton(self.widget)
         self.index_layout.addWidget(self.next_btn)
         config_btn(self.next_btn, ">", font_size=18, width=30)
+
+
+class _TransactionFunction(Protocol):
+    def __call__(self, page: int, page_len: int | None = None, **filter_values) -> Iterable[Transaction]:
+        pass
+
+
+class DailyBalanceController:
+    def __init__(
+            self,
+            daily_balance_ui: DailyBalanceUI,
+            transactions_fn: _TransactionFunction,
+            transaction_types: Iterable[String],
+            transaction_methods: Iterable[String]
+    ):
+        types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
+        methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
+        methods_dict["Total"] = len(methods_dict) + 2
+
+        balance = system.balance((transaction for transaction in transactions_fn(page=1)),
+                                 transaction_types,
+                                 transaction_methods)
+
+        for trans_type, type_balance in balance.items():
+            for trans_method, method_balance in type_balance.items():
+                lbl = QLabel(str(method_balance))
+                daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
+
+
+class DailyBalanceUI(QMainWindow):
+    def __init__(
+            self,
+            transactions_fn: _TransactionFunction,
+            transaction_types: Iterable[String],
+            transaction_methods: Iterable[String]
+    ):
+        super().__init__()
+        self._setup_ui()
+        self.controller = DailyBalanceController(self, transactions_fn, transaction_types, transaction_methods)
+
+    def _setup_ui(self):
+        self.widget = QWidget(self)
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        self.lbl = QLabel(self.widget)
+        self.layout.addWidget(self.lbl)
+        config_lbl(self.lbl, "Caja diaria")
+
+        self.balance_layout = QGridLayout()
+        self.layout.addLayout(self.balance_layout)
+
+        self.method_lbl = QLabel(self.widget)
+        self.method_lbl.setText("Método")
+        self.balance_layout.addWidget(self.method_lbl, 1, 0)
+
+        self.income_lbl = QLabel(self.widget)
+        self.income_lbl.setText("Ingresos")
+        self.balance_layout.addWidget(self.income_lbl, 1, 1)
+
+        self.expenses_lbl = QLabel(self.widget)
+        self.expenses_lbl.setText("Egresos")
+        self.balance_layout.addWidget(self.expenses_lbl, 1, 2)
+
+        self.cash_lbl = QLabel(self.widget)
+        self.cash_lbl.setText("Efectivo")
+        self.balance_layout.addWidget(self.cash_lbl, 2, 0)
+
+        self.debit_lbl = QLabel(self.widget)
+        self.debit_lbl.setText("Débito")
+        self.balance_layout.addWidget(self.debit_lbl, 3, 0)
+
+        self.credit_lbl = QLabel(self.widget)
+        self.credit_lbl.setText("Crédito")
+        self.balance_layout.addWidget(self.credit_lbl, 4, 0)
+
+        self.total_lbl = QLabel(self.widget)
+        self.total_lbl.setText("TOTAL")
+        self.balance_layout.addWidget(self.total_lbl, 5, 0)
