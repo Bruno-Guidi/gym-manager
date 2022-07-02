@@ -395,7 +395,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
         for record in transactions_q.paginate(page, page_len):
             client = None if record.client is None else self.client_repo.get(record.client_id)
-            yield self.from_record(record.id, record.type, record.when, client, record.amount, record.method,
+            yield self.from_record(record.id, record.type, client, record.when, record.amount, record.method,
                                    record.responsible, record.description)
 
 
