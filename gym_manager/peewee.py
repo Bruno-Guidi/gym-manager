@@ -164,8 +164,10 @@ class SqliteClientRepo(ClientRepo):
             filters: filters to apply.
         """
         clients_q = ClientTable.select()
-        for filter_, value in filters:
-            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+        if filters is not None:
+            for filter_, value in filters:
+                clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+
         clients_q = clients_q.where(ClientTable.is_active)
         if page_len is not None:
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
