@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from typing import Iterable
+
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QCheckBox, QDialog
+    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QCheckBox, QDialog, QComboBox, QLineEdit
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.system import ActivityManager
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
-from ui.widgets import Field, valid_text_value, SearchBox, Dialog
+from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox, config_combobox, \
+    fill_combobox
+from ui.widgets import Field, valid_text_value, Dialog
 
 
 class ActivityRow(QWidget):
@@ -241,18 +244,30 @@ class MainController:
         self.activity_manager = activity_manager
         self.opened_now: ActivityRow | None = None
 
+        self.current_page, self.page_len = 1, 2
+
         self.name_width, self.price_width, self.charge_once_width = name_width, price_width, charge_once_width
 
-        for activity in self.activity_manager.activities(**self.main_ui.search_box.filters()):
-            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
+        # Filters.
+        filters = (TextLike("name", display_name="Nombre", attr="name",
+                            translate_fun=lambda activity, value: activity.act_name.contains(value)),)
+        fill_combobox(self.main_ui.filter_combobox, filters, display=lambda filter_: filter_.display_name)
+
+        self.fill_activity_table()
 
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_client_btn.clicked.connect(self.create_activity)
+        self.main_ui.create_client_btn.clicked.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.search_btn.clicked.connect(self.search)
+        self.main_ui.search_btn.clicked.connect(self.fill_activity_table)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.clear_filter_btn.clicked.connect(self.clear_and_fill)
 
-    def _add_activity(self, activity: Activity, check_filters: bool):
-        if check_filters and not self.main_ui.search_box.passes_filters(activity):
+    def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
+        if check_limit and len(self.main_ui.activity_list) == self.page_len:
+            self.main_ui.activity_list.takeItem(len(self.main_ui.activity_list) - 1)
+
+        filter_, value = self.main_ui.filter_combobox.currentData(Qt.UserRole), self.main_ui.filter_line_edit.text()
+        if check_filters and not filter_.passes(activity, value):
             return
 
         row_height = 50
@@ -262,17 +277,31 @@ class MainController:
                           self.activity_manager)
         self.main_ui.activity_list.setItemWidget(item, row)
 
+    def fill_activity_table(self):
+        self.main_ui.activity_list.clear()
+
+        activities: Iterable
+        filter_value = self.main_ui.filter_line_edit.text()
+        if len(filter_value) == 0 or filter_value.isspace():
+            activities = self.activity_manager.activity_repo.all(self.current_page, self.page_len)
+        else:
+            filter_ = self.main_ui.filter_combobox.currentData(Qt.UserRole)
+            activities = self.activity_manager.activity_repo.all(self.current_page, self.page_len,
+                                                                 ((filter_, filter_value), ))
+
+        for activity in activities:
+            self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
+
+    def clear_and_fill(self):
+        self.main_ui.filter_line_edit.clear()
+        self.fill_activity_table()
+
     # noinspection PyAttributeOutsideInit
-    def create_activity(self):
+    def create_ui(self):
         self._create_ui = CreateUI(self.activity_manager)
         self._create_ui.exec_()
         if self._create_ui.controller.activity is not None:
-            self._add_activity(self._create_ui.controller.activity, check_filters=True)
-
-    def search(self):
-        self.main_ui.activity_list.clear()
-        for activity in self.activity_manager.activities(**self.main_ui.search_box.filters()):
-            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
+            self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
 
 
 class ActivityMainUI(QMainWindow):
@@ -299,12 +328,22 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox([TextLike("name", display_name="Nombre", attr="name")], parent=self.widget)
-        self.utils_layout.addWidget(self.search_box)
+        # Filtering functionalities.
+        self.filter_combobox = QComboBox(self.widget)
+        self.utils_layout.addWidget(self.filter_combobox)
+        config_combobox(self.filter_combobox)
+
+        self.filter_line_edit = QLineEdit(self.widget)
+        self.utils_layout.addWidget(self.filter_line_edit)
+        config_line(self.filter_line_edit, place_holder="Búsqueda")
 
         self.search_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        config_btn(self.search_btn, "B")
+
+        self.clear_filter_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.clear_filter_btn)
+        config_btn(self.clear_filter_btn, "C")
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
