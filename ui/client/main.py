@@ -467,9 +467,8 @@ class Controller:
         if len(filter_value) == 0 or filter_value.isspace():
             clients = self.client_repo.all(self.current_page, self.page_len)
         else:
-            # noinspection PyShadowingBuiltins
-            filter = self.main_ui.filter_combobox.currentData(Qt.UserRole)
-            clients = self.client_repo.all(self.current_page, self.page_len, ((filter, filter_value), ))
+            filter_ = self.main_ui.filter_combobox.currentData(Qt.UserRole)
+            clients = self.client_repo.all(self.current_page, self.page_len, ((filter_, filter_value), ))
 
         for client in clients:
             self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
