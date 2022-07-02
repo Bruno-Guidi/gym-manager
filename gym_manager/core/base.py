@@ -183,6 +183,9 @@ class Currency(Validatable):
             raise ValidationError(f"The argument 'value' is not a valid currency. [value={value}]")
         return value
 
+    def increase(self, other_currency: Currency) -> None:
+        self._value += other_currency.as_primitive()
+
 
 @dataclass
 class Client:
