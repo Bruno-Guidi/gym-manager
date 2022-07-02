@@ -135,12 +135,12 @@ def balance(
 ):
     """Calculates the balance for the given transactions types and methods.
     """
-    balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
+    _balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
                for trans_type in transaction_types}
     for trans_type in transaction_types:
-        balance[trans_type]["Total"] = Currency("0")
+        _balance[trans_type]["Total"] = Currency("0")
 
     for transaction in transactions:
-        balance[transaction.type][transaction.method].increase(transaction.amount)
-        balance[transaction.type]["Total"].increase(transaction.amount)
+        _balance[transaction.type][transaction.method].increase(transaction.amount)
+        _balance[transaction.type]["Total"].increase(transaction.amount)
     return balance
