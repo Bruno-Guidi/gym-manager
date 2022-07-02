@@ -288,12 +288,12 @@ class Transaction:
 
     id: int
     type: String
-    client: Client
     when: date
     amount: Currency
     method: String
     responsible: String
     description: String
+    client: Client | None = None
 
 
 class Filter(abc.ABC):

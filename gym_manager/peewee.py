@@ -304,7 +304,7 @@ class SqliteActivityRepo(ActivityRepo):
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)
     type = CharField()
-    client = ForeignKeyField(ClientTable, backref="transactions")
+    client = ForeignKeyField(ClientTable, backref="transactions", null=True)
     when = DateField()
     amount = CharField()
     method = CharField()
@@ -335,19 +335,22 @@ class SqliteTransactionRepo(TransactionRepo):
         if self._do_caching and id in self.cache:
             return self.cache[id]
 
-        transaction = Transaction(id, String(type, max_len=constants.TRANSACTION_TYPE_CHARS), client, when,
+        transaction = Transaction(id,
+                                  String(type, max_len=constants.TRANSACTION_TYPE_CHARS),
+                                  when,
                                   Currency(amount, max_currency=constants.MAX_CURRENCY),
                                   String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
                                   String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
-                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS))
+                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS),
+                                  client)
         if self._do_caching:
             self.cache[id] = transaction
         return transaction
 
     # noinspection PyShadowingBuiltins
     def create(
-            self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
-            description: String
+            self, type: String, when: date, amount: Currency, method: String, responsible: String, description: String,
+            client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
 
@@ -359,7 +362,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
         record = TransactionTable.create(
             type=type.as_primitive(),
-            client=ClientTable.get_by_id(client.dni.as_primitive()),
+            client=ClientTable.get_by_id(client.dni.as_primitive()) if client is not None else None,
             when=when,
             amount=amount.as_primitive(),
             method=method.as_primitive(),
@@ -367,7 +370,7 @@ class SqliteTransactionRepo(TransactionRepo):
             description=description.as_primitive()
         )
 
-        transaction = Transaction(record.id, type, client, when, amount, method, responsible, description)
+        transaction = Transaction(record.id, type, when, amount, method, responsible, description, client)
         if self._do_caching:
             self.cache[record.id] = transaction
 
@@ -391,8 +394,9 @@ class SqliteTransactionRepo(TransactionRepo):
             transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
         for record in transactions_q.paginate(page, page_len):
-            yield self.from_record(record.id, record.type, self.client_repo.get(record.client_id), record.when,
-                                   record.amount, record.method, record.responsible, record.description)
+            client = None if record.client is None else self.client_repo.get(record.client_id)
+            yield self.from_record(record.id, record.type, client, record.when, record.amount, record.method,
+                                   record.responsible, record.description)
 
 
 class SubscriptionTable(Model):

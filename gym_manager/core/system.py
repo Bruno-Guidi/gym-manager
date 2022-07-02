@@ -119,7 +119,7 @@ class AccountingSystem:
         """Charges the *client* for its *activity* subscription.
         """
         transaction = self.transaction_repo.create(
-            self._transaction_types["charge"], client, when, activity.price, method, responsible, description
+            self._transaction_types["charge"], when, activity.price, method, responsible, description, client
         )
 
         # For the activities that are not 'charge once', record that the client was charged for it.
@@ -131,6 +131,18 @@ class AccountingSystem:
         return transaction
 
 
+def register_extraction(
+        when: date, amount: Currency, method: String, responsible: String, description: String,
+        transaction_repo: TransactionRepo
+) -> Transaction:
+    transaction_type = String("Extracción", max_len=constants.TRANSACTION_TYPE_CHARS)
+    transaction = transaction_repo.create(transaction_type, when, amount, method, responsible, description)
+
+    logger.info(f"Registered [extraction={transaction}]")
+
+    return transaction
+
+
 def generate_balance(
         transactions: Iterable[Transaction],
         transaction_types: Iterable[String],
@@ -139,10 +151,10 @@ def generate_balance(
     """Generates the balance of the day *when*. The transactions are grouped by type and by method, and then summed up.
     """
     total = String("Total", max_len=constants.TRANSACTION_TYPE_CHARS)
-    balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
+    balance = {trans_type: {trans_method: Currency(0) for trans_method in transaction_methods}
                for trans_type in transaction_types}
     for trans_type in transaction_types:
-        balance[trans_type][total] = Currency("0")
+        balance[trans_type][total] = Currency(0)
 
     for transaction in transactions:
         balance[transaction.type][transaction.method].increase(transaction.amount)
