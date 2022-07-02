@@ -136,7 +136,11 @@ def register_extraction(
         transaction_repo: TransactionRepo
 ) -> Transaction:
     transaction_type = String("Extracción", max_len=constants.TRANSACTION_TYPE_CHARS)
-    return transaction_repo.create(transaction_type, when, amount, method, responsible, description)
+    transaction = transaction_repo.create(transaction_type, when, amount, method, responsible, description)
+
+    logger.info(f"Registered [extraction={transaction}]")
+
+    return transaction
 
 
 def generate_balance(
