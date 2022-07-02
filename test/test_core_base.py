@@ -150,12 +150,6 @@ def test_Currency_raisesValidationError_invalidCurrency():
     assert str(valid_err.value) == f"The argument 'value' is not a valid currency. [value=a1]"
 
 
-def test_Currency_raisesValidationError_maxCurrencyExceeded():
-    with pytest.raises(ValidationError) as valid_err:
-        Currency("100", max_currency=Decimal("100"))
-    assert str(valid_err.value) == f"The argument 'value' must be lesser than {'100'}. [value=100]"
-
-
 # noinspection PyTypeChecker
 def test_Subscription_payDayPassed():
     subscription = Subscription(date(2022, 8, 8), client=None, activity=None)
