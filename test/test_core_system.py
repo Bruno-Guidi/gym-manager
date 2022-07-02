@@ -145,7 +145,7 @@ def test_removeClient():
                                    charge_once=False, description=String("Descr", max_len=20))
 
     # This client is inactive. To make things easy, the client is created with is_active=False since the beginning.
-    cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 6, 2), String("TelC", max_len=20),
+    cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 5, 2), String("TelC", max_len=20),
                    String("DirC", max_len=20), is_active=True)
     client_repo.add(cli_c)
     activity_manager.subscribe(date(2022, 5, 5), cli_c, act1)
