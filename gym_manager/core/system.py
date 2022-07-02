@@ -89,11 +89,13 @@ class AccountingSystem:
             self,
             transaction_repo: TransactionRepo,
             sub_repo: SubscriptionRepo,
+            balance_repo: BalanceRepo,
             transaction_types: tuple[str, ...],
             methods: tuple[str, ...]
     ) -> None:
         self.transaction_repo = transaction_repo
         self.sub_repo = sub_repo
+        self.balance_repo = balance_repo
         self._transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
                                    for name in transaction_types}
         self.methods = tuple(String(name, max_len=constants.TRANSACTION_METHOD_CHARS) for name in methods)
@@ -130,24 +132,19 @@ class AccountingSystem:
 
 
 def generate_balance(
-        when: date,
         transactions: Iterable[Transaction],
         transaction_types: Iterable[String],
-        transaction_methods: Iterable[String],
-        balance_repo: BalanceRepo
+        transaction_methods: Iterable[String]
 ):
     """Generates the balance of the day *when*. The transactions are grouped by type and by method, and then summed up.
     """
     balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
-                for trans_type in transaction_types}
+               for trans_type in transaction_types}
     for trans_type in transaction_types:
         balance[trans_type]["Total"] = Currency("0")
 
-    balance_transactions = []  # This stores transactions, so they can be added later to the repository.
     for transaction in transactions:
-        balance_transactions.append(transaction)
         balance[transaction.type][transaction.method].increase(transaction.amount)
         balance[transaction.type]["Total"].increase(transaction.amount)
 
-    balance_repo.add_all(when, balance_transactions)
     return balance
