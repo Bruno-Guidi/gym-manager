@@ -151,10 +151,10 @@ def generate_balance(
     """Generates the balance of the day *when*. The transactions are grouped by type and by method, and then summed up.
     """
     total = String("Total", max_len=constants.TRANSACTION_TYPE_CHARS)
-    balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
+    balance = {trans_type: {trans_method: Currency(0) for trans_method in transaction_methods}
                for trans_type in transaction_types}
     for trans_type in transaction_types:
-        balance[trans_type][total] = Currency("0")
+        balance[trans_type][total] = Currency(0)
 
     for transaction in transactions:
         balance[transaction.type][transaction.method].increase(transaction.amount)
