@@ -126,3 +126,21 @@ class AccountingSystem:
             self.sub_repo.register_charge(client, activity, transaction)
 
         return transaction
+
+
+def balance(
+        transactions: Iterable[Transaction],
+        transaction_types: Iterable[String],
+        transaction_methods: Iterable[String]
+):
+    """Calculates the balance for the given transactions types and methods.
+    """
+    balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
+               for trans_type in transaction_types}
+    for trans_type in transaction_types:
+        balance[trans_type]["Total"] = Currency("0")
+
+    for transaction in transactions:
+        balance[transaction.type][transaction.method].increase(transaction.amount)
+        balance[transaction.type]["Total"].increase(transaction.amount)
+    return balance
