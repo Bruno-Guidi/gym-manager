@@ -93,9 +93,12 @@ class AccountingSystem:
     ) -> None:
         self.transaction_repo = transaction_repo
         self.sub_repo = sub_repo
-        self.transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
-                                  for name in transaction_types}
+        self._transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
+                                   for name in transaction_types}
         self.methods = tuple(String(name, max_len=constants.TRANSACTION_METHOD_CHARS) for name in methods)
+
+    def transactions_types(self) -> Iterable[String]:
+        return self._transaction_types.values()
 
     def transactions(self, page: int = 1, page_len: int = 15, **filters) -> Iterable[Transaction]:
         """Retrieves transactions.
@@ -113,7 +116,7 @@ class AccountingSystem:
         """Charges the *client* for its *activity* subscription.
         """
         transaction = self.transaction_repo.create(
-            self.transaction_types["charge"], client, when, activity.price, method, responsible, description
+            self._transaction_types["charge"], client, when, activity.price, method, responsible, description
         )
 
         # For the activities that are not 'charge once', record that the client was charged for it.
