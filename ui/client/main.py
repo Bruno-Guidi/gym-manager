@@ -336,7 +336,7 @@ class ClientRow(QWidget):
             self.main_ui_controller.opened_now = None
             self.client_repo.remove(self.client)
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
-            self.main_ui_controller.load_clients()
+            self.main_ui_controller.fill_client_table()
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
@@ -430,13 +430,15 @@ class Controller:
                             translate_fun=lambda client, value: client.cli_name.contains(value)), )
         fill_combobox(self.main_ui.filter_combobox, filters, display=lambda filter_: filter_.display_name)
 
-        self.load_clients()
+        self.fill_client_table()
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_client_btn.clicked.connect(self.create_client)
         # noinspection PyUnresolvedReferences
-        self.main_ui.search_btn.clicked.connect(self.load_clients)
+        self.main_ui.search_btn.clicked.connect(self.fill_client_table)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.clear_filter_btn.clicked.connect(self.clear_and_fill)
 
     def add_client(
             self, client: Client, check_filters: bool, set_to_current: bool = False, check_limit: bool = False
@@ -459,7 +461,7 @@ class Controller:
         if set_to_current:
             self.main_ui.client_list.setCurrentItem(item)
 
-    def load_clients(self):
+    def fill_client_table(self):
         self.main_ui.client_list.clear()
 
         clients: Iterable
@@ -472,6 +474,10 @@ class Controller:
 
         for client in clients:
             self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
+
+    def clear_and_fill(self):
+        self.main_ui.filter_line_edit.clear()
+        self.fill_client_table()
 
     # noinspection PyAttributeOutsideInit
     def create_client(self):
