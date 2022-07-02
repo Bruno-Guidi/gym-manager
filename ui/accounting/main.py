@@ -39,6 +39,8 @@ class MainController:
         self.main_ui.search_btn.clicked.connect(self.load_transactions)
         # noinspection PyUnresolvedReferences
         self.main_ui.generate_balance_action.triggered.connect(self.daily_balance)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.register_extraction_action.triggered.connect(self.extraction)
 
     def load_transactions(self):
         self.main_ui.transaction_table.setRowCount(0)
@@ -96,6 +98,9 @@ class AccountingMainUI(QMainWindow):
         self.widget = QWidget(self.central_widget)
         self.widget.setGeometry(QRect(0, 0, 800, 600))
 
+        self.main_layout = QVBoxLayout(self.widget)
+        config_layout(self.main_layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
+
         # Menu bar.
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
@@ -108,8 +113,12 @@ class AccountingMainUI(QMainWindow):
         self.generate_balance_action = QAction("Cerrar caja", self)
         self.daily_balance_menu.addAction(self.generate_balance_action)
 
-        self.main_layout = QVBoxLayout(self.widget)
-        config_layout(self.main_layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
+        # Extractions menu bar.
+        self.extraction_menu = QMenu("Extracción", self)
+        self.menu_bar.addMenu(self.extraction_menu)
+
+        self.register_extraction_action = QAction("Registrar", self)
+        self.extraction_menu.addAction(self.register_extraction_action)
 
         # Utilities.
         self.utils_layout = QHBoxLayout()
