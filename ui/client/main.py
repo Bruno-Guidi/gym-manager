@@ -428,7 +428,7 @@ class Controller:
         # Filters.
         filters = (TextLike("name", display_name="Nombre", attr="name",
                             translate_fun=lambda client, value: client.cli_name.contains(value)), )
-        fill_combobox(self.main_ui.filter_combobox, filters, display=lambda filter: filter.display_name)
+        fill_combobox(self.main_ui.filter_combobox, filters, display=lambda filter_: filter_.display_name)
 
         self.load_clients()
 
@@ -519,6 +519,10 @@ class ClientMainUI(QMainWindow):
         self.search_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.search_btn)
         config_btn(self.search_btn, "B")
+
+        self.clear_filter_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.clear_filter_btn)
+        config_btn(self.clear_filter_btn, "C")
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
