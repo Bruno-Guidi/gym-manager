@@ -10,7 +10,7 @@ from gym_manager.core.base import Validatable, ValidationError, String, Filter
 from ui.widget_config import fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout
 
 
-def valid_text_value(text: QTextEdit, optional: bool, max_len: int) -> tuple[bool, Any]:
+def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> tuple[bool, Any]:
     valid, value = False, None
     try:
         value = String(text.toPlainText(), optional=optional, max_len=max_len)
