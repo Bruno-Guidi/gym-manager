@@ -166,6 +166,11 @@ class Currency(Validatable):
     """Decimal wrapper that supports a max currency value.
     """
 
+    def __eq__(self, other: Currency) -> bool:
+        if isinstance(other, type(self)):
+            return self._value == other.as_primitive()
+        return NotImplemented
+
     def validate(self, value: str, **kwargs) -> Decimal:
         """Validates the given *value*. If the validation succeeds, returns the created Decimal object.
 
