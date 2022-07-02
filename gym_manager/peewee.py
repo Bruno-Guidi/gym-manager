@@ -304,7 +304,7 @@ class SqliteActivityRepo(ActivityRepo):
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)
     type = CharField()
-    client = ForeignKeyField(ClientTable, backref="transactions")
+    client = ForeignKeyField(ClientTable, backref="transactions", null=True)
     when = DateField()
     amount = CharField()
     method = CharField()
@@ -346,8 +346,8 @@ class SqliteTransactionRepo(TransactionRepo):
 
     # noinspection PyShadowingBuiltins
     def create(
-            self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
-            description: String
+            self, type: String, when: date, amount: Currency, method: String, responsible: String, description: String,
+            client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
 
@@ -359,7 +359,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
         record = TransactionTable.create(
             type=type.as_primitive(),
-            client=ClientTable.get_by_id(client.dni.as_primitive()),
+            client=ClientTable.get_by_id(client.dni.as_primitive()) if client is not None else None,
             when=when,
             amount=amount.as_primitive(),
             method=method.as_primitive(),

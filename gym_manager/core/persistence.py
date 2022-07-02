@@ -193,11 +193,10 @@ class TransactionRepo(abc.ABC):
     # noinspection PyShadowingBuiltins
     @abc.abstractmethod
     def create(
-            self, type: String, client: Client, when: date, amount: Currency, method: String, responsible: String,
-            description: String
+            self, type: String, when: date, amount: Currency, method: String, responsible: String, description: String,
+            client: Client | None = None
     ) -> Transaction:
-        """Register a new transaction with the given information. This method must return the created
-        transaction.
+        """Register a new transaction with the given information. This method must return the created transaction.
         """
         raise NotImplementedError
 
