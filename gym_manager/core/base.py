@@ -166,6 +166,11 @@ class Currency(Validatable):
     """Decimal wrapper that supports a max currency value.
     """
 
+    def __eq__(self, other: Currency) -> bool:
+        if isinstance(other, type(self)):
+            return self._value == other.as_primitive()
+        return NotImplemented
+
     def validate(self, value: str, **kwargs) -> Decimal:
         """Validates the given *value*. If the validation succeeds, returns the created Decimal object.
 
@@ -176,16 +181,15 @@ class Currency(Validatable):
             KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-        if 'max_currency' not in kwargs:
-            raise KeyError(f"The method is missing the kwarg 'max_currency'. [kwargs={kwargs}]")
 
         try:
             value = Decimal(value)
         except InvalidOperation:
             raise ValidationError(f"The argument 'value' is not a valid currency. [value={value}]")
-        if value >= kwargs['max_currency']:
-            raise ValidationError(f"The argument 'value' must be lesser than {kwargs['max_currency']}. [value={value}]")
         return value
+
+    def increase(self, other_currency: Currency) -> None:
+        self._value += other_currency.as_primitive()
 
 
 @dataclass

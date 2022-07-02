@@ -132,20 +132,6 @@ def test_String_raisesValidationError_invalidInput():
                                     f"[len(value)={len('abcde')}, max_len=5]")
 
 
-def test_Currency_raisesKeyError_missingKwarg():
-    with pytest.raises(KeyError):
-        Currency("test")  # Missing max_currency.
-
-    with pytest.raises(KeyError):
-        Currency("test")  # Missing max_currency.
-
-    with pytest.raises(KeyError):
-        Currency("test")  # Missing max_currency.
-
-    with pytest.raises(KeyError):
-        Currency("test", max_crrency=10)  # max_currency misspelled.
-
-
 def test_Currency_raisesValidationError_invalidCurrency():
     with pytest.raises(ValidationError) as valid_err:
         Currency("", max_currency=Decimal("100"))
@@ -162,12 +148,6 @@ def test_Currency_raisesValidationError_invalidCurrency():
     with pytest.raises(ValidationError) as valid_err:
         Currency("a1", max_currency=Decimal("100"))
     assert str(valid_err.value) == f"The argument 'value' is not a valid currency. [value=a1]"
-
-
-def test_Currency_raisesValidationError_maxCurrencyExceeded():
-    with pytest.raises(ValidationError) as valid_err:
-        Currency("100", max_currency=Decimal("100"))
-    assert str(valid_err.value) == f"The argument 'value' must be lesser than {'100'}. [value=100]"
 
 
 # noinspection PyTypeChecker

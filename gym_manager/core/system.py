@@ -6,7 +6,7 @@ from typing import Iterable
 
 from gym_manager.core import constants
 from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency, OperationalError
-from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo
+from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, BalanceRepo
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,8 @@ class ActivityManager:
     def cancel(self, subscription: Subscription):
         subscription.client.unsubscribe(subscription.activity)
         self.sub_repo.remove(subscription)
-        logging.info(f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
+        logging.info(
+            f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
 
 
 class AccountingSystem:
@@ -88,14 +89,19 @@ class AccountingSystem:
             self,
             transaction_repo: TransactionRepo,
             sub_repo: SubscriptionRepo,
+            balance_repo: BalanceRepo,
             transaction_types: tuple[str, ...],
             methods: tuple[str, ...]
     ) -> None:
         self.transaction_repo = transaction_repo
         self.sub_repo = sub_repo
-        self.transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
-                                  for name in transaction_types}
+        self.balance_repo = balance_repo
+        self._transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
+                                   for name in transaction_types}
         self.methods = tuple(String(name, max_len=constants.TRANSACTION_METHOD_CHARS) for name in methods)
+
+    def transactions_types(self) -> Iterable[String]:
+        return self._transaction_types.values()
 
     def transactions(self, page: int = 1, page_len: int = 15, **filters) -> Iterable[Transaction]:
         """Retrieves transactions.
@@ -113,7 +119,7 @@ class AccountingSystem:
         """Charges the *client* for its *activity* subscription.
         """
         transaction = self.transaction_repo.create(
-            self.transaction_types["charge"], client, when, activity.price, method, responsible, description
+            self._transaction_types["charge"], client, when, activity.price, method, responsible, description
         )
 
         # For the activities that are not 'charge once', record that the client was charged for it.
@@ -123,3 +129,23 @@ class AccountingSystem:
             self.sub_repo.register_charge(client, activity, transaction)
 
         return transaction
+
+
+def generate_balance(
+        transactions: Iterable[Transaction],
+        transaction_types: Iterable[String],
+        transaction_methods: Iterable[String]
+):
+    """Generates the balance of the day *when*. The transactions are grouped by type and by method, and then summed up.
+    """
+    total = String("Total", max_len=constants.TRANSACTION_TYPE_CHARS)
+    balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
+               for trans_type in transaction_types}
+    for trans_type in transaction_types:
+        balance[trans_type][total] = Currency("0")
+
+    for transaction in transactions:
+        balance[transaction.type][transaction.method].increase(transaction.amount)
+        balance[transaction.type][total].increase(transaction.amount)
+
+    return balance

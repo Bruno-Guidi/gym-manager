@@ -1,11 +1,12 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from typing import Iterable
 
 import pytest
 
 from gym_manager import peewee
-from gym_manager.core.base import Client, Number, String, TextLike, Currency
-from gym_manager.core.system import ActivityManager, AccountingSystem
+from gym_manager.core.base import Client, Number, String, TextLike, Currency, Transaction
+from gym_manager.core.system import ActivityManager, AccountingSystem, generate_balance
 
 MAX_CURRENCY = Decimal("9999.99")
 
@@ -145,7 +146,7 @@ def test_removeClient():
                                    charge_once=False, description=String("Descr", max_len=20))
 
     # This client is inactive. To make things easy, the client is created with is_active=False since the beginning.
-    cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 6, 2), String("TelC", max_len=20),
+    cli_c = Client(Number(3), String("TestCliC", max_len=20), date(2022, 5, 2), String("TelC", max_len=20),
                    String("DirC", max_len=20), is_active=True)
     client_repo.add(cli_c)
     activity_manager.subscribe(date(2022, 5, 5), cli_c, act1)
@@ -243,9 +244,11 @@ def test_chargeActivity_onSubDate():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge",), ("dummy_method",))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
@@ -271,9 +274,11 @@ def test_chargeActivity_after30DaysOfSub():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge",), ("dummy_method",))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
@@ -300,9 +305,11 @@ def test_chargeActivity_after60DaysOfSub():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge",), ("dummy_method",))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
@@ -329,9 +336,11 @@ def test_chargeActivity_chargeOnceActivity():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
     sub_repo = peewee.SqliteSubscriptionRepo()
+    balance_repo = None  # This repo is irrelevant to the current test.
 
     activity_manager = ActivityManager(activity_repo, sub_repo)
-    accounting_manager = AccountingSystem(transaction_repo, sub_repo, ("charge", ), ("dummy_method", ))
+    # noinspection PyTypeChecker
+    accounting_manager = AccountingSystem(transaction_repo, sub_repo, balance_repo, ("charge",), ("dummy_method",))
 
     # Test setup.
     act1 = activity_manager.create(String("Futbol", max_len=20), Currency("100.00", max_currency=MAX_CURRENCY),
@@ -346,3 +355,38 @@ def test_chargeActivity_chargeOnceActivity():
                               String("dummy_method", max_len=20), String("dummy_descr", max_len=20))
     assert not cli.is_subscribed(act1)
 
+
+def test_generateBalance():
+    total = String("Total", max_len=10)
+    # Transaction types.
+    trans_charge, trans_extract = String("Charge", max_len=10), String("Extract", max_len=10)
+    # Transaction methods.
+    trans_cash, trans_debit = String("Cash", max_len=10), String("Debit", max_len=10)
+    trans_credit = String("Credit", max_len=10)
+
+    # Utility function that creates a generator with some transactions.
+    def transactions_gen() -> Iterable[Transaction]:
+        # noinspection PyTypeChecker
+        to_yield = [
+            Transaction(4, trans_charge, None, date(2022, 6, 6), Currency("100.99"), trans_cash, None, None),
+            Transaction(5, trans_charge, None, date(2022, 6, 6), Currency("100.0001"), trans_cash, None, None),
+            Transaction(1, trans_charge, None, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(6, trans_charge, None, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(3, trans_extract, None, date(2022, 6, 6), Currency("100"), trans_cash, None, None),
+            Transaction(7, trans_extract, None, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(2, trans_extract, None, date(2022, 6, 6), Currency("0.0005"), trans_credit, None, None)
+        ]
+        for t in to_yield:
+            yield t
+
+    # Feature to test.
+    balance = generate_balance(transactions_gen(), (trans_charge, trans_extract),
+                               (trans_cash, trans_debit, trans_credit))
+    expected_balance = {
+        trans_charge: {trans_cash: Currency("200.9901"), trans_debit: Currency("200"), trans_credit: Currency(0),
+                       total: Currency("400.9901")},
+        trans_extract: {trans_cash: Currency("100"), trans_debit: Currency("100"), trans_credit: Currency("0.0005"),
+                        total: Currency("200.0005")}
+    }
+
+    assert expected_balance == balance

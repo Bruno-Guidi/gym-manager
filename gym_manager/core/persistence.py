@@ -1,7 +1,7 @@
 import abc
 from collections import OrderedDict
 from datetime import date
-from typing import Generator, Type, Any
+from typing import Generator, Type, Any, Iterable
 
 from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction
 
@@ -209,4 +209,12 @@ class TransactionRepo(abc.ABC):
             dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
                 filter.
         """
+        raise NotImplementedError
+
+
+class BalanceRepo(abc.ABC):
+    def balance_done(self, when: date) -> bool:
+        raise NotImplementedError
+
+    def add_all(self, when: date, transactions: Iterable[Transaction]):
         raise NotImplementedError
