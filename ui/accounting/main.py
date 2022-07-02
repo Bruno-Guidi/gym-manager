@@ -11,6 +11,7 @@ from PyQt5.uic.properties import QtCore
 from gym_manager.core import system
 from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
     NumberEqual, Transaction, String
+from gym_manager.core.persistence import BalanceRepo
 from gym_manager.core.system import AccountingSystem
 from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
     config_date_edit
@@ -185,15 +186,15 @@ class DailyBalanceController:
             daily_balance_ui: DailyBalanceUI,
             transactions_fn: _TransactionFunction,
             transaction_types: Iterable[String],
-            transaction_methods: Iterable[String]
+            transaction_methods: Iterable[String],
+            balance_repo: BalanceRepo
     ):
         types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
         methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
         methods_dict["Total"] = len(methods_dict) + 2
 
-        balance = system.balance((transaction for transaction in transactions_fn(page=1)),
-                                 transaction_types,
-                                 transaction_methods)
+        balance = system.generate_balance(date.today(), transactions_fn(page=1), transaction_types, transaction_methods,
+                                          balance_repo)
 
         for trans_type, type_balance in balance.items():
             for trans_method, method_balance in type_balance.items():
@@ -206,11 +207,13 @@ class DailyBalanceUI(QMainWindow):
             self,
             transactions_fn: _TransactionFunction,
             transaction_types: Iterable[String],
-            transaction_methods: Iterable[String]
+            transaction_methods: Iterable[String],
+            balance_repo: BalanceRepo
     ):
         super().__init__()
         self._setup_ui()
-        self.controller = DailyBalanceController(self, transactions_fn, transaction_types, transaction_methods)
+        self.controller = DailyBalanceController(self, transactions_fn, transaction_types, transaction_methods,
+                                                 balance_repo)
 
     def _setup_ui(self):
         self.widget = QWidget(self)
