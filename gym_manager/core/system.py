@@ -6,7 +6,7 @@ from typing import Iterable
 
 from gym_manager.core import constants
 from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency, OperationalError
-from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo
+from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, BalanceRepo
 
 logger = logging.getLogger(__name__)
 
@@ -129,19 +129,25 @@ class AccountingSystem:
         return transaction
 
 
-def balance(
+def generate_balance(
+        when: date,
         transactions: Iterable[Transaction],
         transaction_types: Iterable[String],
-        transaction_methods: Iterable[String]
+        transaction_methods: Iterable[String],
+        balance_repo: BalanceRepo
 ):
-    """Calculates the balance for the given transactions types and methods.
+    """Generates the balance of the day *when*. The transactions are grouped by type and by method, and then summed up.
     """
-    _balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
+    balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
                 for trans_type in transaction_types}
     for trans_type in transaction_types:
-        _balance[trans_type]["Total"] = Currency("0")
+        balance[trans_type]["Total"] = Currency("0")
 
+    balance_transactions = []  # This stores transactions, so they can be added later to the repository.
     for transaction in transactions:
-        _balance[transaction.type][transaction.method].increase(transaction.amount)
-        _balance[transaction.type]["Total"].increase(transaction.amount)
-    return _balance
+        balance_transactions.append(transaction)
+        balance[transaction.type][transaction.method].increase(transaction.amount)
+        balance[transaction.type]["Total"].increase(transaction.amount)
+
+    balance_repo.add_all(when, balance_transactions)
+    return balance
