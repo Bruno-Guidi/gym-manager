@@ -5,12 +5,13 @@ from datetime import date
 from typing import Generator
 
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-                    CompositeKey, prefetch, Proxy)
+                    CompositeKey, prefetch, Proxy, chunked)
 
 from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
     OperationalError
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache
+from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache, \
+    BalanceRepo
 
 logger = logging.getLogger(__name__)
 
@@ -433,3 +434,21 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         trans_record = TransactionTable.get_by_id(transaction.id)
         sub_record.transaction = trans_record
         sub_record.save()
+
+
+class BalanceTable(Model):
+    when = DateField()
+    transaction = ForeignKeyField(TransactionTable, backref="balance_register")
+
+    class Meta:
+        database = DATABASE_PROXY
+        primary_key = None
+
+
+class SqliteBalanceRepo(BalanceRepo):
+
+    def add_all(self, when: date, transactions: list[Transaction]):
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(transactions, 30):
+                batch = [(when, transaction.id) for transaction in batch]
+                BalanceTable.insert_many(batch, fields=[BalanceTable.when, BalanceTable.transaction_id]).execute()

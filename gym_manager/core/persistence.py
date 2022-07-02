@@ -210,3 +210,8 @@ class TransactionRepo(abc.ABC):
                 filter.
         """
         raise NotImplementedError
+
+
+class BalanceRepo(abc.ABC):
+    def add_all(self, when: date, transactions: list[Transaction]):
+        raise NotImplementedError
