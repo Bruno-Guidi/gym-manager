@@ -1,7 +1,7 @@
 import abc
 from collections import OrderedDict
 from datetime import date
-from typing import Generator, Type, Any
+from typing import Generator, Type, Any, Iterable
 
 from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction
 
@@ -213,5 +213,8 @@ class TransactionRepo(abc.ABC):
 
 
 class BalanceRepo(abc.ABC):
-    def add_all(self, when: date, transactions: list[Transaction]):
+    def balance_done(self, when: date) -> bool:
+        raise NotImplementedError
+
+    def add_all(self, when: date, transactions: Iterable[Transaction]):
         raise NotImplementedError
