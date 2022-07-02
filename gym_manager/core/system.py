@@ -77,7 +77,8 @@ class ActivityManager:
     def cancel(self, subscription: Subscription):
         subscription.client.unsubscribe(subscription.activity)
         self.sub_repo.remove(subscription)
-        logging.info(f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
+        logging.info(
+            f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
 
 
 class AccountingSystem:
@@ -136,7 +137,7 @@ def balance(
     """Calculates the balance for the given transactions types and methods.
     """
     _balance = {trans_type: {trans_method: Currency("0") for trans_method in transaction_methods}
-               for trans_type in transaction_types}
+                for trans_type in transaction_types}
     for trans_type in transaction_types:
         _balance[trans_type]["Total"] = Currency("0")
 
