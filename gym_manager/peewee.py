@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Generator
+from typing import Generator, Iterable
 
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
                     CompositeKey, prefetch, Proxy, chunked)
@@ -446,9 +446,16 @@ class BalanceTable(Model):
 
 
 class SqliteBalanceRepo(BalanceRepo):
+    def __init__(self):
+        BalanceTable._meta.database.create_tables([BalanceTable])
 
-    def add_all(self, when: date, transactions: list[Transaction]):
+    def balance_done(self, when: date) -> bool:
+        return BalanceTable.select().where(BalanceTable.when == when).count()
+
+    def add_all(self, when: date, transactions: Iterable[Transaction]):
         with DATABASE_PROXY.atomic():
-            for batch in chunked(transactions, 30):
+            BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
+
+            for batch in chunked(transactions, 30):  # Saves the new balance.
                 batch = [(when, transaction.id) for transaction in batch]
                 BalanceTable.insert_many(batch, fields=[BalanceTable.when, BalanceTable.transaction_id]).execute()
