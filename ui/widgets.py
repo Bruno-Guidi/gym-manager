@@ -16,7 +16,7 @@ def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> t
         value = String(text.toPlainText(), optional=optional, max_len=max_len)
         valid = True
     except ValidationError:
-        pass
+        pass  # ToDo self.setStyleSheet("border: 1px solid red")
     return valid, value
 
 
