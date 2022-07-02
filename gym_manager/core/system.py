@@ -143,4 +143,4 @@ def balance(
     for transaction in transactions:
         _balance[transaction.type][transaction.method].increase(transaction.amount)
         _balance[transaction.type]["Total"].increase(transaction.amount)
-    return balance
+    return _balance
