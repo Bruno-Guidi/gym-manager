@@ -205,13 +205,9 @@ class TransactionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
-        """Retrieves the transactions in the repository.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                filter.
-        """
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+    ) -> Generator[Transaction, None, None]:
         raise NotImplementedError
 
 

@@ -387,22 +387,16 @@ class SqliteTransactionRepo(TransactionRepo):
 
         return transaction
 
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
-        """Retrieves the transactions in the repository.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                filter.
-
-        Raises:
-            AttributeError if the client_repo attribute wasn't set before the execution of the method.
-        """
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+    ) -> Generator[Transaction, None, None]:
         if self.client_repo is None:
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
         transactions_q = TransactionTable.select().join(ClientTable)
-        for filter_, value in filters.values():
-            transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
+        if filters is not None:
+            for filter_, value in filters:
+                transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
         for record in transactions_q.paginate(page, page_len):
             client = None if record.client is None else self.client_repo.get(record.client_id)
