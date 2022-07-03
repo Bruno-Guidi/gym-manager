@@ -39,9 +39,9 @@ class MainController:
                              translate_fun=lambda trans, value: trans.method == value),
                    TextLike("responsible", display_name="Responsable", attr="responsible",
                             translate_fun=lambda trans, value: trans.responsible.contains(value)))
-        date_greater_filter = DateGreater("from", display_name="Desde",
+        date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
                                           translate_fun=lambda trans, when: trans.when >= when)
-        date_lesser_filter = DateLesser("to", display_name="Hasta",
+        date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
                                         translate_fun=lambda trans, when: trans.when <= when)
         self.main_ui.filter_header.config(filters, self.fill_transaction_table, date_greater_filter, date_lesser_filter)
 
