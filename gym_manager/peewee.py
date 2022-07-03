@@ -280,7 +280,7 @@ class SqliteActivityRepo(ActivityRepo):
             self.cache.move_to_front(activity.name)
 
     def all(
-            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Activity, None, None]:
         activities_q = ActivityTable.select()
         if filters is not None:
