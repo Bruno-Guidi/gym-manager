@@ -232,8 +232,10 @@ class FilterHeader(QWidget):
         if self._on_search_click is None:
             raise AttributeError("Function 'on_search_click' was not defined.")
         self.filter_line_edit.clear()
-        self.from_date_edit.setDate(date.today() - ONE_MONTH_TD)
-        self.to_date_edit.setDate(date.today())
+        if self.from_date_edit is not None:
+            self.from_date_edit.setDate(date.today() - ONE_MONTH_TD)
+        if self.to_date_edit is not None:
+            self.to_date_edit.setDate(date.today())
         self._on_search_click(self._generate_filters())
 
 
