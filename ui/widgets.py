@@ -266,7 +266,7 @@ class PageIndex(QWidget):
         super().__init__(parent)
         self._setup_ui()
 
-        self.page, self.page_len, self.total_len = 1, None, None
+        self.page, self.page_len, self._total_len = 1, None, None
 
         self._refresh_table: Callable[[], None] | None = None
 
@@ -293,6 +293,15 @@ class PageIndex(QWidget):
         self.next_btn = QPushButton(self)
         self.layout.addWidget(self.next_btn)
         config_btn(self.next_btn, ">")
+
+    @property
+    def total_len(self):
+        return self._total_len
+
+    @total_len.setter
+    def total_len(self, total_len: int):
+        self._total_len = total_len
+        self._update()
 
     def config(self, refresh_table: Callable[[], None], page_len: int, total_len: int):
         self.page_len, self.total_len = page_len, total_len
