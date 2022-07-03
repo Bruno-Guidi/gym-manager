@@ -96,6 +96,7 @@ class FilterHeader(QWidget):
         super().__init__(parent)
         self._setup_ui(date_greater_filtering, date_lesser_filtering)
 
+        self.prev_value: str | None = None
         self._filter_number: dict[str, int] | None = None
         self._date_greater_filter: DateGreater | None = None
         self._date_lesser_filter: DateLesser | None = None
@@ -182,6 +183,7 @@ class FilterHeader(QWidget):
 
     def set_filter(self, name: str, value: str):
         self.filter_combobox.setCurrentIndex(self._filter_number[name])
+        self.prev_value = self.filter_line_edit.text()
         self.filter_line_edit.setText(value)
 
     def passes_filters(self, obj) -> bool:
@@ -190,19 +192,27 @@ class FilterHeader(QWidget):
                 return False
         return True
 
-    def _generate_filters(self) -> list[FilterValuePair, ...]:
-        selected_filter, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
-        filters = [] if len(value) == 0 or value.isspace() else [(selected_filter, value)]
+    def _generate_filters(self) -> list[FilterValuePair]:
+        filters: list[FilterValuePair]
 
+        filter_ = self.filter_combobox.currentData(Qt.UserRole)
         from_date = self.from_date_edit.date().toPyDate() if self._date_greater_filter is not None else None
         to_date = self.to_date_edit.date().toPyDate() if self._date_lesser_filter is not None else None
+
         if from_date is not None and to_date is not None and from_date > to_date:
+            # There is a problem with the date filtering set by the user.
+            # In this case apply the filters with the previous value.
+            filters = [] if len(self.prev_value) == 0 or self.prev_value.isspace() else [(filter_, self.prev_value)]
             Dialog.info("Error", "La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
         else:
+            # If there is no problems, proceed with the new filtering data that the user provides.
+            value = self.filter_line_edit.text()
+            filters = [] if len(value) == 0 or value.isspace() else [(filter_, value)]
             if from_date is not None:
                 filters.append((self._date_greater_filter, self.from_date_edit.date().toPyDate()))
             if to_date is not None:
                 filters.append((self._date_lesser_filter, self.to_date_edit.date().toPyDate()))
+            self.prev_value = value  # The current value will be the previous value for the next filtering.
 
         return filters
 
