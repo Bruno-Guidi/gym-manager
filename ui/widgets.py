@@ -96,7 +96,7 @@ class FilterHeader(QWidget):
         super().__init__(parent)
         self._setup_ui(date_greater_filtering, date_lesser_filtering)
 
-        self._filters: dict[str, Filter] | None = None
+        self._filter_number: dict[str, int] | None = None
         self._date_greater_filter: DateGreater | None = None
         self._date_lesser_filter: DateLesser | None = None
 
@@ -174,14 +174,14 @@ class FilterHeader(QWidget):
             raise AttributeError("date_lesser_filtering flag was True, but DateLesser filter was not configured.")
 
         # Configuration.
-        self._filters = {filter_.name: filter_ for filter_ in filters}
+        self._filter_number = {filter_.name: i for i, filter_ in enumerate(filters)}
         fill_combobox(self.filter_combobox, filters, display=lambda filter_: filter_.display_name)
         self._date_greater_filter, self._date_lesser_filter = date_greater_filter, date_lesser_filter
 
         self._on_search_click = on_search_click
 
     def set_filter(self, name: str, value: str):
-        self.filter_combobox.setCurrentIndex(self._filters[name])
+        self.filter_combobox.setCurrentIndex(self._filter_number[name])
         self.filter_line_edit.setText(value)
 
     def passes_filters(self, obj) -> bool:
