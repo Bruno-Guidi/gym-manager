@@ -455,7 +455,7 @@ class Controller:
         if set_to_current:
             self.main_ui.client_list.setCurrentItem(item)
 
-    def fill_client_table(self, filters: tuple[FilterValuePair, ...]):
+    def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_list.clear()
 
         for client in self.client_repo.all(self.current_page, self.page_len, filters):
