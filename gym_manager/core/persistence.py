@@ -106,6 +106,12 @@ class ClientRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of clients in the repository.
+        """
+        raise NotImplementedError
+
 
 class ActivityRepo(abc.ABC):
     """Activities repository interface.
@@ -160,6 +166,12 @@ class ActivityRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of activities in the repository.
+        """
+        raise NotImplementedError
+
 
 class SubscriptionRepo(abc.ABC):
     """Repository interface for client's activities subscriptions.
@@ -208,6 +220,11 @@ class TransactionRepo(abc.ABC):
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Transaction, None, None]:
+        raise NotImplementedError
+
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of transactions in the repository.
+        """
         raise NotImplementedError
 
 

@@ -5,16 +5,16 @@ from datetime import date
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QLabel
+    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
-from ui.widget_config import config_layout, config_btn, config_table, config_date_edit, config_lbl
-from ui.widgets import FilterHeader
+from ui.widget_config import config_layout, config_btn, config_table, config_date_edit
+from ui.widgets import FilterHeader, PageIndex
 
 
 class Controller:
@@ -38,6 +38,12 @@ class Controller:
         self.main_ui.book_btn.clicked.connect(self.book_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.prev_button.clicked.connect(self.prev_page)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.date_field.dateChanged.connect(self.load_bookings)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.next_button.clicked.connect(self.next_page)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -65,6 +71,14 @@ class Controller:
         for booking, start, end in self.booking_system.bookings((BOOKING_TO_HAPPEN, BOOKING_PAID),
                                                                 self.main_ui.date_field.date().toPyDate()):
             self._load_booking(booking, start, end)
+
+    def next_page(self):
+        # The load_bookings(args) method is executed as a callback when the date_edit date changes.
+        self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() + ONE_DAY_TD)
+
+    def prev_page(self):
+        # The load_bookings(args) method is executed as a callback when the date_edit date changes.
+        self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() - ONE_DAY_TD)
 
     def book_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -147,7 +161,7 @@ class BookingMainUI(QMainWindow):
 
         self.prev_button = QPushButton(self.widget)
         self.date_layout.addWidget(self.prev_button)
-        config_btn(self.prev_button, "<", width=30)
+        config_btn(self.prev_button, "<")
 
         self.date_field = QDateEdit(self.widget)
         self.date_layout.addWidget(self.date_field)
@@ -155,7 +169,7 @@ class BookingMainUI(QMainWindow):
 
         self.next_button = QPushButton(self.widget)
         self.date_layout.addWidget(self.next_button)
-        config_btn(self.next_button, ">", width=30)
+        config_btn(self.next_button, ">")
 
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
@@ -186,14 +200,18 @@ class HistoryController:
                                         translate_fun=lambda trans, when: trans.when <= when)
         self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter, date_lesser_filter)
 
+        # Configures the page index.
+        self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
+                                          page_len=10, total_len=self.booking_system.repo.count())
+
         # Fills the table.
         self.history_ui.filter_header.on_search_click()
 
     def fill_booking_table(self, filters: list[FilterValuePair]):
         self.history_ui.booking_table.setRowCount(0)
 
-        booking = self.booking_system.repo.all(filters=filters)
-        for row, booking in enumerate(booking):
+        self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
+        for row, booking in enumerate(self.booking_system.repo.all(filters=filters)):
             self.history_ui.booking_table.setRowCount(row + 1)
             self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
             self.history_ui.booking_table.setItem(row, 1,
@@ -224,14 +242,9 @@ class HistoryUI(QMainWindow):
         self.layout = QVBoxLayout(self.widget)
         config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
 
-        # Utilities.
-        self.utils_layout = QHBoxLayout()
-        self.layout.addLayout(self.utils_layout)
-        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
-
         # Filtering.
         self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
-        self.utils_layout.addWidget(self.filter_header)
+        self.layout.addWidget(self.filter_header)
 
         # Bookings.
         self.booking_table = QTableWidget(self.widget)
@@ -243,18 +256,5 @@ class HistoryUI(QMainWindow):
         )
 
         # Index.
-        self.index_layout = QHBoxLayout()
-        self.layout.addLayout(self.index_layout)
-        config_layout(self.index_layout, left_margin=100, right_margin=100)
-
-        self.prev_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, "<", font_size=18, width=30)
-
-        self.index_lbl = QLabel(self.widget)
-        self.index_layout.addWidget(self.index_lbl)
-        config_lbl(self.index_lbl, "#", font_size=18)
-
-        self.next_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, ">", font_size=18, width=30)
+        self.page_index = PageIndex(self)
+        self.layout.addWidget(self.page_index)

@@ -259,3 +259,87 @@ class Dialog(QDialog):
             self.buttons_layout.addWidget(self.cancel_btn)
             config_btn(self.cancel_btn, "Cancelar", width=100)
 
+
+class PageIndex(QWidget):
+    """
+    Setting up a PageIndex:
+
+    + Create the widget and add it to a layout of the QMainWindow.
+    + Call (BEFORE FILLING THE TABLE IN DISPLAY) the method config(args). Pass the Callable to run when changing page,
+    the page length, and the total length.
+    + Inside the method that fills the table in display, set the PageIndex total_len property with the amount of
+    expected rows (with the active filters applied).
+    + If it is possible to add or remove rows manually, after each of these actions update the PageIndex total_len
+    property accordingly.
+    """
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self._setup_ui()
+
+        self.page, self.page_len, self._total_len = 1, None, None
+
+        self._refresh_table: Callable[[], None] | None = None
+
+        # noinspection PyUnresolvedReferences
+        self.prev_btn.clicked.connect(self.on_prev_clicked)
+        # noinspection PyUnresolvedReferences
+        self.next_btn.clicked.connect(self.on_next_clicked)
+
+    def _setup_ui(self):
+        self.layout = QHBoxLayout(self)
+
+        self.info_lbl = QLabel(self)
+        self.layout.addWidget(self.info_lbl)
+        config_lbl(self.info_lbl)
+
+        self.prev_btn = QPushButton(self)
+        self.layout.addWidget(self.prev_btn)
+        config_btn(self.prev_btn, "<")
+
+        self.index_lbl = QLabel(self)
+        self.layout.addWidget(self.index_lbl)
+        config_lbl(self.index_lbl)
+
+        self.next_btn = QPushButton(self)
+        self.layout.addWidget(self.next_btn)
+        config_btn(self.next_btn, ">")
+
+    @property
+    def total_len(self):
+        return self._total_len
+
+    @total_len.setter
+    def total_len(self, total_len: int):
+        self._total_len = total_len
+        self._update()
+
+    def config(self, refresh_table: Callable[[], None], page_len: int, total_len: int):
+        self.page_len, self.total_len = page_len, total_len
+        self._refresh_table = refresh_table
+
+        self._update()
+
+    def _update(self):
+        roof = self.page * self.page_len if self.page * self.page_len < self.total_len else self.total_len
+        self.info_lbl.setText(f"Mostrando {(self.page - 1) * self.page_len + 1} - {roof} de {self.total_len}")
+        self.index_lbl.setText(str(self.page))
+
+        self.prev_btn.setEnabled(self.page != 1)
+        self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
+
+    def on_prev_clicked(self):
+        if self.page_len is None or self.total_len is None or self._refresh_table is None:
+            raise AttributeError("PageIndex widget was not configured.")
+
+        self.page -= 1
+        self._update()
+        self._refresh_table()
+
+    def on_next_clicked(self):
+        if self.page_len is None or self.total_len is None or self._refresh_table is None:
+            raise AttributeError("PageIndex widget was not configured.")
+
+        self.page += 1
+        self._update()
+        self._refresh_table()

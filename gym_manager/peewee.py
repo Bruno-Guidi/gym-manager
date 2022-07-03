@@ -188,6 +188,15 @@ class SqliteClientRepo(ClientRepo):
                     )
             yield client
 
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of clients in the repository.
+        """
+        clients_q = ClientTable.select("1")
+        if filters is not None:
+            for filter_, value in filters:
+                clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+        return clients_q.count()
+
 
 class ActivityTable(Model):
     act_name = CharField(primary_key=True)
@@ -311,6 +320,15 @@ class SqliteActivityRepo(ActivityRepo):
         """
         return SubscriptionTable.select().where(SubscriptionTable.activity == activity.name).count()
 
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of activities in the repository.
+        """
+        activities_q = ActivityTable.select("1")
+        if filters is not None:
+            for filter_, value in filters:
+                activities_q = activities_q.where(filter_.passes_in_repo(ActivityTable, value))
+        return activities_q.count()
+
 
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)
@@ -405,6 +423,18 @@ class SqliteTransactionRepo(TransactionRepo):
             client = None if record.client is None else self.client_repo.get(record.client_id)
             yield self.from_record(record.id, record.type, client, record.when, record.amount, record.method,
                                    record.responsible, record.description)
+
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of transactions in the repository.
+        """
+        transactions_q = TransactionTable.select("1")
+        if filters is not None:
+            # The left outer join is required because transactions might be filtered by the client name, which isn't
+            # an attribute of TransactionTable.
+            transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
+            for filter_, value in filters:
+                transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
+        return transactions_q.count()
 
 
 class SubscriptionTable(Model):
