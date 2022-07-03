@@ -165,8 +165,7 @@ class SqliteClientRepo(ClientRepo):
         """
         clients_q = ClientTable.select()
         if filters is not None:
-            for pair in filters:
-                filter_, value = pair[0], pair[1]
+            for filter_, value in filters:
                 clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
 
         clients_q = clients_q.where(ClientTable.is_active)
