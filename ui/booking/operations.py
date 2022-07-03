@@ -36,17 +36,20 @@ class BookController:
                       lambda block: str(block.start))
         fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
-        # noinspection PyUnresolvedReferences
-        self.book_ui.search_btn.clicked.connect(self.search_clients)
+        # Configure the filtering widget.
+        filters = (ClientLike("client_name", display_name="Nombre cliente",
+                              translate_fun=lambda booking, value: booking.client.cli_name.contains(value)),
+                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                               translate_fun=lambda booking, value: booking.client.dni == value))
+        self.book_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
+
         # noinspection PyUnresolvedReferences
         self.book_ui.confirm_btn.clicked.connect(self.book)
 
-    def search_clients(self):
-        if self.book_ui.search_box.is_empty():
-            Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
-        else:
-            clients = self.client_repo.all(page=1, **self.book_ui.search_box.filters())
-            fill_combobox(self.book_ui.client_combobox, clients, lambda client: client.name.as_primitive())
+    def fill_client_combobox(self, filters: list[FilterValuePair]):
+        fill_combobox(self.book_ui.client_combobox,
+                      self.booking_system.repo.all(filters=filters),
+                      lambda booking: booking.client.name.as_primitive())
 
     def book(self):
         client = self.book_ui.client_combobox.currentData(Qt.UserRole)
@@ -87,19 +90,9 @@ class BookUI(QDialog):
         self.layout = QVBoxLayout(self.widget)
         config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
-        # Utilities.
-        self.utils_layout = QHBoxLayout()
-        self.layout.addLayout(self.utils_layout)
-
-        self.search_box = SearchBox(
-            filters=[TextLike("name", display_name="Nombre", attr="name",
-                              translate_fun=lambda client, value: client.cli_name.contains(value))],
-            parent=self.widget)
-        self.utils_layout.addWidget(self.search_box)
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        # Filtering.
+        self.filter_header = FilterHeader(show_clear_button=False, parent=self.widget)
+        self.layout.addWidget(self.filter_header)
 
         # Form.
         self.form_layout = QGridLayout()
@@ -176,8 +169,9 @@ class CancelController:
         self.cancel_ui.confirm_btn.clicked.connect(self.cancel)
 
     def fill_booking_combobox(self, filters: list[FilterValuePair]):
-        bookings = self.booking_system.repo.all(states=(BOOKING_TO_HAPPEN,), filters=filters)
-        fill_combobox(self.cancel_ui.booking_combobox, bookings, booking_summary)
+        fill_combobox(self.cancel_ui.booking_combobox,
+                      self.booking_system.repo.all(states=(BOOKING_TO_HAPPEN,), filters=filters),
+                      booking_summary)
 
     def _update_form(self):
         booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
