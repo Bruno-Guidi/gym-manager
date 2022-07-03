@@ -107,7 +107,7 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def count(self) -> int:
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of clients in the repository.
         """
         raise NotImplementedError

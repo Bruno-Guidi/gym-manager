@@ -188,10 +188,14 @@ class SqliteClientRepo(ClientRepo):
                     )
             yield client
 
-    def count(self) -> int:
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of clients in the repository.
         """
-        return ClientTable.select("1").count()
+        clients_q = ClientTable.select("1")
+        if filters is not None:
+            for filter_, value in filters:
+                clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+        return clients_q.count()
 
 
 class ActivityTable(Model):
