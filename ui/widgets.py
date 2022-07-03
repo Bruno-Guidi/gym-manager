@@ -259,3 +259,68 @@ class Dialog(QDialog):
             self.buttons_layout.addWidget(self.cancel_btn)
             config_btn(self.cancel_btn, "Cancelar", width=100)
 
+
+class PageIndex(QWidget):
+
+    def __init__(self, page_len: int, total_len: int, parent: QWidget | None = None):
+        super().__init__(parent)
+        self._setup_ui()
+
+        self.page, self.page_len, self.total_len = 1, page_len, total_len
+
+        self._update()
+
+        self._on_prev_click: Callable[[], None] | None = None
+        self._on_next_click: Callable[[], None] | None = None
+
+        # noinspection PyUnresolvedReferences
+        self.prev_btn.clicked.connect(self.on_prev_clicked)
+        # noinspection PyUnresolvedReferences
+        self.next_btn.clicked.connect(self.on_next_clicked)
+
+    def _setup_ui(self):
+        self.layout = QHBoxLayout(self)
+
+        self.info_lbl = QLabel(self)
+        self.layout.addWidget(self.info_lbl)
+        config_lbl(self.info_lbl)
+
+        self.prev_btn = QPushButton(self)
+        self.layout.addWidget(self.prev_btn)
+        config_btn(self.prev_btn, "<")
+
+        self.index_lbl = QLabel(self)
+        self.layout.addWidget(self.index_lbl)
+        config_lbl(self.index_lbl)
+
+        self.next_btn = QPushButton(self)
+        self.layout.addWidget(self.next_btn)
+        config_btn(self.next_btn, ">")
+
+    def config(self, on_prev_click: Callable, on_next_click: Callable):
+        self._on_prev_click, self._on_next_click = on_prev_click, on_next_click
+
+    def _update(self):
+        roof = self.page * self.page_len if self.page * self.page_len < self.total_len else self.total_len
+        self.info_lbl.setText(f"Mostrando {(self.page - 1) * self.page_len + 1} - {roof} de {self.total_len}")
+        self.index_lbl.setText(str(self.page))
+
+        self.prev_btn.setEnabled(self.page != 1)
+        self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
+
+    def on_prev_clicked(self):
+        if self._on_prev_click is None:
+            raise AttributeError("Function 'on_prev_click' was not defined.")
+
+        if self.page != 1:
+            self.page -= 1
+            self._update()
+            self._on_prev_click("")
+
+    def on_next_clicked(self):
+        if self._on_next_click is None:
+            raise AttributeError("Function 'on_next_clicked' was not defined.")
+
+        self.page += 1
+        self._update()
+        self._on_next_click("")
