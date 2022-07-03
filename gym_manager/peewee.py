@@ -316,6 +316,11 @@ class SqliteActivityRepo(ActivityRepo):
         """
         return SubscriptionTable.select().where(SubscriptionTable.activity == activity.name).count()
 
+    def count(self) -> int:
+        """Counts the number of activities in the repository.
+        """
+        return ActivityTable.select("1").count()
+
 
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)

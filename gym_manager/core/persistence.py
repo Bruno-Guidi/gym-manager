@@ -166,6 +166,12 @@ class ActivityRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def count(self) -> int:
+        """Counts the number of activities in the repository.
+        """
+        raise NotImplementedError
+
 
 class SubscriptionRepo(abc.ABC):
     """Repository interface for client's activities subscriptions.
