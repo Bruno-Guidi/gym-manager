@@ -229,13 +229,9 @@ class CancelUI(QDialog):
         self.layout = QVBoxLayout(self.widget)
         config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
-        # Utilities.
-        self.utils_layout = QHBoxLayout()
-        self.layout.addLayout(self.utils_layout)
-
         # Filtering.
         self.filter_header = FilterHeader(show_clear_button=False, parent=self.widget)
-        self.utils_layout.addWidget(self.filter_header)
+        self.layout.addWidget(self.filter_header)
 
         # Form.
         self.form_layout = QGridLayout()
