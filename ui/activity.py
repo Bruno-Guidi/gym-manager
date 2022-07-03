@@ -278,6 +278,7 @@ class MainController:
     def fill_activity_table(self, filters: list[FilterValuePair]):
         self.main_ui.activity_list.clear()
 
+        self.main_ui.page_index.total_len = self.activity_manager.activity_repo.count(filters)
         for activity in self.activity_manager.activity_repo.all(self.current_page, self.page_len, filters):
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
