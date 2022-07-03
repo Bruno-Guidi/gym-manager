@@ -473,6 +473,7 @@ class Controller:
         self._create_ui.exec_()
         if self._create_ui.controller.client is not None:
             self._add_client(self._create_ui.controller.client, check_filters=True, set_to_current=True, check_limit=True)
+            self.main_ui.page_index.total_len += 1  # ToDo. After removing a client, update the total_len.
 
 
 class ClientMainUI(QMainWindow):

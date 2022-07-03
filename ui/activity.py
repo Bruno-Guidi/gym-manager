@@ -288,6 +288,7 @@ class MainController:
         self._create_ui.exec_()
         if self._create_ui.controller.activity is not None:
             self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
+            self.main_ui.page_index.total_len += 1  # ToDo. After removing an activity, update the total_len.
 
 
 class ActivityMainUI(QMainWindow):
