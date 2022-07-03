@@ -213,9 +213,6 @@ class FilterHeader(QWidget):
         if to_date is not None:
             filters.append((self._date_lesser_filter, to_date))
 
-        if not self.allow_empty_filter and len(filters) == 0:
-            Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
-
         return filters
 
     def on_search_click(self):
@@ -228,7 +225,11 @@ class FilterHeader(QWidget):
             # There is a problem with the date filtering set by the user.
             Dialog.info("Error", "La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
         else:
-            self._on_search_click(self._generate_filters(from_date, to_date))
+            filters = self._generate_filters(from_date, to_date)
+            if not self.allow_empty_filter and len(filters) == 0:
+                Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
+            else:
+                self._on_search_click(self._generate_filters(from_date, to_date))
 
     def on_clear_click(self):
         if self._on_search_click is None:
