@@ -101,6 +101,7 @@ class FilterHeader(QWidget):
         self._date_lesser_filter: DateLesser | None = None
 
         self._on_search_click: Callable[[list[FilterValuePair]], None] | None = None
+        self.allow_empty_filter: bool = True
 
         # noinspection PyUnresolvedReferences
         self.search_btn.clicked.connect(self.on_search_click)
@@ -161,7 +162,8 @@ class FilterHeader(QWidget):
             filters: tuple[Filter, ...],
             on_search_click: Callable[[list[FilterValuePair]], None],
             date_greater_filter: DateGreater | None = None,
-            date_lesser_filter: DateLesser | None = None
+            date_lesser_filter: DateLesser | None = None,
+            allow_empty_filter: bool = True
     ):
         # Some checks to ensure that date filters are set in case their corresponding flags were True.
         if self.from_lbl is None and date_greater_filter is not None:
@@ -177,6 +179,7 @@ class FilterHeader(QWidget):
         self._filter_number = {filter_.name: i for i, filter_ in enumerate(filters)}
         fill_combobox(self.filter_combobox, filters, display=lambda filter_: filter_.display_name)
         self._date_greater_filter, self._date_lesser_filter = date_greater_filter, date_lesser_filter
+        self.allow_empty_filter = allow_empty_filter
 
         self._on_search_click = on_search_click
 
@@ -207,6 +210,9 @@ class FilterHeader(QWidget):
         to_date = self.to_date_edit.date().toPyDate() if self._date_lesser_filter is not None else to_date
         if to_date is not None:
             filters.append((self._date_lesser_filter, to_date))
+
+        if not self.allow_empty_filter and len(filters) == 0:
+            Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
 
         return filters
 
