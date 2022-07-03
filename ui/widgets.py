@@ -268,8 +268,6 @@ class PageIndex(QWidget):
 
         self.page, self.page_len, self.total_len = 1, None, None
 
-        self._update()
-
         self._on_prev_click: Callable[[], None] | None = None
         self._on_next_click: Callable[[], None] | None = None
 
@@ -300,6 +298,8 @@ class PageIndex(QWidget):
     def config(self, on_prev_click: Callable, on_next_click: Callable, page_len: int, total_len: int):
         self.page_len, self.total_len = page_len, total_len
         self._on_prev_click, self._on_next_click = on_prev_click, on_next_click
+
+        self._update()
 
     def _update(self):
         roof = self.page * self.page_len if self.page * self.page_len < self.total_len else self.total_len
