@@ -106,6 +106,12 @@ class ClientRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def count(self) -> int:
+        """Counts the number of clients in the repository.
+        """
+        raise NotImplementedError
+
 
 class ActivityRepo(abc.ABC):
     """Activities repository interface.

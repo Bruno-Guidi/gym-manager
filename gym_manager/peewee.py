@@ -188,6 +188,11 @@ class SqliteClientRepo(ClientRepo):
                     )
             yield client
 
+    def count(self) -> int:
+        """Counts the number of clients in the repository.
+        """
+        return ClientTable.select("1").count()
+
 
 class ActivityTable(Model):
     act_name = CharField(primary_key=True)
