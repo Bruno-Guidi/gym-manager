@@ -100,7 +100,7 @@ class FilterHeader(QWidget):
 
         self._filters: tuple[Filter] | None = None
 
-        self._on_search_click: Callable[[tuple[FilterValuePair], ...], None] | None = None
+        self._on_search_click: Callable[[list[FilterValuePair]], None] | None = None
         # noinspection PyUnresolvedReferences
         self.search_btn.clicked.connect(self.on_search_click)
         # noinspection PyUnresolvedReferences
@@ -158,7 +158,7 @@ class FilterHeader(QWidget):
     def config(
             self,
             filters: tuple[Filter, ...],
-            on_search_click: Callable[[tuple[FilterValuePair, ...]], None]
+            on_search_click: Callable[[list[FilterValuePair]], None]
     ):
         self._filters = filters
         fill_combobox(self.filter_combobox, self._filters, display=lambda filter_: filter_.display_name)
@@ -167,16 +167,15 @@ class FilterHeader(QWidget):
     def passes_filters(self, obj) -> bool:
         return True
 
-    def _generate_filters(self) -> tuple[FilterValuePair, ...]:
+    def _generate_filters(self) -> list[FilterValuePair, ...]:
         selected_filter, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
-        # if len(value) == 0 or value.isspace():
-        #     return (),
-        return (selected_filter, value),
+        if len(value) == 0 or value.isspace():
+            return []
+        return [(selected_filter, value)]
 
     def on_search_click(self):
         if self._on_search_click is None:
             raise AttributeError("Function 'on_search_click' was not defined.")
-        print(self._generate_filters())
         self._on_search_click(self._generate_filters())
 
     def on_clear_click(self):
