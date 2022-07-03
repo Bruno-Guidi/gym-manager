@@ -268,8 +268,7 @@ class PageIndex(QWidget):
 
         self.page, self.page_len, self.total_len = 1, None, None
 
-        self._on_prev_click: Callable[[], None] | None = None
-        self._on_next_click: Callable[[], None] | None = None
+        self._refresh_table: Callable[[], None] | None = None
 
         # noinspection PyUnresolvedReferences
         self.prev_btn.clicked.connect(self.on_prev_clicked)
@@ -295,9 +294,9 @@ class PageIndex(QWidget):
         self.layout.addWidget(self.next_btn)
         config_btn(self.next_btn, ">")
 
-    def config(self, on_prev_click: Callable, on_next_click: Callable, page_len: int, total_len: int):
+    def config(self, refresh_table: Callable[[], None], page_len: int, total_len: int):
         self.page_len, self.total_len = page_len, total_len
-        self._on_prev_click, self._on_next_click = on_prev_click, on_next_click
+        self._refresh_table = refresh_table
 
         self._update()
 
@@ -310,20 +309,17 @@ class PageIndex(QWidget):
         self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
 
     def on_prev_clicked(self):
-        if (self.page_len is None or self.total_len is None
-                or self._on_prev_click is None or self._on_next_click is None):
+        if self.page_len is None or self.total_len is None or self._refresh_table is None:
             raise AttributeError("PageIndex widget was not configured.")
 
-        if self.page != 1:
-            self.page -= 1
-            self._update()
-            self._on_prev_click("")
+        self.page -= 1
+        self._update()
+        self._refresh_table()
 
     def on_next_clicked(self):
-        if (self.page_len is None or self.total_len is None
-                or self._on_prev_click is None or self._on_next_click is None):
+        if self.page_len is None or self.total_len is None or self._refresh_table is None:
             raise AttributeError("PageIndex widget was not configured.")
 
         self.page += 1
         self._update()
-        self._on_next_click("")
+        self._refresh_table()
