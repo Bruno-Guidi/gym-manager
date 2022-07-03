@@ -171,7 +171,7 @@ class FilterHeader(QWidget):
         selected_filter, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
         # if len(value) == 0 or value.isspace():
         #     return (),
-        return FilterValuePair(selected_filter, value),
+        return (selected_filter, value),
 
     def on_search_click(self):
         if self._on_search_click is None:
