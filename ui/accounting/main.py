@@ -14,8 +14,8 @@ from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, T
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
-from ui.widget_config import config_layout, config_btn, config_lbl, config_table
-from ui.widgets import Dialog, FilterHeader
+from ui.widget_config import config_layout, config_lbl, config_table
+from ui.widgets import Dialog, FilterHeader, PageIndex
 
 
 class MainController:
@@ -48,6 +48,10 @@ class MainController:
         if client is not None:  # If a client is given, set the filter with it.
             self.main_ui.filter_header.set_filter("client_dni", str(client.dni))
 
+        # Configures the page index.
+        self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
+                                       page_len=30, total_len=self.accounting_system.transaction_repo.count())
+
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
@@ -60,6 +64,7 @@ class MainController:
     def fill_transaction_table(self, filters: list[FilterValuePair]):
         self.main_ui.transaction_table.setRowCount(0)
 
+        self.main_ui.page_index.total_len = self.accounting_system.transaction_repo.count(filters)
         transactions = self.accounting_system.transaction_repo.all(self.current_page, self.page_len, filters)
         for row, transaction in enumerate(transactions):
             self.main_ui.transaction_table.setRowCount(row + 1)
@@ -159,21 +164,8 @@ class AccountingMainUI(QMainWindow):
         )
 
         # Index.
-        self.index_layout = QHBoxLayout()
-        self.main_layout.addLayout(self.index_layout)
-        config_layout(self.index_layout, left_margin=100, right_margin=100)
-
-        self.prev_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, "<", font_size=18, width=30)
-
-        self.index_lbl = QLabel(self.widget)
-        self.index_layout.addWidget(self.index_lbl)
-        config_lbl(self.index_lbl, "#", font_size=18)
-
-        self.next_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, ">", font_size=18, width=30)
+        self.page_index = PageIndex(self)
+        self.main_layout.addWidget(self.page_index)
 
 
 class _TransactionFunction(Protocol):
