@@ -14,7 +14,7 @@ from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
 from ui.widget_config import config_layout, config_btn, config_table, config_date_edit, config_lbl
-from ui.widgets import FilterHeader
+from ui.widgets import FilterHeader, PageIndex
 
 
 class Controller:
@@ -186,14 +186,18 @@ class HistoryController:
                                         translate_fun=lambda trans, when: trans.when <= when)
         self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter, date_lesser_filter)
 
+        # Configures the page index.
+        self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
+                                          page_len=10, total_len=self.booking_system.repo.count())
+
         # Fills the table.
         self.history_ui.filter_header.on_search_click()
 
     def fill_booking_table(self, filters: list[FilterValuePair]):
         self.history_ui.booking_table.setRowCount(0)
 
-        booking = self.booking_system.repo.all(filters=filters)
-        for row, booking in enumerate(booking):
+        self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
+        for row, booking in enumerate(self.booking_system.repo.all(filters=filters)):
             self.history_ui.booking_table.setRowCount(row + 1)
             self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
             self.history_ui.booking_table.setItem(row, 1,
@@ -224,14 +228,9 @@ class HistoryUI(QMainWindow):
         self.layout = QVBoxLayout(self.widget)
         config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
 
-        # Utilities.
-        self.utils_layout = QHBoxLayout()
-        self.layout.addLayout(self.utils_layout)
-        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
-
         # Filtering.
         self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
-        self.utils_layout.addWidget(self.filter_header)
+        self.layout.addWidget(self.filter_header)
 
         # Bookings.
         self.booking_table = QTableWidget(self.widget)
@@ -243,18 +242,5 @@ class HistoryUI(QMainWindow):
         )
 
         # Index.
-        self.index_layout = QHBoxLayout()
-        self.layout.addLayout(self.index_layout)
-        config_layout(self.index_layout, left_margin=100, right_margin=100)
-
-        self.prev_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, "<", font_size=18, width=30)
-
-        self.index_lbl = QLabel(self.widget)
-        self.index_layout.addWidget(self.index_lbl)
-        config_lbl(self.index_lbl, "#", font_size=18)
-
-        self.next_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, ">", font_size=18, width=30)
+        self.page_index = PageIndex(self)
+        self.layout.addWidget(self.page_index)
