@@ -91,10 +91,11 @@ class FilterHeader(QWidget):
             self,
             date_greater_filtering: bool = False,
             date_lesser_filtering: bool = False,
+            show_clear_button: bool = True,
             parent: QWidget | None = None
     ):
         super().__init__(parent)
-        self._setup_ui(date_greater_filtering, date_lesser_filtering)
+        self._setup_ui(date_greater_filtering, date_lesser_filtering, show_clear_button)
 
         self._filter_number: dict[str, int] | None = None
         self._date_greater_filter: DateGreater | None = None
@@ -108,7 +109,7 @@ class FilterHeader(QWidget):
         # noinspection PyUnresolvedReferences
         self.clear_filter_btn.clicked.connect(self.on_clear_click)
 
-    def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool):
+    def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool, show_clear_button: bool):
         self.layout = QHBoxLayout(self)
 
         self.filter_combobox = QComboBox(self)
@@ -122,6 +123,7 @@ class FilterHeader(QWidget):
         self.clear_filter_btn = QPushButton(self)
         self.layout.addWidget(self.clear_filter_btn)
         config_btn(self.clear_filter_btn, "C")
+        self.clear_filter_btn.setVisible(show_clear_button)  # ToDo move to config_btn.
 
         self.search_btn = QPushButton(self)
         self.layout.addWidget(self.search_btn)
