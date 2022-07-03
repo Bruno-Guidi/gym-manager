@@ -187,7 +187,7 @@ class BookingSystem:
             return self._blocks[start].number, self._blocks[end].number
 
     def bookings(
-            self, states: tuple[str, ...], when: date | None = None, **filters
+            self, states: tuple[str, ...], when: date | None = None, filters: list[FilterValuePair] | None = None
     ) -> Iterable[tuple[Booking, int, int]]:
         """Retrieves bookings with its start and end block number.
 
@@ -200,10 +200,10 @@ class BookingSystem:
             OperationalError if given both when and filters are missing.
         """
         if when is not None:
-            for booking in self.repo.all(self._courts.values(), states, when):
+            for booking in self.repo.all(states, when):
                 yield booking, *self.block_range(booking.start, booking.end)
         elif len(filters) > 0:
-            for booking in self.repo.all(self._courts.values(), states, **filters):
+            for booking in self.repo.all(states, filters):
                 yield booking, *self.block_range(booking.start, booking.end)
         else:
             raise OperationalError("Both 'when' and 'filters' arguments cannot be missing when querying bookings",
@@ -227,7 +227,7 @@ class BookingSystem:
             raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
                                    duration=duration, start=self.start, end=self.end)
         end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all(self._courts.values(), (BOOKING_TO_HAPPEN, BOOKING_PAID), when):
+        for booking in self.repo.all((BOOKING_TO_HAPPEN, BOOKING_PAID), when):
             if booking.court == court and booking.collides(start_block.start, end):
                 return False
         return True
