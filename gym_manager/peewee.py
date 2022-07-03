@@ -154,7 +154,7 @@ class SqliteClientRepo(ClientRepo):
             self.cache.move_to_front(client.dni)
 
     def all(
-            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Client, None, None]:
         """Retrieve all the clients in the repository.
 
@@ -165,7 +165,8 @@ class SqliteClientRepo(ClientRepo):
         """
         clients_q = ClientTable.select()
         if filters is not None:
-            for filter_, value in filters:
+            for pair in filters:
+                filter_, value = pair[0], pair[1]
                 clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
 
         clients_q = clients_q.where(ClientTable.is_active)

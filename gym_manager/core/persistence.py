@@ -95,7 +95,7 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, page: int = 1, page_len: int | None = None, filters: tuple[FilterValuePair, ...] | None = None
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Client, None, None]:
         """Retrieve all the clients in the repository.
 
