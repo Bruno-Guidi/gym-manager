@@ -462,6 +462,7 @@ class Controller:
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_list.clear()
 
+        self.main_ui.page_index.total_len = self.client_repo.count(filters)
         for client in self.client_repo.all(self.main_ui.page_index.page,
                                            self.main_ui.page_index.page_len, filters):
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
