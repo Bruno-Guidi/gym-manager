@@ -308,20 +308,22 @@ class PreChargeController:
 
         self.pre_charge_ui = pre_charge_ui
 
-        # noinspection PyUnresolvedReferences
-        self.pre_charge_ui.search_btn.clicked.connect(self.search_bookings)
+        # Configure the filtering widget.
+        filters = (ClientLike("client_name", display_name="Nombre cliente",
+                              translate_fun=lambda booking, value: booking.client.cli_name.contains(value)),
+                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                               translate_fun=lambda booking, value: booking.client.dni == value))
+        self.pre_charge_ui.filter_header.config(filters, self.fill_booking_combobox, allow_empty_filter=False)
+
         # noinspection PyUnresolvedReferences
         self.pre_charge_ui.booking_combobox.currentIndexChanged.connect(self._update_form)
         # noinspection PyUnresolvedReferences
         self.pre_charge_ui.confirm_btn.clicked.connect(self.charge)
 
-    def search_bookings(self):
-        if self.pre_charge_ui.search_box.is_empty():
-            Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
-        else:
-            bookings = self.booking_system.bookings(states=(BOOKING_TO_HAPPEN,),
-                                                    **self.pre_charge_ui.search_box.filters())
-            fill_combobox(self.pre_charge_ui.booking_combobox, (booking for booking, _, _ in bookings), booking_summary)
+    def fill_booking_combobox(self, filters: list[FilterValuePair]):
+        fill_combobox(self.pre_charge_ui.booking_combobox,
+                      self.booking_system.repo.all(states=(BOOKING_TO_HAPPEN,), filters=filters),
+                      booking_summary)
 
     def _update_form(self):
         booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
@@ -368,19 +370,9 @@ class PreChargeUI(QDialog):
         self.layout = QVBoxLayout(self.widget)
         config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
-        # Utilities.
-        self.utils_layout = QHBoxLayout()
-        self.layout.addLayout(self.utils_layout)
-
-        self.search_box = SearchBox(
-            filters=[ClientLike("name", display_name="Nombre",
-                                translate_fun=lambda booking, value: booking.client.cli_name.contains(value))],
-            parent=self.widget)
-        self.utils_layout.addWidget(self.search_box)
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        # Filtering.
+        self.filter_header = FilterHeader(show_clear_button=False, parent=self.widget)
+        self.layout.addWidget(self.filter_header)
 
         # Form.
         self.form_layout = QGridLayout()
