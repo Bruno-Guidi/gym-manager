@@ -256,7 +256,7 @@ class MainController:
         self.fill_activity_table()
 
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_client_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_activity_btn.clicked.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.search_btn.clicked.connect(self.fill_activity_table)
         # noinspection PyUnresolvedReferences
@@ -347,9 +347,9 @@ class ActivityMainUI(QMainWindow):
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
-        self.create_client_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.create_client_btn)
-        config_btn(self.create_client_btn, "Nueva actividad", font_size=16)
+        self.create_activity_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.create_activity_btn)
+        config_btn(self.create_activity_btn, "Nueva actividad", font_size=16)
 
         self.main_layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
