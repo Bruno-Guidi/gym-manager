@@ -167,7 +167,7 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def count(self) -> int:
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of activities in the repository.
         """
         raise NotImplementedError
@@ -220,6 +220,11 @@ class TransactionRepo(abc.ABC):
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Transaction, None, None]:
+        raise NotImplementedError
+
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of transactions in the repository.
+        """
         raise NotImplementedError
 
 
