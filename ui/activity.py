@@ -244,7 +244,7 @@ class MainController:
         self.activity_manager = activity_manager
         self.opened_now: ActivityRow | None = None
 
-        self.current_page, self.page_len = 1, 2
+        self.current_page, self.page_len = 1, 20
 
         self.name_width, self.price_width, self.charge_once_width = name_width, price_width, charge_once_width
 
