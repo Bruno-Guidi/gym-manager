@@ -42,10 +42,14 @@ def combine(base_date: date, start: time | None = None, duration: Duration | Non
     return dt
 
 
-def current_block_start(blocks: Iterable[Block]) -> time:
+def current_block_start(blocks: Iterable[Block], when: date) -> time:
     """Returns the start time of the first block whose start time hasn't passed yet.
     """
-    for block in itertools.dropwhile(lambda b: b.start < datetime.now().time(), blocks):
+    blocks_it = blocks
+    if when == date.today():
+        blocks_it = itertools.dropwhile(lambda b: b.start < datetime.now().time(), blocks)
+
+    for block in blocks_it:
         return block.start
 
 

@@ -30,11 +30,9 @@ class BookController:
 
         self.book_ui = book_ui
 
-        fill_combobox(book_ui.court_combobox, self.booking_system.courts(), lambda court: court.name)
-        fill_combobox(book_ui.block_combobox,
-                      self.booking_system.blocks(start=current_block_start(self.booking_system.blocks())),
-                      lambda block: str(block.start))
-        fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
+        fill_combobox(self.book_ui.court_combobox, self.booking_system.courts(), lambda court: court.name)
+        self._fill_block_combobox()
+        fill_combobox(self.book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
         # Configure the filtering widget.
         filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
@@ -45,6 +43,13 @@ class BookController:
 
         # noinspection PyUnresolvedReferences
         self.book_ui.confirm_btn.clicked.connect(self.book)
+        # noinspection PyUnresolvedReferences
+        self.book_ui.date_edit.dateChanged.connect(self._fill_block_combobox)
+
+    def _fill_block_combobox(self):
+        blocks = self.booking_system.blocks(current_block_start(self.booking_system.blocks(),
+                                                                self.book_ui.date_edit.date().toPyDate()))
+        fill_combobox(self.book_ui.block_combobox, blocks, lambda block: str(block.start))
 
     def fill_client_combobox(self, filters: list[FilterValuePair]):
         fill_combobox(self.book_ui.client_combobox,
