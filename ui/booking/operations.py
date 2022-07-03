@@ -37,10 +37,10 @@ class BookController:
         fill_combobox(book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
         # Configure the filtering widget.
-        filters = (ClientLike("client_name", display_name="Nombre cliente",
-                              translate_fun=lambda booking, value: booking.client.cli_name.contains(value)),
+        filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
+                            translate_fun=lambda client, value: client.cli_name.contains(value)),
                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-                               translate_fun=lambda booking, value: booking.client.dni == value))
+                               translate_fun=lambda client, value: client.dni == value))
         self.book_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
 
         # noinspection PyUnresolvedReferences
@@ -48,8 +48,8 @@ class BookController:
 
     def fill_client_combobox(self, filters: list[FilterValuePair]):
         fill_combobox(self.book_ui.client_combobox,
-                      self.booking_system.repo.all(filters=filters),
-                      lambda booking: booking.client.name.as_primitive())
+                      self.client_repo.all(page=1, filters=filters),
+                      lambda client: client.name.as_primitive())
 
     def book(self):
         client = self.book_ui.client_combobox.currentData(Qt.UserRole)
@@ -158,9 +158,9 @@ class CancelController:
 
         # Configure the filtering widget.
         filters = (ClientLike("client_name", display_name="Nombre cliente",
-                              translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
+                              translate_fun=lambda booking, value: booking.client.cli_name.contains(value)),
                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-                               translate_fun=lambda trans, value: trans.client.dni == value))
+                               translate_fun=lambda booking, value: booking.client.dni == value))
         self.cancel_ui.filter_header.config(filters, self.fill_booking_combobox, allow_empty_filter=False)
 
         # noinspection PyUnresolvedReferences
