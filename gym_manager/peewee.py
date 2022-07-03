@@ -5,7 +5,7 @@ from datetime import date
 from typing import Generator, Iterable
 
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-                    CompositeKey, prefetch, Proxy, chunked)
+                    CompositeKey, prefetch, Proxy, chunked, JOIN)
 
 from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
@@ -395,6 +395,9 @@ class SqliteTransactionRepo(TransactionRepo):
 
         transactions_q = TransactionTable.select()
         if filters is not None:
+            # The left outer join is required because transactions might be filtered by the client name, which isn't
+            # an attribute of TransactionTable.
+            transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
             for filter_, value in filters:
                 transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
