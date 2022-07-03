@@ -9,7 +9,7 @@ from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.system import ActivityManager
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
-from ui.widgets import Field, valid_text_value, Dialog, FilterHeader
+from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 
 
 class ActivityRow(QWidget):
@@ -251,6 +251,10 @@ class MainController:
                             translate_fun=lambda activity, value: activity.act_name.contains(value)),)
         self.main_ui.filter_header.config(filters, on_search_click=self.fill_activity_table)
 
+        # Configures the page index.
+        self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
+                                       page_len=10, total_len=self.activity_manager.activity_repo.count())
+
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
@@ -341,6 +345,10 @@ class ActivityMainUI(QMainWindow):
         # Activities.
         self.activity_list = QListWidget(self.widget)
         self.main_layout.addWidget(self.activity_list)
+
+        # Index.
+        self.page_index = PageIndex(self)
+        self.main_layout.addWidget(self.page_index)
 
 
 class CreateController:
