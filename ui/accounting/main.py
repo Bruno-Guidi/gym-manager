@@ -65,7 +65,8 @@ class MainController:
             self.main_ui.transaction_table.setRowCount(row + 1)
             self.main_ui.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
             self.main_ui.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
-            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
+            client_name = str(transaction.client.name) if transaction.client is not None else "-"
+            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(client_name))
             self.main_ui.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
             self.main_ui.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
             self.main_ui.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
