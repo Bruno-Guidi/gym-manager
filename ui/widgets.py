@@ -177,9 +177,8 @@ class FilterHeader(QWidget):
 
     def _generate_filters(self) -> list[FilterValuePair, ...]:
         selected_filter, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
-        if len(value) == 0 or value.isspace():
-            return []
-        return [(selected_filter, value)]
+        filters = [] if len(value) == 0 or value.isspace() else [(selected_filter, value)]
+        return filters
 
     def on_search_click(self):
         if self._on_search_click is None:
