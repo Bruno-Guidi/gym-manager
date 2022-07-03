@@ -41,6 +41,8 @@ class Controller:
         # noinspection PyUnresolvedReferences
         self.main_ui.prev_button.clicked.connect(self.prev_page)
         # noinspection PyUnresolvedReferences
+        self.main_ui.date_field.dateChanged.connect(self.load_bookings)
+        # noinspection PyUnresolvedReferences
         self.main_ui.next_button.clicked.connect(self.next_page)
 
     def _load_booking(
@@ -71,12 +73,12 @@ class Controller:
             self._load_booking(booking, start, end)
 
     def next_page(self):
+        # The load_bookings(args) method is executed as a callback when the date_edit date changes.
         self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() + ONE_DAY_TD)
-        self.load_bookings()
 
     def prev_page(self):
+        # The load_bookings(args) method is executed as a callback when the date_edit date changes.
         self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() - ONE_DAY_TD)
-        self.load_bookings()
 
     def book_ui(self):
         # noinspection PyAttributeOutsideInit
