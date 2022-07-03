@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import Type, Any
+from datetime import date
+from typing import Type, Any, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
-    QPushButton
+    QPushButton, QDateEdit
 
-from gym_manager.core.base import Validatable, ValidationError, String, Filter
-from ui.widget_config import fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout
+from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD
+from gym_manager.core.persistence import FilterValuePair
+from ui.widget_config import fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout, \
+    config_date_edit
 
 
 def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> tuple[bool, Any]:
@@ -81,6 +84,106 @@ class SearchBox(QWidget):
 
     def is_empty(self) -> bool:
         return len(self.search_field.text()) == 0 or self.search_field.text().isspace()
+
+
+class FilterHeader(QWidget):
+    def __init__(
+            self,
+            from_date_filter: bool = False,
+            from_date_fn: Callable = None,
+            to_date_filter: bool = False,
+            to_date_fn: Callable = None,
+            parent: QWidget | None = None
+    ):
+        super().__init__(parent)
+        self._setup_ui(from_date_filter, to_date_filter)
+
+        self._filters: tuple[Filter] | None = None
+
+        self._on_search_click: Callable[[tuple[FilterValuePair], ...], None] | None = None
+        # noinspection PyUnresolvedReferences
+        self.search_btn.clicked.connect(self.on_search_click)
+        # noinspection PyUnresolvedReferences
+        self.clear_filter_btn.clicked.connect(self.on_clear_click)
+
+    def _setup_ui(self, from_date_filter: bool, to_date_filter: bool):
+        self.layout = QHBoxLayout(self)
+
+        self.filter_combobox = QComboBox(self)
+        self.layout.addWidget(self.filter_combobox)
+        config_combobox(self.filter_combobox)
+
+        self.filter_line_edit = QLineEdit(self)
+        self.layout.addWidget(self.filter_line_edit)
+        config_line(self.filter_line_edit, place_holder="Búsqueda")
+
+        self.clear_filter_btn = QPushButton(self)
+        self.layout.addWidget(self.clear_filter_btn)
+        config_btn(self.clear_filter_btn, "C")
+
+        self.search_btn = QPushButton(self)
+        self.layout.addWidget(self.search_btn)
+        config_btn(self.search_btn, "B")
+
+        self.from_layout: QVBoxLayout | None = None
+        self.from_lbl: QLabel | None = None
+        self.from_date_edit: QDateEdit | None = None
+        if from_date_filter:
+            self.from_layout = QVBoxLayout()
+            self.layout.addLayout(self.from_layout)
+
+            self.from_lbl = QLabel(self)
+            self.from_layout.addWidget(self.from_lbl)
+            config_lbl(self.from_lbl, "Desde")
+
+            self.from_date_edit = QDateEdit(self)
+            self.from_layout.addWidget(self.from_date_edit)
+            config_date_edit(self.from_date_edit, date.today() - ONE_MONTH_TD, calendar=True)
+
+        self.to_layout: QVBoxLayout | None = None
+        self.to_lbl: QLabel | None = None
+        self.to_date_edit: QDateEdit | None = None
+        if to_date_filter:
+            self.to_layout = QVBoxLayout()
+            self.layout.addLayout(self.to_layout)
+
+            self.to_lbl = QLabel(self)
+            self.to_layout.addWidget(self.to_lbl)
+            config_lbl(self.to_lbl, "Desde")
+
+            self.to_date_edit = QDateEdit(self)
+            self.to_layout.addWidget(self.to_date_edit)
+            config_date_edit(self.to_date_edit, date.today(), calendar=True)
+
+    def config(
+            self,
+            filters: tuple[Filter, ...],
+            on_search_click: Callable[[tuple[FilterValuePair, ...]], None]
+    ):
+        self._filters = filters
+        fill_combobox(self.filter_combobox, self._filters, display=lambda filter_: filter_.display_name)
+        self._on_search_click = on_search_click
+
+    def passes_filters(self, obj) -> bool:
+        return True
+
+    def _generate_filters(self) -> tuple[FilterValuePair, ...]:
+        selected_filter, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
+        # if len(value) == 0 or value.isspace():
+        #     return (),
+        return FilterValuePair(selected_filter, value),
+
+    def on_search_click(self):
+        if self._on_search_click is None:
+            raise AttributeError("Function 'on_search_click' was not defined.")
+        print(self._generate_filters())
+        self._on_search_click(self._generate_filters())
+
+    def on_clear_click(self):
+        if self._on_search_click is None:
+            raise AttributeError("Function 'on_search_click' was not defined.")
+        self.filter_line_edit.clear()
+        self._on_search_click(self._generate_filters())
 
 
 class Dialog(QDialog):

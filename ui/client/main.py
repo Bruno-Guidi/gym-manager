@@ -1,24 +1,22 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable
 
 from PyQt5.QtCore import QRect, Qt, QSize
 from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit, QComboBox, \
-    QLineEdit
+    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, String, Number, Subscription, TextLike, invalid_sub_charge_date
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.main import AccountingMainUI
 from ui.accounting.operations import ChargeUI
 from ui.client.operations import CreateUI
 from ui.client.operations import SubscribeUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
-    config_date_edit, config_combobox, fill_combobox
-from ui.widgets import Field, Dialog
+    config_date_edit
+from ui.widgets import Field, Dialog, FilterHeader
 
 
 def invalid_date(transaction_date: date, **kwargs) -> bool:
@@ -425,20 +423,17 @@ class Controller:
         self.tel_width = tel_width
         self.dir_width = dir_width
 
-        # Filters.
+        # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
                             translate_fun=lambda client, value: client.cli_name.contains(value)), )
-        fill_combobox(self.main_ui.filter_combobox, filters, display=lambda filter_: filter_.display_name)
+        self.main_ui.filter_header.config(filters, on_search_click=self.fill_client_table)
 
-        self.fill_client_table()
+        # Fills the table.
+        self.main_ui.filter_header.on_search_click()
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_client_btn.clicked.connect(self.create_ui)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.search_btn.clicked.connect(self.fill_client_table)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.clear_filter_btn.clicked.connect(self.clear_and_fill)
 
     def _add_client(
             self, client: Client, check_filters: bool, set_to_current: bool = False, check_limit: bool = False
@@ -446,8 +441,7 @@ class Controller:
         if check_limit and len(self.main_ui.client_list) == self.page_len:
             self.main_ui.client_list.takeItem(len(self.main_ui.client_list) - 1)
 
-        filter_, value = self.main_ui.filter_combobox.currentData(Qt.UserRole), self.main_ui.filter_line_edit.text()
-        if check_filters and not filter_.passes(client, value):
+        if check_filters and not self.main_ui.filter_header.passes_filters(client):
             return
 
         item = QListWidgetItem(self.main_ui.client_list)
@@ -461,23 +455,11 @@ class Controller:
         if set_to_current:
             self.main_ui.client_list.setCurrentItem(item)
 
-    def fill_client_table(self):
+    def fill_client_table(self, filters: tuple[FilterValuePair, ...]):
         self.main_ui.client_list.clear()
 
-        clients: Iterable
-        filter_value = self.main_ui.filter_line_edit.text()
-        if len(filter_value) == 0 or filter_value.isspace():
-            clients = self.client_repo.all(self.current_page, self.page_len)
-        else:
-            filter_ = self.main_ui.filter_combobox.currentData(Qt.UserRole)
-            clients = self.client_repo.all(self.current_page, self.page_len, ((filter_, filter_value), ))
-
-        for client in clients:
+        for client in self.client_repo.all(self.current_page, self.page_len, filters):
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
-
-    def clear_and_fill(self):
-        self.main_ui.filter_line_edit.clear()
-        self.fill_client_table()
 
     # noinspection PyAttributeOutsideInit
     def create_ui(self):
@@ -514,22 +496,9 @@ class ClientMainUI(QMainWindow):
         self.layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        # Filtering functionalities.
-        self.filter_combobox = QComboBox(self.widget)
-        self.utils_layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox)
-
-        self.filter_line_edit = QLineEdit(self.widget)
-        self.utils_layout.addWidget(self.filter_line_edit)
-        config_line(self.filter_line_edit, place_holder="Búsqueda")
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "B")
-
-        self.clear_filter_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.clear_filter_btn)
-        config_btn(self.clear_filter_btn, "C")
+        # Filtering.
+        self.filter_header = FilterHeader(parent=self.widget)
+        self.utils_layout.addWidget(self.filter_header)
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
