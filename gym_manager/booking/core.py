@@ -8,6 +8,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator
 
 from gym_manager.core.base import Client, Activity, Transaction, OperationalError
+from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.system import AccountingSystem
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
@@ -278,6 +279,9 @@ class BookingRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, existing_courts: Iterable[Court], states: tuple[str, ...], when: date | None = None, **filters
+            self,
+            states: tuple[str, ...] | None = None,
+            when: date | None = None,
+            filters: list[FilterValuePair] | None = None
     ) -> Generator[Booking, None, None]:
         raise NotImplementedError
