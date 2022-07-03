@@ -16,7 +16,7 @@ from ui.client.operations import CreateUI
 from ui.client.operations import SubscribeUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
-from ui.widgets import Field, Dialog, FilterHeader
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex
 
 
 def invalid_date(transaction_date: date, **kwargs) -> bool:
@@ -423,10 +423,14 @@ class Controller:
         self.tel_width = tel_width
         self.dir_width = dir_width
 
-        # Configure the filtering widget.
+        # Configures the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
                             translate_fun=lambda client, value: client.cli_name.contains(value)), )
         self.main_ui.filter_header.config(filters, on_search_click=self.fill_client_table)
+
+        # Configures the page index.
+        self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
+                                       page_len=2, total_len=139)
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -458,7 +462,8 @@ class Controller:
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_list.clear()
 
-        for client in self.client_repo.all(self.current_page, self.page_len, filters):
+        for client in self.client_repo.all(self.main_ui.page_index.page,
+                                           self.main_ui.page_index.page_len, filters):
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     # noinspection PyAttributeOutsideInit
@@ -538,18 +543,5 @@ class ClientMainUI(QMainWindow):
         self.layout.addWidget(self.client_list)
 
         # Index.
-        self.index_layout = QHBoxLayout()
-        self.layout.addLayout(self.index_layout)
-        config_layout(self.index_layout, left_margin=100, right_margin=100)
-
-        self.prev_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, "<", font_size=18, width=30)
-
-        self.index_lbl = QLabel(self.widget)
-        self.index_layout.addWidget(self.index_lbl)
-        config_lbl(self.index_lbl, "#", font_size=18)
-
-        self.next_btn = QPushButton(self.widget)
-        self.index_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, ">", font_size=18, width=30)
+        self.page_index = PageIndex(self)
+        self.layout.addWidget(self.page_index)
