@@ -98,9 +98,10 @@ class FilterHeader(QWidget):
         super().__init__(parent)
         self._setup_ui(from_date_filter, to_date_filter)
 
-        self._filters: tuple[Filter] | None = None
+        self._filters: dict[str, Filter] | None = None
 
         self._on_search_click: Callable[[list[FilterValuePair]], None] | None = None
+
         # noinspection PyUnresolvedReferences
         self.search_btn.clicked.connect(self.on_search_click)
         # noinspection PyUnresolvedReferences
@@ -160,9 +161,13 @@ class FilterHeader(QWidget):
             filters: tuple[Filter, ...],
             on_search_click: Callable[[list[FilterValuePair]], None]
     ):
-        self._filters = filters
-        fill_combobox(self.filter_combobox, self._filters, display=lambda filter_: filter_.display_name)
+        self._filters = {filter_.name: filter_ for filter_ in filters}
+        fill_combobox(self.filter_combobox, filters, display=lambda filter_: filter_.display_name)
         self._on_search_click = on_search_click
+
+    def set_filter(self, name: str, value: str):
+        self.filter_combobox.setCurrentIndex(self._filters[name])
+        self.filter_line_edit.setText(value)
 
     def passes_filters(self, obj) -> bool:
         for filter_, value in self._generate_filters():
