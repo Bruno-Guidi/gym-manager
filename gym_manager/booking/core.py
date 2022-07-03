@@ -14,6 +14,7 @@ from gym_manager.core.system import AccountingSystem
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
 
 ONE_WEEK_TD = timedelta(weeks=1)
+ONE_DAY_TD = timedelta(days=1)
 
 
 def time_range(start: time, end: time, minute_step: int) -> Generator[time, None, None]:

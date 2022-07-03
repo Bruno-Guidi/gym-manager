@@ -5,15 +5,15 @@ from datetime import date
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QLabel
+    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
-from ui.widget_config import config_layout, config_btn, config_table, config_date_edit, config_lbl
+from ui.widget_config import config_layout, config_btn, config_table, config_date_edit
 from ui.widgets import FilterHeader, PageIndex
 
 
@@ -38,6 +38,10 @@ class Controller:
         self.main_ui.book_btn.clicked.connect(self.book_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.prev_button.clicked.connect(self.prev_page)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.next_button.clicked.connect(self.next_page)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -65,6 +69,14 @@ class Controller:
         for booking, start, end in self.booking_system.bookings((BOOKING_TO_HAPPEN, BOOKING_PAID),
                                                                 self.main_ui.date_field.date().toPyDate()):
             self._load_booking(booking, start, end)
+
+    def next_page(self):
+        self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() + ONE_DAY_TD)
+        self.load_bookings()
+
+    def prev_page(self):
+        self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() - ONE_DAY_TD)
+        self.load_bookings()
 
     def book_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -147,7 +159,7 @@ class BookingMainUI(QMainWindow):
 
         self.prev_button = QPushButton(self.widget)
         self.date_layout.addWidget(self.prev_button)
-        config_btn(self.prev_button, "<", width=30)
+        config_btn(self.prev_button, "<")
 
         self.date_field = QDateEdit(self.widget)
         self.date_layout.addWidget(self.date_field)
@@ -155,7 +167,7 @@ class BookingMainUI(QMainWindow):
 
         self.next_button = QPushButton(self.widget)
         self.date_layout.addWidget(self.next_button)
-        config_btn(self.next_button, ">", width=30)
+        config_btn(self.next_button, ">")
 
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
