@@ -7,7 +7,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QLabel
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, BOOKING_CANCELLED
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
@@ -192,7 +192,7 @@ class HistoryController:
     def fill_booking_table(self, filters: list[FilterValuePair]):
         self.history_ui.booking_table.setRowCount(0)
 
-        booking = self.booking_system.repo.all(filters=filters)
+        booking = self.booking_system.repo.all(states=(BOOKING_PAID, BOOKING_CANCELLED), filters=filters)
         for row, booking in enumerate(booking):
             self.history_ui.booking_table.setRowCount(row + 1)
             self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
