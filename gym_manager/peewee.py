@@ -393,7 +393,7 @@ class SqliteTransactionRepo(TransactionRepo):
         if self.client_repo is None:
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
-        transactions_q = TransactionTable.select().join(ClientTable)
+        transactions_q = TransactionTable.select()
         if filters is not None:
             for filter_, value in filters:
                 transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
