@@ -8,13 +8,13 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox
 
 from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, current_block_start
 from gym_manager.core import constants
-from gym_manager.core.base import TextLike, ClientLike, String
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.base import TextLike, ClientLike, String, NumberEqual
+from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ChargeUI
 from ui.widget_config import config_layout, config_lbl, config_combobox, config_btn, config_checkbox, \
     fill_combobox, config_date_edit, config_line
-from ui.widgets import SearchBox, Dialog, Field
+from ui.widgets import SearchBox, Dialog, Field, FilterHeader
 
 
 def booking_summary(booking: Booking):
@@ -163,19 +163,21 @@ class CancelController:
 
         self.cancel_ui = cancel_ui
 
-        # noinspection PyUnresolvedReferences
-        self.cancel_ui.search_btn.clicked.connect(self.search_bookings)
+        # Configure the filtering widget.
+        filters = (ClientLike("client_name", display_name="Nombre cliente",
+                              translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
+                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                               translate_fun=lambda trans, value: trans.client.dni == value))
+        self.cancel_ui.filter_header.config(filters, self.fill_booking_combobox, allow_empty_filter=False)
+
         # noinspection PyUnresolvedReferences
         self.cancel_ui.booking_combobox.currentIndexChanged.connect(self._update_form)
         # noinspection PyUnresolvedReferences
         self.cancel_ui.confirm_btn.clicked.connect(self.cancel)
 
-    def search_bookings(self):
-        if self.cancel_ui.search_box.is_empty():
-            Dialog.info("Error", "La caja de búsqueda no puede estar vacia.")
-        else:
-            bookings = self.booking_system.bookings(states=(BOOKING_TO_HAPPEN,), **self.cancel_ui.search_box.filters())
-            fill_combobox(self.cancel_ui.booking_combobox, (booking for booking, _, _ in bookings), booking_summary)
+    def fill_booking_combobox(self, filters: list[FilterValuePair]):
+        bookings = self.booking_system.repo.all(states=(BOOKING_TO_HAPPEN,), filters=filters)
+        fill_combobox(self.cancel_ui.booking_combobox, bookings, booking_summary)
 
     def _update_form(self):
         booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
@@ -231,15 +233,9 @@ class CancelUI(QDialog):
         self.utils_layout = QHBoxLayout()
         self.layout.addLayout(self.utils_layout)
 
-        self.search_box = SearchBox(
-            filters=[ClientLike("name", display_name="Nombre",
-                                translate_fun=lambda booking, value: booking.client.cli_name.contains(value))],
-            parent=self.widget)
-        self.utils_layout.addWidget(self.search_box)
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        # Filtering.
+        self.filter_header = FilterHeader(show_clear_button=False, parent=self.widget)
+        self.utils_layout.addWidget(self.filter_header)
 
         # Form.
         self.form_layout = QGridLayout()
