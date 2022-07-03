@@ -4,7 +4,7 @@ from datetime import date
 
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox, \
-    QCheckBox, QPushButton, QDialog, QDateEdit, QHBoxLayout, QLineEdit
+    QCheckBox, QPushButton, QDialog, QDateEdit, QLineEdit
 
 from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, current_block_start
 from gym_manager.core import constants
@@ -14,7 +14,7 @@ from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ChargeUI
 from ui.widget_config import config_layout, config_lbl, config_combobox, config_btn, config_checkbox, \
     fill_combobox, config_date_edit, config_line
-from ui.widgets import SearchBox, Dialog, Field, FilterHeader
+from ui.widgets import Dialog, Field, FilterHeader
 
 
 def booking_summary(booking: Booking):

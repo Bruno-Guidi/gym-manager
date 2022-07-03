@@ -43,49 +43,6 @@ class Field(QLineEdit):
         return self.validatable(self.text(), **self.validate_args)
 
 
-class SearchBox(QWidget):
-    def __init__(self, filters: list[Filter], parent: QWidget | None = None):
-        """
-        Args:
-            filters: dict {k: v}, where k is the filter name and v is the str to display in the combobox.
-        """
-        super().__init__(parent)
-
-        self._setup_ui()
-
-        self._filters = filters
-        self._filters_index = {f.name: i for i, f in enumerate(self._filters)}
-        fill_combobox(self.filter_combobox, self._filters, display=lambda f: f.display_name)
-
-    def _setup_ui(self):
-        self.layout = QHBoxLayout(self)
-
-        self.filter_combobox = QComboBox()
-        self.layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox, font_size=16)
-
-        self.search_field = QLineEdit()
-        self.layout.addWidget(self.search_field)
-        config_line(self.search_field, place_holder="Búsqueda", font_size=16)
-
-    def set_filter(self, name: str, value: str):
-        self.filter_combobox.setCurrentIndex(self._filters_index[name])
-        self.search_field.setText(value)
-
-    def filters(self) -> dict[str: tuple[Filter, str]]:
-        """Returns a dict {k: v}, where k is a Filter object and v is its value to filter.
-        """
-        selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
-        return {selected.name: (selected, self.search_field.text())}
-
-    def passes_filters(self, to_filter: Any) -> bool:
-        selected: Filter = self.filter_combobox.currentData(Qt.UserRole)
-        return selected.passes(to_filter, self.search_field.text())
-
-    def is_empty(self) -> bool:
-        return len(self.search_field.text()) == 0 or self.search_field.text().isspace()
-
-
 class FilterHeader(QWidget):
     def __init__(
             self,
