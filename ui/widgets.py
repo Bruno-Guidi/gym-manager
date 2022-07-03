@@ -165,6 +165,9 @@ class FilterHeader(QWidget):
         self._on_search_click = on_search_click
 
     def passes_filters(self, obj) -> bool:
+        for filter_, value in self._generate_filters():
+            if not filter_.passes(obj, value):
+                return False
         return True
 
     def _generate_filters(self) -> list[FilterValuePair, ...]:
