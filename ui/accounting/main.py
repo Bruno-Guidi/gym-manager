@@ -39,7 +39,11 @@ class MainController:
                              translate_fun=lambda trans, value: trans.method == value),
                    TextLike("responsible", display_name="Responsable", attr="responsible",
                             translate_fun=lambda trans, value: trans.responsible.contains(value)))
-        self.main_ui.filter_header.config(filters, on_search_click=self.fill_transaction_table)
+        date_greater_filter = DateGreater("from", display_name="Desde",
+                                          translate_fun=lambda trans, when: trans.when >= when)
+        date_lesser_filter = DateLesser("to", display_name="Hasta",
+                                        translate_fun=lambda trans, when: trans.when <= when)
+        self.main_ui.filter_header.config(filters, self.fill_transaction_table, date_greater_filter, date_lesser_filter)
 
         if client is not None:  # If a client is given, set the filter with it.
             self.main_ui.filter_header.set_filter("client_dni", str(client.dni))
@@ -56,10 +60,6 @@ class MainController:
     def fill_transaction_table(self, filters: list[FilterValuePair]):
         self.main_ui.transaction_table.setRowCount(0)
 
-        from_date_filter = DateGreater("from", display_name="Desde",
-                                       translate_fun=lambda trans, when: trans.when >= when)
-        to_date_filter = DateLesser("to", display_name="Hasta",
-                                    translate_fun=lambda trans, when: trans.when <= when)
         transactions = self.accounting_system.transaction_repo.all(self.current_page, self.page_len, filters)
         for row, transaction in enumerate(transactions):
             self.main_ui.transaction_table.setRowCount(row + 1)
@@ -146,7 +146,7 @@ class AccountingMainUI(QMainWindow):
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         # Filtering.
-        self.filter_header = FilterHeader(parent=self.widget)
+        self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
         self.utils_layout.addWidget(self.filter_header)
 
         # Transactions.

@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
     QPushButton, QDateEdit
 
-from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD
+from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
 from ui.widget_config import fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout, \
     config_date_edit
@@ -89,16 +89,16 @@ class SearchBox(QWidget):
 class FilterHeader(QWidget):
     def __init__(
             self,
-            from_date_filter: bool = False,
-            from_date_fn: Callable = None,
-            to_date_filter: bool = False,
-            to_date_fn: Callable = None,
+            date_greater_filtering: bool = False,
+            date_lesser_filtering: bool = False,
             parent: QWidget | None = None
     ):
         super().__init__(parent)
-        self._setup_ui(from_date_filter, to_date_filter)
+        self._setup_ui(date_greater_filtering, date_lesser_filtering)
 
         self._filters: dict[str, Filter] | None = None
+        self._date_greater_filter: DateGreater | None = None
+        self._date_lesser_filter: DateLesser | None = None
 
         self._on_search_click: Callable[[list[FilterValuePair]], None] | None = None
 
@@ -107,7 +107,7 @@ class FilterHeader(QWidget):
         # noinspection PyUnresolvedReferences
         self.clear_filter_btn.clicked.connect(self.on_clear_click)
 
-    def _setup_ui(self, from_date_filter: bool, to_date_filter: bool):
+    def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool):
         self.layout = QHBoxLayout(self)
 
         self.filter_combobox = QComboBox(self)
@@ -129,7 +129,7 @@ class FilterHeader(QWidget):
         self.from_layout: QVBoxLayout | None = None
         self.from_lbl: QLabel | None = None
         self.from_date_edit: QDateEdit | None = None
-        if from_date_filter:
+        if date_greater_filtering:
             self.from_layout = QVBoxLayout()
             self.layout.addLayout(self.from_layout)
 
@@ -144,7 +144,7 @@ class FilterHeader(QWidget):
         self.to_layout: QVBoxLayout | None = None
         self.to_lbl: QLabel | None = None
         self.to_date_edit: QDateEdit | None = None
-        if to_date_filter:
+        if date_lesser_filtering:
             self.to_layout = QVBoxLayout()
             self.layout.addLayout(self.to_layout)
 
@@ -159,10 +159,25 @@ class FilterHeader(QWidget):
     def config(
             self,
             filters: tuple[Filter, ...],
-            on_search_click: Callable[[list[FilterValuePair]], None]
+            on_search_click: Callable[[list[FilterValuePair]], None],
+            date_greater_filter: DateGreater | None = None,
+            date_lesser_filter: DateLesser | None = None
     ):
+        # Some checks to ensure that date filters are set in case their corresponding flags were True.
+        if self.from_lbl is None and date_greater_filter is not None:
+            raise AttributeError("date_greater_filtering flag was False, but a DateGreater filter was configured.")
+        if self.from_lbl is not None and date_greater_filter is None:
+            raise AttributeError("date_greater_filtering flag was True, but DateGreater filter was not configured.")
+        if self.to_lbl is None and date_lesser_filter is not None:
+            raise AttributeError("date_lesser_filtering flag was False, but a DateLesser filter was configured.")
+        if self.to_lbl is not None and date_lesser_filter is None:
+            raise AttributeError("date_lesser_filtering flag was True, but DateLesser filter was not configured.")
+
+        # Configuration.
         self._filters = {filter_.name: filter_ for filter_ in filters}
         fill_combobox(self.filter_combobox, filters, display=lambda filter_: filter_.display_name)
+        self._date_greater_filter, self._date_lesser_filter = date_greater_filter, date_lesser_filter
+
         self._on_search_click = on_search_click
 
     def set_filter(self, name: str, value: str):
@@ -178,6 +193,11 @@ class FilterHeader(QWidget):
     def _generate_filters(self) -> list[FilterValuePair, ...]:
         selected_filter, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
         filters = [] if len(value) == 0 or value.isspace() else [(selected_filter, value)]
+        if self._date_greater_filter is not None:
+            filters.append((self._date_greater_filter, self.from_date_edit.date().toPyDate()))
+        if self._date_lesser_filter is not None:
+            filters.append((self._date_lesser_filter, self.to_date_edit.date().toPyDate()))
+
         return filters
 
     def on_search_click(self):
