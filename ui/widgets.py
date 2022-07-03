@@ -193,10 +193,16 @@ class FilterHeader(QWidget):
     def _generate_filters(self) -> list[FilterValuePair, ...]:
         selected_filter, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
         filters = [] if len(value) == 0 or value.isspace() else [(selected_filter, value)]
-        if self._date_greater_filter is not None:
-            filters.append((self._date_greater_filter, self.from_date_edit.date().toPyDate()))
-        if self._date_lesser_filter is not None:
-            filters.append((self._date_lesser_filter, self.to_date_edit.date().toPyDate()))
+
+        from_date = self.from_date_edit.date().toPyDate() if self._date_greater_filter is not None else None
+        to_date = self.to_date_edit.date().toPyDate() if self._date_lesser_filter is not None else None
+        if from_date is not None and to_date is not None and from_date > to_date:
+            Dialog.info("Error", "La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
+        else:
+            if from_date is not None:
+                filters.append((self._date_greater_filter, self.from_date_edit.date().toPyDate()))
+            if to_date is not None:
+                filters.append((self._date_lesser_filter, self.to_date_edit.date().toPyDate()))
 
         return filters
 
