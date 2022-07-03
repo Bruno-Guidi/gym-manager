@@ -192,34 +192,37 @@ class FilterHeader(QWidget):
                 return False
         return True
 
-    def _generate_filters(self) -> list[FilterValuePair]:
-        filters: list[FilterValuePair]
+    def _generate_filters(self, from_date: date | None = None, to_date: date | None = None) -> list[FilterValuePair]:
+        filter_, value = self.filter_combobox.currentData(Qt.UserRole), self.filter_line_edit.text()
+        filters = [] if len(value) == 0 or value.isspace() else [(filter_, value)]
 
-        filter_ = self.filter_combobox.currentData(Qt.UserRole)
-        from_date = self.from_date_edit.date().toPyDate() if self._date_greater_filter is not None else None
-        to_date = self.to_date_edit.date().toPyDate() if self._date_lesser_filter is not None else None
-
-        if from_date is not None and to_date is not None and from_date > to_date:
-            # There is a problem with the date filtering set by the user.
-            # In this case apply the filters with the previous value.
-            filters = [] if len(self.prev_value) == 0 or self.prev_value.isspace() else [(filter_, self.prev_value)]
-            Dialog.info("Error", "La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
-        else:
-            # If there is no problems, proceed with the new filtering data that the user provides.
-            value = self.filter_line_edit.text()
-            filters = [] if len(value) == 0 or value.isspace() else [(filter_, value)]
-            if from_date is not None:
-                filters.append((self._date_greater_filter, self.from_date_edit.date().toPyDate()))
-            if to_date is not None:
-                filters.append((self._date_lesser_filter, self.to_date_edit.date().toPyDate()))
-            self.prev_value = value  # The current value will be the previous value for the next filtering.
+        # By default, it doesn't matter that from_date is greater than to_date.
+        # The problem appears when the user is actively filtering. In that case the user needs to be notified of the
+        # reason that there are no results in the table. For simplicity, this notification has to be done outside this
+        # method.
+        # This approach is useful when adding one element to the table being filtered. We don't need to notify the user
+        # that the dates are invalid, because he wasn't actively filtering. If the dates are invalid, the new element
+        # simply won't pass the filtering and won't be displayed.
+        from_date = self.from_date_edit.date().toPyDate() if self._date_greater_filter is not None else from_date
+        if from_date is not None:
+            filters.append((self._date_greater_filter, from_date))
+        to_date = self.to_date_edit.date().toPyDate() if self._date_lesser_filter is not None else to_date
+        if to_date is not None:
+            filters.append((self._date_lesser_filter, to_date))
 
         return filters
 
     def on_search_click(self):
         if self._on_search_click is None:
             raise AttributeError("Function 'on_search_click' was not defined.")
-        self._on_search_click(self._generate_filters())
+
+        from_date = self.from_date_edit.date().toPyDate() if self._date_greater_filter is not None else None
+        to_date = self.to_date_edit.date().toPyDate() if self._date_lesser_filter is not None else None
+        if from_date is not None and to_date is not None and from_date > to_date:
+            # There is a problem with the date filtering set by the user.
+            Dialog.info("Error", "La fecha 'desde' no puede ser posterior a la fecha 'hasta'.")
+        else:
+            self._on_search_click(self._generate_filters(from_date, to_date))
 
     def on_clear_click(self):
         if self._on_search_click is None:
