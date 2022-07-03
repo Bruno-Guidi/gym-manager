@@ -7,14 +7,14 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QLabel
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, BOOKING_CANCELLED
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID
 from gym_manager.core import constants
-from gym_manager.core.base import DateGreater, DateLesser, ClientLike, ONE_MONTH_TD
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
+from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
 from ui.widget_config import config_layout, config_btn, config_table, config_date_edit, config_lbl
-from ui.widgets import SearchBox
+from ui.widgets import FilterHeader
 
 
 class Controller:
@@ -175,26 +175,26 @@ class HistoryController:
         self.history_ui = history_ui
         self.current_page, self.page_len = 1, 20
 
-        self.load_bookings()
+        # Configure the filtering widget.
+        filters = (ClientLike("client_name", display_name="Nombre cliente",
+                              translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
+                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                               translate_fun=lambda trans, value: trans.client.dni == value))
+        date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
+                                          translate_fun=lambda trans, when: trans.when >= when)
+        date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
+                                        translate_fun=lambda trans, when: trans.when <= when)
+        self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter, date_lesser_filter)
 
-        # noinspection PyUnresolvedReferences
-        self.history_ui.search_btn.clicked.connect(self.load_bookings)
+        # Fills the table.
+        self.history_ui.filter_header.on_search_click()
 
-    def load_bookings(self):
+    def fill_booking_table(self, filters: list[FilterValuePair]):
         self.history_ui.booking_table.setRowCount(0)
-        self.history_ui.booking_table.setRowCount(self.page_len)
 
-        from_date_filter = DateGreater("from", display_name="Desde",
-                                       translate_fun=lambda trans, when: trans.when >= when)
-        to_date_filter = DateLesser("to", display_name="Hasta",
-                                    translate_fun=lambda trans, when: trans.when <= when)
-        bookings = self.booking_system.bookings(
-            states=(BOOKING_CANCELLED, BOOKING_PAID),
-            from_date=(from_date_filter, self.history_ui.from_date_edit.date().toPyDate()),
-            to_date=(to_date_filter, self.history_ui.to_date_edit.date().toPyDate()),
-            **self.history_ui.search_box.filters()
-        )
-        for row, (booking, _, _) in enumerate(bookings):
+        booking = self.booking_system.repo.all(filters=filters)
+        for row, booking in enumerate(booking):
+            self.history_ui.booking_table.setRowCount(row + 1)
             self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
             self.history_ui.booking_table.setItem(row, 1,
                                                   QTableWidgetItem(str(booking.when.strftime(constants.DATE_FORMAT))))
@@ -229,46 +229,9 @@ class HistoryUI(QMainWindow):
         self.layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
-        self.search_box = SearchBox(
-            filters=[ClientLike("client", display_name="Cliente",
-                                translate_fun=lambda booking, value: booking.client.cli_name.contains(value))],
-            parent=self.widget
-        )
-        self.utils_layout.addWidget(self.search_box)
-
-        self.utils_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
-
-        self.from_layout = QVBoxLayout()
-        self.utils_layout.addLayout(self.from_layout)
-
-        self.from_lbl = QLabel()
-        self.from_layout.addWidget(self.from_lbl)
-        config_lbl(self.from_lbl, "Desde", font_size=16, alignment=Qt.AlignCenter)
-
-        self.from_date_edit = QDateEdit()
-        self.from_layout.addWidget(self.from_date_edit)
-        config_date_edit(self.from_date_edit, date.today() - ONE_MONTH_TD, calendar=True,
-                         layout_direction=Qt.LayoutDirection.RightToLeft)
-
-        self.utils_layout.addItem(QSpacerItem(10, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
-
-        self.to_layout = QVBoxLayout()
-        self.utils_layout.addLayout(self.to_layout)
-
-        self.to_lbl = QLabel()
-        self.to_layout.addWidget(self.to_lbl)
-        config_lbl(self.to_lbl, "Hasta", font_size=16, alignment=Qt.AlignCenter)
-
-        self.to_date_edit = QDateEdit()
-        self.to_layout.addWidget(self.to_date_edit)
-        config_date_edit(self.to_date_edit, date.today(), calendar=True,
-                         layout_direction=Qt.LayoutDirection.RightToLeft)
-
-        self.utils_layout.addItem(QSpacerItem(30, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        # Filtering.
+        self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
+        self.utils_layout.addWidget(self.filter_header)
 
         # Bookings.
         self.booking_table = QTableWidget(self.widget)
