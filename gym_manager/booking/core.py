@@ -285,3 +285,9 @@ class BookingRepo(abc.ABC):
             filters: list[FilterValuePair] | None = None
     ) -> Generator[Booking, None, None]:
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+        """Counts the number of bookings in the repository.
+        """
+        raise NotImplementedError
