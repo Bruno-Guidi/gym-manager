@@ -192,7 +192,7 @@ class HistoryController:
     def fill_booking_table(self, filters: list[FilterValuePair]):
         self.history_ui.booking_table.setRowCount(0)
 
-        booking = self.booking_system.repo.all(states=(BOOKING_PAID, BOOKING_CANCELLED), filters=filters)
+        booking = self.booking_system.repo.all(filters=filters)
         for row, booking in enumerate(booking):
             self.history_ui.booking_table.setRowCount(row + 1)
             self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
