@@ -96,7 +96,6 @@ class FilterHeader(QWidget):
         super().__init__(parent)
         self._setup_ui(date_greater_filtering, date_lesser_filtering)
 
-        self.prev_value: str | None = None
         self._filter_number: dict[str, int] | None = None
         self._date_greater_filter: DateGreater | None = None
         self._date_lesser_filter: DateLesser | None = None
@@ -183,7 +182,6 @@ class FilterHeader(QWidget):
 
     def set_filter(self, name: str, value: str):
         self.filter_combobox.setCurrentIndex(self._filter_number[name])
-        self.prev_value = self.filter_line_edit.text()
         self.filter_line_edit.setText(value)
 
     def passes_filters(self, obj) -> bool:
