@@ -7,7 +7,7 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QLabel
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, BOOKING_CANCELLED
+from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
