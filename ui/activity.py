@@ -6,9 +6,10 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Activity, Currency, TextLike
+from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.system import ActivityManager
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
-from ui.widgets import Field, valid_text_value, SearchBox, Dialog
+from ui.widgets import Field, valid_text_value, Dialog, FilterHeader
 
 
 class ActivityRow(QWidget):
@@ -241,18 +242,26 @@ class MainController:
         self.activity_manager = activity_manager
         self.opened_now: ActivityRow | None = None
 
+        self.current_page, self.page_len = 1, 20
+
         self.name_width, self.price_width, self.charge_once_width = name_width, price_width, charge_once_width
 
-        for activity in self.activity_manager.activities(**self.main_ui.search_box.filters()):
-            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
+        # Configure the filtering widget.
+        filters = (TextLike("name", display_name="Nombre", attr="name",
+                            translate_fun=lambda activity, value: activity.act_name.contains(value)),)
+        self.main_ui.filter_header.config(filters, on_search_click=self.fill_activity_table)
+
+        # Fills the table.
+        self.main_ui.filter_header.on_search_click()
 
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_client_btn.clicked.connect(self.create_activity)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.search_btn.clicked.connect(self.search)
+        self.main_ui.create_activity_btn.clicked.connect(self.create_ui)
 
-    def _add_activity(self, activity: Activity, check_filters: bool):
-        if check_filters and not self.main_ui.search_box.passes_filters(activity):
+    def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
+        if check_limit and len(self.main_ui.activity_list) == self.page_len:
+            self.main_ui.activity_list.takeItem(len(self.main_ui.activity_list) - 1)
+
+        if check_filters and not self.main_ui.filter_header.passes_filters(activity):
             return
 
         row_height = 50
@@ -262,17 +271,18 @@ class MainController:
                           self.activity_manager)
         self.main_ui.activity_list.setItemWidget(item, row)
 
+    def fill_activity_table(self, filters: list[FilterValuePair]):
+        self.main_ui.activity_list.clear()
+
+        for activity in self.activity_manager.activity_repo.all(self.current_page, self.page_len, filters):
+            self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
+
     # noinspection PyAttributeOutsideInit
-    def create_activity(self):
+    def create_ui(self):
         self._create_ui = CreateUI(self.activity_manager)
         self._create_ui.exec_()
         if self._create_ui.controller.activity is not None:
-            self._add_activity(self._create_ui.controller.activity, check_filters=True)
-
-    def search(self):
-        self.main_ui.activity_list.clear()
-        for activity in self.activity_manager.activities(**self.main_ui.search_box.filters()):
-            self._add_activity(activity, check_filters=False)  # The activities are filtered in the ActivityManager.
+            self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
 
 
 class ActivityMainUI(QMainWindow):
@@ -299,18 +309,15 @@ class ActivityMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox([TextLike("name", display_name="Nombre", attr="name")], parent=self.widget)
-        self.utils_layout.addWidget(self.search_box)
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        # Filtering.
+        self.filter_header = FilterHeader(parent=self.widget)
+        self.utils_layout.addWidget(self.filter_header)
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
-        self.create_client_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.create_client_btn)
-        config_btn(self.create_client_btn, "Nueva actividad", font_size=16)
+        self.create_activity_btn = QPushButton(self.widget)
+        self.utils_layout.addWidget(self.create_activity_btn)
+        config_btn(self.create_activity_btn, "Nueva actividad", font_size=16)
 
         self.main_layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
 

@@ -5,18 +5,17 @@ from typing import Iterable, Protocol
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QLabel, QTableWidget, QDateEdit, QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu
+from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
+    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu
 
 from gym_manager.core import system
-from gym_manager.core.base import ONE_MONTH_TD, Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
+from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
     NumberEqual, Transaction, String
-from gym_manager.core.persistence import BalanceRepo
+from gym_manager.core.persistence import BalanceRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
-from ui.widget_config import config_layout, config_btn, config_lbl, config_table, \
-    config_date_edit
-from ui.widgets import SearchBox, Dialog
+from ui.widget_config import config_layout, config_btn, config_lbl, config_table
+from ui.widgets import Dialog, FilterHeader
 
 
 class MainController:
@@ -29,37 +28,45 @@ class MainController:
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
 
-        # If a client is given, set the filter with it.
-        if client is not None:
-            self.main_ui.search_box.set_filter("client_dni", str(client.dni))
-        self.load_transactions()
+        # Configure the filtering widget.
+        filters = (ClientLike("client_name", display_name="Nombre cliente",
+                              translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
+                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                               translate_fun=lambda trans, value: trans.client.dni == value),
+                   TextEqual("type", display_name="Tipo", attr="type",
+                             translate_fun=lambda trans, value: trans.type == value),
+                   TextEqual("method", display_name="Método", attr="method",
+                             translate_fun=lambda trans, value: trans.method == value),
+                   TextLike("responsible", display_name="Responsable", attr="responsible",
+                            translate_fun=lambda trans, value: trans.responsible.contains(value)))
+        date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
+                                          translate_fun=lambda trans, when: trans.when >= when)
+        date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
+                                        translate_fun=lambda trans, when: trans.when <= when)
+        self.main_ui.filter_header.config(filters, self.fill_transaction_table, date_greater_filter, date_lesser_filter)
+
+        if client is not None:  # If a client is given, set the filter with it.
+            self.main_ui.filter_header.set_filter("client_dni", str(client.dni))
+
+        # Fills the table.
+        self.main_ui.filter_header.on_search_click()
 
         # Sets callbacks
-        # noinspection PyUnresolvedReferences
-        self.main_ui.search_btn.clicked.connect(self.load_transactions)
         # noinspection PyUnresolvedReferences
         self.main_ui.generate_balance_action.triggered.connect(self.daily_balance)
         # noinspection PyUnresolvedReferences
         self.main_ui.register_extraction_action.triggered.connect(self.extraction)
 
-    def load_transactions(self):
+    def fill_transaction_table(self, filters: list[FilterValuePair]):
         self.main_ui.transaction_table.setRowCount(0)
-        self.main_ui.transaction_table.setRowCount(self.page_len)
 
-        from_date_filter = DateGreater("from", display_name="Desde",
-                                       translate_fun=lambda trans, when: trans.when >= when)
-        to_date_filter = DateLesser("to", display_name="Hasta",
-                                    translate_fun=lambda trans, when: trans.when <= when)
-        transactions = self.accounting_system.transactions(
-            self.current_page, self.page_len,
-            from_date=(from_date_filter, self.main_ui.from_date_edit.date().toPyDate()),
-            to_date=(to_date_filter, self.main_ui.to_date_edit.date().toPyDate()),
-            **self.main_ui.search_box.filters()
-        )
+        transactions = self.accounting_system.transaction_repo.all(self.current_page, self.page_len, filters)
         for row, transaction in enumerate(transactions):
+            self.main_ui.transaction_table.setRowCount(row + 1)
             self.main_ui.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
             self.main_ui.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
-            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.client.name)))
+            client_name = str(transaction.client.name) if transaction.client is not None else "-"
+            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(client_name))
             self.main_ui.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
             self.main_ui.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
             self.main_ui.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
@@ -78,6 +85,19 @@ class MainController:
     def extraction(self):
         self.extract_ui = ExtractUI(self.accounting_system.methods, self.accounting_system.transaction_repo)
         self.extract_ui.exec_()
+
+        extraction, row_count = self.extract_ui.controller.extraction, self.main_ui.transaction_table.rowCount()
+        if (extraction is not None and row_count < self.page_len
+                and self.main_ui.filter_header.passes_filters(extraction)):
+            self.main_ui.transaction_table.setRowCount(row_count + 1)
+            self.main_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(extraction.id)))
+            self.main_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(extraction.type)))
+            self.main_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem("-"))
+            self.main_ui.transaction_table.setItem(row_count, 3, QTableWidgetItem(str(extraction.when)))
+            self.main_ui.transaction_table.setItem(row_count, 4, QTableWidgetItem(str(extraction.amount)))
+            self.main_ui.transaction_table.setItem(row_count, 5, QTableWidgetItem(str(extraction.method)))
+            self.main_ui.transaction_table.setItem(row_count, 6, QTableWidgetItem(str(extraction.responsible)))
+            self.main_ui.transaction_table.setItem(row_count, 7, QTableWidgetItem(str(extraction.description)))
 
 
 class AccountingMainUI(QMainWindow):
@@ -125,54 +145,9 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
-        self.search_box = SearchBox(
-            filters=[ClientLike("client_name", display_name="Nombre cliente",
-                                translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
-                     NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-                                 translate_fun=lambda trans, value: trans.client.dni == value),
-                     TextEqual("type", display_name="Tipo", attr="type",
-                               translate_fun=lambda trans, value: trans.type == value),
-                     TextEqual("method", display_name="Método", attr="method",
-                               translate_fun=lambda trans, value: trans.method == value),
-                     TextLike("responsible", display_name="Responsable", attr="responsible",
-                              translate_fun=lambda trans, value: trans.responsible.contains(value))],
-            parent=self.widget
-        )
-        self.utils_layout.addWidget(self.search_box)
-
-        self.utils_layout.addItem(QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
-
-        self.from_layout = QVBoxLayout()
-        self.utils_layout.addLayout(self.from_layout)
-
-        self.from_lbl = QLabel()
-        self.from_layout.addWidget(self.from_lbl)
-        config_lbl(self.from_lbl, "Desde", font_size=16, alignment=Qt.AlignCenter)
-
-        self.from_date_edit = QDateEdit()
-        self.from_layout.addWidget(self.from_date_edit)
-        config_date_edit(self.from_date_edit, date.today() - ONE_MONTH_TD, calendar=True,
-                         layout_direction=Qt.LayoutDirection.RightToLeft)
-
-        self.utils_layout.addItem(QSpacerItem(10, 20, QSizePolicy.Fixed, QSizePolicy.Minimum))
-
-        self.to_layout = QVBoxLayout()
-        self.utils_layout.addLayout(self.to_layout)
-
-        self.to_lbl = QLabel()
-        self.to_layout.addWidget(self.to_lbl)
-        config_lbl(self.to_lbl, "Hasta", font_size=16, alignment=Qt.AlignCenter)
-
-        self.to_date_edit = QDateEdit()
-        self.to_layout.addWidget(self.to_date_edit)
-        config_date_edit(self.to_date_edit, date.today(), calendar=True,
-                         layout_direction=Qt.LayoutDirection.RightToLeft)
-
-        self.utils_layout.addItem(QSpacerItem(30, 20, QSizePolicy.Minimum, QSizePolicy.Minimum))
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        # Filtering.
+        self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
+        self.utils_layout.addWidget(self.filter_header)
 
         # Transactions.
         self.transaction_table = QTableWidget(self.widget)

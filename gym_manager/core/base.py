@@ -424,21 +424,42 @@ class TextEqual(Filter):
 
 
 class DateGreater(Filter):
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
+
     def passes(self, to_filter: Any, filter_value: date) -> bool:
-        """Returns True if the given *to_filter* date is great or equal to *filter_value*.
+        """Returns True if date stored in the attr *self.attr* of the object *to_filter* is greater or equal than
+         *filter_value* date.
         """
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
         if not isinstance(filter_value, date):
-            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
-                            f"'{type(filter_value)}'.")
-        return to_filter >= filter_value
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a "
+                            f"'date', but received a '{type(filter_value)}'.")
+
+        return getattr(to_filter, self.attr) >= filter_value
 
 
 class DateLesser(Filter):
+    def __init__(
+            self, name: str, display_name: str, attr: str, translate_fun: Callable[[Any, Any], bool] | None = None
+    ) -> None:
+        super().__init__(name, display_name, translate_fun)
+        self.attr = attr
 
     def passes(self, to_filter: Any, filter_value: date) -> bool:
-        """Returns True if the given *to_filter* date is less or equal to *filter_value*.
+        """Returns True if date stored in the attr *self.attr* of the object *to_filter* is lesser or equal than
+         *filter_value* date.
         """
+        if not hasattr(to_filter, self.attr):
+            raise AttributeError(f"The filter '{self.name}: {type(self)}' expects a 'to_filter' argument that has the "
+                                 f"attribute '{self.attr}'.")
         if not isinstance(filter_value, date):
-            raise TypeError(f"The filter '{type(self)}' expects a 'filter_value' of type 'date', but received a "
-                            f"'{type(filter_value)}'.")
-        return to_filter <= filter_value
+            raise TypeError(f"The filter '{self.name}: {type(self)}' expects the argument 'filter_value' to be a "
+                            f"'date', but received a '{type(filter_value)}'.")
+
+        return getattr(to_filter, self.attr) <= filter_value

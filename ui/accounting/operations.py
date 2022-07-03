@@ -196,6 +196,8 @@ class ExtractController:
         self.extract_ui = extract_ui
         self.transaction_repo = transaction_repo
 
+        self.extraction: Transaction | None = None
+
         # Loads info into the ui.
         fill_combobox(self.extract_ui.method_combobox, transaction_methods, display=lambda method: str(method))
 
@@ -216,13 +218,14 @@ class ExtractController:
             Dialog.info("Error", "Hay campos que no son válidos.")
         else:
             # noinspection PyTypeChecker
-            extraction = system.register_extraction(self.extract_ui.when_date_edit.date().toPyDate(),
+            self.extraction = system.register_extraction(self.extract_ui.when_date_edit.date().toPyDate(),
                                                     self.extract_ui.amount_field.value(),
                                                     self.extract_ui.method_combobox.currentData(Qt.UserRole),
                                                     self.extract_ui.responsible_field.value(),
                                                     description,
                                                     self.transaction_repo)
-            Dialog.info("Éxito", f"Se ha registrado una extracción con número de identificación '{extraction.id}'.")
+            Dialog.info("Éxito",
+                        f"Se ha registrado una extracción con número de identificación '{self.extraction.id}'.")
             self.extract_ui.descr_text.window().close()
 
 

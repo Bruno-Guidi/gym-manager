@@ -1,9 +1,12 @@
 import abc
 from collections import OrderedDict
 from datetime import date
-from typing import Generator, Type, Any, Iterable
+from typing import Generator, Type, Any, Iterable, TypeAlias
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter
+
+
+FilterValuePair: TypeAlias = tuple[Filter, str]
 
 
 class LRUCache:
@@ -91,16 +94,15 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Client, None, None]:
         """Retrieve all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page. If None, retrieve all clients.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                filter.
+            filters: filters to apply.
         """
         raise NotImplementedError
 
@@ -147,7 +149,9 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self) -> Generator[Activity, None, None]:
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Activity, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -201,13 +205,9 @@ class TransactionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
-        """Retrieves the transactions in the repository.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                filter.
-        """
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Transaction, None, None]:
         raise NotImplementedError
 
 

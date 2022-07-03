@@ -5,13 +5,13 @@ from datetime import date
 from typing import Generator, Iterable
 
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-                    CompositeKey, prefetch, Proxy, chunked)
+                    CompositeKey, prefetch, Proxy, chunked, JOIN)
 
 from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
     OperationalError
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache, \
-    BalanceRepo
+    BalanceRepo, FilterValuePair
 
 logger = logging.getLogger(__name__)
 
@@ -153,20 +153,21 @@ class SqliteClientRepo(ClientRepo):
         if self._do_caching:
             self.cache.move_to_front(client.dni)
 
-    def all(self, page: int = 1, page_len: int | None = None, **filters) -> Generator[Client, None, None]:
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Client, None, None]:
         """Retrieve all the clients in the repository.
 
         Args:
             page: page to retrieve.
             page_len: clients per page. If None, retrieve all clients.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                filter.
+            filters: filters to apply.
         """
         clients_q = ClientTable.select()
-        for filter_, value in filters.values():
-            clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+        if filters is not None:
+            for filter_, value in filters:
+                clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
+
         clients_q = clients_q.where(ClientTable.is_active)
         if page_len is not None:
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
@@ -278,8 +279,18 @@ class SqliteActivityRepo(ActivityRepo):
         if self._do_caching:
             self.cache.move_to_front(activity.name)
 
-    def all(self) -> Generator[Activity, None, None]:
-        for record in ActivityTable.select():
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Activity, None, None]:
+        activities_q = ActivityTable.select()
+        if filters is not None:
+            for filter_, value in filters:
+                activities_q = activities_q.where(filter_.passes_in_repo(ActivityTable, value))
+
+        if page_len is not None:
+            activities_q = activities_q.order_by(ActivityTable.act_name).paginate(page, page_len)
+
+        for record in activities_q:
             activity: Activity
             if self._do_caching and record.act_name in self.cache:
                 activity = self.cache[record.act_name]
@@ -376,22 +387,19 @@ class SqliteTransactionRepo(TransactionRepo):
 
         return transaction
 
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
-        """Retrieves the transactions in the repository.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                filter.
-
-        Raises:
-            AttributeError if the client_repo attribute wasn't set before the execution of the method.
-        """
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Transaction, None, None]:
         if self.client_repo is None:
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
-        transactions_q = TransactionTable.select().join(ClientTable)
-        for filter_, value in filters.values():
-            transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
+        transactions_q = TransactionTable.select()
+        if filters is not None:
+            # The left outer join is required because transactions might be filtered by the client name, which isn't
+            # an attribute of TransactionTable.
+            transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
+            for filter_, value in filters:
+                transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
         for record in transactions_q.paginate(page, page_len):
             client = None if record.client is None else self.client_repo.get(record.client_id)

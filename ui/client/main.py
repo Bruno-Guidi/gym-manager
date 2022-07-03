@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLab
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, String, Number, Subscription, TextLike, invalid_sub_charge_date
-from gym_manager.core.persistence import ClientRepo
+from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.accounting.main import AccountingMainUI
 from ui.accounting.operations import ChargeUI
@@ -16,7 +16,7 @@ from ui.client.operations import CreateUI
 from ui.client.operations import SubscribeUI
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
     config_date_edit
-from ui.widgets import Field, SearchBox, Dialog
+from ui.widgets import Field, Dialog, FilterHeader
 
 
 def invalid_date(transaction_date: date, **kwargs) -> bool:
@@ -334,7 +334,7 @@ class ClientRow(QWidget):
             self.main_ui_controller.opened_now = None
             self.client_repo.remove(self.client)
             self.item.listWidget().takeItem(self.item.listWidget().currentRow())
-            self.main_ui_controller.load_clients()
+            self.main_ui_controller.fill_client_table()
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
@@ -423,22 +423,26 @@ class Controller:
         self.tel_width = tel_width
         self.dir_width = dir_width
 
-        self.load_clients()
+        # Configure the filtering widget.
+        filters = (TextLike("name", display_name="Nombre", attr="name",
+                            translate_fun=lambda client, value: client.cli_name.contains(value)), )
+        self.main_ui.filter_header.config(filters, on_search_click=self.fill_client_table)
+
+        # Fills the table.
+        self.main_ui.filter_header.on_search_click()
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_client_btn.clicked.connect(self.create_client)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.search_btn.clicked.connect(self.load_clients)
+        self.main_ui.create_client_btn.clicked.connect(self.create_ui)
 
-    def add_client(
+    def _add_client(
             self, client: Client, check_filters: bool, set_to_current: bool = False, check_limit: bool = False
     ):
-        if check_filters and not self.main_ui.search_box.passes_filters(client):
-            return
-
         if check_limit and len(self.main_ui.client_list) == self.page_len:
             self.main_ui.client_list.takeItem(len(self.main_ui.client_list) - 1)
+
+        if check_filters and not self.main_ui.filter_header.passes_filters(client):
+            return
 
         item = QListWidgetItem(self.main_ui.client_list)
         self.main_ui.client_list.addItem(item)
@@ -451,19 +455,18 @@ class Controller:
         if set_to_current:
             self.main_ui.client_list.setCurrentItem(item)
 
-    def load_clients(self):
+    def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_list.clear()
 
-        clients = self.client_repo.all(self.current_page, self.page_len, **self.main_ui.search_box.filters())
-        for client in clients:
-            self.add_client(client, check_filters=False)  # Clients are filtered in the repo.
+        for client in self.client_repo.all(self.current_page, self.page_len, filters):
+            self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     # noinspection PyAttributeOutsideInit
-    def create_client(self):
-        self.create_ui = CreateUI(self.client_repo)
-        self.create_ui.exec_()
-        if self.create_ui.controller.client is not None:
-            self.add_client(self.create_ui.controller.client, check_filters=True, set_to_current=True, check_limit=True)
+    def create_ui(self):
+        self._create_ui = CreateUI(self.client_repo)
+        self._create_ui.exec_()
+        if self._create_ui.controller.client is not None:
+            self._add_client(self._create_ui.controller.client, check_filters=True, set_to_current=True, check_limit=True)
 
 
 class ClientMainUI(QMainWindow):
@@ -493,15 +496,9 @@ class ClientMainUI(QMainWindow):
         self.layout.addLayout(self.utils_layout)
         config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
-        self.search_box = SearchBox(
-            filters=[TextLike("name", display_name="Nombre", attr="name",
-                              translate_fun=lambda client, value: client.cli_name.contains(value))],
-            parent=self.widget)
-        self.utils_layout.addWidget(self.search_box)
-
-        self.search_btn = QPushButton(self.widget)
-        self.utils_layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "Busq", font_size=16)
+        # Filtering.
+        self.filter_header = FilterHeader(parent=self.widget)
+        self.utils_layout.addWidget(self.filter_header)
 
         self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
