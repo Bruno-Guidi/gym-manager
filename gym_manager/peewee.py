@@ -360,7 +360,9 @@ class SqliteTransactionRepo(TransactionRepo):
         self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
 
     # noinspection PyShadowingBuiltins
-    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
+    def from_record(
+            self, id, type, client: Client, when, amount, method, responsible, description, balance_date=None
+    ):
         """Creates a Transaction with the given data.
         """
         if self._do_caching and id in self.cache:
@@ -373,7 +375,8 @@ class SqliteTransactionRepo(TransactionRepo):
                                   String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
                                   String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
                                   String(description, max_len=constants.TRANSACTION_DESCR_CHARS),
-                                  client)
+                                  client,
+                                  balance_date)
         if self._do_caching:
             self.cache[id] = transaction
         return transaction
@@ -429,7 +432,7 @@ class SqliteTransactionRepo(TransactionRepo):
         for record in transactions_q.paginate(page, page_len):
             client = None if record.client is None else self.client_repo.get(record.client_id)
             yield self.from_record(record.id, record.type, client, record.when, record.amount, record.method,
-                                   record.responsible, record.description)
+                                   record.responsible, record.description, record.balance_date)
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of transactions in the repository.
