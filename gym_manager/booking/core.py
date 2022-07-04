@@ -144,7 +144,8 @@ class BookingSystem:
 
     def __init__(
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
-            minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem
+            minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem,
+            weeks_in_advance: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
@@ -157,6 +158,7 @@ class BookingSystem:
                                            in self.create_blocks(start, end, minute_step)}
 
         self._bookings: dict[date, list[Booking]] = {}
+        self.weeks_in_advance = weeks_in_advance
 
         self.activity = activity
         self.repo = repo
@@ -239,7 +241,7 @@ class BookingSystem:
 
     def book(
             self, court: Court, client: Client, is_fixed: bool, when: date, start_block: Block, duration: Duration
-    ) -> Booking:
+    ) -> list[Booking]:
         """Creates a Booking with the given data.
 
         Raises:
@@ -254,9 +256,17 @@ class BookingSystem:
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start_block.start, duration).time()
-        booking = self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)
+        bookings = [self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)]
 
-        return booking
+        # If the booking is fixed, then create *weeks_in_advance* more bookings in advance.
+        if is_fixed:
+            for i in range(self.weeks_in_advance - 1):
+                when = when + ONE_WEEK_TD
+                bookings.append(
+                    self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)
+                )
+
+        return bookings
 
     def cancel(self, booking: Booking, responsible: str, cancel_fixed: bool = False):
         prev_state = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)

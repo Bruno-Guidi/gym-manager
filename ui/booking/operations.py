@@ -72,7 +72,7 @@ class BookController:
             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
         else:
             is_fixed = self.book_ui.fixed_checkbox.isChecked()
-            self.booking = self.booking_system.book(court, client, is_fixed, when, start_block, duration)
+            self.booking = self.booking_system.book(court, client, is_fixed, when, start_block, duration)[0]
             Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
             self.book_ui.client_combobox.window().close()
 
