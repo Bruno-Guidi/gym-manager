@@ -6,7 +6,7 @@ from typing import Iterable
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
-    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu
+    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit
 
 from gym_manager.core import system
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
@@ -14,7 +14,7 @@ from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, T
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
-from ui.widget_config import config_layout, config_lbl, config_table
+from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn
 from ui.widgets import Dialog, FilterHeader, PageIndex
 
 
@@ -59,6 +59,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.generate_balance_action.triggered.connect(self.daily_balance)
         # noinspection PyUnresolvedReferences
+        self.main_ui.balance_history_action.triggered.connect(self.balance_history_ui)
+        # noinspection PyUnresolvedReferences
         self.main_ui.register_extraction_action.triggered.connect(self.extraction)
 
     def fill_transaction_table(self, filters: list[FilterValuePair]):
@@ -86,6 +88,12 @@ class MainController:
                                                self.accounting_system.balance_repo)
         self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
         self.daily_balance_ui.show()
+
+    def balance_history_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._balance_history_ui = BalanceHistoryUI()
+        self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
+        self._balance_history_ui.show()
 
     def extraction(self):
         self.extract_ui = ExtractUI(self.accounting_system.methods, self.accounting_system.transaction_repo)
@@ -137,6 +145,9 @@ class AccountingMainUI(QMainWindow):
 
         self.generate_balance_action = QAction("Cerrar caja", self)
         self.daily_balance_menu.addAction(self.generate_balance_action)
+
+        self.balance_history_action = QAction("Historial", self)
+        self.daily_balance_menu.addAction(self.balance_history_action)
 
         # Extractions menu bar.
         self.extraction_menu = QMenu("Extracción", self)
@@ -279,3 +290,60 @@ class DailyBalanceUI(QMainWindow):
         self.confirm_btn = QPushButton(self.widget)
         self.confirm_btn.setText("Cerrar caja")
         self.layout.addWidget(self.confirm_btn)
+
+
+class BalanceHistoryController:
+    def __init__(self):
+        pass
+
+
+class BalanceHistoryUI(QMainWindow):
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self._setup_ui()
+
+    def _setup_ui(self):
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        # Header layout.
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+        # Last n balances.
+        self.last_n_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.last_n_layout)
+
+        self.last_n_lbl = QLabel(self.widget)
+        self.last_n_layout.addWidget(self.last_n_lbl)
+        config_lbl(self.last_n_lbl, "Últimos")
+
+        self.last_n_combobox = QComboBox(self.widget)
+        self.last_n_layout.addWidget(self.last_n_combobox)
+        config_combobox(self.last_n_combobox)
+
+        # Specific date balance.
+        self.date_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.date_layout)
+
+        self.date_lbl = QLabel(self.widget)
+        self.date_layout.addWidget(self.last_n_lbl)
+        config_lbl(self.date_lbl, "Fecha")
+
+        self.date_edit = QDateEdit(self.widget)
+        self.date_layout.addWidget(self.date_edit)
+        config_combobox(self.date_edit)
+
+        # Balance detail button.
+        self.detail_btn = QPushButton(self.widget)
+        self.header_layout.addWidget(self.detail_btn)
+        config_btn(self.detail_btn, "Detalle")
+
+        # Transactions.
+        self.transaction_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.transaction_table)
+        config_table(
+            target=self.transaction_table, allow_resizing=True,
+            columns={"Fecha": 100, "Responsable": 175, "Ingresos": 100, "Egresos": 100}
+        )
