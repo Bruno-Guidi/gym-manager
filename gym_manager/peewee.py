@@ -373,14 +373,6 @@ class SqliteBalanceRepo(BalanceRepo):
         for record in balance_q:
             yield record.when, self.json_to_balance(record.balance_dict)
 
-    def add_all(self, when: date, transactions: Iterable[Transaction]):
-        with DATABASE_PROXY.atomic():
-            BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
-
-            for batch in chunked(transactions, 30):  # Saves the new balance.
-                batch = [(when, transaction.id) for transaction in batch]
-                BalanceTable.insert_many(batch, fields=[BalanceTable.when, BalanceTable.transaction_id]).execute()
-
 
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)
