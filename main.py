@@ -45,7 +45,8 @@ if __name__ == "__main__":
                                    durations=(Duration(30, "30m"), Duration(60, "1h"), Duration(90, "1h30m")),
                                    start=time(8, 0), end=time(23, 0), minute_step=30,
                                    activity=activity_repo.get("Padel"), repo=booking_repo,
-                                   accounting_system=accounting_system)
+                                   accounting_system=accounting_system,
+                                   weeks_in_advance=8)
 
     window = MainUI(client_repo, activity_manager, accounting_system, booking_system)
     window.show()

@@ -6,7 +6,7 @@ from peewee import Model, CharField, ForeignKeyField, BooleanField, TimeField, I
     JOIN, DateField
 
 from gym_manager import peewee
-from gym_manager.booking.core import Booking, BookingRepo, Court, State
+from gym_manager.booking.core import Booking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN
 from gym_manager.core.base import Client
 from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair
 from gym_manager.peewee import TransactionTable
@@ -73,6 +73,39 @@ class SqliteBookingRepo(BookingRepo):
         if booking.transaction is not None:
             record.transaction = TransactionTable.get_by_id(booking.transaction.id)
         record.save()
+
+    def cancel(self, booking: Booking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
+        # There is a problem with this approach. If a fixed booking is created, *weeks_in_advance* - 1 bookings will be
+        # created in advance, to avoid another booking to step on the fixed one. Now suppose a new fixed booking is
+        # created, with the same start and client, but after *weeks_in_advance* weeks of the first fixed booking. If the
+        # first fixed booking is cancelled definitely, but after the week number 5, with this approach the remaining 3
+        # bookings related to the first one will be deleted, but the first 5 related to the second one will be deleted
+        # too. This is because both fixed bookings are virtually the same, even when they don't.
+
+        # Another problem of this approach is that the booking history is bloated with the bookings that were made in
+        # advance and cancelled, when they were never actively cancelled.
+
+        # Deletes the booking.
+        record = BookingTable.get_by_id(booking.id)
+        record.state, record.updated_by = booking.state.name, booking.state.updated_by
+        record.save()
+        # Deletes the bookings created in advance.
+        if cancel_fixed:
+            when = booking.when
+            for i in range(weeks_in_advance - 1):
+                when = when + ONE_WEEK_TD
+                # (when, start, client, state) isn't the PK of the table, but even so, there shouldn't be two bookings
+                # whose state is BOOKING_TO_HAPPEN. Because of this, the query should always return only one record.
+                # If there is any problem regarding booking cancelling, this should be the first place to look at.
+                record = BookingTable.get_or_none(when=when,
+                                                  start=booking.start,
+                                                  client_id=booking.client.dni.as_primitive(),
+                                                  state=BOOKING_TO_HAPPEN)
+                if record is None:
+                    break
+                record.state, record.updated_by = booking.state.name, booking.state.updated_by
+                record.save()
+                self.cache[record.id].update_state(record.state, record.updated_by)
 
     def all(
             self,
