@@ -5,8 +5,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Callable
-
+from typing import Any, Iterable, Callable, TypeAlias
 
 logger = logging.getLogger(__name__)
 
@@ -190,6 +189,9 @@ class Currency(Validatable):
 
     def increase(self, other_currency: Currency) -> None:
         self._value += other_currency.as_primitive()
+
+
+Balance: TypeAlias = dict[str, dict[str, Currency]]
 
 
 @dataclass
