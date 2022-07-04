@@ -344,7 +344,7 @@ class SqliteBalanceRepo(BalanceRepo):
         BalanceTable._meta.database.create_tables([BalanceTable])
 
     def balance_done(self, when: date) -> bool:
-        return BalanceTable.select().where(BalanceTable.when == when).count()
+        return BalanceTable.get_or_none(BalanceTable.when == when) is not None
 
     @staticmethod
     def balance_to_json(balance: Balance):
