@@ -296,6 +296,7 @@ class Transaction:
     responsible: String
     description: String
     client: Client | None = None
+    balance_date: date | None = None
 
 
 class Filter(abc.ABC):
