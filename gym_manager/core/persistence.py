@@ -222,9 +222,14 @@ class TransactionRepo(abc.ABC):
     ) -> Generator[Transaction, None, None]:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of transactions in the repository.
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def bind_to_balance(self, transaction: Transaction, balance_date: date):
         raise NotImplementedError
 
 

@@ -500,6 +500,11 @@ class SqliteTransactionRepo(TransactionRepo):
                 transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
         return transactions_q.count()
 
+    def bind_to_balance(self, transaction: Transaction, balance_date: date):
+        record = TransactionTable.get_by_id(transaction.id)
+        record.balance = balance_date
+        record.save()
+
 
 class SubscriptionTable(Model):
     when = DateField()
