@@ -365,7 +365,7 @@ class SqliteBalanceRepo(BalanceRepo):
         return _balance
 
     def add(self, when: date, balance: Balance):
-        BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
+        BalanceTable.delete().where(BalanceTable.when == when).execute()  # Deletes existing balance, if it exists.
         BalanceTable.create(when=when, balance_dict=self.balance_to_json(balance))
 
     def all(self, from_date: date, to_date: date) -> Generator[tuple[date, Balance], None, None]:
