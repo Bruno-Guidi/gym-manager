@@ -92,7 +92,7 @@ class MainController:
 
     def balance_history_ui(self):
         # noinspection PyAttributeOutsideInit
-        self._balance_history_ui = BalanceHistoryUI(self.accounting_system.balance_repo)
+        self._balance_history_ui = BalanceHistoryUI(self.accounting_system.balance_repo, self.accounting_system)
         self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
         self._balance_history_ui.show()
 
@@ -333,16 +333,17 @@ class BalanceHistoryController:
     TWO_WEEK_TD = ("14 días", timedelta(days=14))
     ONE_MONTH_TD = ("30 días", timedelta(days=30))
 
-    def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo):
+    def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo, accounting_system: AccountingSystem):
         self.history_ui = history_ui
         self.balance_repo = balance_repo
+        self.accounting_system = accounting_system
 
         self.updated_date_checkbox()
 
         fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
                       display=lambda pair: pair[0])
 
-        self._balances: dict[date, Balance] = {}
+        self._balances: dict[int, tuple[date, String, Balance]] = {}  # ToDo Create a namedtuple to store all this.
         self.load_last_n_balances()
 
         # Sets callbacks.
@@ -373,7 +374,8 @@ class BalanceHistoryController:
         self.history_ui.transaction_table.setRowCount(0)
 
         for when, responsible, balance in self.balance_repo.all(from_date, to_date):
-            self._balances[when], row_count = balance, self.history_ui.transaction_table.rowCount()
+            row_count = self.history_ui.transaction_table.rowCount()
+            self._balances[row_count] = when, responsible, balance
             self.history_ui.transaction_table.setRowCount(row_count + 1)
             self.history_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(when)))
             self.history_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(responsible)))
@@ -390,15 +392,22 @@ class BalanceHistoryController:
         self._load_balance_table(from_date=when, to_date=when)
 
     def balance_detail_ui(self):
-        pass
+        # noinspection PyAttributeOutsideInit
+        when, responsible, balance = self._balances[self.history_ui.transaction_table.currentRow()]
+        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                               self.accounting_system.transactions_types(),
+                                               self.accounting_system.methods,
+                                               self.balance_repo, when, responsible, balance)
+        self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
+        self.daily_balance_ui.show()
 
 
 class BalanceHistoryUI(QMainWindow):
-    def __init__(self, balance_repo: BalanceRepo, parent: QWidget | None = None):
+    def __init__(self, balance_repo: BalanceRepo, accounting_system: AccountingSystem, parent: QWidget | None = None):
         super().__init__(parent)
         self._setup_ui()
 
-        self.controller = BalanceHistoryController(self, balance_repo)
+        self.controller = BalanceHistoryController(self, balance_repo, accounting_system)
 
     def _setup_ui(self):
         self.widget = QWidget()
