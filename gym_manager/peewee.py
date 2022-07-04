@@ -407,7 +407,8 @@ class SqliteTransactionRepo(TransactionRepo):
         return transaction
 
     def all(
-            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
+            include_closed: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
         if self.client_repo is None:
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
