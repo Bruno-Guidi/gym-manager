@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable, Protocol
+from typing import Iterable
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
@@ -10,8 +10,8 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
 
 from gym_manager.core import system
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
-    NumberEqual, Transaction, String
-from gym_manager.core.persistence import BalanceRepo, FilterValuePair
+    NumberEqual, String
+from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
 from ui.widget_config import config_layout, config_lbl, config_table
@@ -80,7 +80,7 @@ class MainController:
 
     def daily_balance(self):
         # noinspection PyAttributeOutsideInit
-        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transactions,
+        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
                                                self.accounting_system.transactions_types(),
                                                self.accounting_system.methods,
                                                self.accounting_system.balance_repo)
@@ -168,22 +168,17 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.page_index)
 
 
-class _TransactionFunction(Protocol):
-    def __call__(self, page: int, page_len: int | None = None, **filter_values) -> Iterable[Transaction]:
-        pass
-
-
 class DailyBalanceController:
     def __init__(
             self,
             daily_balance_ui: DailyBalanceUI,
-            transactions_fn: _TransactionFunction,
+            transaction_repo: TransactionRepo,
+            balance_repo: BalanceRepo,
             transaction_types: Iterable[String],
-            transaction_methods: Iterable[String],
-            balance_repo: BalanceRepo
+            transaction_methods: Iterable[String]
     ):
         self.daily_balance_ui = daily_balance_ui
-        self.transactions_fn = transactions_fn
+        self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
 
         # Sets callbacks.
@@ -195,10 +190,19 @@ class DailyBalanceController:
         methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
         methods_dict["Total"] = len(methods_dict) + 2
 
-        balance = system.generate_balance(self.transactions_fn(page=1), transaction_types, transaction_methods)
+        transaction_gen: Iterable
+        today = date.today()
+        if self.balance_repo.balance_done(today):
+            # If there is a balance closed, pass date.today().
+            transaction_gen = self.transaction_repo.all(page=1, balance_date=today)
+        else:
+            # If there isn't a closed balance, set include_closed=False.
+            transaction_gen = self.transaction_repo.all(page=1, include_closed=False)
+        self.transactions = [transaction for transaction in transaction_gen]
+        self.balance = system.generate_balance(self.transactions, transaction_types, transaction_methods)
 
         # Shows balance information in the ui.
-        for trans_type, type_balance in balance.items():
+        for trans_type, type_balance in self.balance.items():
             for trans_method, method_balance in type_balance.items():
                 lbl = QLabel(str(method_balance))
                 self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
@@ -211,7 +215,7 @@ class DailyBalanceController:
                 f"Ya hay una caja diaria calculada para la fecha {today}. ¿Desea sobreescribirla?", "Si", "No"
             )
         if overwrite:
-            self.balance_repo.add_all(today, self.transactions_fn(page=1))
+            system.close_balance(self.balance, today, self.transactions, self.transaction_repo, self.balance_repo)
             Dialog.info("Éxito", "Caja diaria calculada correctamente.")
             self.daily_balance_ui.confirm_btn.window().close()
 
@@ -219,15 +223,15 @@ class DailyBalanceController:
 class DailyBalanceUI(QMainWindow):
     def __init__(
             self,
-            transactions_fn: _TransactionFunction,
+            transaction_repo: TransactionRepo,
             transaction_types: Iterable[String],
             transaction_methods: Iterable[String],
             balance_repo: BalanceRepo
     ):
         super().__init__()
         self._setup_ui()
-        self.controller = DailyBalanceController(self, transactions_fn, transaction_types, transaction_methods,
-                                                 balance_repo)
+        self.controller = DailyBalanceController(self, transaction_repo, balance_repo, transaction_types,
+                                                 transaction_methods)
 
     def _setup_ui(self):
         self.widget = QWidget(self)
