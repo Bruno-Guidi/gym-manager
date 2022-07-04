@@ -187,19 +187,38 @@ class DailyBalanceController:
             transaction_repo: TransactionRepo,
             balance_repo: BalanceRepo,
             transaction_types: Iterable[String],
-            transaction_methods: Iterable[String]
+            transaction_methods: Iterable[String],
+            when: date | None = None,
+            responsible: String | None = None,
+            balance: Balance | None = None
     ):
         self.daily_balance_ui = daily_balance_ui
         self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
+        self.balance: Balance | None = None
 
-        self.daily_balance_ui.date_lbl.setText(str(date.today()))
+        self.daily_balance_ui.date_lbl.setText(str(date.today() if when is None else when))
+        if responsible is not None:
+            self.daily_balance_ui.responsible_field.setText(str(responsible))
+        if balance is not None:
+            self.balance = balance
+        else:
+            self._generate_balance(transaction_types, transaction_methods)  # Generates the balance.
 
-        # Generates the balance.
+        # Shows balance information in the ui.
         types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
         methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
         methods_dict["Total"] = len(methods_dict) + 2
+        for trans_type, type_balance in self.balance.items():
+            for trans_method, method_balance in type_balance.items():
+                lbl = QLabel(str(method_balance))
+                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
 
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.daily_balance_ui.confirm_btn.clicked.connect(self.close_balance)
+
+    def _generate_balance(self, transaction_types: Iterable[String], transaction_methods: Iterable[String]):
         transaction_gen: Iterable
         today = date.today()
         if self.balance_repo.balance_done(today):
@@ -210,16 +229,6 @@ class DailyBalanceController:
             transaction_gen = self.transaction_repo.all(page=1, include_closed=False)
         self.transactions = [transaction for transaction in transaction_gen]
         self.balance = system.generate_balance(self.transactions, transaction_types, transaction_methods)
-
-        # Shows balance information in the ui.
-        for trans_type, type_balance in self.balance.items():
-            for trans_method, method_balance in type_balance.items():
-                lbl = QLabel(str(method_balance))
-                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
-
-        # Sets callbacks.
-        # noinspection PyUnresolvedReferences
-        self.daily_balance_ui.confirm_btn.clicked.connect(self.close_balance)
 
     def close_balance(self):
         today = date.today()
@@ -245,12 +254,15 @@ class DailyBalanceUI(QMainWindow):
             transaction_repo: TransactionRepo,
             transaction_types: Iterable[String],
             transaction_methods: Iterable[String],
-            balance_repo: BalanceRepo
+            balance_repo: BalanceRepo,
+            when: date | None = None,
+            responsible: String | None = None,
+            balance: Balance | None = None
     ):
         super().__init__()
         self._setup_ui()
         self.controller = DailyBalanceController(self, transaction_repo, balance_repo, transaction_types,
-                                                 transaction_methods)
+                                                 transaction_methods, when, responsible, balance)
 
     def _setup_ui(self):
         self.widget = QWidget(self)
