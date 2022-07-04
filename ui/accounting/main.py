@@ -379,5 +379,5 @@ class BalanceHistoryUI(QMainWindow):
         self.layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True,
-            columns={"Fecha": 100, "Responsable": 175, "Ingresos": 100, "Egresos": 100}
+            columns={"Fecha": 100, "Responsable": 175, "Cobros": 100, "Extracciones": 100}
         )
