@@ -480,7 +480,10 @@ class SqliteTransactionRepo(TransactionRepo):
             for filter_, value in filters:
                 transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
-        for record in transactions_q.paginate(page, page_len):
+        if page_len is not None:
+            transactions_q = transactions_q.paginate(page, page_len)
+
+        for record in transactions_q:
             client = None if record.client is None else self.client_repo.get(record.client_id)
             yield self.from_record(record.id, record.type, client, record.when, record.amount, record.method,
                                    record.responsible, record.description, record.balance)
