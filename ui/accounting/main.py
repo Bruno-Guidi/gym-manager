@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Iterable
 
 from PyQt5 import QtCore
@@ -293,14 +293,37 @@ class DailyBalanceUI(QMainWindow):
 
 
 class BalanceHistoryController:
-    def __init__(self):
+    def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo):
+        self.history_ui = history_ui
+        self.balance_repo = balance_repo
+
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.history_ui.last_n_combobox.currentIndexChanged.connect(self.load_last_n_balances)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.detail_btn.clicked.connect(self.balance_detail_ui)
+
+    def _load_balance_table(self, td: timedelta | None = None, when: date | None = None):
+        pass
+
+    def load_last_n_balances(self):
+        pass
+
+    def load_date_balance(self):
+        pass
+
+    def balance_detail_ui(self):
         pass
 
 
 class BalanceHistoryUI(QMainWindow):
-    def __init__(self, parent: QWidget | None = None):
+    def __init__(self, balance_repo: BalanceRepo, parent: QWidget | None = None):
         super().__init__(parent)
         self._setup_ui()
+
+        self.controller = BalanceHistoryController(self, balance_repo)
 
     def _setup_ui(self):
         self.widget = QWidget()
