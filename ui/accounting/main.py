@@ -198,10 +198,11 @@ class DailyBalanceController:
         self.balance: Balance | None = None
 
         self.daily_balance_ui.date_lbl.setText(str(date.today() if when is None else when))
-        if responsible is not None:
+        if responsible is not None and balance is not None:
             self.daily_balance_ui.responsible_field.setText(str(responsible))
-        if balance is not None:
             self.balance = balance
+            self.daily_balance_ui.responsible_field.setEnabled(False)
+            self.daily_balance_ui.confirm_btn.setVisible(False)
         else:
             self._generate_balance(transaction_types, transaction_methods)  # Generates the balance.
 
