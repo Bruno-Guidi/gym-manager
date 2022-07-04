@@ -277,8 +277,9 @@ class BookingSystem:
         prev_state = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
         self.repo.update(booking, prev_state)
         if booking.is_fixed:  # ToDo add another booking in weeks_in_advance weeks
+            when = booking.when + timedelta(self.weeks_in_advance)
             self.repo.create(booking.court, booking.client, booking.is_fixed, State(BOOKING_TO_HAPPEN),
-                             booking.when + ONE_WEEK_TD, booking.start, booking.end)
+                             when, booking.start, booking.end)
 
 
 class BookingRepo(abc.ABC):
