@@ -350,9 +350,9 @@ class SqliteBalanceRepo(BalanceRepo):
     def balance_to_json(balance: Balance):
         _balance = {}
         for type_, type_balance in balance.items():
-            _balance[type_] = {}
+            _balance[str(type_)] = {}
             for method, method_balance in type_balance.items():
-                _balance[type_][method] = str(method_balance)
+                _balance[str(type_)][str(method)] = str(method_balance)
         return _balance
 
     @staticmethod
