@@ -6,16 +6,16 @@ from typing import Iterable
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
-    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit
+    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox
 
 from gym_manager.core import system
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
-    NumberEqual, String
+    NumberEqual, String, Balance
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
 from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn, fill_combobox, \
-    config_date_edit
+    config_date_edit, config_checkbox
 from ui.widgets import Dialog, FilterHeader, PageIndex
 
 
@@ -302,10 +302,19 @@ class BalanceHistoryController:
         self.history_ui = history_ui
         self.balance_repo = balance_repo
 
+        self.updated_date_checkbox()
+
         fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
                       display=lambda pair: pair[0])
 
+        self._balances: dict[date, Balance] = {}
+        self.load_last_n_balances()
+
         # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.history_ui.last_n_checkbox.stateChanged.connect(self.updated_date_checkbox)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.date_checkbox.stateChanged.connect(self.update_last_n_checkbox)
         # noinspection PyUnresolvedReferences
         self.history_ui.last_n_combobox.currentIndexChanged.connect(self.load_last_n_balances)
         # noinspection PyUnresolvedReferences
@@ -313,9 +322,35 @@ class BalanceHistoryController:
         # noinspection PyUnresolvedReferences
         self.history_ui.detail_btn.clicked.connect(self.balance_detail_ui)
 
+    def update_last_n_checkbox(self):
+        """Callback called when the state of date_checkbox changes.
+        """
+        # self.history_ui.last_n_checkbox.setEnabled(not self.history_ui.date_checkbox.isChecked())
+        self.history_ui.last_n_checkbox.setChecked(not self.history_ui.date_checkbox.isChecked())
+        self.history_ui.last_n_combobox.setEnabled(not self.history_ui.date_checkbox.isChecked())
+
+        # self.history_ui.date_checkbox.setEnabled(not self.history_ui.last_n_checkbox.isEnabled())
+
+    def updated_date_checkbox(self):
+        """Callback called when the state of last_n_checkbox changes.
+        """
+        # self.history_ui.date_checkbox.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
+        self.history_ui.date_checkbox.setChecked(not self.history_ui.last_n_checkbox.isChecked())
+        self.history_ui.date_edit.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
+
+        # self.history_ui.last_n_checkbox.setEnabled(not self.history_ui.date_checkbox.isEnabled())
+
     def _load_balance_table(self, from_date: date, to_date: date):
+        self.history_ui.transaction_table.setRowCount(0)
+
         for when, balance in self.balance_repo.all(from_date, to_date):
-            print(when, balance)
+            self._balances[when], row_count = balance, self.history_ui.transaction_table.rowCount()
+            self.history_ui.transaction_table.setRowCount(row_count + 1)
+            self.history_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(when)))
+            self.history_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str("resp")))
+            self.history_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem(str(balance["Cobro"]["Total"])))
+            self.history_ui.transaction_table.setItem(row_count, 3,
+                                                      QTableWidgetItem(str(balance["Extracción"]["Total"])))
 
     def load_last_n_balances(self):
         td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
@@ -349,9 +384,9 @@ class BalanceHistoryUI(QMainWindow):
         self.last_n_layout = QVBoxLayout()
         self.header_layout.addLayout(self.last_n_layout)
 
-        self.last_n_lbl = QLabel(self.widget)
-        self.last_n_layout.addWidget(self.last_n_lbl)
-        config_lbl(self.last_n_lbl, "Últimos")
+        self.last_n_checkbox = QCheckBox(self.widget)
+        self.last_n_layout.addWidget(self.last_n_checkbox)
+        config_checkbox(self.last_n_checkbox, True, "Últimos", direction=Qt.LayoutDirection.LeftToRight)
 
         self.last_n_combobox = QComboBox(self.widget)
         self.last_n_layout.addWidget(self.last_n_combobox)
@@ -361,9 +396,9 @@ class BalanceHistoryUI(QMainWindow):
         self.date_layout = QVBoxLayout()
         self.header_layout.addLayout(self.date_layout)
 
-        self.date_lbl = QLabel(self.widget)
-        self.date_layout.addWidget(self.date_lbl)
-        config_lbl(self.date_lbl, "Fecha")
+        self.date_checkbox = QCheckBox(self.widget)
+        self.date_layout.addWidget(self.date_checkbox)
+        config_checkbox(self.date_checkbox, False, "Fecha", direction=Qt.LayoutDirection.LeftToRight)
 
         self.date_edit = QDateEdit(self.widget)
         self.date_layout.addWidget(self.date_edit)
