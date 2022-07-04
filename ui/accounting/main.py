@@ -325,20 +325,14 @@ class BalanceHistoryController:
     def update_last_n_checkbox(self):
         """Callback called when the state of date_checkbox changes.
         """
-        # self.history_ui.last_n_checkbox.setEnabled(not self.history_ui.date_checkbox.isChecked())
         self.history_ui.last_n_checkbox.setChecked(not self.history_ui.date_checkbox.isChecked())
         self.history_ui.last_n_combobox.setEnabled(not self.history_ui.date_checkbox.isChecked())
-
-        # self.history_ui.date_checkbox.setEnabled(not self.history_ui.last_n_checkbox.isEnabled())
 
     def updated_date_checkbox(self):
         """Callback called when the state of last_n_checkbox changes.
         """
-        # self.history_ui.date_checkbox.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
         self.history_ui.date_checkbox.setChecked(not self.history_ui.last_n_checkbox.isChecked())
         self.history_ui.date_edit.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
-
-        # self.history_ui.last_n_checkbox.setEnabled(not self.history_ui.date_checkbox.isEnabled())
 
     def _load_balance_table(self, from_date: date, to_date: date):
         self.history_ui.transaction_table.setRowCount(0)
