@@ -8,15 +8,15 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
     QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox
 
-from gym_manager.core import system
+from gym_manager.core import system, constants
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
     NumberEqual, String, Balance
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
 from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn, fill_combobox, \
-    config_date_edit, config_checkbox
-from ui.widgets import Dialog, FilterHeader, PageIndex
+    config_date_edit, config_checkbox, config_line
+from ui.widgets import Dialog, FilterHeader, PageIndex, Field
 
 
 class MainController:
@@ -193,9 +193,7 @@ class DailyBalanceController:
         self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
 
-        # Sets callbacks.
-        # noinspection PyUnresolvedReferences
-        self.daily_balance_ui.confirm_btn.clicked.connect(self.close_balance)
+        self.daily_balance_ui.date_lbl.setText(str(date.today()))
 
         # Generates the balance.
         types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
@@ -218,6 +216,10 @@ class DailyBalanceController:
             for trans_method, method_balance in type_balance.items():
                 lbl = QLabel(str(method_balance))
                 self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
+
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.daily_balance_ui.confirm_btn.clicked.connect(self.close_balance)
 
     def close_balance(self):
         today = date.today()
@@ -250,10 +252,17 @@ class DailyBalanceUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
 
-        # UI title.
-        self.lbl = QLabel(self.widget)
-        self.layout.addWidget(self.lbl)
-        config_lbl(self.lbl, "Caja diaria")
+        # Header.
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+        self.title = QLabel(self.widget)
+        self.header_layout.addWidget(self.title)
+        config_lbl(self.title, "Caja diaria")
+
+        self.date_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.date_lbl)
+        config_lbl(self.date_lbl)
 
         # Balance.
         self.balance_layout = QGridLayout()
@@ -286,6 +295,15 @@ class DailyBalanceUI(QMainWindow):
         self.total_lbl = QLabel(self.widget)
         self.total_lbl.setText("TOTAL")
         self.balance_layout.addWidget(self.total_lbl, 5, 0)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self.widget)
+        self.balance_layout.addWidget(self.responsible_lbl, 6, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
+        self.balance_layout.addWidget(self.responsible_field, 6, 1, 1, 2)
+        config_line(self.responsible_field, place_holder="Responsable")
 
         # Confirm button.
         self.confirm_btn = QPushButton(self.widget)
