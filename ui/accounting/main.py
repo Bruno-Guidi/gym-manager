@@ -394,13 +394,16 @@ class BalanceHistoryController:
 
     def balance_detail_ui(self):
         # noinspection PyAttributeOutsideInit
-        when, responsible, balance = self._balances[self.history_ui.transaction_table.currentRow()]
-        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
-                                               self.accounting_system.transactions_types(),
-                                               self.accounting_system.methods,
-                                               self.balance_repo, when, responsible, balance)
-        self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
-        self.daily_balance_ui.show()
+        if self.history_ui.transaction_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una caja diaria.")
+        else:
+            when, responsible, balance = self._balances[self.history_ui.transaction_table.currentRow()]
+            self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                                   self.accounting_system.transactions_types(),
+                                                   self.accounting_system.methods,
+                                                   self.balance_repo, when, responsible, balance)
+            self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
+            self.daily_balance_ui.show()
 
 
 class BalanceHistoryUI(QMainWindow):
