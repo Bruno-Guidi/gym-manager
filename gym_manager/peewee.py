@@ -391,7 +391,7 @@ class TransactionTable(Model):
     method = CharField()
     responsible = CharField()
     description = CharField()
-    balance = ForeignKeyField(BalanceTable, backref="balance_date", null=True)
+    balance = ForeignKeyField(BalanceTable, backref="balance_date", null=True, on_delete="SET NULL")
 
     class Meta:
         database = DATABASE_PROXY
