@@ -5,8 +5,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Callable
-
+from typing import Any, Iterable, Callable, TypeAlias
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +191,9 @@ class Currency(Validatable):
         self._value += other_currency.as_primitive()
 
 
+Balance: TypeAlias = dict[str, dict[str, Currency]]
+
+
 @dataclass
 class Client:
     """Stores information about a client.
@@ -294,6 +296,7 @@ class Transaction:
     responsible: String
     description: String
     client: Client | None = None
+    balance_date: date | None = None
 
 
 class Filter(abc.ABC):

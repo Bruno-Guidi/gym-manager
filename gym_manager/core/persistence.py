@@ -3,8 +3,7 @@ from collections import OrderedDict
 from datetime import date
 from typing import Generator, Type, Any, Iterable, TypeAlias
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter
-
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter, Balance
 
 FilterValuePair: TypeAlias = tuple[Filter, str]
 
@@ -218,13 +217,19 @@ class TransactionRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
+            include_closed: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of transactions in the repository.
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def bind_to_balance(self, transaction: Transaction, balance_date: date):
         raise NotImplementedError
 
 
@@ -232,5 +237,10 @@ class BalanceRepo(abc.ABC):
     def balance_done(self, when: date) -> bool:
         raise NotImplementedError
 
-    def add_all(self, when: date, transactions: Iterable[Transaction]):
+    @abc.abstractmethod
+    def add(self, when: date, responsible: String, balance: Balance):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, String, Balance], None, None]:
         raise NotImplementedError

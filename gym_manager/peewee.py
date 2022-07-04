@@ -6,10 +6,11 @@ from typing import Generator, Iterable
 
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
                     CompositeKey, prefetch, Proxy, chunked, JOIN)
+from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
-    OperationalError
+    OperationalError, Balance
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache, \
     BalanceRepo, FilterValuePair
 
@@ -330,6 +331,52 @@ class SqliteActivityRepo(ActivityRepo):
         return activities_q.count()
 
 
+class BalanceTable(Model):
+    when = DateField(primary_key=True)
+    responsible = CharField()
+    balance_dict = JSONField()
+
+    class Meta:
+        database = DATABASE_PROXY
+
+
+class SqliteBalanceRepo(BalanceRepo):
+    def __init__(self):
+        BalanceTable._meta.database.create_tables([BalanceTable])
+
+    def balance_done(self, when: date) -> bool:
+        return BalanceTable.get_or_none(BalanceTable.when == when) is not None
+
+    @staticmethod
+    def balance_to_json(balance: Balance):
+        _balance = {}
+        for type_, type_balance in balance.items():
+            _balance[str(type_)] = {}
+            for method, method_balance in type_balance.items():
+                _balance[str(type_)][str(method)] = str(method_balance)
+        return _balance
+
+    @staticmethod
+    def json_to_balance(json_balance: dict):
+        _balance = {}
+        for type_, type_balance in json_balance.items():
+            _balance[type_] = {}
+            for method, method_balance in type_balance.items():
+                _balance[type_][method] = Currency(method_balance)
+        return _balance
+
+    def add(self, when: date, responsible: String, balance: Balance):
+        BalanceTable.delete().where(BalanceTable.when == when).execute()  # Deletes existing balance, if it exists.
+        BalanceTable.create(when=when, responsible=responsible.as_primitive(),
+                            balance_dict=self.balance_to_json(balance))
+
+    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, String, Balance], None, None]:
+        balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
+        for record in balance_q:
+            yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
+                   self.json_to_balance(record.balance_dict))
+
+
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)
     type = CharField()
@@ -339,6 +386,7 @@ class TransactionTable(Model):
     method = CharField()
     responsible = CharField()
     description = CharField()
+    balance = ForeignKeyField(BalanceTable, backref="balance_date", null=True, on_delete="SET NULL")
 
     class Meta:
         database = DATABASE_PROXY
@@ -358,7 +406,9 @@ class SqliteTransactionRepo(TransactionRepo):
         self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
 
     # noinspection PyShadowingBuiltins
-    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
+    def from_record(
+            self, id, type, client: Client, when, amount, method, responsible, description, balance_date=None
+    ):
         """Creates a Transaction with the given data.
         """
         if self._do_caching and id in self.cache:
@@ -371,7 +421,8 @@ class SqliteTransactionRepo(TransactionRepo):
                                   String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
                                   String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
                                   String(description, max_len=constants.TRANSACTION_DESCR_CHARS),
-                                  client)
+                                  client,
+                                  balance_date)
         if self._do_caching:
             self.cache[id] = transaction
         return transaction
@@ -406,23 +457,31 @@ class SqliteTransactionRepo(TransactionRepo):
         return transaction
 
     def all(
-            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
+            include_closed: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
         if self.client_repo is None:
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
         transactions_q = TransactionTable.select()
-        if filters is not None:
+        if not include_closed:  # Filter used when generating a balance for a day that wasn't closed.
+            transactions_q = transactions_q.where(TransactionTable.balance.is_null())
+        if include_closed and balance_date is not None:  # Filter used when generating a balance for a closed day.
+            transactions_q = transactions_q.where(TransactionTable.balance == balance_date)
+        if filters is not None:  # Generic filters.
             # The left outer join is required because transactions might be filtered by the client name, which isn't
             # an attribute of TransactionTable.
             transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
             for filter_, value in filters:
                 transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
-        for record in transactions_q.paginate(page, page_len):
+        if page_len is not None:
+            transactions_q = transactions_q.paginate(page, page_len)
+
+        for record in transactions_q:
             client = None if record.client is None else self.client_repo.get(record.client_id)
             yield self.from_record(record.id, record.type, client, record.when, record.amount, record.method,
-                                   record.responsible, record.description)
+                                   record.responsible, record.description, record.balance)
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of transactions in the repository.
@@ -435,6 +494,11 @@ class SqliteTransactionRepo(TransactionRepo):
             for filter_, value in filters:
                 transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
         return transactions_q.count()
+
+    def bind_to_balance(self, transaction: Transaction, balance_date: date):
+        record = TransactionTable.get_by_id(transaction.id)
+        record.balance = balance_date
+        record.save()
 
 
 class SubscriptionTable(Model):
@@ -476,28 +540,3 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         trans_record = TransactionTable.get_by_id(transaction.id)
         sub_record.transaction = trans_record
         sub_record.save()
-
-
-class BalanceTable(Model):
-    when = DateField()
-    transaction = ForeignKeyField(TransactionTable, backref="balance_register")
-
-    class Meta:
-        database = DATABASE_PROXY
-        primary_key = None
-
-
-class SqliteBalanceRepo(BalanceRepo):
-    def __init__(self):
-        BalanceTable._meta.database.create_tables([BalanceTable])
-
-    def balance_done(self, when: date) -> bool:
-        return BalanceTable.select().where(BalanceTable.when == when).count()
-
-    def add_all(self, when: date, transactions: Iterable[Transaction]):
-        with DATABASE_PROXY.atomic():
-            BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
-
-            for batch in chunked(transactions, 30):  # Saves the new balance.
-                batch = [(when, transaction.id) for transaction in batch]
-                BalanceTable.insert_many(batch, fields=[BalanceTable.when, BalanceTable.transaction_id]).execute()

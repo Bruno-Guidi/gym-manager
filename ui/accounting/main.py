@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-from datetime import date
-from typing import Iterable, Protocol
+from datetime import date, timedelta
+from typing import Iterable
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
-    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu
+    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox
 
-from gym_manager.core import system
+from gym_manager.core import system, constants
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
-    NumberEqual, Transaction, String
-from gym_manager.core.persistence import BalanceRepo, FilterValuePair
+    NumberEqual, String, Balance
+from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
-from ui.widget_config import config_layout, config_lbl, config_table
-from ui.widgets import Dialog, FilterHeader, PageIndex
+from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn, fill_combobox, \
+    config_date_edit, config_checkbox, config_line
+from ui.widgets import Dialog, FilterHeader, PageIndex, Field
 
 
 class MainController:
@@ -59,6 +60,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.generate_balance_action.triggered.connect(self.daily_balance)
         # noinspection PyUnresolvedReferences
+        self.main_ui.balance_history_action.triggered.connect(self.balance_history_ui)
+        # noinspection PyUnresolvedReferences
         self.main_ui.register_extraction_action.triggered.connect(self.extraction)
 
     def fill_transaction_table(self, filters: list[FilterValuePair]):
@@ -80,12 +83,18 @@ class MainController:
 
     def daily_balance(self):
         # noinspection PyAttributeOutsideInit
-        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transactions,
+        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
                                                self.accounting_system.transactions_types(),
                                                self.accounting_system.methods,
                                                self.accounting_system.balance_repo)
         self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
         self.daily_balance_ui.show()
+
+    def balance_history_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._balance_history_ui = BalanceHistoryUI(self.accounting_system.balance_repo, self.accounting_system)
+        self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
+        self._balance_history_ui.show()
 
     def extraction(self):
         self.extract_ui = ExtractUI(self.accounting_system.methods, self.accounting_system.transaction_repo)
@@ -138,6 +147,9 @@ class AccountingMainUI(QMainWindow):
         self.generate_balance_action = QAction("Cerrar caja", self)
         self.daily_balance_menu.addAction(self.generate_balance_action)
 
+        self.balance_history_action = QAction("Historial", self)
+        self.daily_balance_menu.addAction(self.balance_history_action)
+
         # Extractions menu bar.
         self.extraction_menu = QMenu("Extracción", self)
         self.menu_bar.addMenu(self.extraction_menu)
@@ -168,76 +180,107 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.page_index)
 
 
-class _TransactionFunction(Protocol):
-    def __call__(self, page: int, page_len: int | None = None, **filter_values) -> Iterable[Transaction]:
-        pass
-
-
 class DailyBalanceController:
     def __init__(
             self,
             daily_balance_ui: DailyBalanceUI,
-            transactions_fn: _TransactionFunction,
+            transaction_repo: TransactionRepo,
+            balance_repo: BalanceRepo,
             transaction_types: Iterable[String],
             transaction_methods: Iterable[String],
-            balance_repo: BalanceRepo
+            when: date | None = None,
+            responsible: String | None = None,
+            balance: Balance | None = None
     ):
         self.daily_balance_ui = daily_balance_ui
-        self.transactions_fn = transactions_fn
+        self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
+        self.balance: Balance | None = None
+
+        self.daily_balance_ui.date_lbl.setText(str(date.today() if when is None else when))
+        if responsible is not None and balance is not None:
+            self.daily_balance_ui.responsible_field.setText(str(responsible))
+            self.balance = balance
+            self.daily_balance_ui.responsible_field.setEnabled(False)
+            self.daily_balance_ui.confirm_btn.setVisible(False)
+        else:
+            self._generate_balance(transaction_types, transaction_methods)  # Generates the balance.
+
+        # Shows balance information in the ui.
+        types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
+        methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
+        methods_dict["Total"] = len(methods_dict) + 2
+        for trans_type, type_balance in self.balance.items():
+            for trans_method, method_balance in type_balance.items():
+                lbl = QLabel(str(method_balance))
+                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.daily_balance_ui.confirm_btn.clicked.connect(self.close_balance)
 
-        # Generates the balance.
-        types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
-        methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
-        methods_dict["Total"] = len(methods_dict) + 2
-
-        balance = system.generate_balance(self.transactions_fn(page=1), transaction_types, transaction_methods)
-
-        # Shows balance information in the ui.
-        for trans_type, type_balance in balance.items():
-            for trans_method, method_balance in type_balance.items():
-                lbl = QLabel(str(method_balance))
-                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
+    def _generate_balance(self, transaction_types: Iterable[String], transaction_methods: Iterable[String]):
+        transaction_gen: Iterable
+        today = date.today()
+        if self.balance_repo.balance_done(today):
+            # If there is a balance closed, pass date.today().
+            transaction_gen = self.transaction_repo.all(page=1, balance_date=today)
+        else:
+            # If there isn't a closed balance, set include_closed=False.
+            transaction_gen = self.transaction_repo.all(page=1, include_closed=False)
+        self.transactions = [transaction for transaction in transaction_gen]
+        self.balance = system.generate_balance(self.transactions, transaction_types, transaction_methods)
 
     def close_balance(self):
         today = date.today()
         overwrite = True
-        if self.balance_repo.balance_done(today):
-            overwrite = Dialog.confirm(
-                f"Ya hay una caja diaria calculada para la fecha {today}. ¿Desea sobreescribirla?", "Si", "No"
-            )
-        if overwrite:
-            self.balance_repo.add_all(today, self.transactions_fn(page=1))
-            Dialog.info("Éxito", "Caja diaria calculada correctamente.")
-            self.daily_balance_ui.confirm_btn.window().close()
+        if not self.daily_balance_ui.responsible_field.valid_value():
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            if self.balance_repo.balance_done(today):
+                overwrite = Dialog.confirm(
+                    f"Ya hay una caja diaria calculada para la fecha {today}. ¿Desea sobreescribirla?", "Si", "No"
+                )
+            if overwrite:
+                # noinspection PyTypeChecker
+                system.close_balance(self.balance, today, self.daily_balance_ui.responsible_field.value(),
+                                     self.transactions, self.transaction_repo, self.balance_repo)
+                Dialog.info("Éxito", "Caja diaria calculada correctamente.")
+                self.daily_balance_ui.confirm_btn.window().close()
 
 
 class DailyBalanceUI(QMainWindow):
     def __init__(
             self,
-            transactions_fn: _TransactionFunction,
+            transaction_repo: TransactionRepo,
             transaction_types: Iterable[String],
             transaction_methods: Iterable[String],
-            balance_repo: BalanceRepo
+            balance_repo: BalanceRepo,
+            when: date | None = None,
+            responsible: String | None = None,
+            balance: Balance | None = None
     ):
         super().__init__()
         self._setup_ui()
-        self.controller = DailyBalanceController(self, transactions_fn, transaction_types, transaction_methods,
-                                                 balance_repo)
+        self.controller = DailyBalanceController(self, transaction_repo, balance_repo, transaction_types,
+                                                 transaction_methods, when, responsible, balance)
 
     def _setup_ui(self):
         self.widget = QWidget(self)
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
 
-        # UI title.
-        self.lbl = QLabel(self.widget)
-        self.layout.addWidget(self.lbl)
-        config_lbl(self.lbl, "Caja diaria")
+        # Header.
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+        self.title = QLabel(self.widget)
+        self.header_layout.addWidget(self.title)
+        config_lbl(self.title, "Caja diaria")
+
+        self.date_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.date_lbl)
+        config_lbl(self.date_lbl)
 
         # Balance.
         self.balance_layout = QGridLayout()
@@ -271,7 +314,147 @@ class DailyBalanceUI(QMainWindow):
         self.total_lbl.setText("TOTAL")
         self.balance_layout.addWidget(self.total_lbl, 5, 0)
 
+        # Responsible.
+        self.responsible_lbl = QLabel(self.widget)
+        self.balance_layout.addWidget(self.responsible_lbl, 6, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
+        self.balance_layout.addWidget(self.responsible_field, 6, 1, 1, 2)
+        config_line(self.responsible_field, place_holder="Responsable")
+
         # Confirm button.
         self.confirm_btn = QPushButton(self.widget)
         self.confirm_btn.setText("Cerrar caja")
         self.layout.addWidget(self.confirm_btn)
+
+
+class BalanceHistoryController:
+    ONE_WEEK_TD = ("7 días", timedelta(days=7))
+    TWO_WEEK_TD = ("14 días", timedelta(days=14))
+    ONE_MONTH_TD = ("30 días", timedelta(days=30))
+
+    def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo, accounting_system: AccountingSystem):
+        self.history_ui = history_ui
+        self.balance_repo = balance_repo
+        self.accounting_system = accounting_system
+
+        self.updated_date_checkbox()
+
+        fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
+                      display=lambda pair: pair[0])
+
+        self._balances: dict[int, tuple[date, String, Balance]] = {}  # ToDo Create a namedtuple to store all this.
+        self.load_last_n_balances()
+
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.history_ui.last_n_checkbox.stateChanged.connect(self.updated_date_checkbox)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.date_checkbox.stateChanged.connect(self.update_last_n_checkbox)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.last_n_combobox.currentIndexChanged.connect(self.load_last_n_balances)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.detail_btn.clicked.connect(self.balance_detail_ui)
+
+    def update_last_n_checkbox(self):
+        """Callback called when the state of date_checkbox changes.
+        """
+        self.history_ui.last_n_checkbox.setChecked(not self.history_ui.date_checkbox.isChecked())
+        self.history_ui.last_n_combobox.setEnabled(not self.history_ui.date_checkbox.isChecked())
+
+    def updated_date_checkbox(self):
+        """Callback called when the state of last_n_checkbox changes.
+        """
+        self.history_ui.date_checkbox.setChecked(not self.history_ui.last_n_checkbox.isChecked())
+        self.history_ui.date_edit.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
+
+    def _load_balance_table(self, from_date: date, to_date: date):
+        self.history_ui.transaction_table.setRowCount(0)
+
+        for when, responsible, balance in self.balance_repo.all(from_date, to_date):
+            row_count = self.history_ui.transaction_table.rowCount()
+            self._balances[row_count] = when, responsible, balance
+            self.history_ui.transaction_table.setRowCount(row_count + 1)
+            self.history_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(when)))
+            self.history_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(responsible)))
+            self.history_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem(str(balance["Cobro"]["Total"])))
+            self.history_ui.transaction_table.setItem(row_count, 3,
+                                                      QTableWidgetItem(str(balance["Extracción"]["Total"])))
+
+    def load_last_n_balances(self):
+        td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
+        self._load_balance_table(from_date=date.today() - td, to_date=date.today())
+
+    def load_date_balance(self):
+        when = self.history_ui.date_edit.date().toPyDate()
+        self._load_balance_table(from_date=when, to_date=when)
+
+    def balance_detail_ui(self):
+        # noinspection PyAttributeOutsideInit
+        if self.history_ui.transaction_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una caja diaria.")
+        else:
+            when, responsible, balance = self._balances[self.history_ui.transaction_table.currentRow()]
+            self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                                   self.accounting_system.transactions_types(),
+                                                   self.accounting_system.methods,
+                                                   self.balance_repo, when, responsible, balance)
+            self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
+            self.daily_balance_ui.show()
+
+
+class BalanceHistoryUI(QMainWindow):
+    def __init__(self, balance_repo: BalanceRepo, accounting_system: AccountingSystem, parent: QWidget | None = None):
+        super().__init__(parent)
+        self._setup_ui()
+
+        self.controller = BalanceHistoryController(self, balance_repo, accounting_system)
+
+    def _setup_ui(self):
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        # Header layout.
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+        # Last n balances.
+        self.last_n_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.last_n_layout)
+
+        self.last_n_checkbox = QCheckBox(self.widget)
+        self.last_n_layout.addWidget(self.last_n_checkbox)
+        config_checkbox(self.last_n_checkbox, True, "Últimos", direction=Qt.LayoutDirection.LeftToRight)
+
+        self.last_n_combobox = QComboBox(self.widget)
+        self.last_n_layout.addWidget(self.last_n_combobox)
+        config_combobox(self.last_n_combobox)
+
+        # Specific date balance.
+        self.date_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.date_layout)
+
+        self.date_checkbox = QCheckBox(self.widget)
+        self.date_layout.addWidget(self.date_checkbox)
+        config_checkbox(self.date_checkbox, False, "Fecha", direction=Qt.LayoutDirection.LeftToRight)
+
+        self.date_edit = QDateEdit(self.widget)
+        self.date_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today())
+
+        # Balance detail button.
+        self.detail_btn = QPushButton(self.widget)
+        self.header_layout.addWidget(self.detail_btn)
+        config_btn(self.detail_btn, "Detalle")
+
+        # Transactions.
+        self.transaction_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.transaction_table)
+        config_table(
+            target=self.transaction_table, allow_resizing=True,
+            columns={"Fecha": 100, "Responsable": 175, "Cobros": 100, "Extracciones": 100}
+        )

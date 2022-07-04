@@ -5,7 +5,8 @@ from datetime import date
 from typing import Iterable
 
 from gym_manager.core import constants
-from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency, OperationalError
+from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency, OperationalError, \
+    Balance
 from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, BalanceRepo
 
 logger = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ class AccountingSystem:
         """Charges the *client* for its *activity* subscription.
         """
         transaction = self.transaction_repo.create(
-            self._transaction_types["charge"], when, activity.price, method, responsible, description, client
+            self._transaction_types["Cobro"], when, activity.price, method, responsible, description, client
         )
 
         # For the activities that are not 'charge once', record that the client was charged for it.
@@ -161,3 +162,18 @@ def generate_balance(
         balance[transaction.type][total].increase(transaction.amount)
 
     return balance
+
+
+def close_balance(
+        balance: Balance,
+        balance_date: date,
+        responsible: String,
+        transactions: Iterable[Transaction],
+        transactions_repo: TransactionRepo,
+        balance_repo: BalanceRepo
+):
+    balance_repo.add(balance_date, responsible, balance)
+    for transaction in transactions:
+        transaction.balance_date = balance_date
+        transactions_repo.bind_to_balance(transaction, balance_date)
+
