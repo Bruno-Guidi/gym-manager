@@ -269,14 +269,14 @@ class BookingSystem:
         return bookings
 
     def cancel(self, booking: Booking, responsible: str, cancel_fixed: bool = False):
-        prev_state = booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
-        # booking.is_fixed = cancel_fixed
-        self.repo.update(booking, prev_state)
+        booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
+        booking.is_fixed = not cancel_fixed
+        self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
 
     def register_charge(self, booking: Booking, transaction: Transaction):
         prev_state = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
         self.repo.update(booking, prev_state)
-        if booking.is_fixed:
+        if booking.is_fixed:  # ToDo add another booking in weeks_in_advance weeks
             self.repo.create(booking.court, booking.client, booking.is_fixed, State(BOOKING_TO_HAPPEN),
                              booking.when + ONE_WEEK_TD, booking.start, booking.end)
 
@@ -290,6 +290,10 @@ class BookingRepo(abc.ABC):
 
     @abc.abstractmethod
     def update(self, booking: Booking, prev_state: State):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def cancel(self, booking: Booking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
         raise NotImplementedError
 
     @abc.abstractmethod
