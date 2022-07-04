@@ -6,10 +6,11 @@ from typing import Generator, Iterable
 
 from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
                     CompositeKey, prefetch, Proxy, chunked, JOIN)
+from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
-    OperationalError
+    OperationalError, Balance
 from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache, \
     BalanceRepo, FilterValuePair
 
@@ -479,12 +480,11 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
 
 
 class BalanceTable(Model):
-    when = DateField()
-    transaction = ForeignKeyField(TransactionTable, backref="balance_register")
+    when = DateField(primary_key=True)
+    balance_dict = JSONField()
 
     class Meta:
         database = DATABASE_PROXY
-        primary_key = None
 
 
 class SqliteBalanceRepo(BalanceRepo):
