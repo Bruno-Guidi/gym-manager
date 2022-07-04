@@ -153,7 +153,8 @@ class SubscribeController:
 
         self.subscribe_ui = subscribe_ui
 
-        it = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity), activity_manager.activities())
+        it = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity) or activity.charge_once,
+                                   activity_manager.activities())
         fill_combobox(self.subscribe_ui.activity_combobox, it, lambda activity: str(activity.name))
 
         # Sets callbacks.
