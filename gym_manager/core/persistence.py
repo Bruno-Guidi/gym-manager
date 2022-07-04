@@ -3,8 +3,7 @@ from collections import OrderedDict
 from datetime import date
 from typing import Generator, Type, Any, Iterable, TypeAlias
 
-from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter
-
+from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter, Balance
 
 FilterValuePair: TypeAlias = tuple[Filter, str]
 
@@ -230,6 +229,14 @@ class TransactionRepo(abc.ABC):
 
 class BalanceRepo(abc.ABC):
     def balance_done(self, when: date) -> bool:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def add(self, when: date, balance: Balance):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, Balance], None, None]:
         raise NotImplementedError
 
     def add_all(self, when: date, transactions: Iterable[Transaction]):
