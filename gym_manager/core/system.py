@@ -167,11 +167,12 @@ def generate_balance(
 def close_balance(
         balance: Balance,
         balance_date: date,
+        responsible: String,
         transactions: Iterable[Transaction],
         transactions_repo: TransactionRepo,
         balance_repo: BalanceRepo
 ):
-    balance_repo.add(balance_date, balance)
+    balance_repo.add(balance_date, responsible, balance)
     for transaction in transactions:
         transaction.balance_date = balance_date
         transactions_repo.bind_to_balance(transaction, balance_date)

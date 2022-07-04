@@ -238,9 +238,9 @@ class BalanceRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add(self, when: date, balance: Balance):
+    def add(self, when: date, responsible: String, balance: Balance):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, Balance], None, None]:
+    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, String, Balance], None, None]:
         raise NotImplementedError

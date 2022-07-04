@@ -224,14 +224,19 @@ class DailyBalanceController:
     def close_balance(self):
         today = date.today()
         overwrite = True
-        if self.balance_repo.balance_done(today):
-            overwrite = Dialog.confirm(
-                f"Ya hay una caja diaria calculada para la fecha {today}. ¿Desea sobreescribirla?", "Si", "No"
-            )
-        if overwrite:
-            system.close_balance(self.balance, today, self.transactions, self.transaction_repo, self.balance_repo)
-            Dialog.info("Éxito", "Caja diaria calculada correctamente.")
-            self.daily_balance_ui.confirm_btn.window().close()
+        if not self.daily_balance_ui.responsible_field.valid_value():
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            if self.balance_repo.balance_done(today):
+                overwrite = Dialog.confirm(
+                    f"Ya hay una caja diaria calculada para la fecha {today}. ¿Desea sobreescribirla?", "Si", "No"
+                )
+            if overwrite:
+                # noinspection PyTypeChecker
+                system.close_balance(self.balance, today, self.daily_balance_ui.responsible_field.value(),
+                                     self.transactions, self.transaction_repo, self.balance_repo)
+                Dialog.info("Éxito", "Caja diaria calculada correctamente.")
+                self.daily_balance_ui.confirm_btn.window().close()
 
 
 class DailyBalanceUI(QMainWindow):
@@ -355,11 +360,11 @@ class BalanceHistoryController:
     def _load_balance_table(self, from_date: date, to_date: date):
         self.history_ui.transaction_table.setRowCount(0)
 
-        for when, balance in self.balance_repo.all(from_date, to_date):
+        for when, responsible, balance in self.balance_repo.all(from_date, to_date):
             self._balances[when], row_count = balance, self.history_ui.transaction_table.rowCount()
             self.history_ui.transaction_table.setRowCount(row_count + 1)
             self.history_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(when)))
-            self.history_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str("resp")))
+            self.history_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(responsible)))
             self.history_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem(str(balance["Cobro"]["Total"])))
             self.history_ui.transaction_table.setItem(row_count, 3,
                                                       QTableWidgetItem(str(balance["Extracción"]["Total"])))

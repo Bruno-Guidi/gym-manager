@@ -333,6 +333,7 @@ class SqliteActivityRepo(ActivityRepo):
 
 class BalanceTable(Model):
     when = DateField(primary_key=True)
+    responsible = CharField()
     balance_dict = JSONField()
 
     class Meta:
@@ -364,14 +365,16 @@ class SqliteBalanceRepo(BalanceRepo):
                 _balance[type_][method] = Currency(method_balance)
         return _balance
 
-    def add(self, when: date, balance: Balance):
+    def add(self, when: date, responsible: String, balance: Balance):
         BalanceTable.delete().where(BalanceTable.when == when).execute()  # Deletes existing balance, if it exists.
-        BalanceTable.create(when=when, balance_dict=self.balance_to_json(balance))
+        BalanceTable.create(when=when, responsible=responsible.as_primitive(),
+                            balance_dict=self.balance_to_json(balance))
 
-    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, Balance], None, None]:
+    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, String, Balance], None, None]:
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
         for record in balance_q:
-            yield record.when, self.json_to_balance(record.balance_dict)
+            yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
+                   self.json_to_balance(record.balance_dict))
 
 
 class TransactionTable(Model):
