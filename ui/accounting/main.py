@@ -14,7 +14,8 @@ from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, T
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
-from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn
+from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn, fill_combobox, \
+    config_date_edit
 from ui.widgets import Dialog, FilterHeader, PageIndex
 
 
@@ -91,7 +92,7 @@ class MainController:
 
     def balance_history_ui(self):
         # noinspection PyAttributeOutsideInit
-        self._balance_history_ui = BalanceHistoryUI()
+        self._balance_history_ui = BalanceHistoryUI(self.accounting_system.balance_repo)
         self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
         self._balance_history_ui.show()
 
@@ -293,9 +294,16 @@ class DailyBalanceUI(QMainWindow):
 
 
 class BalanceHistoryController:
+    ONE_WEEK_TD = ("7 días", timedelta(days=7))
+    TWO_WEEK_TD = ("14 días", timedelta(days=14))
+    ONE_MONTH_TD = ("30 días", timedelta(days=30))
+
     def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo):
         self.history_ui = history_ui
         self.balance_repo = balance_repo
+
+        fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
+                      display=lambda pair: pair[0])
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
@@ -305,14 +313,17 @@ class BalanceHistoryController:
         # noinspection PyUnresolvedReferences
         self.history_ui.detail_btn.clicked.connect(self.balance_detail_ui)
 
-    def _load_balance_table(self, td: timedelta | None = None, when: date | None = None):
-        pass
+    def _load_balance_table(self, from_date: date, to_date: date):
+        for when, balance in self.balance_repo.all(from_date, to_date):
+            print(when, balance)
 
     def load_last_n_balances(self):
-        pass
+        td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
+        self._load_balance_table(from_date=date.today() - td, to_date=date.today())
 
     def load_date_balance(self):
-        pass
+        when = self.history_ui.date_edit.date().toPyDate()
+        self._load_balance_table(from_date=when, to_date=when)
 
     def balance_detail_ui(self):
         pass
@@ -351,12 +362,12 @@ class BalanceHistoryUI(QMainWindow):
         self.header_layout.addLayout(self.date_layout)
 
         self.date_lbl = QLabel(self.widget)
-        self.date_layout.addWidget(self.last_n_lbl)
+        self.date_layout.addWidget(self.date_lbl)
         config_lbl(self.date_lbl, "Fecha")
 
         self.date_edit = QDateEdit(self.widget)
         self.date_layout.addWidget(self.date_edit)
-        config_combobox(self.date_edit)
+        config_date_edit(self.date_edit, date.today())
 
         # Balance detail button.
         self.detail_btn = QPushButton(self.widget)
