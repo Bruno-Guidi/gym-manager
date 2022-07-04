@@ -340,6 +340,7 @@ class TransactionTable(Model):
     method = CharField()
     responsible = CharField()
     description = CharField()
+    balance = ForeignKeyField(BalanceTable, backref="balance_date", null=True)
 
     class Meta:
         database = DATABASE_PROXY
@@ -414,7 +415,11 @@ class SqliteTransactionRepo(TransactionRepo):
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
         transactions_q = TransactionTable.select()
-        if filters is not None:
+        if not include_closed:  # Filter used when generating a balance for a day that wasn't closed.
+            transactions_q = transactions_q.where(TransactionTable.balance.is_null())
+        if include_closed and balance_date is not None:  # Filter used when generating a balance for a closed day.
+            transactions_q = transactions_q.where(TransactionTable.balance == balance_date)
+        if filters is not None:  # Generic filters.
             # The left outer join is required because transactions might be filtered by the client name, which isn't
             # an attribute of TransactionTable.
             transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
