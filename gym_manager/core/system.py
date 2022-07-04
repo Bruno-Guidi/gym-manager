@@ -120,7 +120,7 @@ class AccountingSystem:
         """Charges the *client* for its *activity* subscription.
         """
         transaction = self.transaction_repo.create(
-            self._transaction_types["charge"], when, activity.price, method, responsible, description, client
+            self._transaction_types["Cobro"], when, activity.price, method, responsible, description, client
         )
 
         # For the activities that are not 'charge once', record that the client was charged for it.
