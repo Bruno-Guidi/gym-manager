@@ -331,6 +331,57 @@ class SqliteActivityRepo(ActivityRepo):
         return activities_q.count()
 
 
+class BalanceTable(Model):
+    when = DateField(primary_key=True)
+    balance_dict = JSONField()
+
+    class Meta:
+        database = DATABASE_PROXY
+
+
+class SqliteBalanceRepo(BalanceRepo):
+    def __init__(self):
+        BalanceTable._meta.database.create_tables([BalanceTable])
+
+    def balance_done(self, when: date) -> bool:
+        return BalanceTable.select().where(BalanceTable.when == when).count()
+
+    @staticmethod
+    def balance_to_json(balance: Balance):
+        _balance = {}
+        for type_, type_balance in balance.items():
+            _balance[type_] = {}
+            for method, method_balance in type_balance.items():
+                _balance[type_][method] = str(method_balance)
+        return _balance
+
+    @staticmethod
+    def json_to_balance(json_balance: dict):
+        _balance = {}
+        for type_, type_balance in json_balance.items():
+            _balance[type_] = {}
+            for method, method_balance in type_balance.items():
+                _balance[type_][method] = Currency(method_balance)
+        return _balance
+
+    def add(self, when: date, balance: Balance):
+        BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
+        BalanceTable.create(when=when, balance_dict=self.balance_to_json(balance))
+
+    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, Balance], None, None]:
+        balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
+        for record in balance_q:
+            yield record.when, self.json_to_balance(record.balance_dict)
+
+    def add_all(self, when: date, transactions: Iterable[Transaction]):
+        with DATABASE_PROXY.atomic():
+            BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
+
+            for batch in chunked(transactions, 30):  # Saves the new balance.
+                batch = [(when, transaction.id) for transaction in batch]
+                BalanceTable.insert_many(batch, fields=[BalanceTable.when, BalanceTable.transaction_id]).execute()
+
+
 class TransactionTable(Model):
     id = IntegerField(primary_key=True)
     type = CharField()
@@ -486,54 +537,3 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         trans_record = TransactionTable.get_by_id(transaction.id)
         sub_record.transaction = trans_record
         sub_record.save()
-
-
-class BalanceTable(Model):
-    when = DateField(primary_key=True)
-    balance_dict = JSONField()
-
-    class Meta:
-        database = DATABASE_PROXY
-
-
-class SqliteBalanceRepo(BalanceRepo):
-    def __init__(self):
-        BalanceTable._meta.database.create_tables([BalanceTable])
-
-    def balance_done(self, when: date) -> bool:
-        return BalanceTable.select().where(BalanceTable.when == when).count()
-
-    @staticmethod
-    def balance_to_json(balance: Balance):
-        _balance = {}
-        for type_, type_balance in balance.items():
-            _balance[type_] = {}
-            for method, method_balance in type_balance.items():
-                _balance[type_][method] = str(method_balance)
-        return _balance
-
-    @staticmethod
-    def json_to_balance(json_balance: dict):
-        _balance = {}
-        for type_, type_balance in json_balance.items():
-            _balance[type_] = {}
-            for method, method_balance in type_balance.items():
-                _balance[type_][method] = Currency(method_balance)
-        return _balance
-
-    def add(self, when: date, balance: Balance):
-        BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
-        BalanceTable.create(when=when, balance_dict=self.balance_to_json(balance))
-
-    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, Balance], None, None]:
-        balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
-        for record in balance_q:
-            yield record.when, self.json_to_balance(record.balance_dict)
-
-    def add_all(self, when: date, transactions: Iterable[Transaction]):
-        with DATABASE_PROXY.atomic():
-            BalanceTable.delete().where(BalanceTable.when == when)  # Deletes existing balance, if it exists.
-
-            for batch in chunked(transactions, 30):  # Saves the new balance.
-                batch = [(when, transaction.id) for transaction in batch]
-                BalanceTable.insert_many(batch, fields=[BalanceTable.when, BalanceTable.transaction_id]).execute()
