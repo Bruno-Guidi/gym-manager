@@ -125,7 +125,7 @@ class BookUI(QDialog):
 
         self.date_edit = QDateEdit(self.widget)
         self.form_layout.addWidget(self.date_edit, 2, 1, 1, 1)
-        config_date_edit(self.date_edit, date.today())
+        config_date_edit(self.date_edit, date.today(), calendar=True)
 
         self.hour_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.hour_lbl, 3, 0, 1, 1)
