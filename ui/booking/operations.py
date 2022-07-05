@@ -45,6 +45,8 @@ class BookController:
         # noinspection PyUnresolvedReferences
         self.book_ui.confirm_btn.clicked.connect(self.book)
         # noinspection PyUnresolvedReferences
+        self.book_ui.cancel_btn.clicked.connect(self.book_ui.reject)
+        # noinspection PyUnresolvedReferences
         self.book_ui.date_edit.dateChanged.connect(self._fill_block_combobox)
 
     def _fill_block_combobox(self):
