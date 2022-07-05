@@ -29,7 +29,7 @@ class ChargeController:
         # Sets ui fields.
         self.charge_ui.client_line.setText(str(client.name))
         self.charge_ui.when_date_edit.setDate(date.today())
-        self.charge_ui.amount_field.setText(str(activity.price))
+        self.charge_ui.amount_field.setText(Currency.fmt(activity.price))
         fill_combobox(self.charge_ui.method_combobox, accounting_system.methods,
                       display=lambda method: method.as_primitive())
         self.charge_ui.descr_text.setText(str(descr))
@@ -129,7 +129,7 @@ class ChargeUI(QDialog):
         # Responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 4, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
+        config_lbl(self.responsible_lbl, "Responsable*")
 
         self.responsible_field = Field(String, parent=self, max_len=consts.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.responsible_field, 4, 1)
@@ -137,7 +137,7 @@ class ChargeUI(QDialog):
 
         # Description.
         self.descr_lbl = QLabel(self)
-        self.form_layout.addWidget(self.descr_lbl, 5, 0)
+        self.form_layout.addWidget(self.descr_lbl, 5, 0, alignment=Qt.AlignTop)
         config_lbl(self.descr_lbl, "Descripción")
 
         self.descr_text = QTextEdit(self)
