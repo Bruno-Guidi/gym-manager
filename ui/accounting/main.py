@@ -454,7 +454,7 @@ class BalanceHistoryUI(QMainWindow):
 
         self.last_n_checkbox = QCheckBox(self.widget)
         self.last_n_layout.addWidget(self.last_n_checkbox)
-        config_checkbox(self.last_n_checkbox, True, "Últimos", direction=Qt.LayoutDirection.LeftToRight)
+        config_checkbox(self.last_n_checkbox, "Últimos", checked=True, layout_dir=Qt.LayoutDirection.LeftToRight)
 
         self.last_n_combobox = QComboBox(self.widget)
         self.last_n_layout.addWidget(self.last_n_combobox)
@@ -466,11 +466,11 @@ class BalanceHistoryUI(QMainWindow):
 
         self.date_checkbox = QCheckBox(self.widget)
         self.date_layout.addWidget(self.date_checkbox)
-        config_checkbox(self.date_checkbox, False, "Fecha", direction=Qt.LayoutDirection.LeftToRight)
+        config_checkbox(self.date_checkbox, "Fecha", checked=False, layout_dir=Qt.LayoutDirection.LeftToRight)
 
         self.date_edit = QDateEdit(self.widget)
         self.date_layout.addWidget(self.date_edit)
-        config_date_edit(self.date_edit, date.today())
+        config_date_edit(self.date_edit, date.today(), calendar=True)
 
         # Horizontal spacer.
         self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
