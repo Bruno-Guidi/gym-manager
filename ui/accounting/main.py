@@ -97,7 +97,7 @@ class MainController:
         self._balance_history_ui.show()
 
     def extraction(self):
-        self.extract_ui = ExtractUI(self.accounting_system.methods, self.accounting_system.transaction_repo)
+        self.extract_ui = ExtractUI(self.accounting_system.transaction_repo, self.accounting_system.methods)
         self.extract_ui.exec_()
 
         extraction, row_count = self.extract_ui.controller.extraction, self.main_ui.transaction_table.rowCount()
