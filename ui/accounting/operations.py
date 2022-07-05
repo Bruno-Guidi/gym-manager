@@ -55,8 +55,7 @@ class ChargeController:
     def charge(self):
         valid_descr, descr = valid_text_value(self.charge_ui.descr_text, optional=False,
                                               max_len=consts.TRANSACTION_DESCR_CHARS)
-        valid_fields = all([self.charge_ui.responsible_field.valid_value(), valid_descr])
-        if not valid_fields:
+        if not (self.charge_ui.responsible_field.valid_value() and valid_descr):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             transaction_date = self.charge_ui.when_date_edit.date().toPyDate()
