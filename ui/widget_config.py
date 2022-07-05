@@ -61,8 +61,8 @@ def config_checkbox(
 
 
 def config_layout(
-        target: QLayout, alignment=Qt.AlignCenter, spacing: int = 6, left_margin: int = 0, top_margin: int = 0,
-        right_margin: int = 0, bottom_margin: int = 0
+        target: QLayout, alignment=Qt.AlignCenter, spacing: int = 6, left_margin: int = 11, top_margin: int = 11,
+        right_margin: int = 11, bottom_margin: int = 11
 ):
     target.setAlignment(alignment)
     target.setSpacing(spacing)

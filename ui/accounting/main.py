@@ -270,29 +270,38 @@ class DailyBalanceUI(QMainWindow):
         self.widget = QWidget(self)
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
+        config_layout(self.layout, left_margin=20, right_margin=20)
 
-        # Header.
+        # Header layout.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
 
+        # Form labels layout.
+        self.form_lbl_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.form_lbl_layout)
+        config_layout(self.header_layout, left_margin=40, right_margin=40)
+
         self.title = QLabel(self.widget)
-        self.header_layout.addWidget(self.title)
+        self.form_lbl_layout.addWidget(self.title, alignment=Qt.AlignVCenter)
         config_lbl(self.title, "Caja diaria", font_size=18)
 
-        self.date_lbl = QLabel(self.widget)
-        self.header_layout.addWidget(self.date_lbl)
-        config_lbl(self.date_lbl, font_size=18, alignment=Qt.AlignLeft)
-
-        # Responsible.
-        self.responsible_layout = QHBoxLayout()
-        self.layout.addLayout(self.responsible_layout)
-
         self.responsible_lbl = QLabel(self.widget)
-        self.responsible_layout.addWidget(self.responsible_lbl)
+        self.form_lbl_layout.addWidget(self.responsible_lbl, alignment=Qt.AlignVCenter)
         config_lbl(self.responsible_lbl, "Responsable", font_size=18)
 
+        # Spacer.
+        self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        # Form data layout.
+        self.form_data_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.form_data_layout)
+
+        self.date_lbl = QLabel(self.widget)
+        self.form_data_layout.addWidget(self.date_lbl, alignment=Qt.AlignLeft)
+        config_lbl(self.date_lbl, font_size=18)
+
         self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
-        self.responsible_layout.addWidget(self.responsible_field)
+        self.form_data_layout.addWidget(self.responsible_field, alignment=Qt.AlignVCenter)
         config_line(self.responsible_field, place_holder="Responsable", font_size=18)
 
         # Spacer.
@@ -340,7 +349,8 @@ class DailyBalanceUI(QMainWindow):
         config_btn(self.confirm_btn, "Cerrar caja")
 
         # Adjusts size.
-        self.widget.setMinimumSize(self.widget.sizeHint())
+        self.setMinimumSize(self.widget.sizeHint())
+        self.setMaximumSize(self.widget.sizeHint())
 
 
 class BalanceHistoryController:
