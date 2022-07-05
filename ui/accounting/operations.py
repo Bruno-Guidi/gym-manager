@@ -5,7 +5,7 @@ from typing import TypeAlias, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, \
-    QDateEdit, QComboBox, QTextEdit, QPushButton, QGridLayout
+    QDateEdit, QComboBox, QTextEdit, QPushButton, QGridLayout, QSpacerItem, QSizePolicy
 
 from gym_manager.core import constants as consts, system
 from gym_manager.core.base import String, Client, Currency, Activity, Transaction
@@ -253,23 +253,23 @@ class ExtractUI(QDialog):
         self.form_layout.addWidget(self.when_date_edit, 0, 1)
         config_date_edit(self.when_date_edit, date.today(), calendar=False)
 
-        # Amount.
-        self.amount_lbl = QLabel()
-        self.form_layout.addWidget(self.amount_lbl, 1, 0)
-        config_lbl(self.amount_lbl, "Monto")
-
-        self.amount_field = Field(Currency)
-        self.form_layout.addWidget(self.amount_field, 1, 1)
-        config_line(self.amount_field, place_holder="000.00")
-
         # Method.
         self.method_lbl = QLabel(self)
-        self.form_layout.addWidget(self.method_lbl, 2, 0)
+        self.form_layout.addWidget(self.method_lbl, 1, 0)
         config_lbl(self.method_lbl, "Método")
 
         self.method_combobox = QComboBox()
-        self.form_layout.addWidget(self.method_combobox, 2, 1)
+        self.form_layout.addWidget(self.method_combobox, 1, 1)
         config_combobox(self.method_combobox)
+
+        # Amount.
+        self.amount_lbl = QLabel()
+        self.form_layout.addWidget(self.amount_lbl, 2, 0)
+        config_lbl(self.amount_lbl, "Monto")
+
+        self.amount_field = Field(Currency)
+        self.form_layout.addWidget(self.amount_field, 2, 1)
+        config_line(self.amount_field, place_holder="000.00")
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
@@ -288,6 +288,9 @@ class ExtractUI(QDialog):
         self.descr_text = QTextEdit()
         self.form_layout.addWidget(self.descr_text, 4, 1)
         config_line(self.descr_text, place_holder="Descripción")
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
