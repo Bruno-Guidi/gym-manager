@@ -10,11 +10,13 @@ from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
 
 def config_widget(
         target: QWidget, font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0, extra_height: int = 0,
-        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight
+        enabled: bool = True, fixed_width: int = 0, layout_dir=Qt.LayoutDirection.LeftToRight
 ):
     target.setFont(QFont(font, font_size))
     target.setMinimumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
     target.setMaximumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
+    if fixed_width > 0:
+        target.setFixedWidth(fixed_width)
     target.setLayoutDirection(layout_dir)
     target.setEnabled(enabled)
 
@@ -76,9 +78,9 @@ def config_layout(
 
 def config_combobox(
         target: QComboBox, font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0,
-        extra_height: int = 0
+        extra_height: int = 0, fixed_width: int = 0
 ):
-    config_widget(target, font, font_size, extra_width, extra_height)
+    config_widget(target, font, font_size, extra_width, extra_height, fixed_width=fixed_width)
 
 
 def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], str]):
