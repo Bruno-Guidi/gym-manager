@@ -245,11 +245,11 @@ class ExtractUI(QDialog):
         self.layout.addLayout(self.form_layout)
 
         # Date.
-        self.when_lbl = QLabel()
+        self.when_lbl = QLabel(self)
         self.form_layout.addWidget(self.when_lbl, 0, 0)
         config_lbl(self.when_lbl, "Fecha")
 
-        self.when_date_edit = QDateEdit()
+        self.when_date_edit = QDateEdit(self)
         self.form_layout.addWidget(self.when_date_edit, 0, 1)
         config_date_edit(self.when_date_edit, date.today(), calendar=False)
 
@@ -258,16 +258,16 @@ class ExtractUI(QDialog):
         self.form_layout.addWidget(self.method_lbl, 1, 0)
         config_lbl(self.method_lbl, "Método")
 
-        self.method_combobox = QComboBox()
+        self.method_combobox = QComboBox(self)
         self.form_layout.addWidget(self.method_combobox, 1, 1)
         config_combobox(self.method_combobox, fixed_width=self.when_date_edit.width())
 
         # Amount.
-        self.amount_lbl = QLabel()
+        self.amount_lbl = QLabel(self)
         self.form_layout.addWidget(self.amount_lbl, 2, 0)
         config_lbl(self.amount_lbl, "Monto")
 
-        self.amount_field = Field(Currency)
+        self.amount_field = Field(Currency, parent=self)
         self.form_layout.addWidget(self.amount_field, 2, 1)
         config_line(self.amount_field, place_holder="000.00")
 
@@ -276,7 +276,7 @@ class ExtractUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 3, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, max_len=consts.CLIENT_NAME_CHARS)
+        self.responsible_field = Field(String, parent=self, max_len=consts.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 3, 1)
         config_line(self.responsible_field, place_holder="Responsable")
 
@@ -285,7 +285,7 @@ class ExtractUI(QDialog):
         self.form_layout.addWidget(self.descr_lbl, 4, 0)
         config_lbl(self.descr_lbl, "Descripción")
 
-        self.descr_text = QTextEdit()
+        self.descr_text = QTextEdit(self)
         self.form_layout.addWidget(self.descr_text, 4, 1)
         config_line(self.descr_text, place_holder="Descripción")
 
@@ -296,10 +296,10 @@ class ExtractUI(QDialog):
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
 
-        self.confirm_btn = QPushButton()
+        self.confirm_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.confirm_btn)
         config_btn(self.confirm_btn, "Confirmar")
 
-        self.cancel_btn = QPushButton()
+        self.cancel_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.cancel_btn)
         config_btn(self.cancel_btn, "Cancelar")
