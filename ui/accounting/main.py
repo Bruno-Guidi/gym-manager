@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPus
 
 from gym_manager.core import system, constants
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
-    NumberEqual, String, Balance, Currency
+    NumberEqual, String, Balance, Currency, Transaction
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
@@ -28,6 +28,7 @@ class MainController:
 
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
+        self.transactions: dict[int, Transaction] = {}
 
         # Configure the filtering widget.
         filters = (ClientLike("client_name", display_name="Nombre cliente",
@@ -72,6 +73,7 @@ class MainController:
         self.main_ui.page_index.total_len = self.accounting_system.transaction_repo.count(filters)
         transactions = self.accounting_system.transaction_repo.all(self.current_page, self.page_len, filters)
         for row, transaction in enumerate(transactions):
+            self.transactions[row] = transaction
             fill_cell(self.main_ui.transaction_table, row, 0, transaction.id, data_type=int)
             fill_cell(self.main_ui.transaction_table, row, 1, transaction.when, data_type=int)
             fill_cell(self.main_ui.transaction_table, row, 2, transaction.type, data_type=str)
@@ -104,6 +106,7 @@ class MainController:
         extraction, row_count = self._extract_ui.controller.extract_ui, self.main_ui.transaction_table.rowCount()
         if (extraction is not None and row_count < self.page_len
                 and self.main_ui.filter_header.passes_filters(extraction)):
+            self.transactions[row_count] = extraction
             fill_cell(self.main_ui.transaction_table, row_count, 0, extraction.id, data_type=int)
             fill_cell(self.main_ui.transaction_table, row_count, 1, extraction.when, data_type=int)
             fill_cell(self.main_ui.transaction_table, row_count, 2, extraction.type, data_type=str)
@@ -116,7 +119,7 @@ class MainController:
         if self.main_ui.transaction_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione una transacción.")
         else:
-            Dialog.info("Detalle", "")
+            Dialog.info("Detalle", str(self.transactions[self.main_ui.transaction_table.currentRow()].description))
 
 
 class AccountingMainUI(QMainWindow):
