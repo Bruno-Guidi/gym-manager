@@ -30,11 +30,12 @@ def config_line(
 
 
 def config_lbl(
-        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, alignment=Qt.AlignLeft,
-        width: int = 0, height: int = 0, word_wrap=False
+        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0,
+        height: int = 0, alignment=None, word_wrap=False
 ):
     target.setText(text)
-    target.setAlignment(alignment)
+    if alignment is not None:
+        target.setAlignment(alignment)
     config_widget(target, font, font_size, width, height)
 
 
