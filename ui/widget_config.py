@@ -5,16 +5,18 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem, \
-    QTextEdit, QCheckBox, QDateEdit, QWidget
+    QTextEdit, QCheckBox, QDateEdit, QWidget, QSizePolicy
 
 
 def config_widget(
-        target: QWidget, font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0, extra_height: int = 0,
-        enabled: bool = True, fixed_width: int = 0, layout_dir=Qt.LayoutDirection.LeftToRight
+        target: QWidget, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
+        layout_dir=Qt.LayoutDirection.LeftToRight
 ):
     target.setFont(QFont(font, font_size))
-    target.setMinimumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
-    target.setMaximumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
+    if adjust_to_hint:
+        target.setMinimumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
+        target.setMaximumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
     if fixed_width > 0:
         target.setFixedWidth(fixed_width)
     target.setLayoutDirection(layout_dir)
@@ -22,49 +24,53 @@ def config_widget(
 
 
 def config_line(
-        target: QLineEdit | QTextEdit, text: str = "", place_holder: str = "", font: str = "MS Shell Dlg 2",
-        font_size: int = 14, extra_width: int = 0, extra_height: int = 0, read_only: bool = False
+        target: QLineEdit | QTextEdit, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
+        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = "", place_holder: str = "", read_only: bool = False
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
     target.setReadOnly(read_only)
-    config_widget(target, font, font_size, extra_width, extra_height)
+    config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
 def config_lbl(
-        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0,
-        extra_height: int = 0, alignment=None, word_wrap=False
+        target: QLabel, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
+        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = "", alignment=None
 ):
     target.setText(text)
     if alignment is not None:
         target.setAlignment(alignment)
-    config_widget(target, font, font_size, extra_width, extra_height)
+    config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
 def config_date_edit(
-        target: QDateEdit, value: date, font: str = "MS Shell Dlg 2", font_size: int = 14, calendar: bool = True,
-        extra_width: int = 0, extra_height: int = 0, layout_direction=Qt.LayoutDirection.LeftToRight
+        target: QDateEdit, value: date, calendar: bool, font: str = "MS Shell Dlg 2", font_size: int = 14,
+        layout_dir=Qt.LayoutDirection.LeftToRight
 ):
     target.setDate(value)
     target.setCalendarPopup(calendar)
-    config_widget(target, font, font_size, extra_width, extra_height, layout_dir=layout_direction)
+    config_widget(target, font, font_size, layout_dir=layout_dir)
 
 
-def config_btn(  # ToDo rename width to extra_width
-        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0,
-        extra_height: int = 0, enabled: bool = True
+def config_btn(
+        target: QPushButton, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
+        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = ""
 ):
     target.setText(text)  # The value has to be set before the config_widget call.
-    config_widget(target, font, font_size, extra_width, extra_height, enabled)
+    config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
 def config_checkbox(
-        target: QCheckBox, checked: bool, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
-        enabled: bool = True, extra_width: int = 0, extra_height: int = 0, direction=Qt.LayoutDirection.RightToLeft
+        target: QCheckBox, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
+        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = "", checked: bool = False
 ):
     target.setText(text)
     target.setChecked(checked)
-    config_widget(target, font, font_size, extra_width, extra_height, enabled, layout_dir=direction)
+    config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
 def config_layout(
@@ -77,10 +83,11 @@ def config_layout(
 
 
 def config_combobox(
-        target: QComboBox, font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0,
-        extra_height: int = 0, fixed_width: int = 0
+        target: QComboBox, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
+        layout_dir=Qt.LayoutDirection.LeftToRight
 ):
-    config_widget(target, font, font_size, extra_width, extra_height, fixed_width=fixed_width)
+    config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
 def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], str]):
