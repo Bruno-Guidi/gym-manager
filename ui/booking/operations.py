@@ -137,9 +137,13 @@ class BookUI(QDialog):
         self.duration_combobox = QComboBox(self)  # The configuration is done in _fill_block_combobox.
         self.form_layout.addWidget(self.duration_combobox, 4, 1)
 
+        self.fixed_lbl = QLabel(self)
+        self.form_layout.addWidget(self.fixed_lbl, 5, 0)
+        config_lbl(self.fixed_lbl, "Turno fijo")
+
         self.fixed_checkbox = QCheckBox(self)
-        self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
-        config_checkbox(self.fixed_checkbox, "Turno fijo")
+        self.form_layout.addWidget(self.fixed_checkbox, 5, 1)
+        config_checkbox(self.fixed_checkbox)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
