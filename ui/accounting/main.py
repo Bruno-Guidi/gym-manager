@@ -84,9 +84,9 @@ class MainController:
     def daily_balance(self):
         # noinspection PyAttributeOutsideInit
         self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                               self.accounting_system.balance_repo,
                                                self.accounting_system.transactions_types(),
-                                               self.accounting_system.methods,
-                                               self.accounting_system.balance_repo)
+                                               self.accounting_system.methods)
         self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
         self.daily_balance_ui.show()
 
@@ -253,9 +253,9 @@ class DailyBalanceUI(QMainWindow):
     def __init__(
             self,
             transaction_repo: TransactionRepo,
+            balance_repo: BalanceRepo,
             transaction_types: Iterable[String],
             transaction_methods: Iterable[String],
-            balance_repo: BalanceRepo,
             when: date | None = None,
             responsible: String | None = None,
             balance: Balance | None = None
@@ -399,9 +399,9 @@ class BalanceHistoryController:
         else:
             when, responsible, balance = self._balances[self.history_ui.transaction_table.currentRow()]
             self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                                   self.balance_repo,
                                                    self.accounting_system.transactions_types(),
-                                                   self.accounting_system.methods,
-                                                   self.balance_repo, when, responsible, balance)
+                                                   self.accounting_system.methods, when, responsible, balance)
             self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
             self.daily_balance_ui.show()
 
