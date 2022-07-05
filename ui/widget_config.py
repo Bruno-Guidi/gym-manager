@@ -83,8 +83,17 @@ def config_table(
         target: QTableWidget, columns: dict[str, int], n_rows: int = 0, font_size: int = 14,
         allow_resizing: bool = False
 ):
+    """Configures a QTableWidget.
+
+    Args:
+        target: QTableWidget to configure.
+        columns: dict {k: v} where k is a column name, and v is the max number of chars that the column will display.
+        n_rows: numbers of rows that the table will have.
+        font_size: font size of the header and cells.
+        allow_resizing: if True, columns can be resized during runtime.
+    """
     target.setFont(QFont("Inconsolata", font_size))  # This font is monospaced.
-    target.verticalHeader().setVisible(False)
+    target.verticalHeader().setVisible(False)  # Hides rows number.
 
     target.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Blocks cell modification.
     if not allow_resizing:
@@ -93,9 +102,15 @@ def config_table(
     target.setColumnCount(len(columns))
     target.setRowCount(n_rows)
 
-    for i, (column_name, column_width) in enumerate(columns.items()):
+    max_width = 0
+    for i, (column_name, column_char_width) in enumerate(columns.items()):
         target.setHorizontalHeaderItem(i, QTableWidgetItem(column_name))
-        target.setColumnWidth(i, column_width)
+        placeholder = "".zfill(column_char_width)
+        target.setColumnWidth(i, len(placeholder) * font_size)
+        max_width += target.columnWidth(i)
+
+    target.setMinimumWidth(max_width + target.verticalScrollBar().height() - 7)
+    target.setSelectionMode(QAbstractItemView.SingleSelection)
 
 
 def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], str]):
