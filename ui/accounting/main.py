@@ -70,16 +70,14 @@ class MainController:
         self.main_ui.page_index.total_len = self.accounting_system.transaction_repo.count(filters)
         transactions = self.accounting_system.transaction_repo.all(self.current_page, self.page_len, filters)
         for row, transaction in enumerate(transactions):
-            self.main_ui.transaction_table.setRowCount(row + 1)
-            self.main_ui.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
-            self.main_ui.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.when)))
-            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.type)))
-            self.main_ui.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.method)))
-            client_name = str(transaction.client.name) if transaction.client is not None else "-"
-            self.main_ui.transaction_table.setItem(row, 4, QTableWidgetItem(client_name))
-            self.main_ui.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.amount)))
-            self.main_ui.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
-            self.main_ui.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
+            fill_cell(self.main_ui.transaction_table, row, 0, transaction.id, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row, 1, transaction.when, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row, 2, transaction.type, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row, 3, transaction.method, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row, 4,
+                      transaction.client.name if transaction.client is not None else "-", data_type=str)
+            fill_cell(self.main_ui.transaction_table, row, 5, transaction.amount, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row, 6, transaction.responsible, data_type=str)
 
     def daily_balance(self):
         # noinspection PyAttributeOutsideInit
@@ -103,15 +101,13 @@ class MainController:
         extraction, row_count = self.extract_ui.controller.extraction, self.main_ui.transaction_table.rowCount()
         if (extraction is not None and row_count < self.page_len
                 and self.main_ui.filter_header.passes_filters(extraction)):
-            self.main_ui.transaction_table.setRowCount(row_count + 1)
-            self.main_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(extraction.id)))
-            self.main_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(extraction.when)))
-            self.main_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem(str(extraction.type)))
-            self.main_ui.transaction_table.setItem(row_count, 3, QTableWidgetItem(str(extraction.method)))
-            self.main_ui.transaction_table.setItem(row_count, 4, QTableWidgetItem("-"))
-            self.main_ui.transaction_table.setItem(row_count, 5, QTableWidgetItem(str(extraction.amount)))
-            self.main_ui.transaction_table.setItem(row_count, 6, QTableWidgetItem(str(extraction.responsible)))
-            self.main_ui.transaction_table.setItem(row_count, 7, QTableWidgetItem(str(extraction.description)))
+            fill_cell(self.main_ui.transaction_table, row_count, 0, extraction.id, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row_count, 1, extraction.when, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row_count, 2, extraction.type, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row_count, 3, extraction.method, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row_count, 4, "-", data_type=str)
+            fill_cell(self.main_ui.transaction_table, row_count, 5, extraction.amount, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row_count, 6, extraction.responsible, data_type=str)
 
 
 class AccountingMainUI(QMainWindow):
