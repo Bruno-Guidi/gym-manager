@@ -75,7 +75,6 @@ class FilterHeader(QWidget):
 
         self.filter_combobox = QComboBox(self)
         self.layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox)
 
         self.filter_line_edit = QLineEdit(self)
         self.layout.addWidget(self.filter_line_edit)
@@ -148,8 +147,9 @@ class FilterHeader(QWidget):
             raise AttributeError("date_lesser_filtering flag was True, but DateLesser filter was not configured.")
 
         # Configuration.
-        self._filter_number = {filter_.name: i for i, filter_ in enumerate(filters)}
         fill_combobox(self.filter_combobox, filters, display=lambda filter_: filter_.display_name)
+        config_combobox(self.filter_combobox)
+        self._filter_number = {filter_.name: i for i, filter_ in enumerate(filters)}
         self._date_greater_filter, self._date_lesser_filter = date_greater_filter, date_lesser_filter
         self.allow_empty_filter = allow_empty_filter
 
