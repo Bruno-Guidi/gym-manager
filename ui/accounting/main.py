@@ -15,7 +15,7 @@ from gym_manager.core.persistence import BalanceRepo, FilterValuePair, Transacti
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
 from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn, fill_combobox, \
-    config_date_edit, config_checkbox, config_line
+    config_date_edit, config_checkbox, config_line, fill_cell
 from ui.widgets import Dialog, FilterHeader, PageIndex, Field
 
 
@@ -394,12 +394,10 @@ class BalanceHistoryController:
         for when, responsible, balance in self.balance_repo.all(from_date, to_date):
             row_count = self.history_ui.transaction_table.rowCount()
             self._balances[row_count] = when, responsible, balance
-            self.history_ui.transaction_table.setRowCount(row_count + 1)
-            self.history_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(when)))
-            self.history_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(responsible)))
-            self.history_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem(str(balance["Cobro"]["Total"])))
-            self.history_ui.transaction_table.setItem(row_count, 3,
-                                                      QTableWidgetItem(str(balance["Extracción"]["Total"])))
+            fill_cell(self.history_ui.transaction_table, row_count, 0, when, data_type=int)
+            fill_cell(self.history_ui.transaction_table, row_count, 1, responsible, data_type=str)
+            fill_cell(self.history_ui.transaction_table, row_count, 2, balance["Cobro"]["Total"], data_type=str)
+            fill_cell(self.history_ui.transaction_table, row_count, 3, balance["Extracción"]["Total"], data_type=str)
 
     def load_last_n_balances(self):
         td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
@@ -477,7 +475,8 @@ class BalanceHistoryUI(QMainWindow):
         self.layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True, min_rows_to_show=1,
-            columns={"Fecha": 10, "Responsable": constants.CLIENT_NAME_CHARS, "Cobros": 12, "Extracciones": 12}
+            columns={"Fecha": (10, int), "Responsable": (constants.CLIENT_NAME_CHARS, str), "Cobros": (12, int),
+                     "Extracciones": (12, int)}
         )
 
         # Adjusts size.
