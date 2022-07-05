@@ -231,7 +231,6 @@ class CancelUI(QDialog):
 
     def _setup_ui(self):
         self.layout = QVBoxLayout(self)
-        config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
         # Filtering.
         self.filter_header = FilterHeader(show_clear_button=False, parent=self)
@@ -246,7 +245,7 @@ class CancelUI(QDialog):
         self.form_layout.addWidget(self.booking_lbl, 0, 0, 1, 1)
         config_lbl(self.booking_lbl, "Reserva")
 
-        self.booking_combobox = QComboBox()
+        self.booking_combobox = QComboBox(self)
         self.form_layout.addWidget(self.booking_combobox, 0, 1, 1, 1)
         config_combobox(self.booking_combobox, extra_height=35)
 
@@ -290,7 +289,7 @@ class CancelUI(QDialog):
         self.form_layout.addWidget(self.end_line, 5, 1, 1, 1)
         config_line(self.end_line, extra_height=35, read_only=False)
 
-        self.fixed_checkbox = QCheckBox()
+        self.fixed_checkbox = QCheckBox(self)
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
         config_checkbox(self.fixed_checkbox, checked=False, text="Turno fijo", enabled=False)
 
