@@ -47,17 +47,15 @@ def config_date_edit(
         width: int = 0, height: int = 0, layout_direction=Qt.LayoutDirection.LeftToRight
 ):
     target.setDate(value)
-    target.setFont(QFont(font, font_size))
+    config_widget(target, font, font_size, layout_dir=layout_direction)
     target.setCalendarPopup(calendar)
-    target.setLayoutDirection(layout_direction)
 
 
 def config_btn(  # ToDo rename width to extra_width
         target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width=0, height=0
 ):
-    target.setText(text)
-    target.setFont(QFont(font, font_size))
-    target.setMinimumSize(target.sizeHint().width() + width, target.sizeHint().height() + height)
+    target.setText(text)  # The value has to be set before the config_widget call.
+    config_widget(target, font, font_size, width, height)
 
 
 def config_checkbox(
