@@ -73,7 +73,7 @@ class ChargeController:
 
 
 class ChargeUI(QDialog):
-    def __init__(
+    def __init__(  # ToDo. Check why the app crashes when the Ok button is clicked.
             self, accounting_system: AccountingSystem, client: Client, activity: Activity, descr: String,
             invalid_date_fn: InvalidDateFn | None = None, validation_msg: str | None = None, **invalid_date_kwargs
     ) -> None:
