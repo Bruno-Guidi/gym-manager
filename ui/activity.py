@@ -34,39 +34,39 @@ class ActivityRow(QWidget):
             # Name.
             self.name_lbl = QLabel(self.widget)
             self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.name_lbl, "Nombre", font_size=12, width=name_width)
+            config_lbl(self.name_lbl, "Nombre", font_size=12, extra_width=name_width)
 
             self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
-            config_line(self.name_field, str(activity.name), width=name_width, read_only=False)
+            config_line(self.name_field, str(activity.name), extra_width=name_width, read_only=False)
 
             # Price.
             self.price_lbl = QLabel(self.widget)
             self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.price_lbl, "Precio", font_size=12, width=price_width)
+            config_lbl(self.price_lbl, "Precio", font_size=12, extra_width=price_width)
 
             self.price_field = Field(Currency, self.widget, max_currency=consts.MAX_CURRENCY)
             self.price_layout.addWidget(self.price_field)
-            config_line(self.price_field, str(activity.price), width=price_width)
+            config_line(self.price_field, str(activity.price), extra_width=price_width)
 
             # Charge once.
             self.charge_once_lbl = QLabel(self.widget)
             self.charge_once_layout.addWidget(self.charge_once_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.charge_once_lbl, "Cobro único", font_size=12, width=charge_once_width)
+            config_lbl(self.charge_once_lbl, "Cobro único", font_size=12, extra_width=charge_once_width)
 
             self.charge_once_checkbox = QCheckBox()
             self.charge_once_layout.addWidget(self.charge_once_checkbox)
-            config_checkbox(self.charge_once_checkbox, checked=activity.charge_once, width=charge_once_width,
+            config_checkbox(self.charge_once_checkbox, checked=activity.charge_once, extra_width=charge_once_width,
                             enabled=not activity.locked)
 
             # Save and delete buttons.
             self.save_btn = QPushButton(self.widget)
             self.top_buttons_layout.addWidget(self.save_btn)
-            config_btn(self.save_btn, text="Guardar", width=100)
+            config_btn(self.save_btn, text="Guardar", extra_width=100)
 
             self.remove_btn = QPushButton(self.widget)
             self.top_buttons_layout.addWidget(self.remove_btn)
-            config_btn(self.remove_btn, text="Eliminar", width=100)
+            config_btn(self.remove_btn, text="Eliminar", extra_width=100)
 
             # Description.
             self.description_lbl = QLabel(self.widget)
@@ -99,7 +99,7 @@ class ActivityRow(QWidget):
 
         self.name_summary = QLabel(self.widget)
         self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
-        config_lbl(self.name_summary, str(self.activity.name), width=name_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.name_summary, str(self.activity.name), extra_width=name_width, extra_height=30, alignment=Qt.AlignVCenter)
 
         self.name_lbl: QLabel | None = None
         self.name_field: Field | None = None
@@ -110,7 +110,7 @@ class ActivityRow(QWidget):
 
         self.price_summary = QLabel(self.widget)
         self.price_layout.addWidget(self.price_summary, alignment=Qt.AlignTop)
-        config_lbl(self.price_summary, str(self.activity.price), width=price_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.price_summary, str(self.activity.price), extra_width=price_width, extra_height=30, alignment=Qt.AlignVCenter)
 
         self.price_lbl: QLabel | None = None
         self.price_field: Field | None = None
@@ -122,7 +122,7 @@ class ActivityRow(QWidget):
         self.charge_once_summary = QLabel(self.widget)
         self.charge_once_layout.addWidget(self.charge_once_summary, alignment=Qt.AlignTop)
         charge_once_text = "Si" if self.activity.charge_once else "No"
-        config_lbl(self.charge_once_summary, charge_once_text, width=charge_once_width, height=30, alignment=Qt.AlignVCenter)
+        config_lbl(self.charge_once_summary, charge_once_text, extra_width=charge_once_width, extra_height=30, alignment=Qt.AlignVCenter)
 
         self.charge_once_lbl: QLabel | None = None
         self.charge_once_checkbox: QCheckBox | None = None
@@ -133,7 +133,7 @@ class ActivityRow(QWidget):
 
         self.detail_btn = QPushButton(self.widget)
         self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, text="Detalle", width=100)
+        config_btn(self.detail_btn, text="Detalle", extra_width=100)
 
         self.save_btn: QPushButton | None = None
         self.remove_btn: QPushButton | None = None
@@ -334,15 +334,15 @@ class ActivityMainUI(QMainWindow):
 
         self.name_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Nombre", width=name_width + 6)  # 6 is the spacing.
+        config_lbl(self.name_lbl, "Nombre", extra_width=name_width + 6)  # 6 is the spacing.
 
         self.price_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.price_lbl)
-        config_lbl(self.price_lbl, "Precio", width=price_width + 6)  # 6 is the spacing.
+        config_lbl(self.price_lbl, "Precio", extra_width=price_width + 6)  # 6 is the spacing.
 
         self.charge_once_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.charge_once_lbl)
-        config_lbl(self.charge_once_lbl, "Cobro único", width=charge_once_width + 6)  # 6 is the spacing.
+        config_lbl(self.charge_once_lbl, "Cobro único", extra_width=charge_once_width + 6)  # 6 is the spacing.
 
         # Activities.
         self.activity_list = QListWidget(self.widget)
@@ -402,7 +402,7 @@ class CreateUI(QDialog):
 
         self.name_lbl = QLabel()
         self.name_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Nombre", font_size=16, width=120)
+        config_lbl(self.name_lbl, "Nombre", font_size=16, extra_width=120)
 
         self.name_field = Field(String, max_len=consts.ACTIVITY_NAME_CHARS)
         self.name_layout.addWidget(self.name_field)
@@ -415,7 +415,7 @@ class CreateUI(QDialog):
 
         self.price_lbl = QLabel()
         self.price_layout.addWidget(self.price_lbl)
-        config_lbl(self.price_lbl, "Precio", font_size=16, width=120)
+        config_lbl(self.price_lbl, "Precio", font_size=16, extra_width=120)
 
         self.price_field = Field(Currency, max_currency=consts.MAX_CURRENCY)
         self.price_layout.addWidget(self.price_field)
@@ -428,7 +428,7 @@ class CreateUI(QDialog):
 
         self.charge_once_lbl = QLabel()
         self.charge_once_layout.addWidget(self.charge_once_lbl)
-        config_lbl(self.charge_once_lbl, "Cobro único", font_size=16, width=120)
+        config_lbl(self.charge_once_lbl, "Cobro único", font_size=16, extra_width=120)
 
         self.charge_once_checkbox = QCheckBox()
         self.charge_once_layout.addWidget(self.charge_once_checkbox)
@@ -441,7 +441,7 @@ class CreateUI(QDialog):
 
         self.description_lbl = QLabel(self)
         self.description_layout.addWidget(self.description_lbl)
-        config_lbl(self.description_lbl, "Descripción", font_size=16, width=120)
+        config_lbl(self.description_lbl, "Descripción", font_size=16, extra_width=120)
 
         self.description_text = QTextEdit()
         self.description_layout.addWidget(self.description_text)
@@ -454,8 +454,8 @@ class CreateUI(QDialog):
 
         self.ok_btn = QPushButton()
         self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", width=100)
+        config_btn(self.ok_btn, "Ok", extra_width=100)
 
         self.cancel_btn = QPushButton()
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", width=100)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=100)

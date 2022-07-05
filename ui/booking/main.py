@@ -142,15 +142,15 @@ class BookingMainUI(QMainWindow):
 
         self.charge_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.charge_btn)
-        config_btn(self.charge_btn, "Cobrar turno", font_size=18, width=200)
+        config_btn(self.charge_btn, "Cobrar turno", font_size=18, extra_width=200)
 
         self.book_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.book_btn)
-        config_btn(self.book_btn, "Reservar turno", font_size=18, width=200)
+        config_btn(self.book_btn, "Reservar turno", font_size=18, extra_width=200)
 
         self.cancel_button = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.cancel_button)
-        config_btn(self.cancel_button, "Cancelar turno", font_size=18, width=200)
+        config_btn(self.cancel_button, "Cancelar turno", font_size=18, extra_width=200)
 
         self.spacer_item = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.layout.addItem(self.spacer_item)

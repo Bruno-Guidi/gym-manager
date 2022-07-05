@@ -243,7 +243,7 @@ class Dialog(QDialog):
 
         self.question_lbl = QLabel(self)
         self.layout.addWidget(self.question_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.question_lbl, text=text, width=300, word_wrap=True)
+        config_lbl(self.question_lbl, text=text, extra_width=300, word_wrap=True)
 
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
@@ -251,13 +251,13 @@ class Dialog(QDialog):
 
         self.ok_btn = QPushButton()
         self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", width=100)
+        config_btn(self.ok_btn, "Ok", extra_width=100)
 
         self.cancel_btn: QPushButton | None = None
         if show_cancel_btn:
             self.cancel_btn = QPushButton()
             self.buttons_layout.addWidget(self.cancel_btn)
-            config_btn(self.cancel_btn, "Cancelar", width=100)
+            config_btn(self.cancel_btn, "Cancelar", extra_width=100)
 
 
 class PageIndex(QWidget):

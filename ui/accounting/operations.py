@@ -104,7 +104,7 @@ class ChargeUI(QDialog):
 
         self.client_lbl = QLabel()
         self.client_layout.addWidget(self.client_lbl)
-        config_lbl(self.client_lbl, "Cliente", font_size=16, width=120)
+        config_lbl(self.client_lbl, "Cliente", font_size=16, extra_width=120)
 
         self.client_line = QLineEdit()
         self.client_layout.addWidget(self.client_line)
@@ -117,7 +117,7 @@ class ChargeUI(QDialog):
 
         self.when_lbl = QLabel()
         self.when_layout.addWidget(self.when_lbl)
-        config_lbl(self.when_lbl, "Fecha", font_size=16, width=120)
+        config_lbl(self.when_lbl, "Fecha", font_size=16, extra_width=120)
 
         self.when_date_edit = QDateEdit()
         self.when_layout.addWidget(self.when_date_edit)
@@ -130,11 +130,11 @@ class ChargeUI(QDialog):
 
         self.amount_lbl = QLabel()
         self.amount_layout.addWidget(self.amount_lbl)
-        config_lbl(self.amount_lbl, "Monto", font_size=16, width=120)
+        config_lbl(self.amount_lbl, "Monto", font_size=16, extra_width=120)
 
         self.amount_field = Field(Currency, max_currency=consts.MAX_CURRENCY)
         self.amount_layout.addWidget(self.amount_field)
-        config_line(self.amount_field, place_holder="000.00", font_size=16, height=30)
+        config_line(self.amount_field, place_holder="000.00", font_size=16, extra_height=30)
 
         # Method.
         self.method_layout = QHBoxLayout()
@@ -143,7 +143,7 @@ class ChargeUI(QDialog):
 
         self.method_lbl = QLabel(self)
         self.method_layout.addWidget(self.method_lbl)
-        config_lbl(self.method_lbl, "Método", font_size=16, width=120)
+        config_lbl(self.method_lbl, "Método", font_size=16, extra_width=120)
 
         self.method_combobox = QComboBox()
         self.method_layout.addWidget(self.method_combobox)
@@ -156,7 +156,7 @@ class ChargeUI(QDialog):
 
         self.responsible_lbl = QLabel(self)
         self.responsible_layout.addWidget(self.responsible_lbl)
-        config_lbl(self.responsible_lbl, "Responsable", font_size=16, width=120)
+        config_lbl(self.responsible_lbl, "Responsable", font_size=16, extra_width=120)
 
         self.responsible_field = Field(String, max_len=consts.CLIENT_DIR_CHARS)
         self.responsible_layout.addWidget(self.responsible_field)
@@ -169,7 +169,7 @@ class ChargeUI(QDialog):
 
         self.descr_lbl = QLabel(self)
         self.descr_layout.addWidget(self.descr_lbl)
-        config_lbl(self.descr_lbl, "Descripción", font_size=16, width=120)
+        config_lbl(self.descr_lbl, "Descripción", font_size=16, extra_width=120)
 
         self.descr_text = QTextEdit()
         self.descr_layout.addWidget(self.descr_text)
@@ -182,11 +182,11 @@ class ChargeUI(QDialog):
 
         self.ok_btn = QPushButton()
         self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", width=100)
+        config_btn(self.ok_btn, "Ok", extra_width=100)
 
         self.cancel_btn = QPushButton()
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", width=100)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=100)
 
 
 class ExtractController:

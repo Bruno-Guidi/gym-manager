@@ -110,7 +110,7 @@ class BookUI(QDialog):
 
         self.client_combobox = QComboBox()
         self.form_layout.addWidget(self.client_combobox, 0, 1, 1, 1)
-        config_combobox(self.client_combobox, height=35)
+        config_combobox(self.client_combobox, extra_height=35)
 
         self.court_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.court_lbl, 1, 0, 1, 1)
@@ -118,7 +118,7 @@ class BookUI(QDialog):
 
         self.court_combobox = QComboBox(self.widget)
         self.form_layout.addWidget(self.court_combobox, 1, 1, 1, 1)
-        config_combobox(self.court_combobox, height=35)
+        config_combobox(self.court_combobox, extra_height=35)
 
         self.date_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.date_lbl, 2, 0, 1, 1)
@@ -126,7 +126,7 @@ class BookUI(QDialog):
 
         self.date_edit = QDateEdit(self.widget)
         self.form_layout.addWidget(self.date_edit, 2, 1, 1, 1)
-        config_date_edit(self.date_edit, date.today(), height=35)
+        config_date_edit(self.date_edit, date.today(), extra_height=35)
 
         self.hour_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.hour_lbl, 3, 0, 1, 1)
@@ -134,7 +134,7 @@ class BookUI(QDialog):
 
         self.block_combobox = QComboBox(self.widget)
         self.form_layout.addWidget(self.block_combobox, 3, 1, 1, 1)
-        config_combobox(self.block_combobox, height=35)
+        config_combobox(self.block_combobox, extra_height=35)
 
         self.duration_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.duration_lbl, 4, 0, 1, 1)
@@ -142,7 +142,7 @@ class BookUI(QDialog):
 
         self.duration_combobox = QComboBox(self.widget)
         self.form_layout.addWidget(self.duration_combobox, 4, 1, 1, 1)
-        config_combobox(self.duration_combobox, height=35)
+        config_combobox(self.duration_combobox, extra_height=35)
 
         self.fixed_checkbox = QCheckBox()
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
@@ -150,7 +150,7 @@ class BookUI(QDialog):
 
         self.confirm_btn = QPushButton(self.widget)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
-        config_btn(self.confirm_btn, "Confirmar", font_size=18, width=200)
+        config_btn(self.confirm_btn, "Confirmar", font_size=18, extra_width=200)
 
 
 class CancelController:
@@ -243,7 +243,7 @@ class CancelUI(QDialog):
 
         self.booking_combobox = QComboBox()
         self.form_layout.addWidget(self.booking_combobox, 0, 1, 1, 1)
-        config_combobox(self.booking_combobox, height=35)
+        config_combobox(self.booking_combobox, extra_height=35)
 
         self.client_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.client_lbl, 1, 0, 1, 1)
@@ -251,7 +251,7 @@ class CancelUI(QDialog):
 
         self.client_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.client_line, 1, 1, 1, 1)
-        config_line(self.client_line, height=35, read_only=False)
+        config_line(self.client_line, extra_height=35, read_only=False)
 
         self.court_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.court_lbl, 2, 0, 1, 1)
@@ -259,7 +259,7 @@ class CancelUI(QDialog):
 
         self.court_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.court_line, 2, 1, 1, 1)
-        config_line(self.court_line, height=35, read_only=False)
+        config_line(self.court_line, extra_height=35, read_only=False)
 
         self.date_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.date_lbl, 3, 0, 1, 1)
@@ -267,7 +267,7 @@ class CancelUI(QDialog):
 
         self.date_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.date_line, 3, 1, 1, 1)
-        config_line(self.date_line, height=35, read_only=False)
+        config_line(self.date_line, extra_height=35, read_only=False)
 
         self.block_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.block_lbl, 4, 0, 1, 1)
@@ -275,7 +275,7 @@ class CancelUI(QDialog):
 
         self.start_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.start_line, 4, 1, 1, 1)
-        config_line(self.start_line, height=35, read_only=False)
+        config_line(self.start_line, extra_height=35, read_only=False)
 
         self.duration_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.duration_lbl, 5, 0, 1, 1)
@@ -283,7 +283,7 @@ class CancelUI(QDialog):
 
         self.end_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.end_line, 5, 1, 1, 1)
-        config_line(self.end_line, height=35, read_only=False)
+        config_line(self.end_line, extra_height=35, read_only=False)
 
         self.fixed_checkbox = QCheckBox()
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
@@ -295,11 +295,11 @@ class CancelUI(QDialog):
 
         self.responsible_field = Field(String, self.widget, max_len=constants.TRANSACTION_RESP_CHARS)
         self.form_layout.addWidget(self.responsible_field, 6, 1, 1, 1)
-        config_line(self.responsible_field, height=35)
+        config_line(self.responsible_field, extra_height=35)
 
         self.confirm_btn = QPushButton(self.widget)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
-        config_btn(self.confirm_btn, "Eliminar", font_size=18, width=200)
+        config_btn(self.confirm_btn, "Eliminar", font_size=18, extra_width=200)
 
 
 class PreChargeController:
@@ -390,7 +390,7 @@ class PreChargeUI(QDialog):
 
         self.booking_combobox = QComboBox()
         self.form_layout.addWidget(self.booking_combobox, 0, 1, 1, 1)
-        config_combobox(self.booking_combobox, height=35)
+        config_combobox(self.booking_combobox, extra_height=35)
 
         self.client_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.client_lbl, 1, 0, 1, 1)
@@ -398,7 +398,7 @@ class PreChargeUI(QDialog):
 
         self.client_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.client_line, 1, 1, 1, 1)
-        config_line(self.client_line, height=35, read_only=False)
+        config_line(self.client_line, extra_height=35, read_only=False)
 
         self.court_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.court_lbl, 2, 0, 1, 1)
@@ -406,7 +406,7 @@ class PreChargeUI(QDialog):
 
         self.court_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.court_line, 2, 1, 1, 1)
-        config_line(self.court_line, height=35, read_only=False)
+        config_line(self.court_line, extra_height=35, read_only=False)
 
         self.date_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.date_lbl, 3, 0, 1, 1)
@@ -414,7 +414,7 @@ class PreChargeUI(QDialog):
 
         self.date_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.date_line, 3, 1, 1, 1)
-        config_line(self.date_line, height=35, read_only=False)
+        config_line(self.date_line, extra_height=35, read_only=False)
 
         self.block_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.block_lbl, 4, 0, 1, 1)
@@ -422,7 +422,7 @@ class PreChargeUI(QDialog):
 
         self.start_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.start_line, 4, 1, 1, 1)
-        config_line(self.start_line, height=35, read_only=False)
+        config_line(self.start_line, extra_height=35, read_only=False)
 
         self.duration_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.duration_lbl, 5, 0, 1, 1)
@@ -430,7 +430,7 @@ class PreChargeUI(QDialog):
 
         self.end_line = QLineEdit(self.widget)
         self.form_layout.addWidget(self.end_line, 5, 1, 1, 1)
-        config_line(self.end_line, height=35, read_only=False)
+        config_line(self.end_line, extra_height=35, read_only=False)
 
         self.fixed_checkbox = QCheckBox()
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
@@ -438,4 +438,4 @@ class PreChargeUI(QDialog):
 
         self.confirm_btn = QPushButton(self.widget)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
-        config_btn(self.confirm_btn, "Siguiente", font_size=18, width=200)
+        config_btn(self.confirm_btn, "Siguiente", font_size=18, extra_width=200)

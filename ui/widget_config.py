@@ -21,48 +21,48 @@ def config_widget(
 
 def config_line(
         target: QLineEdit | QTextEdit, text: str = "", place_holder: str = "", font: str = "MS Shell Dlg 2",
-        font_size: int = 14, width: int = 0, height: int = 0, read_only: bool = True
+        font_size: int = 14, extra_width: int = 0, extra_height: int = 0, read_only: bool = True
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
     target.setReadOnly(read_only)
-    config_widget(target, font, font_size, width, height)
+    config_widget(target, font, font_size, extra_width, extra_height)
 
 
 def config_lbl(
-        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0,
-        height: int = 0, alignment=None, word_wrap=False
+        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0,
+        extra_height: int = 0, alignment=None, word_wrap=False
 ):
     target.setText(text)
     if alignment is not None:
         target.setAlignment(alignment)
-    config_widget(target, font, font_size, width, height)
+    config_widget(target, font, font_size, extra_width, extra_height)
 
 
 def config_date_edit(
         target: QDateEdit, value: date, font: str = "MS Shell Dlg 2", font_size: int = 14, calendar: bool = True,
-        width: int = 0, height: int = 0, layout_direction=Qt.LayoutDirection.LeftToRight
+        extra_width: int = 0, extra_height: int = 0, layout_direction=Qt.LayoutDirection.LeftToRight
 ):
     target.setDate(value)
     target.setCalendarPopup(calendar)
-    config_widget(target, font, font_size, width, height, layout_dir=layout_direction)
+    config_widget(target, font, font_size, extra_width, extra_height, layout_dir=layout_direction)
 
 
 def config_btn(  # ToDo rename width to extra_width
-        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0,
-        height: int = 0, enabled: bool = True
+        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0,
+        extra_height: int = 0, enabled: bool = True
 ):
     target.setText(text)  # The value has to be set before the config_widget call.
-    config_widget(target, font, font_size, width, height, enabled)
+    config_widget(target, font, font_size, extra_width, extra_height, enabled)
 
 
 def config_checkbox(
         target: QCheckBox, checked: bool, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
-        enabled: bool = True, width: int = 0, height: int = 0, direction=Qt.LayoutDirection.RightToLeft
+        enabled: bool = True, extra_width: int = 0, extra_height: int = 0, direction=Qt.LayoutDirection.RightToLeft
 ):
     target.setText(text)
     target.setChecked(checked)
-    config_widget(target, font, font_size, width, height, enabled, layout_dir=direction)
+    config_widget(target, font, font_size, extra_width, extra_height, enabled, layout_dir=direction)
 
 
 def config_layout(
@@ -75,9 +75,10 @@ def config_layout(
 
 
 def config_combobox(
-        target: QComboBox, font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0, height: int = 0
+        target: QComboBox, font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0,
+        extra_height: int = 0
 ):
-    config_widget(target, font, font_size, width, height)
+    config_widget(target, font, font_size, extra_width, extra_height)
 
 
 def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], str]):

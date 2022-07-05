@@ -347,7 +347,7 @@ class DailyBalanceUI(QMainWindow):
         # Confirm button.
         self.confirm_btn = QPushButton(self.widget)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
-        config_btn(self.confirm_btn, "Cerrar caja", width=40)
+        config_btn(self.confirm_btn, "Cerrar caja", extra_width=40)
 
         # Adjusts size.
         self.setMinimumSize(self.widget.sizeHint())
@@ -458,7 +458,7 @@ class BalanceHistoryUI(QMainWindow):
 
         self.last_n_combobox = QComboBox(self.widget)
         self.last_n_layout.addWidget(self.last_n_combobox)
-        config_combobox(self.last_n_combobox, width=20)
+        config_combobox(self.last_n_combobox, extra_width=20)
 
         # Specific date balance.
         self.date_layout = QVBoxLayout()
@@ -478,7 +478,7 @@ class BalanceHistoryUI(QMainWindow):
         # Balance detail button.
         self.detail_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.detail_btn)
-        config_btn(self.detail_btn, "Detalle", width=20)
+        config_btn(self.detail_btn, "Detalle", extra_width=20)
 
         # Transactions.
         self.transaction_table = QTableWidget(self.widget)

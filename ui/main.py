@@ -88,19 +88,19 @@ class MainUI(QMainWindow):
 
         self.client_ui_btn = QPushButton()
         self.first_row_layout.addWidget(self.client_ui_btn)
-        config_btn(self.client_ui_btn, "Cli", width=80, height=80)
+        config_btn(self.client_ui_btn, "Cli", extra_width=80, extra_height=80)
 
         self.activity_ui_btn = QPushButton()
         self.first_row_layout.addWidget(self.activity_ui_btn)
-        config_btn(self.activity_ui_btn, "Act", width=80, height=80)
+        config_btn(self.activity_ui_btn, "Act", extra_width=80, extra_height=80)
 
         self.second_row_layout = QHBoxLayout()
         self.layout.addLayout(self.second_row_layout)
 
         self.booking_ui_btn = QPushButton()
         self.second_row_layout.addWidget(self.booking_ui_btn)
-        config_btn(self.booking_ui_btn, "Turn", width=80, height=80)
+        config_btn(self.booking_ui_btn, "Turn", extra_width=80, extra_height=80)
 
         self.accounting_ui_btn = QPushButton()
         self.second_row_layout.addWidget(self.accounting_ui_btn)
-        config_btn(self.accounting_ui_btn, "Cont", width=80, height=80)
+        config_btn(self.accounting_ui_btn, "Cont", extra_width=80, extra_height=80)

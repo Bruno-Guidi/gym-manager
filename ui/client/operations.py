@@ -72,7 +72,7 @@ class CreateUI(QDialog):
 
         self.name_lbl = QLabel()
         self.name_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Nombre", font_size=16, width=120)
+        config_lbl(self.name_lbl, "Nombre", font_size=16, extra_width=120)
 
         self.name_field = Field(validatable=String, max_len=consts.CLIENT_NAME_CHARS)
         self.name_layout.addWidget(self.name_field)
@@ -85,7 +85,7 @@ class CreateUI(QDialog):
 
         self.dni_lbl = QLabel()
         self.dni_layout.addWidget(self.dni_lbl)
-        config_lbl(self.dni_lbl, "DNI", font_size=16, width=120)
+        config_lbl(self.dni_lbl, "DNI", font_size=16, extra_width=120)
 
         self.dni_field = Field(Number, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
         self.dni_layout.addWidget(self.dni_field)
@@ -98,11 +98,11 @@ class CreateUI(QDialog):
 
         self.admission_lbl = QLabel()
         self.admission_layout.addWidget(self.admission_lbl)
-        config_lbl(self.admission_lbl, "Ingreso", font_size=16, width=120)
+        config_lbl(self.admission_lbl, "Ingreso", font_size=16, extra_width=120)
 
         self.admission_date_field = QDateEdit()
         self.admission_layout.addWidget(self.admission_date_field)
-        config_date_edit(self.admission_date_field, date.today(), font_size=16, height=30)
+        config_date_edit(self.admission_date_field, date.today(), font_size=16, extra_height=30)
 
         # Telephone.
         self.tel_layout = QHBoxLayout()
@@ -111,7 +111,7 @@ class CreateUI(QDialog):
 
         self.tel_lbl = QLabel(self)
         self.tel_layout.addWidget(self.tel_lbl)
-        config_lbl(self.tel_lbl, "Teléfono", font_size=16, width=120)
+        config_lbl(self.tel_lbl, "Teléfono", font_size=16, extra_width=120)
 
         self.tel_field = Field(validatable=String, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
         self.tel_layout.addWidget(self.tel_field)
@@ -124,7 +124,7 @@ class CreateUI(QDialog):
 
         self.dir_lbl = QLabel(self)
         self.dir_layout.addWidget(self.dir_lbl)
-        config_lbl(self.dir_lbl, "Dirección", font_size=16, width=120)
+        config_lbl(self.dir_lbl, "Dirección", font_size=16, extra_width=120)
 
         self.dir_field = Field(validatable=String, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
         self.dir_layout.addWidget(self.dir_field)
@@ -137,11 +137,11 @@ class CreateUI(QDialog):
 
         self.ok_btn = QPushButton()
         self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", width=100)
+        config_btn(self.ok_btn, "Ok", extra_width=100)
 
         self.cancel_btn = QPushButton()
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", width=100)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=100)
 
 
 class SubscribeController:
@@ -197,7 +197,7 @@ class SubscribeUI(QDialog):
 
         self.name_lbl = QLabel()
         self.activity_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Actividad", font_size=16, width=120)
+        config_lbl(self.name_lbl, "Actividad", font_size=16, extra_width=120)
 
         self.activity_combobox = QComboBox()
         self.activity_layout.addWidget(self.activity_combobox)
@@ -209,7 +209,7 @@ class SubscribeUI(QDialog):
 
         self.when_lbl = QLabel()
         self.when_layout.addWidget(self.when_lbl)
-        config_lbl(self.when_lbl, "Fecha", font_size=16, width=120)
+        config_lbl(self.when_lbl, "Fecha", font_size=16, extra_width=120)
 
         self.when_date_edit = QDateEdit()
         self.when_layout.addWidget(self.when_date_edit)
@@ -222,8 +222,8 @@ class SubscribeUI(QDialog):
 
         self.ok_btn = QPushButton()
         self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", width=100)
+        config_btn(self.ok_btn, "Ok", extra_width=100)
 
         self.cancel_btn = QPushButton()
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", width=100)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=100)
