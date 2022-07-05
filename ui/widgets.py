@@ -128,10 +128,6 @@ class FilterHeader(QWidget):
         # Horizontal spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
 
-    def sizeHint(self) -> QSize:
-        print(self.width(), super().width(), super().sizeHint().width())
-        return QSize(self.width(), super().sizeHint().height())  # ToDo fix.
-
     def config(
             self,
             filters: tuple[Filter, ...],

@@ -164,7 +164,7 @@ class BookUI(QDialog):
         config_btn(self.cancel_btn, "Cancelar", extra_width=20)
 
         # Adjusts size.
-        self.setFixedSize(self.sizeHint())
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
 class CancelController:
