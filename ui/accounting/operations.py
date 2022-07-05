@@ -84,103 +84,78 @@ class ChargeUI(QDialog):
         self.controller = ChargeController(self, client, activity, descr, accounting_system, invalid_date_fn, validation_msg, **invalid_date_kwargs)
 
     def _setup_ui(self):
-        self.resize(400, 300)
-
         self.layout = QVBoxLayout(self)
 
-        self.form_layout = QVBoxLayout()
+        # Form.
+        self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
 
         # Client.
-        self.client_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.client_layout)
-        config_layout(self.client_layout, alignment=Qt.AlignLeft)
+        self.client_lbl = QLabel(self)
+        self.form_layout.addWidget(self.client_lbl, 0, 0)
+        config_lbl(self.client_lbl, "Cliente")
 
-        self.client_lbl = QLabel()
-        self.client_layout.addWidget(self.client_lbl)
-        config_lbl(self.client_lbl, "Cliente", font_size=16, extra_width=120)
-
-        self.client_line = QLineEdit()
-        self.client_layout.addWidget(self.client_line)
-        config_line(self.client_line, font_size=16, read_only=False)
+        self.client_line = QLineEdit(self)
+        self.form_layout.addWidget(self.client_line, 0, 1)
+        config_line(self.client_line)
 
         # Date.
-        self.when_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.when_layout)
-        config_layout(self.when_layout, alignment=Qt.AlignLeft)
+        self.when_lbl = QLabel(self)
+        self.form_layout.addWidget(self.when_lbl, 1, 0)
+        config_lbl(self.when_lbl, "Fecha")
 
-        self.when_lbl = QLabel()
-        self.when_layout.addWidget(self.when_lbl)
-        config_lbl(self.when_lbl, "Fecha", font_size=16, extra_width=120)
-
-        self.when_date_edit = QDateEdit()
-        self.when_layout.addWidget(self.when_date_edit)
-        config_date_edit(self.when_date_edit, date.today(), font_size=16, calendar=False)
+        self.when_date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.when_date_edit, 1, 1)
+        config_date_edit(self.when_date_edit, date.today(), calendar=True)
 
         # Amount.
-        self.amount_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.amount_layout)
-        config_layout(self.amount_layout, alignment=Qt.AlignLeft)
+        self.amount_lbl = QLabel(self)
+        self.form_layout.addWidget(self.amount_lbl, 2, 0)
+        config_lbl(self.amount_lbl, "Monto")
 
-        self.amount_lbl = QLabel()
-        self.amount_layout.addWidget(self.amount_lbl)
-        config_lbl(self.amount_lbl, "Monto", font_size=16, extra_width=120)
-
-        self.amount_field = Field(Currency, max_currency=consts.MAX_CURRENCY)
-        self.amount_layout.addWidget(self.amount_field)
-        config_line(self.amount_field, place_holder="000.00", font_size=16, extra_height=30)
+        self.amount_field = Field(Currency, parent=self)
+        self.form_layout.addWidget(self.amount_field, 2, 1)
+        config_line(self.amount_field)
 
         # Method.
-        self.method_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.method_layout)
-        config_layout(self.method_layout, alignment=Qt.AlignLeft)
-
         self.method_lbl = QLabel(self)
-        self.method_layout.addWidget(self.method_lbl)
+        self.form_layout.addWidget(self.method_lbl, 3, 0)
         config_lbl(self.method_lbl, "Método", font_size=16, extra_width=120)
 
-        self.method_combobox = QComboBox()
-        self.method_layout.addWidget(self.method_combobox)
-        config_combobox(self.method_combobox, font_size=16)
+        self.method_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.method_combobox, 3, 1)
+        config_combobox(self.method_combobox)
 
         # Responsible.
-        self.responsible_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.responsible_layout)
-        config_layout(self.responsible_layout, alignment=Qt.AlignLeft)
-
         self.responsible_lbl = QLabel(self)
-        self.responsible_layout.addWidget(self.responsible_lbl)
-        config_lbl(self.responsible_lbl, "Responsable", font_size=16, extra_width=120)
+        self.form_layout.addWidget(self.responsible_lbl, 4, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, max_len=consts.CLIENT_DIR_CHARS)
-        self.responsible_layout.addWidget(self.responsible_field)
-        config_line(self.responsible_field, place_holder="Responsable", font_size=16)
+        self.responsible_field = Field(String, parent=self, max_len=consts.CLIENT_DIR_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 4, 1)
+        config_line(self.responsible_field)
 
         # Description.
-        self.descr_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.descr_layout)
-        config_layout(self.descr_layout, alignment=Qt.AlignLeft)
-
         self.descr_lbl = QLabel(self)
-        self.descr_layout.addWidget(self.descr_lbl)
-        config_lbl(self.descr_lbl, "Descripción", font_size=16, extra_width=120)
+        self.form_layout.addWidget(self.descr_lbl, 5, 0)
+        config_lbl(self.descr_lbl, "Descripción")
 
-        self.descr_text = QTextEdit()
-        self.descr_layout.addWidget(self.descr_text)
-        config_line(self.descr_text, place_holder="Descripción", font_size=16)
+        self.descr_text = QTextEdit(self)
+        self.form_layout.addWidget(self.descr_text, 5, 1)
+        config_line(self.descr_text)
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
+        config_layout(self.buttons_layout)
 
         self.ok_btn = QPushButton()
         self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", extra_width=100)
+        config_btn(self.ok_btn, "Ok")
 
         self.cancel_btn = QPushButton()
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=100)
+        config_btn(self.cancel_btn, "Cancelar")
 
 
 class ExtractController:
