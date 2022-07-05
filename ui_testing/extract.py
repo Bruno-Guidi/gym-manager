@@ -10,20 +10,6 @@ from gym_manager.core.persistence import TransactionRepo
 from ui.accounting.operations import ExtractUI
 
 
-# noinspection PyShadowingBuiltins
-class Mock(TransactionRepo):
-
-    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
-        pass
-
-    def create(self, type: String, when: date, amount: Currency, method: String, responsible: String,
-               description: String, client: Client | None = None) -> Transaction:
-        return Transaction(int(random()), type, client, when, amount, method, responsible, description)
-
-    def all(self, page: int, page_len: int = 20, **filters) -> Generator[Transaction, None, None]:
-        pass
-
-
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 

@@ -191,7 +191,7 @@ class ChargeUI(QDialog):
 
 class ExtractController:
     def __init__(
-            self, extract_ui: ExtractUI, transaction_methods: tuple[String, ...], transaction_repo: TransactionRepo
+            self, extract_ui: ExtractUI, transaction_repo: TransactionRepo, transaction_methods: tuple[String, ...]
     ):
         self.extract_ui = extract_ui
         self.transaction_repo = transaction_repo
@@ -219,11 +219,11 @@ class ExtractController:
         else:
             # noinspection PyTypeChecker
             self.extraction = system.register_extraction(self.extract_ui.when_date_edit.date().toPyDate(),
-                                                    self.extract_ui.amount_field.value(),
-                                                    self.extract_ui.method_combobox.currentData(Qt.UserRole),
-                                                    self.extract_ui.responsible_field.value(),
-                                                    description,
-                                                    self.transaction_repo)
+                                                         self.extract_ui.amount_field.value(),
+                                                         self.extract_ui.method_combobox.currentData(Qt.UserRole),
+                                                         self.extract_ui.responsible_field.value(),
+                                                         description,
+                                                         self.transaction_repo)
             Dialog.info("Éxito",
                         f"Se ha registrado una extracción con número de identificación '{self.extraction.id}'.")
             self.extract_ui.descr_text.window().close()
@@ -231,11 +231,11 @@ class ExtractController:
 
 class ExtractUI(QDialog):
     def __init__(
-            self, transaction_methods: tuple[String, ...], transaction_repo: TransactionRepo
+            self, transaction_repo: TransactionRepo, transaction_methods: tuple[String, ...]
     ):
         super().__init__()
         self._setup_ui()
-        self.controller = ExtractController(self, transaction_methods, transaction_repo)
+        self.controller = ExtractController(self, transaction_repo, transaction_methods)
 
     def _setup_ui(self):
         self.layout = QVBoxLayout(self)
