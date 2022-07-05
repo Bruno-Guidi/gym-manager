@@ -124,11 +124,8 @@ class AccountingMainUI(QMainWindow):
         self.controller = MainController(self, accounting_system, client)
 
     def _setup_ui(self):
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        self.widget = QWidget(self.central_widget)
-
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
         self.main_layout = QVBoxLayout(self.widget)
 
         # Menu bar.
