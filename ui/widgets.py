@@ -301,7 +301,6 @@ class PageIndex(QWidget):
 
         self.info_lbl = QLabel(self)
         self.layout.addWidget(self.info_lbl)
-        config_lbl(self.info_lbl)
 
         self.prev_btn = QPushButton(self)
         self.layout.addWidget(self.prev_btn)
@@ -309,7 +308,6 @@ class PageIndex(QWidget):
 
         self.index_lbl = QLabel(self)
         self.layout.addWidget(self.index_lbl)
-        config_lbl(self.index_lbl)
 
         self.next_btn = QPushButton(self)
         self.layout.addWidget(self.next_btn)
@@ -332,8 +330,8 @@ class PageIndex(QWidget):
 
     def _update(self):
         roof = self.page * self.page_len if self.page * self.page_len < self.total_len else self.total_len
-        self.info_lbl.setText(f"Mostrando {(self.page - 1) * self.page_len + 1} - {roof} de {self.total_len}")
-        self.index_lbl.setText(str(self.page))
+        config_lbl(self.info_lbl, f"Mostrando {(self.page - 1) * self.page_len + 1} - {roof}, de {self.total_len}")
+        config_lbl(self.index_lbl, str(self.page))
 
         self.prev_btn.setEnabled(self.page != 1)
         self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
