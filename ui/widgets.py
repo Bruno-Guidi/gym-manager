@@ -89,13 +89,13 @@ class FilterHeader(QWidget):
         self.layout.addWidget(self.search_btn)
         config_btn(self.search_btn, icon_path=r"ui/resources/search.png", icon_size=30)
 
-        # Horizontal spacer.
-        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
-
         self.from_layout: QVBoxLayout | None = None
         self.from_lbl: QLabel | None = None
         self.from_date_edit: QDateEdit | None = None
         if date_greater_filtering:
+            # Horizontal spacer.
+            self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
             self.from_layout = QVBoxLayout()
             self.layout.addLayout(self.from_layout)
 
@@ -107,13 +107,13 @@ class FilterHeader(QWidget):
             self.from_layout.addWidget(self.from_date_edit)
             config_date_edit(self.from_date_edit, date.today() - ONE_MONTH_TD, calendar=True)
 
-        # Horizontal spacer.
-        self.layout.addSpacerItem(QSpacerItem(15, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
-
         self.to_layout: QVBoxLayout | None = None
         self.to_lbl: QLabel | None = None
         self.to_date_edit: QDateEdit | None = None
         if date_lesser_filtering:
+            # Horizontal spacer.
+            self.layout.addSpacerItem(QSpacerItem(15, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
+
             self.to_layout = QVBoxLayout()
             self.layout.addLayout(self.to_layout)
 
