@@ -21,7 +21,7 @@ def config_widget(
 
 def config_line(
         target: QLineEdit | QTextEdit, text: str = "", place_holder: str = "", font: str = "MS Shell Dlg 2",
-        font_size: int = 14, extra_width: int = 0, extra_height: int = 0, read_only: bool = True
+        font_size: int = 14, extra_width: int = 0, extra_height: int = 0, read_only: bool = False
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
