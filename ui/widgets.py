@@ -298,20 +298,32 @@ class PageIndex(QWidget):
 
     def _setup_ui(self):
         self.layout = QHBoxLayout(self)
+        config_layout(self.layout)
 
         self.info_lbl = QLabel(self)
-        self.layout.addWidget(self.info_lbl)
+        self.layout.addWidget(self.info_lbl, alignment=Qt.AlignRight)
+        config_lbl(self.info_lbl, f"Mostrando xxx - yyy de zzz", font_size=16, alignment=Qt.AlignCenter)
 
         self.prev_btn = QPushButton(self)
         self.layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, "<")
+        config_btn(self.prev_btn, icon_path="ui/resources/prev_page.png", icon_size=32)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(10, 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
         self.index_lbl = QLabel(self)
         self.layout.addWidget(self.index_lbl)
+        config_lbl(self.index_lbl, "xxx", font_size=16, alignment=Qt.AlignCenter)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(10, 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
         self.next_btn = QPushButton(self)
         self.layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, ">")
+        config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=32)
+
+        # Horizontal spacer. Adjusts the layout, causing the page_lbl to be in its center.
+        self.layout.addSpacerItem(QSpacerItem(self.info_lbl.width(), 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
     @property
     def total_len(self):
@@ -330,11 +342,11 @@ class PageIndex(QWidget):
 
     def _update(self):
         roof = self.page * self.page_len if self.page * self.page_len < self.total_len else self.total_len
-        config_lbl(self.info_lbl, f"Mostrando {(self.page - 1) * self.page_len + 1} - {roof}, de {self.total_len}")
-        config_lbl(self.index_lbl, str(self.page))
+        self.info_lbl.setText(f"Mostrando {(self.page - 1) * self.page_len + 1} - {roof} de {self.total_len}")
+        self.index_lbl.setText(str(self.page))
 
         self.prev_btn.setEnabled(self.page != 1)
-        self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
+        # self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
 
     def on_prev_clicked(self):
         if self.page_len is None or self.total_len is None or self._refresh_table is None:
