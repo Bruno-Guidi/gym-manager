@@ -5,7 +5,18 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem, \
-    QTextEdit, QCheckBox, QDateEdit
+    QTextEdit, QCheckBox, QDateEdit, QWidget
+
+
+def config_widget(
+        target: QWidget, font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0, extra_height: int = 0,
+        layout_dir=Qt.LayoutDirection.LeftToRight
+):
+    target.setFont(QFont(font, font_size))
+    print(target.sizeHint())
+    target.setMinimumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
+    target.setMaximumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
+    target.setLayoutDirection(layout_dir)
 
 
 def config_line(
