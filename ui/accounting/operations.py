@@ -251,7 +251,7 @@ class ExtractUI(QDialog):
 
         self.when_date_edit = QDateEdit(self)
         self.form_layout.addWidget(self.when_date_edit, 0, 1)
-        config_date_edit(self.when_date_edit, date.today(), calendar=False)
+        config_date_edit(self.when_date_edit, date.today(), calendar=True)
 
         # Method.
         self.method_lbl = QLabel(self)
@@ -265,29 +265,29 @@ class ExtractUI(QDialog):
         # Amount.
         self.amount_lbl = QLabel(self)
         self.form_layout.addWidget(self.amount_lbl, 2, 0)
-        config_lbl(self.amount_lbl, "Monto")
+        config_lbl(self.amount_lbl, "Monto*")
 
         self.amount_field = Field(Currency, parent=self)
         self.form_layout.addWidget(self.amount_field, 2, 1)
-        config_line(self.amount_field, place_holder="000.00")
+        config_line(self.amount_field, place_holder="000000000,00", adjust_to_hint=False)
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 3, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
+        config_lbl(self.responsible_lbl, "Responsable*")
 
         self.responsible_field = Field(String, parent=self, max_len=consts.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 3, 1)
-        config_line(self.responsible_field, place_holder="Responsable")
+        config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Description.
         self.descr_lbl = QLabel(self)
-        self.form_layout.addWidget(self.descr_lbl, 4, 0)
-        config_lbl(self.descr_lbl, "Descripción")
+        self.form_layout.addWidget(self.descr_lbl, 4, 0, alignment=Qt.AlignTop)
+        config_lbl(self.descr_lbl, "Descripción*")
 
         self.descr_text = QTextEdit(self)
         self.form_layout.addWidget(self.descr_text, 4, 1)
-        config_line(self.descr_text, place_holder="Descripción")
+        config_line(self.descr_text, place_holder="Descripción", extra_width=30, adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -295,11 +295,12 @@ class ExtractUI(QDialog):
         # Buttons.
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
 
         self.confirm_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar")
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
 
         self.cancel_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar")
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
