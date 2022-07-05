@@ -93,7 +93,6 @@ class BookUI(QDialog):
         self.widget = QWidget(self.central_widget)
         self.widget.setGeometry(QRect(0, 0, width, height))
         self.layout = QVBoxLayout(self.widget)
-        config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
         # Filtering.
         self.filter_header = FilterHeader(show_clear_button=False, parent=self.widget)
@@ -110,7 +109,7 @@ class BookUI(QDialog):
 
         self.client_combobox = QComboBox()
         self.form_layout.addWidget(self.client_combobox, 0, 1, 1, 1)
-        config_combobox(self.client_combobox, extra_height=35)
+        config_combobox(self.client_combobox)
 
         self.court_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.court_lbl, 1, 0, 1, 1)
@@ -118,7 +117,7 @@ class BookUI(QDialog):
 
         self.court_combobox = QComboBox(self.widget)
         self.form_layout.addWidget(self.court_combobox, 1, 1, 1, 1)
-        config_combobox(self.court_combobox, extra_height=35)
+        config_combobox(self.court_combobox)
 
         self.date_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.date_lbl, 2, 0, 1, 1)
@@ -126,7 +125,7 @@ class BookUI(QDialog):
 
         self.date_edit = QDateEdit(self.widget)
         self.form_layout.addWidget(self.date_edit, 2, 1, 1, 1)
-        config_date_edit(self.date_edit, date.today(), extra_height=35)
+        config_date_edit(self.date_edit, date.today())
 
         self.hour_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.hour_lbl, 3, 0, 1, 1)
@@ -134,7 +133,7 @@ class BookUI(QDialog):
 
         self.block_combobox = QComboBox(self.widget)
         self.form_layout.addWidget(self.block_combobox, 3, 1, 1, 1)
-        config_combobox(self.block_combobox, extra_height=35)
+        config_combobox(self.block_combobox)
 
         self.duration_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.duration_lbl, 4, 0, 1, 1)
@@ -142,15 +141,15 @@ class BookUI(QDialog):
 
         self.duration_combobox = QComboBox(self.widget)
         self.form_layout.addWidget(self.duration_combobox, 4, 1, 1, 1)
-        config_combobox(self.duration_combobox, extra_height=35)
+        config_combobox(self.duration_combobox)
 
         self.fixed_checkbox = QCheckBox()
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
-        config_checkbox(self.fixed_checkbox, checked=False, text="Turno fijo")
+        config_checkbox(self.fixed_checkbox)
 
         self.confirm_btn = QPushButton(self.widget)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
-        config_btn(self.confirm_btn, "Confirmar", font_size=18, extra_width=200)
+        config_btn(self.confirm_btn, "Confirmar")
 
 
 class CancelController:
