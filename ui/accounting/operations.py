@@ -21,8 +21,8 @@ InvalidDateFn: TypeAlias = Callable[[date], bool]
 class ChargeController:
     def __init__(
             self, charge_ui: ChargeUI, client: Client, activity: Activity, descr: String,
-            accounting_system: AccountingSystem, fixed_amount: bool = False, fixed_descr: bool = False,
-            invalid_date_fn: InvalidDateFn | None = None, validation_msg: str | None = None, **invalid_date_kwargs
+            accounting_system: AccountingSystem, invalid_date_fn: InvalidDateFn | None = None,
+            validation_msg: str | None = None, **invalid_date_kwargs
     ) -> None:
         self.charge_ui = charge_ui
 
@@ -30,13 +30,9 @@ class ChargeController:
         self.charge_ui.client_line.setText(str(client.name))
         self.charge_ui.when_date_edit.setDate(date.today())
         self.charge_ui.amount_field.setText(str(activity.price))
-        if fixed_amount:
-            self.charge_ui.amount_field.setEnabled(False)
         fill_combobox(self.charge_ui.method_combobox, accounting_system.methods,
                       display=lambda method: method.as_primitive())
         self.charge_ui.descr_text.setText(str(descr))
-        if fixed_descr:
-            self.charge_ui.descr_text.setEnabled(False)
 
         self.transaction: Transaction | None = None
         self.client, self.activity = client, activity
@@ -81,13 +77,11 @@ class ChargeController:
 class ChargeUI(QDialog):
     def __init__(
             self, accounting_system: AccountingSystem, client: Client, activity: Activity, descr: String,
-            fixed_amount: bool = False, fixed_descr: bool = False, invalid_date_fn: InvalidDateFn | None = None,
-            validation_msg: str | None = None, **invalid_date_kwargs
+            invalid_date_fn: InvalidDateFn | None = None, validation_msg: str | None = None, **invalid_date_kwargs
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = ChargeController(self, client, activity, descr, accounting_system, fixed_amount, fixed_descr,
-                                           invalid_date_fn, validation_msg, **invalid_date_kwargs)
+        self.controller = ChargeController(self, client, activity, descr, accounting_system, invalid_date_fn, validation_msg, **invalid_date_kwargs)
 
     def _setup_ui(self):
         self.resize(400, 300)

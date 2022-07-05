@@ -384,8 +384,8 @@ class ClientRow(QWidget):
             descr = String(f"Cobro por actividad {activity.name}", max_len=consts.TRANSACTION_DESCR_CHARS)
             msg = (f"La fecha de cobro no puede ser previa a la fecha {subscription.when} de inscripción del cliente a"
                    f" la actividad.")
-            self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr, fixed_amount=True,
-                                      fixed_descr=True, invalid_date_fn=invalid_date, validation_msg=msg,
+            self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr,
+                                      invalid_date_fn=invalid_date, validation_msg=msg,
                                       subscription=subscription)
             self.charge_ui.exec_()
             self._load_subscription(self.subscription_table.currentRow(), subscription)

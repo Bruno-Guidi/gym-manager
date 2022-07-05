@@ -348,8 +348,7 @@ class PreChargeController:
             activity = self.booking_system.activity
             descr = String(f"Cobro de turno de {activity.name}", max_len=constants.TRANSACTION_DESCR_CHARS)
             # noinspection PyAttributeOutsideInit
-            self.charge_ui = ChargeUI(self.accounting_system, booking.client, activity, descr, fixed_amount=True,
-                                      fixed_descr=True)
+            self.charge_ui = ChargeUI(self.accounting_system, booking.client, activity, descr)
             self.charge_ui.exec_()
 
             if self.charge_ui.controller.transaction is not None:
