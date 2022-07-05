@@ -230,18 +230,11 @@ class CancelUI(QDialog):
         self.controller = CancelController(self, booking_system)
 
     def _setup_ui(self):
-        width, height = 600, 500
-        self.resize(width, height)
-
-        self.central_widget = QWidget(self)
-
-        self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, width, height))
-        self.layout = QVBoxLayout(self.widget)
+        self.layout = QVBoxLayout(self)
         config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
         # Filtering.
-        self.filter_header = FilterHeader(show_clear_button=False, parent=self.widget)
+        self.filter_header = FilterHeader(show_clear_button=False, parent=self)
         self.layout.addWidget(self.filter_header)
 
         # Form.
@@ -249,7 +242,7 @@ class CancelUI(QDialog):
         self.layout.addLayout(self.form_layout)
         config_layout(self.form_layout, spacing=10)
 
-        self.booking_lbl = QLabel(self.widget)
+        self.booking_lbl = QLabel(self)
         self.form_layout.addWidget(self.booking_lbl, 0, 0, 1, 1)
         config_lbl(self.booking_lbl, "Reserva")
 
@@ -257,43 +250,43 @@ class CancelUI(QDialog):
         self.form_layout.addWidget(self.booking_combobox, 0, 1, 1, 1)
         config_combobox(self.booking_combobox, extra_height=35)
 
-        self.client_lbl = QLabel(self.widget)
+        self.client_lbl = QLabel(self)
         self.form_layout.addWidget(self.client_lbl, 1, 0, 1, 1)
         config_lbl(self.client_lbl, "Cliente")
 
-        self.client_line = QLineEdit(self.widget)
+        self.client_line = QLineEdit(self)
         self.form_layout.addWidget(self.client_line, 1, 1, 1, 1)
         config_line(self.client_line, extra_height=35, read_only=False)
 
-        self.court_lbl = QLabel(self.widget)
+        self.court_lbl = QLabel(self)
         self.form_layout.addWidget(self.court_lbl, 2, 0, 1, 1)
         config_lbl(self.court_lbl, "Cancha")
 
-        self.court_line = QLineEdit(self.widget)
+        self.court_line = QLineEdit(self)
         self.form_layout.addWidget(self.court_line, 2, 1, 1, 1)
         config_line(self.court_line, extra_height=35, read_only=False)
 
-        self.date_lbl = QLabel(self.widget)
+        self.date_lbl = QLabel(self)
         self.form_layout.addWidget(self.date_lbl, 3, 0, 1, 1)
         config_lbl(self.date_lbl, "Fecha")
 
-        self.date_line = QLineEdit(self.widget)
+        self.date_line = QLineEdit(self)
         self.form_layout.addWidget(self.date_line, 3, 1, 1, 1)
         config_line(self.date_line, extra_height=35, read_only=False)
 
-        self.block_lbl = QLabel(self.widget)
+        self.block_lbl = QLabel(self)
         self.form_layout.addWidget(self.block_lbl, 4, 0, 1, 1)
         config_lbl(self.block_lbl, "Inicio")
 
-        self.start_line = QLineEdit(self.widget)
+        self.start_line = QLineEdit(self)
         self.form_layout.addWidget(self.start_line, 4, 1, 1, 1)
         config_line(self.start_line, extra_height=35, read_only=False)
 
-        self.duration_lbl = QLabel(self.widget)
+        self.duration_lbl = QLabel(self)
         self.form_layout.addWidget(self.duration_lbl, 5, 0, 1, 1)
         config_lbl(self.duration_lbl, "Fin")
 
-        self.end_line = QLineEdit(self.widget)
+        self.end_line = QLineEdit(self)
         self.form_layout.addWidget(self.end_line, 5, 1, 1, 1)
         config_line(self.end_line, extra_height=35, read_only=False)
 
@@ -301,15 +294,15 @@ class CancelUI(QDialog):
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
         config_checkbox(self.fixed_checkbox, checked=False, text="Turno fijo", enabled=False)
 
-        self.responsible_lbl = QLabel(self.widget)
+        self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 6, 0, 1, 1)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, self.widget, max_len=constants.TRANSACTION_RESP_CHARS)
+        self.responsible_field = Field(String, self, max_len=constants.TRANSACTION_RESP_CHARS)
         self.form_layout.addWidget(self.responsible_field, 6, 1, 1, 1)
         config_line(self.responsible_field, extra_height=35)
 
-        self.confirm_btn = QPushButton(self.widget)
+        self.confirm_btn = QPushButton(self)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
         config_btn(self.confirm_btn, "Eliminar", font_size=18, extra_width=200)
 

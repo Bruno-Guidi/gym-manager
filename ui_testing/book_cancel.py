@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QApplication
 from gym_manager.booking.core import BookingRepo, Booking, State, Court, BookingSystem, Duration
 from gym_manager.core.base import Client, Number, Activity, String, Currency
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
-from ui.booking.operations import BookUI
+from ui.booking.operations import CancelUI
 
 
 class MockClientRepo(ClientRepo):
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                         True)
     booking_system = BookingSystem(("1", "2"), (Duration(30, "30m"), Duration(60, "1h")),
                                    time(8, 0), time(23, 0), 30, activity, MockBookingRepo(), None, 8)
-    window = BookUI(MockClientRepo(), booking_system)
+    window = CancelUI(booking_system)
     window.show()
 
     app.exec()
