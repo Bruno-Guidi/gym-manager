@@ -10,13 +10,13 @@ from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
 
 def config_widget(
         target: QWidget, font: str = "MS Shell Dlg 2", font_size: int = 14, extra_width: int = 0, extra_height: int = 0,
-        layout_dir=Qt.LayoutDirection.LeftToRight
+        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight
 ):
     target.setFont(QFont(font, font_size))
-    print(target.sizeHint())
     target.setMinimumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
     target.setMaximumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
     target.setLayoutDirection(layout_dir)
+    target.setEnabled(enabled)
 
 
 def config_line(
@@ -25,21 +25,17 @@ def config_line(
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
-    target.setFont(QFont(font, font_size))
-    if width > 0:
-        target.setFixedWidth(width)
-    if height > 0:
-        target.setFixedHeight(height)
     target.setReadOnly(read_only)
+    config_widget(target, font, font_size, width, height)
 
 
 def config_lbl(
         target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, alignment=Qt.AlignLeft,
-        width=0, word_wrap=False
+        width: int = 0, height: int = 0, word_wrap=False
 ):
     target.setText(text)
-    target.setFont(QFont(font, font_size))
     target.setAlignment(alignment)
+    config_widget(target, font, font_size, width, height)
 
 
 def config_date_edit(
@@ -47,28 +43,25 @@ def config_date_edit(
         width: int = 0, height: int = 0, layout_direction=Qt.LayoutDirection.LeftToRight
 ):
     target.setDate(value)
-    config_widget(target, font, font_size, layout_dir=layout_direction)
     target.setCalendarPopup(calendar)
+    config_widget(target, font, font_size, width, height, layout_dir=layout_direction)
 
 
 def config_btn(  # ToDo rename width to extra_width
-        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width=0, height=0
+        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0,
+        height: int = 0, enabled: bool = True
 ):
     target.setText(text)  # The value has to be set before the config_widget call.
-    config_widget(target, font, font_size, width, height)
+    config_widget(target, font, font_size, width, height, enabled)
 
 
 def config_checkbox(
         target: QCheckBox, checked: bool, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
-        enabled: bool = True, width: int = 0, direction=Qt.LayoutDirection.RightToLeft
+        enabled: bool = True, width: int = 0, height: int = 0, direction=Qt.LayoutDirection.RightToLeft
 ):
     target.setText(text)
-    target.setFont(QFont(font, font_size))
     target.setChecked(checked)
-    target.setEnabled(enabled)
-    if width > 0:
-        target.setFixedWidth(width)
-    target.setLayoutDirection(direction)
+    config_widget(target, font, font_size, width, height, enabled, layout_dir=direction)
 
 
 def config_layout(
@@ -81,11 +74,19 @@ def config_layout(
 
 
 def config_combobox(
-        target: QComboBox, font: str = "MS Shell Dlg 2", font_size: int = 14, height: int = 0
+        target: QComboBox, font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0, height: int = 0
 ):
-    target.setFont(QFont(font, font_size))
-    if height > 0:
-        target.setFixedHeight(height)
+    config_widget(target, font, font_size, width, height)
+
+
+def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], str]):
+    model = QStandardItemModel()
+    for item in items:
+        std_item = QStandardItem()
+        std_item.setData(display(item), Qt.DisplayRole)
+        std_item.setData(item, Qt.UserRole)
+        model.appendRow(std_item)
+    target.setModel(model)
 
 
 def config_table(
@@ -120,13 +121,3 @@ def config_table(
 
     target.setMinimumWidth(max_width + target.verticalScrollBar().height() - 7)
     target.setSelectionMode(QAbstractItemView.SingleSelection)
-
-
-def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], str]):
-    model = QStandardItemModel()
-    for item in items:
-        std_item = QStandardItem()
-        std_item.setData(display(item), Qt.DisplayRole)
-        std_item.setData(item, Qt.UserRole)
-        model.appendRow(std_item)
-    target.setModel(model)
