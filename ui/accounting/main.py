@@ -197,7 +197,8 @@ class DailyBalanceController:
         self.balance_repo = balance_repo
         self.balance: Balance | None = None
 
-        self.daily_balance_ui.date_lbl.setText(str(date.today() if when is None else when))
+        config_lbl(self.daily_balance_ui.date_lbl, text=str(date.today() if when is None else when), font_size=18)
+
         if responsible is not None and balance is not None:
             self.daily_balance_ui.responsible_field.setText(str(responsible))
             self.balance = balance
@@ -213,8 +214,9 @@ class DailyBalanceController:
         for trans_type, type_balance in self.balance.items():
             for trans_method, method_balance in type_balance.items():
                 lbl = QLabel(self.daily_balance_ui.widget)
-                config_lbl(lbl, Currency.fmt(method_balance), alignment=Qt.AlignRight)
-                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
+                config_lbl(lbl, Currency.fmt(method_balance))
+                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type],
+                                                               alignment=Qt.AlignRight)
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
@@ -296,9 +298,8 @@ class DailyBalanceUI(QMainWindow):
         self.form_data_layout = QVBoxLayout()
         self.header_layout.addLayout(self.form_data_layout)
 
-        self.date_lbl = QLabel(self.widget)
+        self.date_lbl = QLabel(self.widget)  # The widget config is done in the controller.
         self.form_data_layout.addWidget(self.date_lbl, alignment=Qt.AlignLeft)
-        config_lbl(self.date_lbl, font_size=18)
 
         self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
         self.form_data_layout.addWidget(self.responsible_field, alignment=Qt.AlignVCenter)
@@ -318,11 +319,11 @@ class DailyBalanceUI(QMainWindow):
 
         self.charges_lbl = QLabel(self.widget)
         self.balance_layout.addWidget(self.charges_lbl, 2, 1)
-        config_lbl(self.charges_lbl, "Cobros", alignment=Qt.AlignRight)
+        config_lbl(self.charges_lbl, "Cobros")
 
         self.extractions_lbl = QLabel(self.widget)
         self.balance_layout.addWidget(self.extractions_lbl, 2, 2)
-        config_lbl(self.extractions_lbl, "Extracciones", alignment=Qt.AlignRight)
+        config_lbl(self.extractions_lbl, "Extracciones")
 
         self.cash_lbl = QLabel(self.widget)
         self.balance_layout.addWidget(self.cash_lbl, 3, 0)
@@ -482,3 +483,7 @@ class BalanceHistoryUI(QMainWindow):
             target=self.transaction_table, allow_resizing=True,
             columns={"Fecha": 10, "Responsable": constants.CLIENT_NAME_CHARS, "Cobros": 12, "Extracciones": 12}
         )
+
+        # Adjusts size.
+        # self.setMinimumSize(self.widget.sizeHint())
+        # self.setMaximumSize(self.widget.sizeHint())
