@@ -14,8 +14,8 @@ def config_widget(
         layout_dir=Qt.LayoutDirection.LeftToRight
 ):
     target.setFont(QFont(font, font_size))
+    target.setMinimumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
     if adjust_to_hint:
-        target.setMinimumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
         target.setMaximumSize(target.sizeHint().width() + extra_width, target.sizeHint().height() + extra_height)
     if fixed_width > 0:
         target.setFixedWidth(fixed_width)
