@@ -396,8 +396,8 @@ class BalanceHistoryController:
             self._balances[row_count] = when, responsible, balance
             fill_cell(self.history_ui.transaction_table, row_count, 0, when, data_type=int)
             fill_cell(self.history_ui.transaction_table, row_count, 1, responsible, data_type=str)
-            fill_cell(self.history_ui.transaction_table, row_count, 2, balance["Cobro"]["Total"], data_type=str)
-            fill_cell(self.history_ui.transaction_table, row_count, 3, balance["Extracción"]["Total"], data_type=str)
+            fill_cell(self.history_ui.transaction_table, row_count, 2, balance["Cobro"]["Total"], data_type=int)
+            fill_cell(self.history_ui.transaction_table, row_count, 3, balance["Extracción"]["Total"], data_type=int)
 
     def load_last_n_balances(self):
         td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
