@@ -124,21 +124,16 @@ class AccountingMainUI(QMainWindow):
         self.controller = MainController(self, accounting_system, client)
 
     def _setup_ui(self):
-        self.resize(800, 600)
-
         self.central_widget = QWidget(self)
         self.setCentralWidget(self.central_widget)
 
         self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, 800, 600))
 
         self.main_layout = QVBoxLayout(self.widget)
-        config_layout(self.main_layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
 
         # Menu bar.
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
-        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 800, 20))
 
         # Balance menu bar.
         self.daily_balance_menu = QMenu("Caja diaria", self)
@@ -160,7 +155,6 @@ class AccountingMainUI(QMainWindow):
         # Utilities.
         self.utils_layout = QHBoxLayout()
         self.main_layout.addLayout(self.utils_layout)
-        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         # Filtering.
         self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
@@ -171,8 +165,8 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True,
-            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120,
-                     "Responsable": 175, "Descripción": 200}
+            columns={"#": 10, "Tipo": 10, "Cliente": 10, "Fecha": 10, "Monto": 10, "Método": 10,
+                     "Responsable": 10, "Descripción": 10}
         )
 
         # Index.
