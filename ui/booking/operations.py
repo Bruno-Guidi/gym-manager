@@ -85,25 +85,18 @@ class BookUI(QDialog):
         self.controller = BookController(self, client_repo, booking_system)
 
     def _setup_ui(self):
-        width, height = 600, 400
-        self.resize(width, height)
-
-        self.central_widget = QWidget(self)
-
-        self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, width, height))
-        self.layout = QVBoxLayout(self.widget)
+        self.layout = QVBoxLayout(self)
 
         # Filtering.
-        self.filter_header = FilterHeader(show_clear_button=False, parent=self.widget)
+        self.filter_header = FilterHeader(show_clear_button=False, parent=self)
         self.layout.addWidget(self.filter_header)
 
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
-        config_layout(self.form_layout, spacing=10)
+        config_layout(self.form_layout)
 
-        self.client_lbl = QLabel(self.widget)
+        self.client_lbl = QLabel(self)
         self.form_layout.addWidget(self.client_lbl, 0, 0, 1, 1)
         config_lbl(self.client_lbl, "Cliente")
 
@@ -111,43 +104,43 @@ class BookUI(QDialog):
         self.form_layout.addWidget(self.client_combobox, 0, 1, 1, 1)
         config_combobox(self.client_combobox)
 
-        self.court_lbl = QLabel(self.widget)
+        self.court_lbl = QLabel(self)
         self.form_layout.addWidget(self.court_lbl, 1, 0, 1, 1)
         config_lbl(self.court_lbl, "Cancha")
 
-        self.court_combobox = QComboBox(self.widget)
+        self.court_combobox = QComboBox(self)
         self.form_layout.addWidget(self.court_combobox, 1, 1, 1, 1)
         config_combobox(self.court_combobox)
 
-        self.date_lbl = QLabel(self.widget)
+        self.date_lbl = QLabel(self)
         self.form_layout.addWidget(self.date_lbl, 2, 0, 1, 1)
         config_lbl(self.date_lbl, "Fecha")
 
-        self.date_edit = QDateEdit(self.widget)
+        self.date_edit = QDateEdit(self)
         self.form_layout.addWidget(self.date_edit, 2, 1, 1, 1)
         config_date_edit(self.date_edit, date.today(), calendar=True)
 
-        self.hour_lbl = QLabel(self.widget)
+        self.hour_lbl = QLabel(self)
         self.form_layout.addWidget(self.hour_lbl, 3, 0, 1, 1)
         config_lbl(self.hour_lbl, "Hora")
 
-        self.block_combobox = QComboBox(self.widget)
+        self.block_combobox = QComboBox(self)
         self.form_layout.addWidget(self.block_combobox, 3, 1, 1, 1)
         config_combobox(self.block_combobox)
 
-        self.duration_lbl = QLabel(self.widget)
+        self.duration_lbl = QLabel(self)
         self.form_layout.addWidget(self.duration_lbl, 4, 0, 1, 1)
         config_lbl(self.duration_lbl, "Duración")
 
-        self.duration_combobox = QComboBox(self.widget)
+        self.duration_combobox = QComboBox(self)
         self.form_layout.addWidget(self.duration_combobox, 4, 1, 1, 1)
         config_combobox(self.duration_combobox)
 
-        self.fixed_checkbox = QCheckBox()
+        self.fixed_checkbox = QCheckBox(self)
         self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
         config_checkbox(self.fixed_checkbox)
 
-        self.confirm_btn = QPushButton(self.widget)
+        self.confirm_btn = QPushButton(self)
         self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
         config_btn(self.confirm_btn, "Confirmar")
 
