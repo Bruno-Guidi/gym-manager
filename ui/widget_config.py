@@ -24,9 +24,10 @@ def config_widget(
 
 
 def config_line(
-        target: QLineEdit | QTextEdit, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
-        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
-        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = "", place_holder: str = "", read_only: bool = False
+        target: QLineEdit | QTextEdit, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
+        adjust_to_hint: bool = True, extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0,
+        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight, place_holder: str = "",
+        read_only: bool = False
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
@@ -35,9 +36,9 @@ def config_line(
 
 
 def config_lbl(
-        target: QLabel, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
         extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
-        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = "", alignment=None
+        layout_dir=Qt.LayoutDirection.LeftToRight, alignment=None
 ):
     target.setText(text)
     if alignment is not None:
@@ -55,18 +56,18 @@ def config_date_edit(
 
 
 def config_btn(
-        target: QPushButton, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
-        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
-        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = ""
+        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
+        adjust_to_hint: bool = True, extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0,
+        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight
 ):
     target.setText(text)  # The value has to be set before the config_widget call.
     config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
 def config_checkbox(
-        target: QCheckBox, font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
+        target: QCheckBox, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
         extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
-        layout_dir=Qt.LayoutDirection.LeftToRight, text: str = "", checked: bool = False
+        layout_dir=Qt.LayoutDirection.LeftToRight, checked: bool = False
 ):
     target.setText(text)
     target.setChecked(checked)
