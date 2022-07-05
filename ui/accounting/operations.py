@@ -46,7 +46,7 @@ class ChargeController:
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
-        self.charge_ui.ok_btn.clicked.connect(self.charge)
+        self.charge_ui.confirm_btn.clicked.connect(self.charge)
         # noinspection PyUnresolvedReferences
         self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
 
@@ -142,18 +142,24 @@ class ChargeUI(QDialog):
         self.form_layout.addWidget(self.descr_text, 5, 1)
         config_line(self.descr_text, extra_width=30, adjust_to_hint=False, enabled=False)
 
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
         # Buttons.
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
 
-        self.ok_btn = QPushButton()
-        self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok")
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
 
-        self.cancel_btn = QPushButton()
+        self.cancel_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar")
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setFixedSize(self.sizeHint())
 
 
 class ExtractController:
