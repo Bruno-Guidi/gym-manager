@@ -97,7 +97,7 @@ class ChargeUI(QDialog):
 
         self.client_line = QLineEdit(self)
         self.form_layout.addWidget(self.client_line, 0, 1)
-        config_line(self.client_line)
+        config_line(self.client_line, adjust_to_hint=False, read_only=True)
 
         # Date.
         self.when_lbl = QLabel(self)
@@ -115,7 +115,7 @@ class ChargeUI(QDialog):
 
         self.method_combobox = QComboBox(self)
         self.form_layout.addWidget(self.method_combobox, 2, 1)
-        config_combobox(self.method_combobox)
+        config_combobox(self.method_combobox, fixed_width=self.when_date_edit.width())
 
         # Amount.
         self.amount_lbl = QLabel(self)
@@ -124,7 +124,7 @@ class ChargeUI(QDialog):
 
         self.amount_field = Field(Currency, parent=self)
         self.form_layout.addWidget(self.amount_field, 3, 1)
-        config_line(self.amount_field)
+        config_line(self.amount_field, adjust_to_hint=False, enabled=False)
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
@@ -133,7 +133,7 @@ class ChargeUI(QDialog):
 
         self.responsible_field = Field(String, parent=self, max_len=consts.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.responsible_field, 4, 1)
-        config_line(self.responsible_field)
+        config_line(self.responsible_field, adjust_to_hint=False)
 
         # Description.
         self.descr_lbl = QLabel(self)
@@ -142,7 +142,7 @@ class ChargeUI(QDialog):
 
         self.descr_text = QTextEdit(self)
         self.form_layout.addWidget(self.descr_text, 5, 1)
-        config_line(self.descr_text)
+        config_line(self.descr_text, extra_width=30, adjust_to_hint=False, enabled=False)
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
