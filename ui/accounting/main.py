@@ -72,12 +72,12 @@ class MainController:
         for row, transaction in enumerate(transactions):
             self.main_ui.transaction_table.setRowCount(row + 1)
             self.main_ui.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
-            self.main_ui.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
+            self.main_ui.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.when)))
+            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(str(transaction.type)))
+            self.main_ui.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.method)))
             client_name = str(transaction.client.name) if transaction.client is not None else "-"
-            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(client_name))
-            self.main_ui.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
-            self.main_ui.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
-            self.main_ui.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
+            self.main_ui.transaction_table.setItem(row, 4, QTableWidgetItem(client_name))
+            self.main_ui.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.amount)))
             self.main_ui.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
             self.main_ui.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
 
@@ -105,11 +105,11 @@ class MainController:
                 and self.main_ui.filter_header.passes_filters(extraction)):
             self.main_ui.transaction_table.setRowCount(row_count + 1)
             self.main_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(extraction.id)))
-            self.main_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(extraction.type)))
-            self.main_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem("-"))
-            self.main_ui.transaction_table.setItem(row_count, 3, QTableWidgetItem(str(extraction.when)))
-            self.main_ui.transaction_table.setItem(row_count, 4, QTableWidgetItem(str(extraction.amount)))
-            self.main_ui.transaction_table.setItem(row_count, 5, QTableWidgetItem(str(extraction.method)))
+            self.main_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(extraction.when)))
+            self.main_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem(str(extraction.type)))
+            self.main_ui.transaction_table.setItem(row_count, 3, QTableWidgetItem(str(extraction.method)))
+            self.main_ui.transaction_table.setItem(row_count, 4, QTableWidgetItem("-"))
+            self.main_ui.transaction_table.setItem(row_count, 5, QTableWidgetItem(str(extraction.amount)))
             self.main_ui.transaction_table.setItem(row_count, 6, QTableWidgetItem(str(extraction.responsible)))
             self.main_ui.transaction_table.setItem(row_count, 7, QTableWidgetItem(str(extraction.description)))
 
@@ -162,8 +162,8 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True,
-            columns={"#": 10, "Tipo": 10, "Cliente": 10, "Fecha": 10, "Monto": 10, "Método": 10,
-                     "Responsable": 10, "Descripción": 10}
+            columns={"#": 6, "Fecha": 10, "Tipo": 8, "Método": 8, "Cliente": constants.CLIENT_NAME_CHARS // 2,
+                     "Monto": 10, "Responsable": constants.CLIENT_NAME_CHARS // 2}
         )
 
         # Index.
