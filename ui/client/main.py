@@ -63,7 +63,7 @@ class ClientRow(QWidget):
             self.dni_field = Field(Number, self.widget, min_value=consts.CLIENT_MIN_DNI,
                                    max_value=consts.CLIENT_MAX_DNI)
             self.dni_layout.addWidget(self.dni_field)
-            config_line(self.dni_field, str(client.dni), width=dni_width, enabled=False)
+            config_line(self.dni_field, str(client.dni), width=dni_width, read_only=False)
 
             # Admission.
             self.admission_lbl = QLabel(self.widget)

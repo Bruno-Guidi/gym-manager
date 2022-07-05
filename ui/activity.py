@@ -38,7 +38,7 @@ class ActivityRow(QWidget):
 
             self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
             self.name_layout.addWidget(self.name_field)
-            config_line(self.name_field, str(activity.name), width=name_width, enabled=False)
+            config_line(self.name_field, str(activity.name), width=name_width, read_only=False)
 
             # Price.
             self.price_lbl = QLabel(self.widget)

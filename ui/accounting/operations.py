@@ -108,7 +108,7 @@ class ChargeUI(QDialog):
 
         self.client_line = QLineEdit()
         self.client_layout.addWidget(self.client_line)
-        config_line(self.client_line, font_size=16, enabled=False)
+        config_line(self.client_line, font_size=16, read_only=False)
 
         # Date.
         self.when_layout = QHBoxLayout()
