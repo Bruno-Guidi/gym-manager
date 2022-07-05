@@ -304,3 +304,6 @@ class ExtractUI(QDialog):
         self.cancel_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.cancel_btn)
         config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setFixedSize(self.sizeHint())
