@@ -23,7 +23,8 @@ def config_line(
 
 
 def config_lbl(
-        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, alignment=Qt.AlignLeft
+        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, alignment=Qt.AlignLeft,
+        width=0, word_wrap=False
 ):
     target.setText(text)
     target.setFont(QFont(font, font_size))
@@ -41,7 +42,7 @@ def config_date_edit(
 
 
 def config_btn(
-        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14
+        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width=0, height=0
 ):
     target.setText(text)
     target.setFont(QFont(font, font_size))
