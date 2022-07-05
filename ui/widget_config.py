@@ -92,7 +92,7 @@ def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], s
 
 def config_table(
         target: QTableWidget, columns: dict[str, int], n_rows: int = 0, font_size: int = 14,
-        allow_resizing: bool = False
+        allow_resizing: bool = False, min_rows_to_show: int = 0
 ):
     """Configures a QTableWidget.
 
@@ -102,6 +102,7 @@ def config_table(
         n_rows: numbers of rows that the table will have.
         font_size: font size of the header and cells.
         allow_resizing: if True, columns can be resized during runtime.
+        min_rows_to_show: the minimum height of the table will be (*min_rows_to_show* + 1)*horizontalHeader.height()
     """
     target.setFont(QFont("Inconsolata", font_size))  # This font is monospaced.
     target.verticalHeader().setVisible(False)  # Hides rows number.
@@ -122,3 +123,7 @@ def config_table(
 
     target.setMinimumWidth(max_width + target.verticalScrollBar().height() - 7)
     target.setSelectionMode(QAbstractItemView.SingleSelection)
+
+    if min_rows_to_show > 0:
+        target.setMinimumHeight((min_rows_to_show + 1) * target.horizontalHeader().height()
+                                + target.horizontalScrollBar().height())
