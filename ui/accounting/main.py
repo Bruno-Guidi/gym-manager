@@ -489,5 +489,4 @@ class BalanceHistoryUI(QMainWindow):
         )
 
         # Adjusts size.
-        # self.setMinimumSize(self.widget.sizeHint())
-        # self.setMaximumSize(self.widget.sizeHint())
+        self.setFixedWidth(self.sizeHint().width())
