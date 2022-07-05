@@ -162,8 +162,9 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True,
-            columns={"#": 6, "Fecha": 10, "Tipo": 8, "Método": 8, "Cliente": constants.CLIENT_NAME_CHARS // 2,
-                     "Monto": 10, "Responsable": constants.CLIENT_NAME_CHARS // 2}
+            columns={"#": (6, int), "Fecha": (10, int), "Tipo": (8, str), "Método": (8, str),
+                     "Cliente": (constants.CLIENT_NAME_CHARS // 2, str), "Monto": (10, int),
+                     "Responsable": (constants.CLIENT_NAME_CHARS // 2, str)}
         )
 
         # Index.
