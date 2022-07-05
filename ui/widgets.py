@@ -243,7 +243,7 @@ class Dialog(QDialog):
 
         self.question_lbl = QLabel(self)
         self.layout.addWidget(self.question_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.question_lbl, text=text, extra_width=300, word_wrap=True)
+        config_lbl(self.question_lbl, text=text, extra_width=300)
 
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
