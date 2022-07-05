@@ -76,7 +76,7 @@ class MainController:
             fill_cell(self.main_ui.transaction_table, row, 3, transaction.method, data_type=str)
             fill_cell(self.main_ui.transaction_table, row, 4,
                       transaction.client.name if transaction.client is not None else "-", data_type=str)
-            fill_cell(self.main_ui.transaction_table, row, 5, transaction.amount, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row, 5, Currency.fmt(transaction.amount), data_type=int)
             fill_cell(self.main_ui.transaction_table, row, 6, transaction.responsible, data_type=str)
 
     def daily_balance(self):
@@ -106,7 +106,7 @@ class MainController:
             fill_cell(self.main_ui.transaction_table, row_count, 2, extraction.type, data_type=str)
             fill_cell(self.main_ui.transaction_table, row_count, 3, extraction.method, data_type=str)
             fill_cell(self.main_ui.transaction_table, row_count, 4, "-", data_type=str)
-            fill_cell(self.main_ui.transaction_table, row_count, 5, extraction.amount, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row_count, 5, Currency.fmt(extraction.amount), data_type=int)
             fill_cell(self.main_ui.transaction_table, row_count, 6, extraction.responsible, data_type=str)
 
 
@@ -157,7 +157,7 @@ class AccountingMainUI(QMainWindow):
         self.transaction_table = QTableWidget(self.widget)
         self.main_layout.addWidget(self.transaction_table)
         config_table(
-            target=self.transaction_table, allow_resizing=True,
+            target=self.transaction_table, allow_resizing=True, min_rows_to_show=5,
             columns={"#": (6, int), "Fecha": (10, int), "Tipo": (8, str), "Método": (8, str),
                      "Cliente": (constants.CLIENT_NAME_CHARS // 2, str), "Monto": (10, int),
                      "Responsable": (constants.CLIENT_NAME_CHARS // 2, str)}
