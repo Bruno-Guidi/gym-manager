@@ -23,16 +23,10 @@ def config_line(
 
 
 def config_lbl(
-        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0,
-        height: int = 0, alignment=Qt.AlignLeft, word_wrap: bool = False
+        target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, alignment=Qt.AlignLeft
 ):
-    target.setWordWrap(word_wrap)
     target.setText(text)
     target.setFont(QFont(font, font_size))
-    if width > 0:
-        target.setFixedWidth(width)
-    if height > 0:
-        target.setFixedHeight(height)
     target.setAlignment(alignment)
 
 
@@ -47,15 +41,10 @@ def config_date_edit(
 
 
 def config_btn(
-        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width: int = 0,
-        height: int = 0
+        target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14
 ):
     target.setText(text)
     target.setFont(QFont(font, font_size))
-    if width > 0:
-        target.setFixedWidth(width)
-    if height > 0:
-        target.setFixedHeight(height)
 
 
 def config_checkbox(

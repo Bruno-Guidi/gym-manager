@@ -6,11 +6,11 @@ from typing import Iterable
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
-    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox
+    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox, QSpacerItem, QSizePolicy
 
 from gym_manager.core import system, constants
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
-    NumberEqual, String, Balance
+    NumberEqual, String, Balance, Currency
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
@@ -208,11 +208,12 @@ class DailyBalanceController:
 
         # Shows balance information in the ui.
         types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
-        methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
-        methods_dict["Total"] = len(methods_dict) + 2
+        methods_dict = {trans_method: i + 3 for i, trans_method in enumerate(transaction_methods)}
+        methods_dict["Total"] = len(methods_dict) + 3
         for trans_type, type_balance in self.balance.items():
             for trans_method, method_balance in type_balance.items():
-                lbl = QLabel(str(method_balance))
+                lbl = QLabel(self.daily_balance_ui.widget)
+                config_lbl(lbl, Currency.fmt(method_balance), alignment=Qt.AlignRight)
                 self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
 
         # Sets callbacks.
@@ -276,57 +277,70 @@ class DailyBalanceUI(QMainWindow):
 
         self.title = QLabel(self.widget)
         self.header_layout.addWidget(self.title)
-        config_lbl(self.title, "Caja diaria")
+        config_lbl(self.title, "Caja diaria", font_size=18)
 
         self.date_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.date_lbl)
-        config_lbl(self.date_lbl)
+        config_lbl(self.date_lbl, font_size=18, alignment=Qt.AlignLeft)
+
+        # Responsible.
+        self.responsible_layout = QHBoxLayout()
+        self.layout.addLayout(self.responsible_layout)
+
+        self.responsible_lbl = QLabel(self.widget)
+        self.responsible_layout.addWidget(self.responsible_lbl)
+        config_lbl(self.responsible_lbl, "Responsable", font_size=18)
+
+        self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_layout.addWidget(self.responsible_field)
+        config_line(self.responsible_field, place_holder="Responsable", font_size=18)
+
+        # Spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # Balance.
         self.balance_layout = QGridLayout()
         self.layout.addLayout(self.balance_layout)
+        self.balance_layout.setHorizontalSpacing(50)
 
         self.method_lbl = QLabel(self.widget)
-        self.method_lbl.setText("Método")
-        self.balance_layout.addWidget(self.method_lbl, 1, 0)
+        self.balance_layout.addWidget(self.method_lbl, 2, 0)
+        config_lbl(self.method_lbl, "Método")
 
-        self.income_lbl = QLabel(self.widget)
-        self.income_lbl.setText("Ingresos")
-        self.balance_layout.addWidget(self.income_lbl, 1, 1)
+        self.charges_lbl = QLabel(self.widget)
+        self.balance_layout.addWidget(self.charges_lbl, 2, 1)
+        config_lbl(self.charges_lbl, "Cobros", alignment=Qt.AlignRight)
 
-        self.expenses_lbl = QLabel(self.widget)
-        self.expenses_lbl.setText("Egresos")
-        self.balance_layout.addWidget(self.expenses_lbl, 1, 2)
+        self.extractions_lbl = QLabel(self.widget)
+        self.balance_layout.addWidget(self.extractions_lbl, 2, 2)
+        config_lbl(self.extractions_lbl, "Extracciones", alignment=Qt.AlignRight)
 
         self.cash_lbl = QLabel(self.widget)
-        self.cash_lbl.setText("Efectivo")
-        self.balance_layout.addWidget(self.cash_lbl, 2, 0)
+        self.balance_layout.addWidget(self.cash_lbl, 3, 0)
+        config_lbl(self.cash_lbl, "Efectivo")
 
         self.debit_lbl = QLabel(self.widget)
-        self.debit_lbl.setText("Débito")
-        self.balance_layout.addWidget(self.debit_lbl, 3, 0)
+        self.balance_layout.addWidget(self.debit_lbl, 4, 0)
+        config_lbl(self.debit_lbl, "Débito")
 
         self.credit_lbl = QLabel(self.widget)
-        self.credit_lbl.setText("Crédito")
-        self.balance_layout.addWidget(self.credit_lbl, 4, 0)
+        self.balance_layout.addWidget(self.credit_lbl, 5, 0)
+        config_lbl(self.credit_lbl, "Crédito")
 
         self.total_lbl = QLabel(self.widget)
-        self.total_lbl.setText("TOTAL")
-        self.balance_layout.addWidget(self.total_lbl, 5, 0)
+        self.balance_layout.addWidget(self.total_lbl, 6, 0)
+        config_lbl(self.total_lbl, "TOTAL")
 
-        # Responsible.
-        self.responsible_lbl = QLabel(self.widget)
-        self.balance_layout.addWidget(self.responsible_lbl, 6, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
-        self.balance_layout.addWidget(self.responsible_field, 6, 1, 1, 2)
-        config_line(self.responsible_field, place_holder="Responsable")
+        # Spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # Confirm button.
         self.confirm_btn = QPushButton(self.widget)
-        self.confirm_btn.setText("Cerrar caja")
         self.layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Cerrar caja")
+
+        # Adjusts size.
+        self.widget.setMinimumSize(self.widget.sizeHint())
 
 
 class BalanceHistoryController:
