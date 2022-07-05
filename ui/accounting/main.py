@@ -58,11 +58,11 @@ class MainController:
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
-        self.main_ui.generate_balance_action.triggered.connect(self.daily_balance)
+        self.main_ui.generate_balance_action.triggered.connect(self.daily_balance_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.balance_history_action.triggered.connect(self.balance_history_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.register_extraction_action.triggered.connect(self.extraction)
+        self.main_ui.register_extraction_action.triggered.connect(self.extract_ui)
 
     def fill_transaction_table(self, filters: list[FilterValuePair]):
         self.main_ui.transaction_table.setRowCount(0)
@@ -79,14 +79,14 @@ class MainController:
             fill_cell(self.main_ui.transaction_table, row, 5, Currency.fmt(transaction.amount), data_type=int)
             fill_cell(self.main_ui.transaction_table, row, 6, transaction.responsible, data_type=str)
 
-    def daily_balance(self):
+    def daily_balance_ui(self):
         # noinspection PyAttributeOutsideInit
-        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
-                                               self.accounting_system.balance_repo,
-                                               self.accounting_system.transactions_types(),
-                                               self.accounting_system.methods)
-        self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
-        self.daily_balance_ui.show()
+        self._daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                                self.accounting_system.balance_repo,
+                                                self.accounting_system.transactions_types(),
+                                                self.accounting_system.methods)
+        self._daily_balance_ui.setWindowModality(Qt.ApplicationModal)
+        self._daily_balance_ui.show()
 
     def balance_history_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -94,11 +94,12 @@ class MainController:
         self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
         self._balance_history_ui.show()
 
-    def extraction(self):
-        self.extract_ui = ExtractUI(self.accounting_system.transaction_repo, self.accounting_system.methods)
-        self.extract_ui.exec_()
+    def extract_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._extract_ui = ExtractUI(self.accounting_system.transaction_repo, self.accounting_system.methods)
+        self._extract_ui.exec_()
 
-        extraction, row_count = self.extract_ui.controller.extraction, self.main_ui.transaction_table.rowCount()
+        extraction, row_count = self._extract_ui.controller.extract_ui, self.main_ui.transaction_table.rowCount()
         if (extraction is not None and row_count < self.page_len
                 and self.main_ui.filter_header.passes_filters(extraction)):
             fill_cell(self.main_ui.transaction_table, row_count, 0, extraction.id, data_type=int)
