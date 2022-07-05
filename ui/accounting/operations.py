@@ -108,23 +108,23 @@ class ChargeUI(QDialog):
         self.form_layout.addWidget(self.when_date_edit, 1, 1)
         config_date_edit(self.when_date_edit, date.today(), calendar=True)
 
+        # Method.
+        self.method_lbl = QLabel(self)
+        self.form_layout.addWidget(self.method_lbl, 2, 0)
+        config_lbl(self.method_lbl, "Método")
+
+        self.method_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.method_combobox, 2, 1)
+        config_combobox(self.method_combobox)
+
         # Amount.
         self.amount_lbl = QLabel(self)
-        self.form_layout.addWidget(self.amount_lbl, 2, 0)
+        self.form_layout.addWidget(self.amount_lbl, 3, 0)
         config_lbl(self.amount_lbl, "Monto")
 
         self.amount_field = Field(Currency, parent=self)
-        self.form_layout.addWidget(self.amount_field, 2, 1)
+        self.form_layout.addWidget(self.amount_field, 3, 1)
         config_line(self.amount_field)
-
-        # Method.
-        self.method_lbl = QLabel(self)
-        self.form_layout.addWidget(self.method_lbl, 3, 0)
-        config_lbl(self.method_lbl, "Método", font_size=16, extra_width=120)
-
-        self.method_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.method_combobox, 3, 1)
-        config_combobox(self.method_combobox)
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
