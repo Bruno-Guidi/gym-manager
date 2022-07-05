@@ -101,6 +101,7 @@ class BookUI(QDialog):
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
         config_layout(self.form_layout, alignment=Qt.AlignCenter, bottom_margin=0)
+        self.form_layout.setHorizontalSpacing(30)
 
         self.client_lbl = QLabel(self)
         self.form_layout.addWidget(self.client_lbl, 0, 0)
@@ -186,6 +187,8 @@ class CancelController:
         self.cancel_ui.booking_combobox.currentIndexChanged.connect(self._update_form)
         # noinspection PyUnresolvedReferences
         self.cancel_ui.confirm_btn.clicked.connect(self.cancel)
+        # noinspection PyUnresolvedReferences
+        self.cancel_ui.cancel_btn.clicked.connect(self.cancel_ui.reject)
 
     def fill_booking_combobox(self, filters: list[FilterValuePair]):
         fill_combobox(self.cancel_ui.booking_combobox,
