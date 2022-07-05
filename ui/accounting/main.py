@@ -446,6 +446,7 @@ class BalanceHistoryUI(QMainWindow):
         # Header layout.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
+        config_layout(self.header_layout, left_margin=250, right_margin=250, alignment=Qt.AlignCenter)
 
         # Last n balances.
         self.last_n_layout = QVBoxLayout()
@@ -457,7 +458,7 @@ class BalanceHistoryUI(QMainWindow):
 
         self.last_n_combobox = QComboBox(self.widget)
         self.last_n_layout.addWidget(self.last_n_combobox)
-        config_combobox(self.last_n_combobox)
+        config_combobox(self.last_n_combobox, width=20)
 
         # Specific date balance.
         self.date_layout = QVBoxLayout()
@@ -471,10 +472,13 @@ class BalanceHistoryUI(QMainWindow):
         self.date_layout.addWidget(self.date_edit)
         config_date_edit(self.date_edit, date.today())
 
+        # Horizontal spacer.
+        self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
         # Balance detail button.
         self.detail_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.detail_btn)
-        config_btn(self.detail_btn, "Detalle")
+        config_btn(self.detail_btn, "Detalle", width=20)
 
         # Transactions.
         self.transaction_table = QTableWidget(self.widget)
