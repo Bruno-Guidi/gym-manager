@@ -70,6 +70,9 @@ class FilterHeader(QWidget):
         self.layout = QHBoxLayout(self)
         config_layout(self.layout, spacing=0)
 
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+
         self.filter_combobox = QComboBox(self)
         self.layout.addWidget(self.filter_combobox)
         config_combobox(self.filter_combobox)
@@ -88,7 +91,7 @@ class FilterHeader(QWidget):
         config_btn(self.search_btn, icon_path=r"ui/resources/search.png", icon_size=30)
 
         # Horizontal spacer.
-        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
 
         self.from_layout: QVBoxLayout | None = None
         self.from_lbl: QLabel | None = None
@@ -106,7 +109,7 @@ class FilterHeader(QWidget):
             config_date_edit(self.from_date_edit, date.today() - ONE_MONTH_TD, calendar=True)
 
         # Horizontal spacer.
-        self.layout.addSpacerItem(QSpacerItem(15, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+        self.layout.addSpacerItem(QSpacerItem(15, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
 
         self.to_layout: QVBoxLayout | None = None
         self.to_lbl: QLabel | None = None
@@ -122,6 +125,9 @@ class FilterHeader(QWidget):
             self.to_date_edit = QDateEdit(self)
             self.to_layout.addWidget(self.to_date_edit)
             config_date_edit(self.to_date_edit, date.today(), calendar=True)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
 
     def config(
             self,
