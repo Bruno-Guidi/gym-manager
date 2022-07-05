@@ -289,7 +289,7 @@ class DailyBalanceUI(QMainWindow):
 
         self.responsible_lbl = QLabel(self.widget)
         self.form_lbl_layout.addWidget(self.responsible_lbl, alignment=Qt.AlignVCenter)
-        config_lbl(self.responsible_lbl, "Responsable", font_size=18)
+        config_lbl(self.responsible_lbl, "Responsable*", font_size=18)
 
         # Spacer.
         self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
