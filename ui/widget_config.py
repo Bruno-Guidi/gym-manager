@@ -125,5 +125,5 @@ def config_table(
     target.setSelectionMode(QAbstractItemView.SingleSelection)
 
     if min_rows_to_show > 0:
-        target.setMinimumHeight((min_rows_to_show + 1) * target.horizontalHeader().height()
-                                + target.horizontalScrollBar().height())
+        # One extra row is added to include header height, and another one is added to include the scrollbar.
+        target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())
