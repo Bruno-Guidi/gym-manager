@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Type, Any, Callable
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
     QPushButton, QDateEdit, QSpacerItem, QSizePolicy
 
@@ -127,6 +127,10 @@ class FilterHeader(QWidget):
 
         # Horizontal spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+
+    def sizeHint(self) -> QSize:
+        print(self.width(), super().width(), super().sizeHint().width())
+        return QSize(self.width(), super().sizeHint().height())  # ToDo fix.
 
     def config(
             self,

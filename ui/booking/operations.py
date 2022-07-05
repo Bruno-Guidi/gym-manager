@@ -162,7 +162,7 @@ class BookUI(QDialog):
         config_btn(self.cancel_btn, "Cancelar", extra_width=20)
 
         # Adjusts size.
-        # self.setFixedSize(self.sizeHint())
+        self.setFixedSize(self.sizeHint())
 
 
 class CancelController:
@@ -239,7 +239,6 @@ class CancelUI(QDialog):
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
-        config_layout(self.form_layout, spacing=10)
 
         self.booking_lbl = QLabel(self)
         self.form_layout.addWidget(self.booking_lbl, 0, 0, 1, 1)
