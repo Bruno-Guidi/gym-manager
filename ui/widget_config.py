@@ -1,8 +1,8 @@
 from datetime import date
 from typing import Iterable, Callable, Any
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem, \
     QTextEdit, QCheckBox, QDateEdit, QWidget, QSizePolicy
@@ -58,9 +58,13 @@ def config_date_edit(
 def config_btn(
         target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
         adjust_to_hint: bool = True, extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0,
-        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight
+        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight, icon_path: str | None = None,
+        icon_size: int | None = None
 ):
     target.setText(text)  # The value has to be set before the config_widget call.
+    if icon_path is not None and icon_size is not None:
+        target.setIcon(QIcon(icon_path))
+        target.setIconSize(QSize(icon_size, icon_size))
     config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
