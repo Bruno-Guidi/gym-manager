@@ -29,7 +29,7 @@ class ChargeController:
         # Sets ui fields.
         self.charge_ui.client_line.setText(str(client.name))
         self.charge_ui.when_date_edit.setDate(date.today())
-        self.charge_ui.amount_field.setText(Currency.fmt(activity.price))
+        self.charge_ui.amount_line.setText(Currency.fmt(activity.price))
         fill_combobox(self.charge_ui.method_combobox, accounting_system.methods,
                       display=lambda method: method.as_primitive())
         self.charge_ui.descr_text.setText(str(descr))
@@ -55,8 +55,7 @@ class ChargeController:
     def charge(self):
         valid_descr, descr = valid_text_value(self.charge_ui.descr_text, optional=False,
                                               max_len=consts.TRANSACTION_DESCR_CHARS)
-        valid_fields = all([self.charge_ui.amount_field.valid_value(), self.charge_ui.responsible_field.valid_value(),
-                            valid_descr])
+        valid_fields = all([self.charge_ui.responsible_field.valid_value(), valid_descr])
         if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
@@ -122,9 +121,9 @@ class ChargeUI(QDialog):
         self.form_layout.addWidget(self.amount_lbl, 3, 0)
         config_lbl(self.amount_lbl, "Monto")
 
-        self.amount_field = Field(Currency, parent=self)
-        self.form_layout.addWidget(self.amount_field, 3, 1)
-        config_line(self.amount_field, adjust_to_hint=False, enabled=False)
+        self.amount_line = QLineEdit(parent=self)
+        self.form_layout.addWidget(self.amount_line, 3, 1)
+        config_line(self.amount_line, adjust_to_hint=False, enabled=False)
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
