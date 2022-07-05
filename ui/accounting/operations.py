@@ -260,7 +260,7 @@ class ExtractUI(QDialog):
 
         self.method_combobox = QComboBox()
         self.form_layout.addWidget(self.method_combobox, 1, 1)
-        config_combobox(self.method_combobox)
+        config_combobox(self.method_combobox, fixed_width=self.when_date_edit.width())
 
         # Amount.
         self.amount_lbl = QLabel()
