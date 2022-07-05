@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Iterable, Callable, Any
+from typing import Iterable, Callable, Any, Type
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QIcon
@@ -146,3 +146,10 @@ def config_table(
     if min_rows_to_show > 0:
         # One extra row is added to include header height, and another one is added to include the scrollbar.
         target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())
+
+
+def fill_cell(target: QTableWidget, row: int, column: int, data: Any, data_type: Type):
+    target.setRowCount(row + 1)
+    item = QTableWidgetItem(str(data))
+    item.setTextAlignment(Qt.AlignRight if data_type is int else Qt.AlignLeft)
+    target.setItem(row, column, item)
