@@ -182,6 +182,9 @@ class AccountingMainUI(QMainWindow):
         self.page_index = PageIndex(self)
         self.main_layout.addWidget(self.page_index)
 
+        # Adjusts size.
+        self.setMaximumWidth(self.widget.sizeHint().width())
+
 
 class DailyBalanceController:
     def __init__(
