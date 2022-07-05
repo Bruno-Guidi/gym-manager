@@ -106,14 +106,15 @@ def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], s
 
 
 def config_table(
-        target: QTableWidget, columns: dict[str, int], n_rows: int = 0, font_size: int = 14,
+        target: QTableWidget, columns: dict[str, tuple[int, type]], n_rows: int = 0, font_size: int = 14,
         allow_resizing: bool = False, min_rows_to_show: int = 0
 ):
     """Configures a QTableWidget.
 
     Args:
         target: QTableWidget to configure.
-        columns: dict {k: v} where k is a column name, and v is the max number of chars that the column will display.
+        columns: dict {k: (a, b)} where k is a column name, a is the max number of chars that the column will display,
+            and b is the type of the data displayed.
         n_rows: numbers of rows that the table will have.
         font_size: font size of the header and cells.
         allow_resizing: if True, columns can be resized during runtime.
@@ -130,9 +131,12 @@ def config_table(
     target.setRowCount(n_rows)
 
     max_width = 0
-    for i, (column_name, column_char_width) in enumerate(columns.items()):
-        target.setHorizontalHeaderItem(i, QTableWidgetItem(column_name))
-        placeholder = "".zfill(column_char_width)
+    for i, (column_name, (column_char_width, column_type)) in enumerate(columns.items()):
+        item = QTableWidgetItem(column_name)
+        item.setTextAlignment(Qt.AlignRight if column_type is int else Qt.AlignLeft)
+        target.setHorizontalHeaderItem(i, item)
+
+        placeholder = "".zfill(column_char_width)  # The width of the column is based on the char width received.
         target.setColumnWidth(i, len(placeholder) * font_size)
         max_width += target.columnWidth(i)
 
