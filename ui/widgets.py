@@ -5,7 +5,7 @@ from typing import Type, Any, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
-    QPushButton, QDateEdit
+    QPushButton, QDateEdit, QSpacerItem, QSizePolicy
 
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
@@ -68,6 +68,7 @@ class FilterHeader(QWidget):
 
     def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool, show_clear_button: bool):
         self.layout = QHBoxLayout(self)
+        config_layout(self.layout, spacing=0)
 
         self.filter_combobox = QComboBox(self)
         self.layout.addWidget(self.filter_combobox)
@@ -79,12 +80,15 @@ class FilterHeader(QWidget):
 
         self.clear_filter_btn = QPushButton(self)
         self.layout.addWidget(self.clear_filter_btn)
-        config_btn(self.clear_filter_btn, "C")
-        self.clear_filter_btn.setVisible(show_clear_button)  # ToDo move to config_btn.
+        config_btn(self.clear_filter_btn, icon_path=r"ui/resources/clear.png", icon_size=30)
+        self.clear_filter_btn.setVisible(show_clear_button)
 
         self.search_btn = QPushButton(self)
         self.layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "B")
+        config_btn(self.search_btn, icon_path=r"ui/resources/search.png", icon_size=30)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
 
         self.from_layout: QVBoxLayout | None = None
         self.from_lbl: QLabel | None = None
@@ -101,6 +105,9 @@ class FilterHeader(QWidget):
             self.from_layout.addWidget(self.from_date_edit)
             config_date_edit(self.from_date_edit, date.today() - ONE_MONTH_TD, calendar=True)
 
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(15, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+
         self.to_layout: QVBoxLayout | None = None
         self.to_lbl: QLabel | None = None
         self.to_date_edit: QDateEdit | None = None
@@ -110,7 +117,7 @@ class FilterHeader(QWidget):
 
             self.to_lbl = QLabel(self)
             self.to_layout.addWidget(self.to_lbl)
-            config_lbl(self.to_lbl, "Desde")
+            config_lbl(self.to_lbl, "Hasta")
 
             self.to_date_edit = QDateEdit(self)
             self.to_layout.addWidget(self.to_date_edit)
