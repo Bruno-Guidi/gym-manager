@@ -41,11 +41,12 @@ def config_date_edit(
     target.setLayoutDirection(layout_direction)
 
 
-def config_btn(
+def config_btn(  # ToDo rename width to extra_width
         target: QPushButton, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, width=0, height=0
 ):
     target.setText(text)
     target.setFont(QFont(font, font_size))
+    target.setMinimumSize(target.sizeHint().width() + width, target.sizeHint().height() + height)
 
 
 def config_checkbox(

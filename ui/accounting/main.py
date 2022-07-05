@@ -202,7 +202,7 @@ class DailyBalanceController:
             self.daily_balance_ui.responsible_field.setText(str(responsible))
             self.balance = balance
             self.daily_balance_ui.responsible_field.setEnabled(False)
-            self.daily_balance_ui.confirm_btn.setVisible(False)
+            self.daily_balance_ui.confirm_btn.setEnabled(False)
         else:
             self._generate_balance(transaction_types, transaction_methods)  # Generates the balance.
 
@@ -345,8 +345,8 @@ class DailyBalanceUI(QMainWindow):
 
         # Confirm button.
         self.confirm_btn = QPushButton(self.widget)
-        self.layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Cerrar caja")
+        self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
+        config_btn(self.confirm_btn, "Cerrar caja", width=40)
 
         # Adjusts size.
         self.setMinimumSize(self.widget.sizeHint())
