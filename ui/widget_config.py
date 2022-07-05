@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
 
 def config_line(
         target: QLineEdit | QTextEdit, text: str = "", place_holder: str = "", font: str = "MS Shell Dlg 2",
-        font_size: int = 14, width: int = 0, height: int = 0, enabled: bool = True
+        font_size: int = 14, width: int = 0, height: int = 0, read_only: bool = True
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
@@ -19,7 +19,7 @@ def config_line(
         target.setFixedWidth(width)
     if height > 0:
         target.setFixedHeight(height)
-    target.setEnabled(enabled)
+    target.setReadOnly(read_only)
 
 
 def config_lbl(
