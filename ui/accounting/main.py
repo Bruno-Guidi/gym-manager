@@ -201,7 +201,7 @@ class DailyBalanceController:
         if responsible is not None and balance is not None:
             self.daily_balance_ui.responsible_field.setText(str(responsible))
             self.balance = balance
-            self.daily_balance_ui.responsible_field.setEnabled(False)
+            self.daily_balance_ui.responsible_field.setReadOnly(True)
             self.daily_balance_ui.confirm_btn.setEnabled(False)
         else:
             self._generate_balance(transaction_types, transaction_methods)  # Generates the balance.
