@@ -63,6 +63,8 @@ class MainController:
         self.main_ui.balance_history_action.triggered.connect(self.balance_history_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.register_extraction_action.triggered.connect(self.extract_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.see_detail_action.triggered.connect(self.detail_ui)
 
     def fill_transaction_table(self, filters: list[FilterValuePair]):
         self.main_ui.transaction_table.setRowCount(0)
@@ -110,6 +112,12 @@ class MainController:
             fill_cell(self.main_ui.transaction_table, row_count, 5, Currency.fmt(extraction.amount), data_type=int)
             fill_cell(self.main_ui.transaction_table, row_count, 6, extraction.responsible, data_type=str)
 
+    def detail_ui(self):
+        if self.main_ui.transaction_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una transacción.")
+        else:
+            Dialog.info("Detalle", "")
+
 
 class AccountingMainUI(QMainWindow):
 
@@ -140,11 +148,14 @@ class AccountingMainUI(QMainWindow):
         self.daily_balance_menu.addAction(self.balance_history_action)
 
         # Extractions menu bar.
-        self.extraction_menu = QMenu("Extracción", self)
-        self.menu_bar.addMenu(self.extraction_menu)
+        self.transaction_menu = QMenu("Transacciones", self)
+        self.menu_bar.addMenu(self.transaction_menu)
 
-        self.register_extraction_action = QAction("Registrar", self)
-        self.extraction_menu.addAction(self.register_extraction_action)
+        self.register_extraction_action = QAction("Registrar extracción", self)
+        self.transaction_menu.addAction(self.register_extraction_action)
+
+        self.see_detail_action = QAction("Ver detalle", self)
+        self.transaction_menu.addAction(self.see_detail_action)
 
         # Utilities.
         self.utils_layout = QHBoxLayout()
