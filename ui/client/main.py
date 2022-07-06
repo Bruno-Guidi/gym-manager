@@ -27,8 +27,9 @@ def invalid_date(transaction_date: date, **kwargs) -> bool:
 
 class ClientRow(QWidget):
     def __init__(
-            self, item: QListWidgetItem, main_ui_controller: Controller, client: Client,
-            client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem
+            self, item: QListWidgetItem, name_width: int, dni_width: int, tel_width: int, dir_width: int,
+            main_ui_controller: Controller, client: Client, client_repo: ClientRepo, activity_manager: ActivityManager,
+            accounting_system: AccountingSystem
     ):
         super().__init__()
         self.client = client
@@ -40,7 +41,7 @@ class ClientRow(QWidget):
         self.item = item
         self.main_ui_controller = main_ui_controller
 
-        self._setup_ui()
+        self._setup_ui(name_width, dni_width, tel_width, dir_width)
         self.item.setSizeHint(self.sizeHint())
 
         self.is_hidden = False
@@ -49,19 +50,19 @@ class ClientRow(QWidget):
         # noinspection PyUnresolvedReferences
         self.detail_btn.clicked.connect(self.hide_detail)
 
-    def _setup_ui(self):
+    def _setup_ui(self, name_width: int, dni_width: int, tel_width: int, dir_width: int):
         self.layout = QGridLayout(self)
         self.layout.setAlignment(Qt.AlignLeft)
 
         # Name.
         self.name_field = Field(String, self, max_len=consts.CLIENT_NAME_CHARS)
         self.layout.addWidget(self.name_field, 0, 0, alignment=Qt.AlignTop)
-        config_line(self.name_field, str(self.client.name), font="Inconsolata", fixed_width=200)
+        config_line(self.name_field, str(self.client.name), font="Inconsolata", fixed_width=name_width)
 
         # DNI.
         self.dni_field = Field(Number, self, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
         self.layout.addWidget(self.dni_field, 0, 1, alignment=Qt.AlignTop)
-        config_line(self.dni_field, str(self.client.dni), font="Inconsolata", enabled=False, fixed_width=120)
+        config_line(self.dni_field, str(self.client.dni), font="Inconsolata", enabled=False, fixed_width=dni_width)
 
         # Admission.
         self.admission_date_edit = QDateEdit()
@@ -71,12 +72,12 @@ class ClientRow(QWidget):
         # Telephone.
         self.tel_field = Field(String, self, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
         self.layout.addWidget(self.tel_field, 0, 3, alignment=Qt.AlignTop)
-        config_line(self.tel_field, str(self.client.telephone), font="Inconsolata", fixed_width=160)
+        config_line(self.tel_field, str(self.client.telephone), font="Inconsolata", fixed_width=tel_width)
 
         # Direction.
         self.dir_field = Field(String, self, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
         self.layout.addWidget(self.dir_field, 0, 4, alignment=Qt.AlignTop)
-        config_line(self.dir_field, str(self.client.direction), font="Inconsolata", fixed_width=180)
+        config_line(self.dir_field, str(self.client.direction), font="Inconsolata", fixed_width=dir_width)
 
         # See client detail button.
         self.detail_btn = QPushButton(self)
@@ -283,23 +284,18 @@ _dummy_client = Client(Number(99_999_999), String("dummy_name", max_len=consts.C
 
 class Controller:
     def __init__(
-            self, main_ui: ClientMainUI, client_repo: ClientRepo, activity_manager: ActivityManager,
-            accounting_system: AccountingSystem, name_width: int, dni_width: int, admission_width: int,
-            tel_width: int, dir_width: int
+            self, main_ui: ClientMainUI, name_width: int, dni_width: int,  tel_width: int, dir_width: int,
+            client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem
     ):
+        self.main_ui = main_ui
+
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 15
         self.opened_now: ClientRow | None = None
 
-        self.main_ui = main_ui
-
-        self.name_width = name_width
-        self.dni_width = dni_width
-        self.admission_width = admission_width
-        self.tel_width = tel_width
-        self.dir_width = dir_width
+        self.name_width, self.dni_width, self.tel_width, self.dir_width = name_width, dni_width, tel_width, dir_width
 
         # Configures the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -315,8 +311,8 @@ class Controller:
 
         # Sets the correct width for the client list. A dummy row is used, so the width is correctly set even if there
         # are no rows to load.
-        self.dummy_row = ClientRow(QListWidgetItem(), self, _dummy_client, client_repo, activity_manager,
-                                   accounting_system)
+        self.dummy_row = ClientRow(QListWidgetItem(), name_width, dni_width, tel_width, dir_width, self, _dummy_client,
+                                   client_repo, activity_manager, accounting_system)
         # The min width includes the width (obtained with height()) of the vertical scrollbar of the list.
         self.main_ui.client_list.setMinimumWidth(self.dummy_row.sizeHint().width()
                                                  + self.main_ui.client_list.verticalScrollBar().height())
@@ -336,7 +332,8 @@ class Controller:
 
         item = QListWidgetItem(self.main_ui.client_list)
         self.main_ui.client_list.addItem(item)
-        client_row = ClientRow(item, self, client, self.client_repo, self.activity_manager, self.accounting_system)
+        client_row = ClientRow(item, self.name_width, self.dni_width, self.tel_width, self.dir_width, self, client,
+                               self.client_repo, self.activity_manager, self.accounting_system)
         self.main_ui.client_list.setItemWidget(item, client_row)
 
         if set_to_current:
@@ -365,12 +362,13 @@ class ClientMainUI(QMainWindow):
             self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
     ) -> None:
         super().__init__(parent=None)
-        name_width, dni_width, admission_width, tel_width, dir_width = 175, 90, 100, 110, 140
-        self._setup_ui(name_width, dni_width, admission_width, tel_width, dir_width)
-        self.controller = Controller(self, client_repo, activity_manager, accounting_system, name_width, dni_width,
-                                     admission_width, tel_width, dir_width)
+        name_width, dni_width, tel_width, dir_width = 200, 120, 160, 180
+        self._setup_ui(name_width, dni_width, tel_width, dir_width)
+        self.controller = Controller(
+            self, name_width, dni_width, tel_width, dir_width, client_repo, activity_manager, accounting_system
+        )
 
-    def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
+    def _setup_ui(self, name_width: int, dni_width: int, tel_width: int, dir_width: int):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
@@ -391,27 +389,29 @@ class ClientMainUI(QMainWindow):
         # Header.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
-        # config_layout(self.header_layout, alignment=Qt.AlignLeft, left_margin=11, spacing=0)
+        config_layout(self.header_layout, alignment=Qt.AlignLeft, left_margin=15)
 
         self.name_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Nombre")  # 6 is the spacing.
+        config_lbl(self.name_lbl, "Nombre", fixed_width=name_width)
 
         self.dni_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.dni_lbl)
-        config_lbl(self.dni_lbl, "DNI")  # 6 is the spacing.
+        config_lbl(self.dni_lbl, "DNI", fixed_width=dni_width)
 
         self.admission_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.admission_lbl)
-        config_lbl(self.admission_lbl, "Ingreso")  # 6 is the spacing.
+        dummy = QDateEdit()
+        config_date_edit(dummy, date.min, calendar=False)
+        config_lbl(self.admission_lbl, "Ingreso", fixed_width=dummy.width())
 
         self.tel_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.tel_lbl)
-        config_lbl(self.tel_lbl, "Teléfono")  # 6 is the spacing.
+        config_lbl(self.tel_lbl, "Teléfono", fixed_width=tel_width)
 
         self.dir_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.dir_lbl)
-        config_lbl(self.dir_lbl, "Dirección")  # 6 is the spacing.
+        config_lbl(self.dir_lbl, "Dirección", fixed_width=dir_width)
 
         # Clients.
         self.client_list = QListWidget(self.widget)
