@@ -107,8 +107,8 @@ class ClientRow(QWidget):
         self.subscription_table = QTableWidget(self)
         self.layout.addWidget(self.subscription_table, 2, 0, 5, 5)
         config_table(self.subscription_table, allow_resizing=True,
-                     columns={"Nombre": (10, str), "Último\npago": (10, int), "Código\npago": (6, int),
-                              "Vencida": (2, str)})
+                     columns={"Nombre": (10, str), "Inscripción": (10, int), "Último pago": (10, int),
+                              "#": (6, int), "Vencida": (7, str)})
 
         # Subscribe button.
         self.subscribe_btn = QPushButton(self)
