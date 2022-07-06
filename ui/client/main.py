@@ -195,16 +195,6 @@ class ClientRow(QWidget):
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
-    # noinspection PyAttributeOutsideInit
-    def subscribe_ui(self):
-        self._subscribe_ui = SubscribeUI(self.activity_manager, self.client)
-        self._subscribe_ui.exec_()
-
-        if self._subscribe_ui.controller.subscription is not None:
-            row = self.subscription_table.rowCount()
-            self.subscription_table.setRowCount(row + 1)
-            self._load_subscription(row, self._subscribe_ui.controller.subscription)
-
     def _load_subscription(self, row: int, subscription: Subscription):
         self.subscriptions[row] = subscription
         self.subscription_table.setItem(row, 0, QTableWidgetItem(str(subscription.activity.name)))
@@ -218,6 +208,16 @@ class ClientRow(QWidget):
 
         expired = "Si" if subscription.charge_day_passed(date.today()) else "No"
         self.subscription_table.setItem(row, 3, QTableWidgetItem(expired))
+
+    # noinspection PyAttributeOutsideInit
+    def subscribe_ui(self):
+        self._subscribe_ui = SubscribeUI(self.activity_manager, self.client)
+        self._subscribe_ui.exec_()
+
+        if self._subscribe_ui.controller.subscription is not None:
+            row = self.subscription_table.rowCount()
+            self.subscription_table.setRowCount(row + 1)
+            self._load_subscription(row, self._subscribe_ui.controller.subscription)
 
     def unsubscribe(self):
         if self.subscription_table.currentRow() == -1:
