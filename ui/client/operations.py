@@ -149,7 +149,7 @@ class SubscribeController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.subscribe_ui.ok_btn.clicked.connect(self.subscribe)
+        self.subscribe_ui.confirm_btn.clicked.connect(self.subscribe)
         # noinspection PyUnresolvedReferences
         self.subscribe_ui.cancel_btn.clicked.connect(self.subscribe_ui.reject)
 
