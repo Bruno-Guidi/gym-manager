@@ -288,7 +288,6 @@ class Controller:
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
-        self.current_page, self.page_len = 1, 2
         self.opened_now: ClientRow | None = None
 
         self.name_width, self.dni_width, self.tel_width, self.dir_width = name_width, dni_width, tel_width, dir_width
