@@ -95,10 +95,20 @@ class ClientRow(QWidget):
         self.dir_lbl: QLabel | None = None
         self.dir_field: Field | None = None
 
-        # Detail button.
+        # See client detail button.
         self.detail_btn = QPushButton(self)
         self.layout.addWidget(self.detail_btn, 0, 5)
-        config_btn(self.detail_btn, "Detalle")
+        config_btn(self.detail_btn, "D", fixed_width=32)
+
+        # Save client data button
+        self.save_btn = QPushButton(self)
+        self.layout.addWidget(self.save_btn, 0, 6)
+        config_btn(self.save_btn, "G", fixed_width=32)
+
+        # Remove client button.
+        self.remove_btn = QPushButton(self)
+        self.layout.addWidget(self.remove_btn, 0, 7)
+        config_btn(self.remove_btn, "E", fixed_width=32)
 
         # Adjusts size.
         self.resize(self.minimumWidth(), self.minimumHeight())
@@ -149,44 +159,35 @@ class ClientRow(QWidget):
         self.layout.addWidget(self.dir_field, 2, 4)
         config_line(self.dir_field, str(self.client.direction))
 
-        # Save and delete buttons.
-        self.save_btn = QPushButton(self)
-        self.layout.addWidget(self.save_btn, 1, 5)
-        config_btn(self.save_btn, text="Guardar")
-
-        self.remove_btn = QPushButton(self)
-        self.layout.addWidget(self.remove_btn, 2, 5)
-        config_btn(self.remove_btn, text="Eliminar")
-
         # Activities.
         self.subscriptions_lbl = QLabel(self)
         self.layout.addWidget(self.subscriptions_lbl, 3, 0, 1, 5)
         config_lbl(self.subscriptions_lbl, "Actividades", font_size=12)
 
         self.subscription_table = QTableWidget(self)
-        self.layout.addWidget(self.subscription_table, 4, 0, 1, 5)
+        self.layout.addWidget(self.subscription_table, 4, 0, 4, 5)
         config_table(self.subscription_table, allow_resizing=True,
                      columns={"Nombre": (10, str), "Último\npago": (10, int), "Código\npago": (6, int),
                               "Vencida": (2, str)})
 
         # Subscribe button.
         self.subscribe_btn = QPushButton(self)
-        self.layout.addWidget(self.subscribe_btn, 4, 5)
+        self.layout.addWidget(self.subscribe_btn, 4, 5, 1, 3)
         config_btn(self.subscribe_btn, text="Inscribir en\nactividad")
 
         # Unsubscribe button.
         self.unsubscribe_btn = QPushButton(self)
-        self.layout.addWidget(self.unsubscribe_btn, 5, 5)
+        self.layout.addWidget(self.unsubscribe_btn, 5, 5, 1, 3)
         config_btn(self.unsubscribe_btn, text="Dar de baja")
 
         # Charge for subscription button.
         self.charge_activity_btn = QPushButton(self)
-        self.layout.addWidget(self.charge_activity_btn, 6, 5)
+        self.layout.addWidget(self.charge_activity_btn, 6, 5, 1, 3)
         config_btn(self.charge_activity_btn, text="Cobrar\nactividad")
 
         # See transactions button.
         self.transactions_btn = QPushButton(self)
-        self.layout.addWidget(self.transactions_btn, 7, 5)
+        self.layout.addWidget(self.transactions_btn, 7, 5, 1, 3)
         config_btn(self.transactions_btn, text="Ver pagos")
 
         # Adjusts size.
