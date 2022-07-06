@@ -40,17 +40,12 @@ class ClientRow(QWidget):
         self.main_ui_controller = main_ui_controller
 
         self._setup_ui()
-        self._setup_hidden_ui()
 
-        # Because the widgets are yet to be hided, the hint has the 'extended' height.
-        # self.current_height, self.previous_height = height, None
-        # self.item.setSizeHint(QSize(self.width(), self.current_height))
-
-        # self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
+        self.is_hidden = False
+        self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
         # noinspection PyUnresolvedReferences
-        # self.detail_btn.clicked.connect(self.hide_detail)
-        # self.is_hidden = False
+        self.detail_btn.clicked.connect(self.hide_detail)
 
     def _setup_ui(self):
         self.layout = QGridLayout(self)
@@ -144,44 +139,26 @@ class ClientRow(QWidget):
 
     def _set_hidden(self, hidden: bool):
         # Hides widgets.
-        self.name_lbl.setHidden(hidden)
-        self.name_field.setHidden(hidden)
-        self.dni_lbl.setHidden(hidden)
-        self.dni_field.setHidden(hidden)
-        self.admission_lbl.setHidden(hidden)
-        self.admission_date_edit.setHidden(hidden)
-        self.tel_lbl.setHidden(hidden)
-        self.tel_field.setHidden(hidden)
-        self.dir_lbl.setHidden(hidden)
-        self.dir_field.setHidden(hidden)
-
         self.subscriptions_lbl.setHidden(hidden)
         self.subscription_table.setHidden(hidden)
-
-        self.save_btn.setHidden(hidden)
-        self.remove_btn.setHidden(hidden)
         self.subscribe_btn.setHidden(hidden)
         self.unsubscribe_btn.setHidden(hidden)
         self.charge_activity_btn.setHidden(hidden)
         self.transactions_btn.setHidden(hidden)
 
-        # Updates the height of the widget.
-        self.previous_height, self.current_height = self.current_height, self.previous_height
-
-        new_width = self.width()
-        self.item.setSizeHint(QSize(new_width, self.current_height))
-        self.resize(new_width, self.current_height)
-        self.resize(new_width, self.current_height)
-
         # Inverts the state of the widget.
         self.is_hidden = not hidden
+
+        # Adjusts size.
+        self.resize(self.minimumWidth(), self.minimumHeight())
+        self.item.setSizeHint(self.sizeHint())
 
     def hide_detail(self):
         # Creates the hidden widgets in case it is the first time the detail button is clicked.
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
             self._setup_callbacks()
-            self.hidden_ui_loaded, self.previous_height = True, 350
+            self.hidden_ui_loaded = True
             self.load_subscriptions()
 
         # Hides previously opened detail.
