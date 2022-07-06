@@ -111,7 +111,7 @@ class ClientRow(QWidget):
         self.layout.addWidget(self.subscription_table, 2, 0, 5, 5)
         config_table(self.subscription_table, allow_resizing=True,
                      columns={"Nombre": (10, str), "Inscripción": (10, bool), "Último pago": (12, bool),
-                              "#": (6, int), "Vencida": (7, bool)})
+                              "#": (6, int), "Vencida": (8, bool)})
 
         # Unsubscribe button.
         self.unsubscribe_btn = QPushButton(self)
