@@ -263,11 +263,11 @@ class CancelUI(QDialog):
 
         self.date_lbl = QLabel(self)
         self.form_layout.addWidget(self.date_lbl, 2, 0)
-        config_lbl(self.date_lbl, "Fecha*")
+        config_lbl(self.date_lbl, "Fecha*",)
 
         self.date_line = QLineEdit(self)
         self.form_layout.addWidget(self.date_line, 2, 1)
-        config_line(self.date_line, enabled=False)
+        config_line(self.date_line, place_holder="dd/mm/aaaa", enabled=False)
 
         self.court_lbl = QLabel(self)
         self.form_layout.addWidget(self.court_lbl, 3, 0)
@@ -275,7 +275,7 @@ class CancelUI(QDialog):
 
         self.court_line = QLineEdit(self)
         self.form_layout.addWidget(self.court_line, 3, 1)
-        config_line(self.court_line, enabled=False)
+        config_line(self.court_line, place_holder="n", enabled=False)
 
         self.block_lbl = QLabel(self)
         self.form_layout.addWidget(self.block_lbl, 4, 0)
@@ -283,7 +283,7 @@ class CancelUI(QDialog):
 
         self.start_line = QLineEdit(self)
         self.form_layout.addWidget(self.start_line, 4, 1)
-        config_line(self.start_line, enabled=False)
+        config_line(self.start_line, place_holder="hh:mm", enabled=False)
 
         self.end_lbl = QLabel(self)
         self.form_layout.addWidget(self.end_lbl, 5, 0)
@@ -291,7 +291,7 @@ class CancelUI(QDialog):
 
         self.end_line = QLineEdit(self)
         self.form_layout.addWidget(self.end_line, 5, 1)
-        config_line(self.end_line, enabled=False)
+        config_line(self.end_line, place_holder="hh:mm", enabled=False)
 
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 6, 0)
