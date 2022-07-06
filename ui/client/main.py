@@ -372,6 +372,7 @@ class ClientMainUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
+        config_layout(self.layout, spacing=0)
 
         # Utilities.
         self.utils_layout = QHBoxLayout()
