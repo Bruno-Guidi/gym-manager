@@ -107,25 +107,25 @@ class ClientRow(QWidget):
                      columns={"Nombre": (10, str), "Inscripción": (10, int), "Último pago": (10, int),
                               "#": (6, int), "Vencida": (7, str)})
 
-        # Subscribe button.
-        self.subscribe_btn = QPushButton(self)
-        self.layout.addWidget(self.subscribe_btn, 2, 5, 1, 3)
-        config_btn(self.subscribe_btn, text="Inscribir")
-
         # Unsubscribe button.
         self.unsubscribe_btn = QPushButton(self)
         self.layout.addWidget(self.unsubscribe_btn, 3, 5, 1, 3)
         config_btn(self.unsubscribe_btn, text="Dar de baja")
 
+        # Subscribe button.
+        self.subscribe_btn = QPushButton(self)
+        self.layout.addWidget(self.subscribe_btn, 2, 5, 1, 3)
+        config_btn(self.subscribe_btn, text="Inscribir", fixed_width=self.unsubscribe_btn.width())
+
         # Charge for subscription button.
         self.charge_activity_btn = QPushButton(self)
         self.layout.addWidget(self.charge_activity_btn, 4, 5, 1, 3)
-        config_btn(self.charge_activity_btn, text="Cobrar")
+        config_btn(self.charge_activity_btn, text="Cobrar", fixed_width=self.unsubscribe_btn.width())
 
         # See transactions button.
         self.transactions_btn = QPushButton(self)
         self.layout.addWidget(self.transactions_btn, 5, 5, 1, 3)
-        config_btn(self.transactions_btn, text="Ver pagos")
+        config_btn(self.transactions_btn, text="Ver pagos", fixed_width=self.unsubscribe_btn.width())
 
         # Adjusts size.
         self.resize(self.minimumWidth(), self.minimumHeight())
