@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu)
@@ -46,6 +46,13 @@ class Controller:
         # noinspection PyUnresolvedReferences
         self.main_ui.next_btn.clicked.connect(self.next_page)
 
+    def _cell_font(self, is_paid: bool) -> QFont:
+        default_font = self.main_ui.booking_table.font()
+        new_font = QFont(default_font)
+        if is_paid:
+            new_font.setUnderline(True)
+        return new_font
+
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
     ):
@@ -54,6 +61,7 @@ class Controller:
 
         item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}")
         item.setTextAlignment(Qt.AlignCenter)
+        item.setFont(self._cell_font(is_paid=True))
         self.main_ui.booking_table.setItem(start, booking.court.id, item)
         self.main_ui.booking_table.setSpan(start, booking.court.id, end - start, 1)
 
@@ -103,6 +111,10 @@ class Controller:
         # noinspection PyAttributeOutsideInit
         self._precharge_ui = PreChargeUI(self.booking_system, self.accounting_system)
         self._precharge_ui.exec_()
+        charged = self._precharge_ui.controller.booking
+        if charged is not None:
+            start, end = self.booking_system.block_range(charged.start, charged.end)
+            self.main_ui.booking_table.item(start, charged.court.id).setFont(self._cell_font(is_paid=True))
 
     def history_ui(self):
         # noinspection PyAttributeOutsideInit
