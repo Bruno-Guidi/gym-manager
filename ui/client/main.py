@@ -377,49 +377,52 @@ class ClientMainUI(QMainWindow):
         # Utilities.
         self.utils_layout = QHBoxLayout()
         self.layout.addLayout(self.utils_layout)
-        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
+        # config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
         self.utils_layout.addWidget(self.filter_header)
 
-        self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        # self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
         self.create_client_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.create_client_btn)
-        config_btn(self.create_client_btn, "Nuevo cliente", font_size=16)
+        config_btn(self.create_client_btn, "Nuevo")
 
-        self.layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        # self.layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
         # Header.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
-        config_layout(self.header_layout, alignment=Qt.AlignLeft, left_margin=11, spacing=0)
+        # config_layout(self.header_layout, alignment=Qt.AlignLeft, left_margin=11, spacing=0)
 
         self.name_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Nombre", extra_width=name_width + 6)  # 6 is the spacing.
+        config_lbl(self.name_lbl, "Nombre")  # 6 is the spacing.
 
         self.dni_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.dni_lbl)
-        config_lbl(self.dni_lbl, "DNI", extra_width=dni_width + 6)  # 6 is the spacing.
+        config_lbl(self.dni_lbl, "DNI")  # 6 is the spacing.
 
         self.admission_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.admission_lbl)
-        config_lbl(self.admission_lbl, "Ingreso", extra_width=admission_width + 6)  # 6 is the spacing.
+        config_lbl(self.admission_lbl, "Ingreso")  # 6 is the spacing.
 
         self.tel_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.tel_lbl)
-        config_lbl(self.tel_lbl, "Teléfono", extra_width=tel_width + 6)  # 6 is the spacing.
+        config_lbl(self.tel_lbl, "Teléfono")  # 6 is the spacing.
 
         self.dir_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.dir_lbl)
-        config_lbl(self.dir_lbl, "Dirección", extra_width=dir_width + 6)  # 6 is the spacing.
+        config_lbl(self.dir_lbl, "Dirección")  # 6 is the spacing.
 
         # Clients.
         self.client_list = QListWidget(self.widget)
         self.layout.addWidget(self.client_list)
 
         # Index.
-        self.page_index = PageIndex(self)
+        self.page_index = PageIndex(self.widget)
         self.layout.addWidget(self.page_index)
+
+        # Adjusts size.
+        # self.setMaximumWidth(self.widget.sizeHint().width())
