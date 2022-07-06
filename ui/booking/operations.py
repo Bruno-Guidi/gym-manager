@@ -201,7 +201,7 @@ class CancelController:
         self.cancel_ui.date_edit.setDate(booking.when)
         self.cancel_ui.start_line.setText(str(booking.start))
         self.cancel_ui.end_line.setText(str(booking.end))
-        self.cancel_ui.fixed_checkbox.setChecked(booking.is_fixed)
+        self.cancel_ui.fixed_line.setText("Si" if booking.is_fixed else "No")
 
     def cancel(self):
         self.booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
@@ -305,9 +305,9 @@ class CancelUI(QDialog):
         self.form_layout.addWidget(self.fixed_lbl, 6, 0)
         config_lbl(self.fixed_lbl, "Turno fijo")
 
-        self.fixed_checkbox = QCheckBox(self)
-        self.form_layout.addWidget(self.fixed_checkbox, 6, 1)
-        config_checkbox(self.fixed_checkbox)
+        self.fixed_line = QLineEdit(self)
+        self.form_layout.addWidget(self.fixed_line, 6, 1)
+        config_line(self.fixed_line, "No", enabled=False, fixed_width=self.date_edit.width())
 
         # Cancellation responsible.
         self.responsible_lbl = QLabel(self)
