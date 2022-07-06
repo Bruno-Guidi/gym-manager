@@ -174,7 +174,8 @@ class BookingMainUI(QMainWindow):
 
         config_table(
             target=self.booking_table,
-            columns={"Hora": (12, int), "Cancha 1": (16, int), "Cancha 2": (16, int), "Cancha 3 (Singles)": (16, int)}
+            columns={"Hora": (12, bool), "Cancha 1": (16, bool), "Cancha 2": (16, bool),
+                     "Cancha 3 (Singles)": (16, bool)}
         )
 
 
