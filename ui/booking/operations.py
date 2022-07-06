@@ -198,7 +198,7 @@ class CancelController:
         booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
         self.cancel_ui.client_line.setText(str(booking.client.name))
         self.cancel_ui.court_line.setText(booking.court.name)
-        self.cancel_ui.date_line.setText(str(booking.when))
+        self.cancel_ui.date_edit.setDate(booking.when)
         self.cancel_ui.start_line.setText(str(booking.start))
         self.cancel_ui.end_line.setText(str(booking.end))
         self.cancel_ui.fixed_checkbox.setChecked(booking.is_fixed)
@@ -245,14 +245,6 @@ class CancelUI(QDialog):
         self.layout.addLayout(self.form_layout)
         self.form_layout.setContentsMargins(40, 0, 40, 0)
 
-        self.booking_lbl = QLabel(self)
-        self.form_layout.addWidget(self.booking_lbl, 0, 0)
-        config_lbl(self.booking_lbl, "Reserva*")
-
-        self.booking_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.booking_combobox, 0, 1)
-        config_combobox(self.booking_combobox)
-
         self.client_lbl = QLabel(self)
         self.form_layout.addWidget(self.client_lbl, 1, 0)
         config_lbl(self.client_lbl, "Cliente*")
@@ -261,13 +253,21 @@ class CancelUI(QDialog):
         self.form_layout.addWidget(self.client_line, 1, 1)
         config_line(self.client_line, read_only=True)
 
+        self.booking_lbl = QLabel(self)
+        self.form_layout.addWidget(self.booking_lbl, 0, 0)
+        config_lbl(self.booking_lbl, "Reserva*")
+
+        self.booking_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.booking_combobox, 0, 1)
+        config_combobox(self.booking_combobox, fixed_width=self.client_line.width())
+
         self.date_lbl = QLabel(self)
         self.form_layout.addWidget(self.date_lbl, 2, 0)
         config_lbl(self.date_lbl, "Fecha*",)
 
-        self.date_line = QLineEdit(self)
-        self.form_layout.addWidget(self.date_line, 2, 1)
-        config_line(self.date_line, place_holder="dd/mm/aaaa", enabled=False)
+        self.date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.date_edit, 2, 1)
+        config_date_edit(self.date_edit, date.today(), calendar=False, enabled=False)
 
         self.court_lbl = QLabel(self)
         self.form_layout.addWidget(self.court_lbl, 3, 0)
@@ -275,7 +275,7 @@ class CancelUI(QDialog):
 
         self.court_line = QLineEdit(self)
         self.form_layout.addWidget(self.court_line, 3, 1)
-        config_line(self.court_line, place_holder="n", enabled=False)
+        config_line(self.court_line, "n", enabled=False, fixed_width=self.date_edit.width())
 
         self.block_lbl = QLabel(self)
         self.form_layout.addWidget(self.block_lbl, 4, 0)
@@ -283,7 +283,7 @@ class CancelUI(QDialog):
 
         self.start_line = QLineEdit(self)
         self.form_layout.addWidget(self.start_line, 4, 1)
-        config_line(self.start_line, place_holder="hh:mm", enabled=False)
+        config_line(self.start_line, "hh:mm", enabled=False, fixed_width=self.date_edit.width())
 
         self.end_lbl = QLabel(self)
         self.form_layout.addWidget(self.end_lbl, 5, 0)
@@ -291,11 +291,11 @@ class CancelUI(QDialog):
 
         self.end_line = QLineEdit(self)
         self.form_layout.addWidget(self.end_line, 5, 1)
-        config_line(self.end_line, place_holder="hh:mm", enabled=False)
+        config_line(self.end_line, "hh:mm", enabled=False, fixed_width=self.date_edit.width())
 
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 6, 0)
-        config_lbl(self.responsible_lbl, "Responsable*", adjust_to_hint=True)
+        config_lbl(self.responsible_lbl, "Responsable*")
 
         self.responsible_field = Field(String, self, max_len=constants.TRANSACTION_RESP_CHARS)
         self.form_layout.addWidget(self.responsible_field, 6, 1)

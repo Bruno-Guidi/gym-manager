@@ -48,11 +48,11 @@ def config_lbl(
 
 def config_date_edit(
         target: QDateEdit, value: date, calendar: bool, font: str = "MS Shell Dlg 2", font_size: int = 14,
-        layout_dir=Qt.LayoutDirection.LeftToRight
+        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight
 ):
     target.setDate(value)
     target.setCalendarPopup(calendar)
-    config_widget(target, font, font_size, layout_dir=layout_dir)
+    config_widget(target, font, font_size, enabled=enabled, layout_dir=layout_dir)
 
 
 def config_btn(
