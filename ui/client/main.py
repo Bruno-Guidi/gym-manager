@@ -56,44 +56,29 @@ class ClientRow(QWidget):
         self.layout = QGridLayout(self)
 
         # Name.
-        self.name_summary = QLabel(self)
-        self.layout.addWidget(self.name_summary, 0, 0, alignment=Qt.AlignLeft)
-        config_lbl(self.name_summary, str(self.client.name))
-
-        self.name_lbl: QLabel | None = None
-        self.name_field: Field | None = None
+        self.name_field = Field(String, self, max_len=consts.CLIENT_NAME_CHARS)
+        self.layout.addWidget(self.name_field, 0, 0)
+        config_line(self.name_field, str(self.client.name))
 
         # DNI.
-        self.dni_summary = QLabel(self)
-        self.layout.addWidget(self.dni_summary, 0, 1, alignment=Qt.AlignLeft)
-        config_lbl(self.dni_summary, str(self.client.dni))
-
-        self.dni_lbl: QLabel | None = None
-        self.dni_field: Field | None = None
+        self.dni_field = Field(Number, self, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+        self.layout.addWidget(self.dni_field, 0, 1)
+        config_line(self.dni_field, str(self.client.dni), enabled=False)
 
         # Admission.
-        self.admission_summary = QLabel(self)
-        self.layout.addWidget(self.admission_summary, 0, 2, alignment=Qt.AlignLeft)
-        config_lbl(self.admission_summary, self.client.admission.strftime(consts.DATE_FORMAT))
-
-        self.admission_lbl: QLabel | None = None
-        self.admission_date_edit: QDateEdit | None = None
+        self.admission_date_edit = QDateEdit()
+        self.layout.addWidget(self.admission_date_edit, 0, 2)
+        config_date_edit(self.admission_date_edit, self.client.admission, calendar=True)
 
         # Telephone.
-        self.tel_summary = QLabel(self)
-        self.layout.addWidget(self.tel_summary, 0, 3, alignment=Qt.AlignLeft)
-        config_lbl(self.tel_summary, str(self.client.telephone))
-
-        self.tel_lbl: QLabel | None = None
-        self.tel_field: Field | None = None
+        self.tel_field = Field(String, self, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
+        self.layout.addWidget(self.tel_field, 0, 3)
+        config_line(self.tel_field, str(self.client.telephone))
 
         # Direction.
-        self.dir_summary = QLabel(self)
-        self.layout.addWidget(self.dir_summary, 0, 4, alignment=Qt.AlignLeft)
-        config_lbl(self.dir_summary, str(self.client.direction))
-
-        self.dir_lbl: QLabel | None = None
-        self.dir_field: Field | None = None
+        self.dir_field = Field(String, self, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
+        self.layout.addWidget(self.dir_field, 0, 4)
+        config_line(self.dir_field, str(self.client.direction))
 
         # See client detail button.
         self.detail_btn = QPushButton(self)
@@ -114,50 +99,6 @@ class ClientRow(QWidget):
         self.resize(self.minimumWidth(), self.minimumHeight())
 
     def _setup_hidden_ui(self):
-        # Name.
-        self.name_lbl = QLabel(self)
-        self.layout.addWidget(self.name_lbl, 1, 0)
-        config_lbl(self.name_lbl, "Nombre", font_size=12)
-
-        self.name_field = Field(String, self, max_len=consts.CLIENT_NAME_CHARS)
-        self.layout.addWidget(self.name_field, 2, 0)
-        config_line(self.name_field, str(self.client.name))
-
-        # DNI.
-        self.dni_lbl = QLabel(self)
-        self.layout.addWidget(self.dni_lbl, 1, 1)
-        config_lbl(self.dni_lbl, "DNI", font_size=12)
-
-        self.dni_field = Field(Number, self, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
-        self.layout.addWidget(self.dni_field, 2, 1)
-        config_line(self.dni_field, str(self.client.dni), enabled=False)
-
-        # Admission.
-        self.admission_lbl = QLabel(self)
-        self.layout.addWidget(self.admission_lbl, 1, 2)
-        config_lbl(self.admission_lbl, "Ingreso", font_size=12)
-
-        self.admission_date_edit = QDateEdit()
-        self.layout.addWidget(self.admission_date_edit, 2, 2)
-        config_date_edit(self.admission_date_edit, self.client.admission, calendar=True)
-
-        # Telephone.
-        self.tel_lbl = QLabel(self)
-        self.layout.addWidget(self.tel_lbl, 1, 3)
-        config_lbl(self.tel_lbl, "Teléfono", font_size=12)
-
-        self.tel_field = Field(String, self, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
-        self.layout.addWidget(self.tel_field, 2, 3)
-        config_line(self.tel_field, str(self.client.telephone))
-
-        # Direction.
-        self.dir_lbl = QLabel(self)
-        self.layout.addWidget(self.dir_lbl, 1, 4)
-        config_lbl(self.dir_lbl, "Dirección", font_size=12)
-
-        self.dir_field = Field(String, self, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
-        self.layout.addWidget(self.dir_field, 2, 4)
-        config_line(self.dir_field, str(self.client.direction))
 
         # Activities.
         self.subscriptions_lbl = QLabel(self)
