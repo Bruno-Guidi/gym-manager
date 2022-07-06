@@ -342,8 +342,11 @@ class Controller:
                                            self.main_ui.page_index.page_len, filters):
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
-    # noinspection PyAttributeOutsideInit
+    def refresh_table(self):
+        self.main_ui.filter_header.on_search_click()
+
     def create_ui(self):
+        # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.client_repo)
         self._create_ui.exec_()
         if self._create_ui.controller.client is not None:
