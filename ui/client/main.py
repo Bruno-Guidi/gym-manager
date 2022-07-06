@@ -422,4 +422,4 @@ class ClientMainUI(QMainWindow):
         self.layout.addWidget(self.page_index)
 
         # Adjusts size.
-        # self.setMaximumWidth(self.widget.sizeHint().width())
+        self.setMinimumHeight(self.widget.sizeHint().height())
