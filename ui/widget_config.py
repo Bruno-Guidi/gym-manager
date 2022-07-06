@@ -133,7 +133,9 @@ def config_table(
     max_width = 0
     for i, (column_name, (column_char_width, column_type)) in enumerate(columns.items()):
         item = QTableWidgetItem(column_name)
-        item.setTextAlignment(Qt.AlignRight if column_type is int else Qt.AlignLeft)
+        align = Qt.AlignRight if column_type is int else Qt.AlignLeft
+        align = Qt.AlignCenter if column_type is bool else align
+        item.setTextAlignment(align)
         target.setHorizontalHeaderItem(i, item)
 
         placeholder = "".zfill(column_char_width)  # The width of the column is based on the char width received.
