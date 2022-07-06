@@ -13,7 +13,7 @@ from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqu
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from gym_manager.core.system import AccountingSystem
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
-from ui.widget_config import config_layout, config_btn, config_table, config_date_edit
+from ui.widget_config import config_layout, config_btn, config_table, config_date_edit, fill_cell
 from ui.widgets import FilterHeader, PageIndex
 
 
@@ -212,14 +212,13 @@ class HistoryController:
         self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
         for row, booking in enumerate(self.booking_system.repo.all(filters=filters)):
             self.history_ui.booking_table.setRowCount(row + 1)
-            self.history_ui.booking_table.setItem(row, 0, QTableWidgetItem(str(booking.client.name)))
-            self.history_ui.booking_table.setItem(row, 1,
-                                                  QTableWidgetItem(str(booking.when.strftime(constants.DATE_FORMAT))))
-            self.history_ui.booking_table.setItem(row, 2, QTableWidgetItem(str(booking.court.name)))
-            self.history_ui.booking_table.setItem(row, 3, QTableWidgetItem(str(booking.start)))
-            self.history_ui.booking_table.setItem(row, 4, QTableWidgetItem(str(booking.end)))
-            self.history_ui.booking_table.setItem(row, 5, QTableWidgetItem(str(booking.state.name)))
-            self.history_ui.booking_table.setItem(row, 6, QTableWidgetItem(str(booking.state.updated_by)))
+            fill_cell(self.history_ui.booking_table, row, 0, booking.when.strftime(constants.DATE_FORMAT), int)
+            fill_cell(self.history_ui.booking_table, row, 1, booking.court.name, str)
+            fill_cell(self.history_ui.booking_table, row, 2, booking.start.strftime('%H:%M'), int)
+            fill_cell(self.history_ui.booking_table, row, 3, booking.end.strftime('%H:%M'), int)
+            fill_cell(self.history_ui.booking_table, row, 4, booking.client.name, str)
+            fill_cell(self.history_ui.booking_table, row, 5, booking.state.updated_by, str)
+            fill_cell(self.history_ui.booking_table, row, 6, booking.state.name, str)
 
 
 class HistoryUI(QMainWindow):
@@ -233,7 +232,6 @@ class HistoryUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
-        # config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
 
         # Filtering.
         self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
@@ -243,12 +241,16 @@ class HistoryUI(QMainWindow):
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
         config_table(
-            target=self.booking_table, allow_resizing=True,
-            columns={"Fecha": (10, str), "Cancha": (16, str), "Inicio": (12, int), "Fin": (12, int),
+            target=self.booking_table, allow_resizing=True, min_rows_to_show=10,
+            columns={"Fecha": (10, str), "Cancha": (12, str), "Inicio": (6, int), "Fin": (6, int),
                      "Cliente": (constants.CLIENT_NAME_CHARS // 2, str),
-                     "Responsable": (constants.CLIENT_NAME_CHARS // 2, str)}
+                     "Responsable": (constants.CLIENT_NAME_CHARS // 2, str),
+                     "Estado": (10, str)}
         )
 
         # Index.
         self.page_index = PageIndex(self)
         self.layout.addWidget(self.page_index)
+
+        # Adjusts size.
+        self.setMaximumWidth(self.widget.sizeHint().width())
