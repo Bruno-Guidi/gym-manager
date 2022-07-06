@@ -50,6 +50,7 @@ class ClientRow(QWidget):
 
     def _setup_ui(self):
         self.layout = QGridLayout(self)
+        self.layout.setAlignment(Qt.AlignLeft)
 
         # Name.
         self.name_field = Field(String, self, max_len=consts.CLIENT_NAME_CHARS)
@@ -79,17 +80,17 @@ class ClientRow(QWidget):
         # See client detail button.
         self.detail_btn = QPushButton(self)
         self.layout.addWidget(self.detail_btn, 0, 5, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, "D", fixed_width=32)
+        config_btn(self.detail_btn, fixed_width=32, icon_path="ui/resources/detail.png", icon_size=32)
 
         # Save client data button
         self.save_btn = QPushButton(self)
         self.layout.addWidget(self.save_btn, 0, 6, alignment=Qt.AlignTop)
-        config_btn(self.save_btn, "G", fixed_width=32)
+        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=32)
 
         # Remove client button.
         self.remove_btn = QPushButton(self)
         self.layout.addWidget(self.remove_btn, 0, 7, alignment=Qt.AlignTop)
-        config_btn(self.remove_btn, "E", fixed_width=32)
+        config_btn(self.remove_btn, icon_path="ui/resources/delete.png", icon_size=32)
 
         # Adjusts size.
         self.resize(self.minimumWidth(), self.minimumHeight())
