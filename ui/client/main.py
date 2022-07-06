@@ -356,14 +356,8 @@ class ClientMainUI(QMainWindow):
                                      admission_width, tel_width, dir_width)
 
     def _setup_ui(self, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int):
-        self.resize(800, 600)
-
-        self.widget = QWidget(self)
+        self.widget = QWidget()
         self.setCentralWidget(self.widget)
-
-        self.widget = QWidget(self.widget)
-        self.widget.setGeometry(QRect(0, 0, 800, 600))
-
         self.layout = QVBoxLayout(self.widget)
 
         # Utilities.
