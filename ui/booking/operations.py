@@ -378,19 +378,19 @@ class PreChargeController:
         self.pre_charge_ui.fixed_line.setText("Si" if booking.is_fixed else "No")
 
     def charge(self):
-        booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
+        self.booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
 
-        if booking is None:
+        if self.booking is None:
             Dialog.info("Error", "Seleccione un turno.")
         else:
             activity = self.booking_system.activity
             descr = String(f"Cobro de turno de {activity.name}", max_len=constants.TRANSACTION_DESCR_CHARS)
             # noinspection PyAttributeOutsideInit
-            self.charge_ui = ChargeUI(self.accounting_system, booking.client, activity, descr)
+            self.charge_ui = ChargeUI(self.accounting_system, self.booking.client, activity, descr)
             self.charge_ui.exec_()
 
             if self.charge_ui.controller.transaction is not None:
-                self.booking_system.register_charge(booking, self.charge_ui.controller.transaction)
+                self.booking_system.register_charge(self.booking, self.charge_ui.controller.transaction)
             self.pre_charge_ui.booking_combobox.window().close()
 
 
