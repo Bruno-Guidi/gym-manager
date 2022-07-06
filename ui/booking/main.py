@@ -230,16 +230,10 @@ class HistoryUI(QMainWindow):
         self.controller = HistoryController(self, booking_system)
 
     def _setup_ui(self):
-        self.resize(800, 600)
-
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, 800, 600))
-
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
-        config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
+        # config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
 
         # Filtering.
         self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
@@ -248,11 +242,12 @@ class HistoryUI(QMainWindow):
         # Bookings.
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
-        # config_table(
-        #     target=self.booking_table, allow_resizing=True,
-        #     columns={"Cliente": 175, "Fecha": 100, "Cancha": 100, "Inicio": 120, "Fin": 120, "Estado": 100,
-        #              "Responsable": 175}
-        # )
+        config_table(
+            target=self.booking_table, allow_resizing=True,
+            columns={"Fecha": (10, str), "Cancha": (16, str), "Inicio": (12, int), "Fin": (12, int),
+                     "Cliente": (constants.CLIENT_NAME_CHARS // 2, str),
+                     "Responsable": (constants.CLIENT_NAME_CHARS // 2, str)}
+        )
 
         # Index.
         self.page_index = PageIndex(self)
