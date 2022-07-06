@@ -244,70 +244,90 @@ class CancelUI(QDialog):
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
 
         self.booking_lbl = QLabel(self)
         self.form_layout.addWidget(self.booking_lbl, 0, 0)
-        config_lbl(self.booking_lbl, "Reserva")
+        config_lbl(self.booking_lbl, "Reserva*")
 
         self.booking_combobox = QComboBox(self)
         self.form_layout.addWidget(self.booking_combobox, 0, 1)
-        config_combobox(self.booking_combobox, extra_height=35)
+        config_combobox(self.booking_combobox)
 
         self.client_lbl = QLabel(self)
         self.form_layout.addWidget(self.client_lbl, 1, 0)
-        config_lbl(self.client_lbl, "Cliente")
+        config_lbl(self.client_lbl, "Cliente*")
 
         self.client_line = QLineEdit(self)
         self.form_layout.addWidget(self.client_line, 1, 1)
-        config_line(self.client_line, extra_height=35, read_only=False)
-
-        self.court_lbl = QLabel(self)
-        self.form_layout.addWidget(self.court_lbl, 2, 0)
-        config_lbl(self.court_lbl, "Cancha")
-
-        self.court_line = QLineEdit(self)
-        self.form_layout.addWidget(self.court_line, 2, 1)
-        config_line(self.court_line, extra_height=35, read_only=False)
+        config_line(self.client_line, read_only=True)
 
         self.date_lbl = QLabel(self)
-        self.form_layout.addWidget(self.date_lbl, 3, 0)
-        config_lbl(self.date_lbl, "Fecha")
+        self.form_layout.addWidget(self.date_lbl, 2, 0)
+        config_lbl(self.date_lbl, "Fecha*")
 
         self.date_line = QLineEdit(self)
-        self.form_layout.addWidget(self.date_line, 3, 1)
-        config_line(self.date_line, extra_height=35, read_only=False)
+        self.form_layout.addWidget(self.date_line, 2, 1)
+        config_line(self.date_line, enabled=False)
+
+        self.court_lbl = QLabel(self)
+        self.form_layout.addWidget(self.court_lbl, 3, 0)
+        config_lbl(self.court_lbl, "Cancha*")
+
+        self.court_line = QLineEdit(self)
+        self.form_layout.addWidget(self.court_line, 3, 1)
+        config_line(self.court_line, enabled=False)
 
         self.block_lbl = QLabel(self)
         self.form_layout.addWidget(self.block_lbl, 4, 0)
-        config_lbl(self.block_lbl, "Inicio")
+        config_lbl(self.block_lbl, "Inicio*")
 
         self.start_line = QLineEdit(self)
         self.form_layout.addWidget(self.start_line, 4, 1)
-        config_line(self.start_line, extra_height=35, read_only=False)
+        config_line(self.start_line, enabled=False)
 
-        self.duration_lbl = QLabel(self)
-        self.form_layout.addWidget(self.duration_lbl, 5, 0)
-        config_lbl(self.duration_lbl, "Fin")
+        self.end_lbl = QLabel(self)
+        self.form_layout.addWidget(self.end_lbl, 5, 0)
+        config_lbl(self.end_lbl, "Fin*")
 
         self.end_line = QLineEdit(self)
         self.form_layout.addWidget(self.end_line, 5, 1)
-        config_line(self.end_line, extra_height=35, read_only=False)
-
-        self.fixed_checkbox = QCheckBox(self)
-        self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
-        config_checkbox(self.fixed_checkbox, checked=False, text="Turno fijo", enabled=False)
+        config_line(self.end_line, enabled=False)
 
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 6, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
+        config_lbl(self.responsible_lbl, "Responsable*", adjust_to_hint=True)
 
         self.responsible_field = Field(String, self, max_len=constants.TRANSACTION_RESP_CHARS)
         self.form_layout.addWidget(self.responsible_field, 6, 1)
-        config_line(self.responsible_field, extra_height=35)
+        config_line(self.responsible_field, place_holder="Responsable")
+
+        self.fixed_lbl = QLabel(self)
+        self.form_layout.addWidget(self.fixed_lbl, 7, 0)
+        config_lbl(self.fixed_lbl, "Turno fijo")
+
+        self.fixed_checkbox = QCheckBox(self)
+        self.form_layout.addWidget(self.fixed_checkbox, 7, 1)
+        config_checkbox(self.fixed_checkbox)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
 
         self.confirm_btn = QPushButton(self)
-        self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
-        config_btn(self.confirm_btn, "Eliminar", font_size=18, extra_width=200)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
 class PreChargeController:
