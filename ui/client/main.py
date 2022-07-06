@@ -99,36 +99,35 @@ class ClientRow(QWidget):
         self.resize(self.minimumWidth(), self.minimumHeight())
 
     def _setup_hidden_ui(self):
-
         # Activities.
         self.subscriptions_lbl = QLabel(self)
-        self.layout.addWidget(self.subscriptions_lbl, 3, 0, 1, 5)
+        self.layout.addWidget(self.subscriptions_lbl, 1, 0, 1, 5)
         config_lbl(self.subscriptions_lbl, "Actividades", font_size=12)
 
         self.subscription_table = QTableWidget(self)
-        self.layout.addWidget(self.subscription_table, 4, 0, 4, 5)
+        self.layout.addWidget(self.subscription_table, 2, 0, 5, 5)
         config_table(self.subscription_table, allow_resizing=True,
                      columns={"Nombre": (10, str), "Último\npago": (10, int), "Código\npago": (6, int),
                               "Vencida": (2, str)})
 
         # Subscribe button.
         self.subscribe_btn = QPushButton(self)
-        self.layout.addWidget(self.subscribe_btn, 4, 5, 1, 3)
-        config_btn(self.subscribe_btn, text="Inscribir en\nactividad")
+        self.layout.addWidget(self.subscribe_btn, 2, 5, 1, 3)
+        config_btn(self.subscribe_btn, text="Inscribir")
 
         # Unsubscribe button.
         self.unsubscribe_btn = QPushButton(self)
-        self.layout.addWidget(self.unsubscribe_btn, 5, 5, 1, 3)
+        self.layout.addWidget(self.unsubscribe_btn, 3, 5, 1, 3)
         config_btn(self.unsubscribe_btn, text="Dar de baja")
 
         # Charge for subscription button.
         self.charge_activity_btn = QPushButton(self)
-        self.layout.addWidget(self.charge_activity_btn, 6, 5, 1, 3)
-        config_btn(self.charge_activity_btn, text="Cobrar\nactividad")
+        self.layout.addWidget(self.charge_activity_btn, 4, 5, 1, 3)
+        config_btn(self.charge_activity_btn, text="Cobrar")
 
         # See transactions button.
         self.transactions_btn = QPushButton(self)
-        self.layout.addWidget(self.transactions_btn, 7, 5, 1, 3)
+        self.layout.addWidget(self.transactions_btn, 5, 5, 1, 3)
         config_btn(self.transactions_btn, text="Ver pagos")
 
         # Adjusts size.
