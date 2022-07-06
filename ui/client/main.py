@@ -55,12 +55,12 @@ class ClientRow(QWidget):
         # Name.
         self.name_field = Field(String, self, max_len=consts.CLIENT_NAME_CHARS)
         self.layout.addWidget(self.name_field, 0, 0, alignment=Qt.AlignTop)
-        config_line(self.name_field, str(self.client.name))
+        config_line(self.name_field, str(self.client.name), font="Inconsolata", fixed_width=200)
 
         # DNI.
         self.dni_field = Field(Number, self, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
         self.layout.addWidget(self.dni_field, 0, 1, alignment=Qt.AlignTop)
-        config_line(self.dni_field, str(self.client.dni), enabled=False)
+        config_line(self.dni_field, str(self.client.dni), font="Inconsolata", enabled=False, fixed_width=120)
 
         # Admission.
         self.admission_date_edit = QDateEdit()
@@ -70,17 +70,17 @@ class ClientRow(QWidget):
         # Telephone.
         self.tel_field = Field(String, self, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
         self.layout.addWidget(self.tel_field, 0, 3, alignment=Qt.AlignTop)
-        config_line(self.tel_field, str(self.client.telephone))
+        config_line(self.tel_field, str(self.client.telephone), font="Inconsolata", fixed_width=160)
 
         # Direction.
         self.dir_field = Field(String, self, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
         self.layout.addWidget(self.dir_field, 0, 4, alignment=Qt.AlignTop)
-        config_line(self.dir_field, str(self.client.direction))
+        config_line(self.dir_field, str(self.client.direction), font="Inconsolata", fixed_width=180)
 
         # See client detail button.
         self.detail_btn = QPushButton(self)
         self.layout.addWidget(self.detail_btn, 0, 5, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, fixed_width=32, icon_path="ui/resources/detail.png", icon_size=32)
+        config_btn(self.detail_btn, icon_path="ui/resources/detail.png", icon_size=32)
 
         # Save client data button
         self.save_btn = QPushButton(self)
