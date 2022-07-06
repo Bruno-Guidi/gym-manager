@@ -177,43 +177,45 @@ class SubscribeUI(QDialog):
         self.controller = SubscribeController(self, activity_manager, client)
 
     def _setup_ui(self):
-        self.resize(400, 300)
-
         self.layout = QVBoxLayout(self)
 
-        # Activity.
-        self.activity_layout = QHBoxLayout()
-        self.layout.addLayout(self.activity_layout)
-
-        self.name_lbl = QLabel()
-        self.activity_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Actividad", font_size=16, extra_width=120)
-
-        self.activity_combobox = QComboBox()
-        self.activity_layout.addWidget(self.activity_combobox)
-        config_combobox(self.activity_combobox, font_size=16)
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
 
         # When.
-        self.when_layout = QHBoxLayout()
-        self.layout.addLayout(self.when_layout)
+        self.when_lbl = QLabel(self)
+        self.form_layout.addWidget(self.when_lbl, 1, 0)
+        config_lbl(self.when_lbl, "Fecha")
 
-        self.when_lbl = QLabel()
-        self.when_layout.addWidget(self.when_lbl)
-        config_lbl(self.when_lbl, "Fecha", font_size=16, extra_width=120)
+        self.when_date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.when_date_edit, 1, 1)
+        config_date_edit(self.when_date_edit, date.today(), calendar=False)
 
-        self.when_date_edit = QDateEdit()
-        self.when_layout.addWidget(self.when_date_edit)
-        config_date_edit(self.when_date_edit, date.today(), font_size=16)
+        # Activity. The widgets related to the activity are added after the ones related to the date, so the combobox
+        # width can be set with the date edit width.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Actividad")
+
+        self.activity_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.activity_combobox, 0, 1)
+        config_combobox(self.activity_combobox, fixed_width=self.when_date_edit.width())
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
 
-        self.ok_btn = QPushButton()
-        self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", extra_width=100)
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
 
-        self.cancel_btn = QPushButton()
+        self.cancel_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=100)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
