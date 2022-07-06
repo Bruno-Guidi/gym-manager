@@ -61,7 +61,7 @@ class Controller:
 
         item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}")
         item.setTextAlignment(Qt.AlignCenter)
-        item.setFont(self._cell_font(is_paid=True))
+        item.setFont(self._cell_font(is_paid=booking.transaction is not None))
         self.main_ui.booking_table.setItem(start, booking.court.id, item)
         self.main_ui.booking_table.setSpan(start, booking.court.id, end - start, 1)
 
@@ -114,7 +114,8 @@ class Controller:
         charged = self._precharge_ui.controller.booking
         if charged is not None:
             start, end = self.booking_system.block_range(charged.start, charged.end)
-            self.main_ui.booking_table.item(start, charged.court.id).setFont(self._cell_font(is_paid=True))
+            self.main_ui.booking_table.item(start, charged.court.id
+                                            ).setFont(self._cell_font(is_paid=charged.transaction is not None))
 
     def history_ui(self):
         # noinspection PyAttributeOutsideInit
