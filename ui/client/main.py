@@ -378,19 +378,15 @@ class ClientMainUI(QMainWindow):
         # Utilities.
         self.utils_layout = QHBoxLayout()
         self.layout.addLayout(self.utils_layout)
-        # config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
+        config_layout(self.utils_layout, right_margin=180)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
         self.utils_layout.addWidget(self.filter_header)
 
-        # self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
-
         self.create_client_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.create_client_btn)
         config_btn(self.create_client_btn, "Nuevo")
-
-        # self.layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
         # Header.
         self.header_layout = QHBoxLayout()
