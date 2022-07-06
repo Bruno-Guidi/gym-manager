@@ -360,6 +360,8 @@ class PreChargeController:
         self.pre_charge_ui.booking_combobox.currentIndexChanged.connect(self._update_form)
         # noinspection PyUnresolvedReferences
         self.pre_charge_ui.confirm_btn.clicked.connect(self.charge)
+        # noinspection PyUnresolvedReferences
+        self.pre_charge_ui.cancel_btn.clicked.connect(self.pre_charge_ui.reject)
 
     def fill_booking_combobox(self, filters: list[FilterValuePair]):
         fill_combobox(self.pre_charge_ui.booking_combobox,
@@ -370,10 +372,10 @@ class PreChargeController:
         booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
         self.pre_charge_ui.client_line.setText(str(booking.client.name))
         self.pre_charge_ui.court_line.setText(booking.court.name)
-        self.pre_charge_ui.date_line.setText(str(booking.when))
+        self.pre_charge_ui.date_edit.setDate(booking.when)
         self.pre_charge_ui.start_line.setText(str(booking.start))
         self.pre_charge_ui.end_line.setText(str(booking.end))
-        self.pre_charge_ui.fixed_checkbox.setChecked(booking.is_fixed)
+        self.pre_charge_ui.fixed_line.setText("Si" if booking.is_fixed else "No")
 
     def charge(self):
         booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
@@ -401,7 +403,6 @@ class PreChargeUI(QDialog):
 
     def _setup_ui(self):
         self.layout = QVBoxLayout(self)
-        config_layout(self.layout, left_margin=30, top_margin=10, right_margin=30, bottom_margin=10, spacing=20)
 
         # Filtering.
         self.filter_header = FilterHeader(show_clear_button=False, parent=self)
@@ -410,60 +411,87 @@ class PreChargeUI(QDialog):
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
-        config_layout(self.form_layout, spacing=10)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
 
-        self.booking_lbl = QLabel(self)
-        self.form_layout.addWidget(self.booking_lbl, 0, 0)
-        config_lbl(self.booking_lbl, "Reserva")
-
-        self.booking_combobox = QComboBox()
-        self.form_layout.addWidget(self.booking_combobox, 0, 1)
-        config_combobox(self.booking_combobox, extra_height=35)
-
+        # Client.
         self.client_lbl = QLabel(self)
         self.form_layout.addWidget(self.client_lbl, 1, 0)
         config_lbl(self.client_lbl, "Cliente")
 
         self.client_line = QLineEdit(self)
         self.form_layout.addWidget(self.client_line, 1, 1)
-        config_line(self.client_line, extra_height=35, read_only=False)
+        config_line(self.client_line, read_only=True)
 
+        # The booking related widgets are declared after the client ones, so the booking combobox width is equal to the
+        # client line width.
+        self.booking_lbl = QLabel(self)
+        self.form_layout.addWidget(self.booking_lbl, 0, 0)
+        config_lbl(self.booking_lbl, "Reserva*")
+
+        self.booking_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.booking_combobox, 0, 1)
+        config_combobox(self.booking_combobox, fixed_width=self.client_line.width())
+
+        # Booked date.
+        self.date_lbl = QLabel(self)
+        self.form_layout.addWidget(self.date_lbl, 2, 0)
+        config_lbl(self.date_lbl, "Fecha",)
+
+        self.date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.date_edit, 2, 1)
+        config_date_edit(self.date_edit, date.today(), calendar=False, enabled=False)
+
+        # Booked court.
         self.court_lbl = QLabel(self)
-        self.form_layout.addWidget(self.court_lbl, 2, 0)
+        self.form_layout.addWidget(self.court_lbl, 3, 0)
         config_lbl(self.court_lbl, "Cancha")
 
         self.court_line = QLineEdit(self)
-        self.form_layout.addWidget(self.court_line, 2, 1)
-        config_line(self.court_line, extra_height=35, read_only=False)
+        self.form_layout.addWidget(self.court_line, 3, 1)
+        config_line(self.court_line, "n", enabled=False, fixed_width=self.date_edit.width())
 
-        self.date_lbl = QLabel(self)
-        self.form_layout.addWidget(self.date_lbl, 3, 0)
-        config_lbl(self.date_lbl, "Fecha")
-
-        self.date_line = QLineEdit(self)
-        self.form_layout.addWidget(self.date_line, 3, 1)
-        config_line(self.date_line, extra_height=35, read_only=False)
-
-        self.block_lbl = QLabel(self)
-        self.form_layout.addWidget(self.block_lbl, 4, 0)
-        config_lbl(self.block_lbl, "Inicio")
+        # Booking start.
+        self.start_lbl = QLabel(self)
+        self.form_layout.addWidget(self.start_lbl, 4, 0)
+        config_lbl(self.start_lbl, "Inicio")
 
         self.start_line = QLineEdit(self)
         self.form_layout.addWidget(self.start_line, 4, 1)
-        config_line(self.start_line, extra_height=35, read_only=False)
+        config_line(self.start_line, "hh:mm", enabled=False, fixed_width=self.date_edit.width())
 
-        self.duration_lbl = QLabel(self)
-        self.form_layout.addWidget(self.duration_lbl, 5, 0)
-        config_lbl(self.duration_lbl, "Fin")
+        # Booking end.
+        self.end_lbl = QLabel(self)
+        self.form_layout.addWidget(self.end_lbl, 5, 0)
+        config_lbl(self.end_lbl, "Fin")
 
         self.end_line = QLineEdit(self)
         self.form_layout.addWidget(self.end_line, 5, 1)
-        config_line(self.end_line, extra_height=35, read_only=False)
+        config_line(self.end_line, "hh:mm", enabled=False, fixed_width=self.date_edit.width())
 
-        self.fixed_checkbox = QCheckBox()
-        self.layout.addWidget(self.fixed_checkbox, alignment=Qt.AlignCenter)
-        config_checkbox(self.fixed_checkbox, checked=False, text="Turno fijo", enabled=False)
+        # Fixed booking or not.
+        self.fixed_lbl = QLabel(self)
+        self.form_layout.addWidget(self.fixed_lbl, 6, 0)
+        config_lbl(self.fixed_lbl, "Turno fijo")
+
+        self.fixed_line = QLineEdit(self)
+        self.form_layout.addWidget(self.fixed_line, 6, 1)
+        config_line(self.fixed_line, "No", enabled=False, fixed_width=self.date_edit.width())
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
 
         self.confirm_btn = QPushButton(self)
-        self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
-        config_btn(self.confirm_btn, "Siguiente", font_size=18, extra_width=200)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
