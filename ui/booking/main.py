@@ -31,7 +31,7 @@ class Controller:
         self.load_bookings()
 
         # noinspection PyUnresolvedReferences
-        self.main_ui.cancel_button.clicked.connect(self.cancel_ui)
+        self.main_ui.cancel_btn.clicked.connect(self.cancel_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.see_history_action.triggered.connect(self.history_ui)
         # noinspection PyUnresolvedReferences
@@ -39,11 +39,11 @@ class Controller:
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.prev_button.clicked.connect(self.prev_page)
+        self.main_ui.prev_btn.clicked.connect(self.prev_page)
         # noinspection PyUnresolvedReferences
-        self.main_ui.date_field.dateChanged.connect(self.load_bookings)
+        self.main_ui.date_edit.dateChanged.connect(self.load_bookings)
         # noinspection PyUnresolvedReferences
-        self.main_ui.next_button.clicked.connect(self.next_page)
+        self.main_ui.next_btn.clicked.connect(self.next_page)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -69,16 +69,16 @@ class Controller:
 
         # Loads the bookings for the day.
         for booking, start, end in self.booking_system.bookings((BOOKING_TO_HAPPEN, BOOKING_PAID),
-                                                                self.main_ui.date_field.date().toPyDate()):
+                                                                self.main_ui.date_edit.date().toPyDate()):
             self._load_booking(booking, start, end)
 
     def next_page(self):
         # The load_bookings(args) method is executed as a callback when the date_edit date changes.
-        self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() + ONE_DAY_TD)
+        self.main_ui.date_edit.setDate(self.main_ui.date_edit.date().toPyDate() + ONE_DAY_TD)
 
     def prev_page(self):
         # The load_bookings(args) method is executed as a callback when the date_edit date changes.
-        self.main_ui.date_field.setDate(self.main_ui.date_field.date().toPyDate() - ONE_DAY_TD)
+        self.main_ui.date_edit.setDate(self.main_ui.date_edit.date().toPyDate() - ONE_DAY_TD)
 
     def book_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -133,7 +133,6 @@ class BookingMainUI(QMainWindow):
         # Buttons.
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
-        # config_layout(self.buttons_layout, spacing=50)
 
         self.charge_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.charge_btn)
@@ -143,12 +142,12 @@ class BookingMainUI(QMainWindow):
         self.buttons_layout.addWidget(self.book_btn)
         config_btn(self.book_btn, "Reservar turno", font_size=18)
 
-        self.cancel_button = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.cancel_button)
-        config_btn(self.cancel_button, "Cancelar turno", font_size=18)
+        self.cancel_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar turno", font_size=18)
 
         # Vertical spacer.
-        self.spacer_item = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.spacer_item = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.layout.addItem(self.spacer_item)
 
         # Date index.
@@ -156,27 +155,30 @@ class BookingMainUI(QMainWindow):
         self.layout.addLayout(self.date_layout)
         config_layout(self.date_layout)
 
-        self.prev_button = QPushButton(self.widget)
-        self.date_layout.addWidget(self.prev_button)
-        config_btn(self.prev_button, "<")
+        self.prev_btn = QPushButton(self.widget)
+        self.date_layout.addWidget(self.prev_btn)
+        config_btn(self.prev_btn, icon_path="ui/resources/prev_page.png", icon_size=32)
 
-        self.date_field = QDateEdit(self.widget)
-        self.date_layout.addWidget(self.date_field)
-        config_date_edit(self.date_field, date.today(), calendar=True)
+        self.date_edit = QDateEdit(self.widget)
+        self.date_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today(), calendar=True)
 
-        self.next_button = QPushButton(self.widget)
-        self.date_layout.addWidget(self.next_button)
-        config_btn(self.next_button, ">")
+        self.next_btn = QPushButton(self.widget)
+        self.date_layout.addWidget(self.next_btn)
+        config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=32)
 
         # Booking schedule.
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
 
         config_table(
-            target=self.booking_table,
+            target=self.booking_table, min_rows_to_show=10,
             columns={"Hora": (12, bool), "Cancha 1": (16, bool), "Cancha 2": (16, bool),
                      "Cancha 3 (Singles)": (16, bool)}
         )
+
+        # Adjusts size.
+        self.setMaximumWidth(self.widget.sizeHint().width())
 
 
 class HistoryController:
