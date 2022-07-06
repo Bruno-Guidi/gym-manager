@@ -313,7 +313,8 @@ class Controller:
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
-        # Sets the correct width for the client list.
+        # Sets the correct width for the client list. A dummy row is used, so the width is correctly set even if there
+        # are no rows to load.
         self.dummy_row = ClientRow(QListWidgetItem(), self, _dummy_client, client_repo, activity_manager,
                                    accounting_system)
         # The min width includes the width (obtained with height()) of the vertical scrollbar of the list.
