@@ -120,41 +120,38 @@ class BookingMainUI(QMainWindow):
         self.controller = Controller(self, client_repo, booking_system, accounting_system)
 
     def _setup_ui(self):
-        width, height = 800, 600
-        self.resize(width, height)
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
 
+        # Menu bar.
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
-        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 800, 20))
         self.see_history_action = QAction("Historial", self)
         self.menu_bar.addAction(self.see_history_action)
 
-        self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, width, height))
-        self.layout = QVBoxLayout(self.widget)
-        config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10, spacing=10)
-
+        # Buttons.
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout, spacing=50)
+        # config_layout(self.buttons_layout, spacing=50)
 
         self.charge_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.charge_btn)
-        config_btn(self.charge_btn, "Cobrar turno", font_size=18, extra_width=200)
+        config_btn(self.charge_btn, "Cobrar turno", font_size=18)
 
         self.book_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.book_btn)
-        config_btn(self.book_btn, "Reservar turno", font_size=18, extra_width=200)
+        config_btn(self.book_btn, "Reservar turno", font_size=18)
 
         self.cancel_button = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.cancel_button)
-        config_btn(self.cancel_button, "Cancelar turno", font_size=18, extra_width=200)
+        config_btn(self.cancel_button, "Cancelar turno", font_size=18)
 
+        # Vertical spacer.
         self.spacer_item = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.layout.addItem(self.spacer_item)
 
+        # Date index.
         self.date_layout = QHBoxLayout()
         self.layout.addLayout(self.date_layout)
         config_layout(self.date_layout)
@@ -165,20 +162,19 @@ class BookingMainUI(QMainWindow):
 
         self.date_field = QDateEdit(self.widget)
         self.date_layout.addWidget(self.date_field)
-        config_date_edit(self.date_field, date.today(), font_size=18, layout_direction=Qt.RightToLeft)
+        config_date_edit(self.date_field, date.today(), calendar=True)
 
         self.next_button = QPushButton(self.widget)
         self.date_layout.addWidget(self.next_button)
         config_btn(self.next_button, ">")
 
+        # Booking schedule.
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
 
-        # height() returns the width of the scrollbar.
-        column_len = (width - self.booking_table.verticalScrollBar().height() - 135) // 3
         config_table(
             target=self.booking_table,
-            columns={"Hora": 126, "Cancha 1": column_len, "Cancha 2": column_len, "Cancha 3 (Singles)": column_len}
+            columns={"Hora": (12, int), "Cancha 1": (16, int), "Cancha 2": (16, int), "Cancha 3 (Singles)": (16, int)}
         )
 
 
@@ -249,11 +245,11 @@ class HistoryUI(QMainWindow):
         # Bookings.
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
-        config_table(
-            target=self.booking_table, allow_resizing=True,
-            columns={"Cliente": 175, "Fecha": 100, "Cancha": 100, "Inicio": 120, "Fin": 120, "Estado": 100,
-                     "Responsable": 175}
-        )
+        # config_table(
+        #     target=self.booking_table, allow_resizing=True,
+        #     columns={"Cliente": 175, "Fecha": 100, "Cancha": 100, "Inicio": 120, "Fin": 120, "Estado": 100,
+        #              "Responsable": 175}
+        # )
 
         # Index.
         self.page_index = PageIndex(self)
