@@ -3,8 +3,9 @@ from __future__ import annotations
 from datetime import date
 
 from PyQt5.QtCore import QRect, Qt, QSize
-from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit
+from PyQt5.QtWidgets import (
+    QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton,
+    QListWidgetItem, QVBoxLayout, QTableWidget, QSpacerItem, QSizePolicy, QTableWidgetItem, QDateEdit, QGridLayout)
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, String, Number, Subscription, TextLike, invalid_sub_charge_date
@@ -25,8 +26,7 @@ def invalid_date(transaction_date: date, **kwargs) -> bool:
 
 class ClientRow(QWidget):
     def __init__(
-            self, item: QListWidgetItem, main_ui_controller: Controller, name_width: int, dni_width: int,
-            admission_width: int, tel_width: int, dir_width: int, height: int, client: Client,
+            self, item: QListWidgetItem, main_ui_controller: Controller, client: Client,
             client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem
     ):
         super().__init__()
@@ -39,207 +39,158 @@ class ClientRow(QWidget):
         self.item = item
         self.main_ui_controller = main_ui_controller
 
-        self._setup_ui(height, name_width, dni_width, admission_width, tel_width, dir_width)
+        self._setup_ui()
+        self._setup_hidden_ui()
 
         # Because the widgets are yet to be hided, the hint has the 'extended' height.
-        self.current_height, self.previous_height = height, None
-        self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
+        # self.current_height, self.previous_height = height, None
+        # self.item.setSizeHint(QSize(self.width(), self.current_height))
 
-        def _setup_hidden_ui():
-            # Name.
-            self.name_lbl = QLabel(self.widget)
-            self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.name_lbl, "Nombre", font_size=12, extra_width=name_width)
-
-            self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
-            self.name_layout.addWidget(self.name_field)
-            config_line(self.name_field, str(client.name), extra_width=name_width)
-
-            # DNI.
-            self.dni_lbl = QLabel(self.widget)
-            self.dni_layout.addWidget(self.dni_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.dni_lbl, "DNI", font_size=12, extra_width=dni_width)
-
-            self.dni_field = Field(Number, self.widget, min_value=consts.CLIENT_MIN_DNI,
-                                   max_value=consts.CLIENT_MAX_DNI)
-            self.dni_layout.addWidget(self.dni_field)
-            config_line(self.dni_field, str(client.dni), extra_width=dni_width, read_only=False)
-
-            # Admission.
-            self.admission_lbl = QLabel(self.widget)
-            self.admission_layout.addWidget(self.admission_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.admission_lbl, "Ingreso", font_size=12, extra_width=admission_width)
-
-            self.admission_date_edit = QDateEdit()
-            self.admission_layout.addWidget(self.admission_date_edit)
-            config_date_edit(self.admission_date_edit, self.client.admission, extra_width=admission_width)
-
-            # Telephone.
-            self.tel_lbl = QLabel(self.widget)
-            self.tel_layout.addWidget(self.tel_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.tel_lbl, "Teléfono", font_size=12, extra_width=tel_width)
-
-            self.tel_field = Field(String, self.widget, optional=consts.CLIENT_TEL_OPTIONAL,
-                                   max_len=consts.CLIENT_TEL_CHARS)
-            self.tel_layout.addWidget(self.tel_field)
-            config_line(self.tel_field, str(client.telephone), extra_width=tel_width)
-
-            # Direction.
-            self.dir_lbl = QLabel(self.widget)
-            self.dir_layout.addWidget(self.dir_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.dir_lbl, "Dirección", font_size=12, extra_width=dir_width)
-
-            self.dir_field = Field(String, self.widget, optional=consts.CLIENT_DIR_OPTIONAL,
-                                   max_len=consts.CLIENT_DIR_CHARS)
-            self.dir_layout.addWidget(self.dir_field)
-            config_line(self.dir_field, str(client.direction), extra_width=dir_width)
-
-            # Save and delete buttons.
-            self.save_btn = QPushButton(self.widget)
-            self.top_buttons_layout.addWidget(self.save_btn)
-            config_btn(self.save_btn, text="Guardar", extra_width=110)
-
-            self.remove_btn = QPushButton(self.widget)
-            self.top_buttons_layout.addWidget(self.remove_btn)
-            config_btn(self.remove_btn, text="Eliminar", extra_width=110)
-
-            # Activities.
-            self.subscriptions_lbl = QLabel(self.widget)
-            self.layout.addWidget(self.subscriptions_lbl)
-            config_lbl(self.subscriptions_lbl, "Actividades", font_size=12)
-
-            # Layout that contains hidden buttons.
-            self.bottom_layout = QHBoxLayout()
-            self.layout.addLayout(self.bottom_layout)
-            config_layout(self.bottom_layout, alignment=Qt.AlignCenter)
-
-            self.subscription_table = QTableWidget(self.widget)
-            self.bottom_layout.addWidget(self.subscription_table)
-            config_table(self.subscription_table,
-                         columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
-                         allow_resizing=True)  # ToDo. Set min width.
-
-            # Buttons.
-            self.bottom_buttons_layout = QVBoxLayout()
-            self.bottom_layout.addLayout(self.bottom_buttons_layout)
-            config_layout(self.bottom_buttons_layout, alignment=Qt.AlignTop)
-
-            self.subscribe_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.subscribe_btn)
-            config_btn(self.subscribe_btn, text="Inscribir en\nactividad", extra_width=110)
-
-            self.unsubscribe_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.unsubscribe_btn)
-            config_btn(self.unsubscribe_btn, text="Dar de baja", extra_width=110)
-
-            self.charge_activity_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.charge_activity_btn)
-            config_btn(self.charge_activity_btn, text="Cobrar\nactividad", extra_width=110)
-
-            self.transactions_btn = QPushButton(self.widget)
-            self.bottom_buttons_layout.addWidget(self.transactions_btn)
-            config_btn(self.transactions_btn, text="Ver pagos", extra_width=110)
-
-        self._setup_hidden_ui = _setup_hidden_ui
-        self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
+        # self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
         # noinspection PyUnresolvedReferences
-        self.detail_btn.clicked.connect(self.hide_detail)
-        self.is_hidden = False
+        # self.detail_btn.clicked.connect(self.hide_detail)
+        # self.is_hidden = False
 
-    def _setup_ui(
-            self, height: int, name_width: int, dni_width: int, admission_width: int, tel_width: int, dir_width: int
-    ):
-        self.widget = QWidget(self)
+    def _setup_ui(self):
+        self.layout = QGridLayout(self)
 
-        self.layout = QVBoxLayout(self.widget)
-
-        # Top layout.
-        self.top_layout = QHBoxLayout()
-        self.layout.addLayout(self.top_layout)
-        config_layout(self.top_layout, alignment=Qt.AlignCenter)
-
-        # Name layout.
-        self.name_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.name_layout)
-
-        self.name_summary = QLabel(self.widget)
-        self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
-        config_lbl(self.name_summary, str(self.client.name), extra_width=name_width, extra_height=30, alignment=Qt.AlignVCenter)
+        # Name.
+        self.name_summary = QLabel(self)
+        self.layout.addWidget(self.name_summary, 0, 0, alignment=Qt.AlignLeft)
+        config_lbl(self.name_summary, str(self.client.name))
 
         self.name_lbl: QLabel | None = None
         self.name_field: Field | None = None
 
-        # DNI layout.
-        self.dni_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.dni_layout)
-
-        self.dni_summary = QLabel(self.widget)
-        self.dni_layout.addWidget(self.dni_summary, alignment=Qt.AlignTop)
-        config_lbl(self.dni_summary, str(self.client.dni), extra_width=dni_width, extra_height=30, alignment=Qt.AlignVCenter)
+        # DNI.
+        self.dni_summary = QLabel(self)
+        self.layout.addWidget(self.dni_summary, 0, 1, alignment=Qt.AlignLeft)
+        config_lbl(self.dni_summary, str(self.client.dni))
 
         self.dni_lbl: QLabel | None = None
         self.dni_field: Field | None = None
 
-        # Admission layout.
-        self.admission_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.admission_layout)
-
-        self.admission_summary = QLabel(self.widget)
-        self.admission_layout.addWidget(self.admission_summary, alignment=Qt.AlignTop)
-        config_lbl(self.admission_summary, self.client.admission.strftime(consts.DATE_FORMAT),
-                   extra_width=admission_width, extra_height=30, alignment=Qt.AlignVCenter)
+        # Admission.
+        self.admission_summary = QLabel(self)
+        self.layout.addWidget(self.admission_summary, 0, 2, alignment=Qt.AlignLeft)
+        config_lbl(self.admission_summary, self.client.admission.strftime(consts.DATE_FORMAT))
 
         self.admission_lbl: QLabel | None = None
         self.admission_date_edit: QDateEdit | None = None
 
-        # Telephone layout.
-        self.tel_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.tel_layout)
-
-        self.tel_summary = QLabel(self.widget)
-        self.tel_layout.addWidget(self.tel_summary, alignment=Qt.AlignTop)
-        config_lbl(self.tel_summary, str(self.client.telephone), extra_width=tel_width, extra_height=30, alignment=Qt.AlignVCenter)
+        # Telephone.
+        self.tel_summary = QLabel(self)
+        self.layout.addWidget(self.tel_summary, 0, 3, alignment=Qt.AlignLeft)
+        config_lbl(self.tel_summary, str(self.client.telephone))
 
         self.tel_lbl: QLabel | None = None
         self.tel_field: Field | None = None
 
-        # Direction layout.
-        self.dir_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.dir_layout)
-
-        self.dir_summary = QLabel(self.widget)
-        self.dir_layout.addWidget(self.dir_summary, alignment=Qt.AlignTop)
-        config_lbl(self.dir_summary, str(self.client.direction), extra_width=dir_width, extra_height=30, alignment=Qt.AlignVCenter)
+        # Direction.
+        self.dir_summary = QLabel(self)
+        self.layout.addWidget(self.dir_summary, 0, 4, alignment=Qt.AlignLeft)
+        config_lbl(self.dir_summary, str(self.client.direction))
 
         self.dir_lbl: QLabel | None = None
         self.dir_field: Field | None = None
 
-        # Some buttons.
-        self.top_buttons_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.top_buttons_layout)
+        # Detail button.
+        self.detail_btn = QPushButton(self)
+        self.layout.addWidget(self.detail_btn, 0, 5)
+        config_btn(self.detail_btn, "Detalle")
 
-        self.detail_btn = QPushButton(self.widget)
-        self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, text="Detalle", extra_width=110)
+        # Adjusts size.
+        self.resize(self.minimumWidth(), self.minimumHeight())
 
-        self.save_btn: QPushButton | None = None
-        self.remove_btn: QPushButton | None = None
+    def _setup_hidden_ui(self):
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.layout.addWidget(self.name_lbl, 1, 0)
+        config_lbl(self.name_lbl, "Nombre", font_size=12)
 
-        # Bottom layout.
-        self.bottom_layout: QHBoxLayout | None = None
+        self.name_field = Field(String, self, max_len=consts.CLIENT_NAME_CHARS)
+        self.layout.addWidget(self.name_field, 2, 0)
+        config_line(self.name_field, str(self.client.name))
 
-        self.subscriptions_lbl: QLabel | None = None
-        self.subscription_table: QTableWidget | None = None
+        # DNI.
+        self.dni_lbl = QLabel(self)
+        self.layout.addWidget(self.dni_lbl, 1, 1)
+        config_lbl(self.dni_lbl, "DNI", font_size=12)
 
-        # Other buttons.
-        self.bottom_buttons_layout: QVBoxLayout | None = None
-        self.subscribe_btn: QPushButton | None = None
-        self.unsubscribe_btn: QPushButton | None = None
-        self.charge_activity_btn: QPushButton | None = None
-        self.transactions_btn: QPushButton | None = None
+        self.dni_field = Field(Number, self, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
+        self.layout.addWidget(self.dni_field, 2, 1)
+        config_line(self.dni_field, str(self.client.dni), enabled=False)
 
-        self.widget.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
+        # Admission.
+        self.admission_lbl = QLabel(self)
+        self.layout.addWidget(self.admission_lbl, 1, 2)
+        config_lbl(self.admission_lbl, "Ingreso", font_size=12)
+
+        self.admission_date_edit = QDateEdit()
+        self.layout.addWidget(self.admission_date_edit, 2, 2)
+        config_date_edit(self.admission_date_edit, self.client.admission, calendar=True)
+
+        # Telephone.
+        self.tel_lbl = QLabel(self)
+        self.layout.addWidget(self.tel_lbl, 1, 3)
+        config_lbl(self.tel_lbl, "Teléfono", font_size=12)
+
+        self.tel_field = Field(String, self, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
+        self.layout.addWidget(self.tel_field, 2, 3)
+        config_line(self.tel_field, str(self.client.telephone))
+
+        # Direction.
+        self.dir_lbl = QLabel(self)
+        self.layout.addWidget(self.dir_lbl, 1, 4)
+        config_lbl(self.dir_lbl, "Dirección", font_size=12)
+
+        self.dir_field = Field(String, self, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
+        self.layout.addWidget(self.dir_field, 2, 4)
+        config_line(self.dir_field, str(self.client.direction))
+
+        # Save and delete buttons.
+        self.save_btn = QPushButton(self)
+        self.layout.addWidget(self.save_btn, 1, 5)
+        config_btn(self.save_btn, text="Guardar")
+
+        self.remove_btn = QPushButton(self)
+        self.layout.addWidget(self.remove_btn, 2, 5)
+        config_btn(self.remove_btn, text="Eliminar")
+
+        # Activities.
+        self.subscriptions_lbl = QLabel(self)
+        self.layout.addWidget(self.subscriptions_lbl, 3, 0, 1, 5)
+        config_lbl(self.subscriptions_lbl, "Actividades", font_size=12)
+
+        self.subscription_table = QTableWidget(self)
+        self.layout.addWidget(self.subscription_table, 4, 4, 1, 4)
+        # config_table(self.subscription_table,
+        #              columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
+        #              allow_resizing=True)  # ToDo. Set min width.
+
+        # Subscribe button.
+        self.subscribe_btn = QPushButton(self)
+        self.layout.addWidget(self.subscribe_btn, 4, 5)
+        config_btn(self.subscribe_btn, text="Inscribir en\nactividad")
+
+        # Unsubscribe button.
+        self.unsubscribe_btn = QPushButton(self)
+        self.layout.addWidget(self.unsubscribe_btn, 5, 5)
+        config_btn(self.unsubscribe_btn, text="Dar de baja")
+
+        # Charge for subscription button.
+        self.charge_activity_btn = QPushButton(self)
+        self.layout.addWidget(self.charge_activity_btn, 6, 5)
+        config_btn(self.charge_activity_btn, text="Cobrar\nactividad")
+
+        # See transactions button.
+        self.transactions_btn = QPushButton(self)
+        self.layout.addWidget(self.transactions_btn, 7, 5)
+        config_btn(self.transactions_btn, text="Ver pagos")
+
+        # Adjusts size.
+        self.resize(self.minimumWidth(), self.minimumHeight())
 
     # noinspection PyUnresolvedReferences
     def _setup_callbacks(self):
@@ -276,10 +227,10 @@ class ClientRow(QWidget):
         # Updates the height of the widget.
         self.previous_height, self.current_height = self.current_height, self.previous_height
 
-        new_width = self.widget.width()
+        new_width = self.width()
         self.item.setSizeHint(QSize(new_width, self.current_height))
         self.resize(new_width, self.current_height)
-        self.widget.resize(new_width, self.current_height)
+        self.resize(new_width, self.current_height)
 
         # Inverts the state of the widget.
         self.is_hidden = not hidden
@@ -450,10 +401,8 @@ class Controller:
 
         item = QListWidgetItem(self.main_ui.client_list)
         self.main_ui.client_list.addItem(item)
-        row_height = 50
-        client_row = ClientRow(
-            item, self, row_height, self.name_width, self.dni_width, self.admission_width, self.tel_width,
-            self.dir_width, client, self.client_repo, self.activity_manager, self.accounting_system)
+        client_row = ClientRow(item, self, client, self.client_repo, self.activity_manager, self.accounting_system)
+        item.setSizeHint(client_row.sizeHint())
         self.main_ui.client_list.setItemWidget(item, client_row)
 
         if set_to_current:
