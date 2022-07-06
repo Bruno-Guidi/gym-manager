@@ -312,6 +312,10 @@ class Controller:
         self.main_ui.client_list.setMinimumWidth(self.dummy_row.sizeHint().width()
                                                  + self.main_ui.client_list.verticalScrollBar().height())
 
+        # Sets the min height of the client list, so the ui can show at least one client with its details.
+        self.dummy_row.hide_detail()  # This instantiates all the hidden widgets of the dummy row.
+        self.main_ui.client_list.setMinimumHeight(self.dummy_row.sizeHint().height())
+
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_client_btn.clicked.connect(self.create_ui)
