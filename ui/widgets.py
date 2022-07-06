@@ -346,7 +346,7 @@ class PageIndex(QWidget):
         self.index_lbl.setText(str(self.page))
 
         self.prev_btn.setEnabled(self.page != 1)
-        # self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
+        self.next_btn.setEnabled(self.page * self.page_len < self.total_len)
 
     def on_prev_clicked(self):
         if self.page_len is None or self.total_len is None or self._refresh_table is None:
