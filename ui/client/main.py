@@ -136,49 +136,37 @@ class ClientRow(QWidget):
         # Adjusts size.
         self.resize(self.minimumWidth(), self.minimumHeight())
 
-    # noinspection PyUnresolvedReferences
-    def _setup_callbacks(self):
-        self.subscribe_btn.clicked.connect(self.subscribe)
-        self.unsubscribe_btn.clicked.connect(self.unsubscribe)
-        self.charge_activity_btn.clicked.connect(self.charge)
-        self.transactions_btn.clicked.connect(self.transactions)
-
-    def _set_hidden(self, hidden: bool):
-        # Hides widgets.
-        self.subscriptions_lbl.setHidden(hidden)
-        self.subscription_table.setHidden(hidden)
-        self.subscribe_btn.setHidden(hidden)
-        self.unsubscribe_btn.setHidden(hidden)
-        self.charge_activity_btn.setHidden(hidden)
-        self.transactions_btn.setHidden(hidden)
-
-        # Inverts the state of the widget.
-        self.is_hidden = not hidden
-
-        # Adjusts size.
-        self.resize(self.minimumWidth(), self.minimumHeight())
-        self.item.setSizeHint(self.sizeHint())
-
     def hide_detail(self):
         # Creates the hidden widgets in case it is the first time the detail button is clicked.
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
-            self._setup_callbacks()
             self.hidden_ui_loaded = True
             self.load_subscriptions()
 
-        # Hides previously opened detail.
-        if self.main_ui_controller.opened_now is None:
-            self.main_ui_controller.opened_now = self
-        elif self.main_ui_controller.opened_now.client != self.client:
-            self.main_ui_controller.opened_now._set_hidden(True)
-            self.main_ui_controller.opened_now = self
-        else:
-            self.main_ui_controller.opened_now = None
+            # Sets callbacks.
+            # noinspection PyUnresolvedReferences
+            self.subscribe_btn.clicked.connect(self.subscribe_ui)
+            # noinspection PyUnresolvedReferences
+            self.unsubscribe_btn.clicked.connect(self.unsubscribe)
+            # noinspection PyUnresolvedReferences
+            self.charge_activity_btn.clicked.connect(self.charge_ui)
+            # noinspection PyUnresolvedReferences
+            self.transactions_btn.clicked.connect(self.transactions)
 
-        # Hide or show the widgets.
-        self.item.listWidget().setCurrentItem(self.item)
-        self._set_hidden(self.is_hidden)
+        # Hides widgets.
+        self.subscriptions_lbl.setHidden(self.is_hidden)
+        self.subscription_table.setHidden(self.is_hidden)
+        self.subscribe_btn.setHidden(self.is_hidden)
+        self.unsubscribe_btn.setHidden(self.is_hidden)
+        self.charge_activity_btn.setHidden(self.is_hidden)
+        self.transactions_btn.setHidden(self.is_hidden)
+
+        # Inverts the state of the widget.
+        self.is_hidden = not self.is_hidden
+
+        # Adjusts size.
+        self.resize(self.minimumWidth(), self.minimumHeight())
+        self.item.setSizeHint(self.sizeHint())
 
     def save_changes(self):
         valid = all([self.name_field.valid_value(), self.dni_field.valid_value(), self.tel_field.valid_value(),
@@ -208,26 +196,14 @@ class ClientRow(QWidget):
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
     # noinspection PyAttributeOutsideInit
-    def subscribe(self):
-        self.subscribe_ui = SubscribeUI(self.activity_manager, self.client)
-        self.subscribe_ui.exec_()
+    def subscribe_ui(self):
+        self._subscribe_ui = SubscribeUI(self.activity_manager, self.client)
+        self._subscribe_ui.exec_()
 
-        if self.subscribe_ui.controller.subscription is not None:
+        if self._subscribe_ui.controller.subscription is not None:
             row = self.subscription_table.rowCount()
             self.subscription_table.setRowCount(row + 1)
-            self._load_subscription(row, self.subscribe_ui.controller.subscription)
-
-    def unsubscribe(self):
-        if self.subscription_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad")
-        else:
-            subscription = self.subscriptions[self.subscription_table.currentRow()]
-            unsubscribe = Dialog.confirm(f"¿Desea cancelar la subscripcion del cliente {self.client.name} en la "
-                                         f"actividad {subscription.activity.name}?")
-            if unsubscribe:
-                self.activity_manager.cancel(subscription)
-                self.subscriptions.pop(self.subscription_table.currentRow())
-                self.subscription_table.removeRow(self.subscription_table.currentRow())
+            self._load_subscription(row, self._subscribe_ui.controller.subscription)
 
     def _load_subscription(self, row: int, subscription: Subscription):
         self.subscriptions[row] = subscription
@@ -243,8 +219,19 @@ class ClientRow(QWidget):
         expired = "Si" if subscription.charge_day_passed(date.today()) else "No"
         self.subscription_table.setItem(row, 3, QTableWidgetItem(expired))
 
-    # noinspection PyAttributeOutsideInit
-    def charge(self):
+    def unsubscribe(self):
+        if self.subscription_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad")
+        else:
+            subscription = self.subscriptions[self.subscription_table.currentRow()]
+            unsubscribe = Dialog.confirm(f"¿Desea cancelar la subscripcion del cliente {self.client.name} en la "
+                                         f"actividad {subscription.activity.name}?")
+            if unsubscribe:
+                self.activity_manager.cancel(subscription)
+                self.subscriptions.pop(self.subscription_table.currentRow())
+                self.subscription_table.removeRow(self.subscription_table.currentRow())
+
+    def charge_ui(self):
         if self.subscription_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad")
         else:
@@ -253,10 +240,11 @@ class ClientRow(QWidget):
             descr = String(f"Cobro por actividad {activity.name}", max_len=consts.TRANSACTION_DESCR_CHARS)
             msg = (f"La fecha de cobro no puede ser previa a la fecha {subscription.when} de inscripción del cliente a"
                    f" la actividad.")
-            self.charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr,
-                                      invalid_date_fn=invalid_date, validation_msg=msg,
-                                      subscription=subscription)
-            self.charge_ui.exec_()
+            # noinspection PyAttributeOutsideInit
+            self._charge_ui = ChargeUI(self.accounting_system, self.client, activity, descr,
+                                       invalid_date_fn=invalid_date, validation_msg=msg,
+                                       subscription=subscription)
+            self._charge_ui.exec_()
             self._load_subscription(self.subscription_table.currentRow(), subscription)
 
     def load_subscriptions(self):
@@ -299,7 +287,7 @@ class Controller:
 
         # Configures the page index.
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
-                                       page_len=2, total_len=self.client_repo.count())
+                                       page_len=15, total_len=self.client_repo.count())
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -423,5 +411,4 @@ class ClientMainUI(QMainWindow):
         self.page_index = PageIndex(self.widget)
         self.layout.addWidget(self.page_index)
 
-        # Adjusts size.
-        self.setMinimumHeight(self.widget.sizeHint().height())
+        # The height is adjusted in the controller.
