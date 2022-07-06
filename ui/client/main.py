@@ -199,10 +199,11 @@ class ClientRow(QWidget):
         remove = Dialog.confirm(f"¿Desea eliminar el cliente '{self.client.name}'?")
 
         if remove:
-            self.main_ui_controller.opened_now = None
+            client_list = self.item.listWidget()
+            client_list.takeItem(client_list.row(self.item))
             self.client_repo.remove(self.client)
-            self.item.listWidget().takeItem(self.item.listWidget().currentRow())
-            self.main_ui_controller.fill_client_table()
+
+            self.main_ui_controller.refresh_table()
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
@@ -287,7 +288,7 @@ class Controller:
         self.client_repo = client_repo
         self.activity_manager = activity_manager
         self.accounting_system = accounting_system
-        self.current_page, self.page_len = 1, 15
+        self.current_page, self.page_len = 1, 2
         self.opened_now: ClientRow | None = None
 
         self.name_width, self.dni_width, self.tel_width, self.dir_width = name_width, dni_width, tel_width, dir_width
@@ -299,7 +300,7 @@ class Controller:
 
         # Configures the page index.
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
-                                       page_len=20, total_len=self.client_repo.count())
+                                       page_len=2, total_len=self.client_repo.count())
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -319,7 +320,7 @@ class Controller:
     def _add_client(
             self, client: Client, check_filters: bool, set_to_current: bool = False, check_limit: bool = False
     ):
-        if check_limit and len(self.main_ui.client_list) == self.page_len:
+        if check_limit and len(self.main_ui.client_list) == self.main_ui.page_index.page_len:
             self.main_ui.client_list.takeItem(len(self.main_ui.client_list) - 1)
 
         if check_filters and not self.main_ui.filter_header.passes_filters(client):
@@ -338,8 +339,7 @@ class Controller:
         self.main_ui.client_list.clear()
 
         self.main_ui.page_index.total_len = self.client_repo.count(filters)
-        for client in self.client_repo.all(self.main_ui.page_index.page,
-                                           self.main_ui.page_index.page_len, filters):
+        for client in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     def refresh_table(self):
