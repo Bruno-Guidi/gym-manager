@@ -49,6 +49,10 @@ class ClientRow(QWidget):
 
         # noinspection PyUnresolvedReferences
         self.detail_btn.clicked.connect(self.hide_detail)
+        # noinspection PyUnresolvedReferences
+        self.save_btn.clicked.connect(self.save_changes)
+        # noinspection PyUnresolvedReferences
+        self.remove_btn.clicked.connect(self.remove)
 
     def _setup_ui(self, name_width: int, dni_width: int, tel_width: int, dir_width: int):
         self.layout = QGridLayout(self)
@@ -134,8 +138,6 @@ class ClientRow(QWidget):
 
     # noinspection PyUnresolvedReferences
     def _setup_callbacks(self):
-        self.save_btn.clicked.connect(self.save_changes)
-        self.remove_btn.clicked.connect(self.remove)
         self.subscribe_btn.clicked.connect(self.subscribe)
         self.unsubscribe_btn.clicked.connect(self.unsubscribe)
         self.charge_activity_btn.clicked.connect(self.charge)
@@ -184,19 +186,12 @@ class ClientRow(QWidget):
         if not valid:
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            # Updates client object.
             self.client.name = self.name_field.value()
             self.client.admission = self.admission_date_edit.date().toPyDate()
             self.client.telephone = self.tel_field.value()
             self.client.direction = self.dir_field.value()
 
             self.client_repo.update(self.client)
-
-            # Updates ui.
-            self.name_summary.setText(str(self.client.name))
-            self.admission_summary.setText(self.client.admission.strftime(consts.DATE_FORMAT))
-            self.tel_summary.setText(self.client.telephone.as_primitive())
-            self.dir_summary.setText(self.client.direction.as_primitive())
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue actualizado correctamente.")
 
