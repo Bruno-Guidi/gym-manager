@@ -100,8 +100,7 @@ class BookUI(QDialog):
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
-        config_layout(self.form_layout, alignment=Qt.AlignCenter, bottom_margin=0)
-        self.form_layout.setHorizontalSpacing(30)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
 
         self.client_lbl = QLabel(self)
         self.form_layout.addWidget(self.client_lbl, 0, 0)
