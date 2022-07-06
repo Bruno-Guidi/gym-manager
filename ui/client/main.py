@@ -17,7 +17,7 @@ from ui.client.operations import CreateUI
 from ui.client.operations import SubscribeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_layout, config_table,
-    config_date_edit)
+    config_date_edit, fill_cell)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex
 
 
@@ -110,27 +110,27 @@ class ClientRow(QWidget):
         self.subscription_table = QTableWidget(self)
         self.layout.addWidget(self.subscription_table, 2, 0, 5, 5)
         config_table(self.subscription_table, allow_resizing=True,
-                     columns={"Nombre": (10, str), "Inscripción": (10, int), "Último pago": (10, int),
-                              "#": (6, int), "Vencida": (7, str)})
+                     columns={"Nombre": (10, str), "Inscripción": (10, bool), "Último pago": (12, bool),
+                              "#": (6, int), "Vencida": (7, bool)})
 
         # Unsubscribe button.
         self.unsubscribe_btn = QPushButton(self)
-        self.layout.addWidget(self.unsubscribe_btn, 3, 5, 1, 3)
+        self.layout.addWidget(self.unsubscribe_btn, 3, 5, 1, 3, alignment=Qt.AlignCenter)
         config_btn(self.unsubscribe_btn, text="Dar de baja")
 
         # Subscribe button.
         self.subscribe_btn = QPushButton(self)
-        self.layout.addWidget(self.subscribe_btn, 2, 5, 1, 3)
+        self.layout.addWidget(self.subscribe_btn, 2, 5, 1, 3, alignment=Qt.AlignCenter)
         config_btn(self.subscribe_btn, text="Inscribir", fixed_width=self.unsubscribe_btn.width())
 
         # Charge for subscription button.
         self.charge_activity_btn = QPushButton(self)
-        self.layout.addWidget(self.charge_activity_btn, 4, 5, 1, 3)
+        self.layout.addWidget(self.charge_activity_btn, 4, 5, 1, 3, alignment=Qt.AlignCenter)
         config_btn(self.charge_activity_btn, text="Cobrar", fixed_width=self.unsubscribe_btn.width())
 
         # See transactions button.
         self.transactions_btn = QPushButton(self)
-        self.layout.addWidget(self.transactions_btn, 5, 5, 1, 3)
+        self.layout.addWidget(self.transactions_btn, 5, 5, 1, 3, alignment=Qt.AlignCenter)
         config_btn(self.transactions_btn, text="Ver pagos", fixed_width=self.unsubscribe_btn.width())
 
         # Adjusts size.
@@ -195,19 +195,14 @@ class ClientRow(QWidget):
 
             Dialog.info("Éxito", f"El cliente '{self.name_field.value()}' fue eliminado correctamente.")
 
-    def _load_subscription(self, row: int, subscription: Subscription):
-        self.subscriptions[row] = subscription
-        self.subscription_table.setItem(row, 0, QTableWidgetItem(str(subscription.activity.name)))
-
-        when = "Sin pagar" if subscription.transaction is None else str(subscription.transaction.when)
-        self.subscription_table.setItem(row, 1, QTableWidgetItem(when))
-
+    def _load_subscription(self, row: int, sub: Subscription):
+        self.subscriptions[row] = sub
+        fill_cell(self.subscription_table, row, 0, sub.activity.name, data_type=str)
+        fill_cell(self.subscription_table, row, 1, sub.when, bool)
+        fill_cell(self.subscription_table, row, 2, "-" if sub.transaction is None else sub.transaction.when, bool)
         # noinspection PyUnresolvedReferences
-        transaction_id = "-" if subscription.transaction is None else str(subscription.transaction.id)
-        self.subscription_table.setItem(row, 2, QTableWidgetItem(transaction_id))
-
-        expired = "Si" if subscription.charge_day_passed(date.today()) else "No"
-        self.subscription_table.setItem(row, 3, QTableWidgetItem(expired))
+        fill_cell(self.subscription_table, row, 3, "-" if sub.transaction is None else sub.transaction.id, int)
+        fill_cell(self.subscription_table, row, 4, "Si" if sub.charge_day_passed(date.today()) else "No", bool)
 
     # noinspection PyAttributeOutsideInit
     def subscribe_ui(self):

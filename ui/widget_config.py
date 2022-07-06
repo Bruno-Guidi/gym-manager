@@ -153,5 +153,7 @@ def config_table(
 def fill_cell(target: QTableWidget, row: int, column: int, data: Any, data_type: Type):
     target.setRowCount(row + 1)
     item = QTableWidgetItem(str(data))
-    item.setTextAlignment(Qt.AlignRight if data_type is int else Qt.AlignLeft)
+    align = Qt.AlignRight if data_type is int else Qt.AlignLeft
+    align = Qt.AlignCenter if data_type is bool else align
+    item.setTextAlignment(align)
     target.setItem(row, column, item)
