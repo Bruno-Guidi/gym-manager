@@ -275,6 +275,7 @@ class BookingSystem:
 
     def register_charge(self, booking: Booking, transaction: Transaction):
         prev_state = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
+        booking.transaction = transaction
         self.repo.update(booking, prev_state)
         if booking.is_fixed:  # ToDo add another booking in weeks_in_advance weeks
             when = booking.when + timedelta(self.weeks_in_advance)
