@@ -40,6 +40,7 @@ class ClientRow(QWidget):
         self.main_ui_controller = main_ui_controller
 
         self._setup_ui()
+        self.item.setSizeHint(self.sizeHint())
 
         self.is_hidden = False
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
@@ -52,42 +53,42 @@ class ClientRow(QWidget):
 
         # Name.
         self.name_field = Field(String, self, max_len=consts.CLIENT_NAME_CHARS)
-        self.layout.addWidget(self.name_field, 0, 0)
+        self.layout.addWidget(self.name_field, 0, 0, alignment=Qt.AlignTop)
         config_line(self.name_field, str(self.client.name))
 
         # DNI.
         self.dni_field = Field(Number, self, min_value=consts.CLIENT_MIN_DNI, max_value=consts.CLIENT_MAX_DNI)
-        self.layout.addWidget(self.dni_field, 0, 1)
+        self.layout.addWidget(self.dni_field, 0, 1, alignment=Qt.AlignTop)
         config_line(self.dni_field, str(self.client.dni), enabled=False)
 
         # Admission.
         self.admission_date_edit = QDateEdit()
-        self.layout.addWidget(self.admission_date_edit, 0, 2)
+        self.layout.addWidget(self.admission_date_edit, 0, 2, alignment=Qt.AlignTop)
         config_date_edit(self.admission_date_edit, self.client.admission, calendar=True)
 
         # Telephone.
         self.tel_field = Field(String, self, optional=consts.CLIENT_TEL_OPTIONAL, max_len=consts.CLIENT_TEL_CHARS)
-        self.layout.addWidget(self.tel_field, 0, 3)
+        self.layout.addWidget(self.tel_field, 0, 3, alignment=Qt.AlignTop)
         config_line(self.tel_field, str(self.client.telephone))
 
         # Direction.
         self.dir_field = Field(String, self, optional=consts.CLIENT_DIR_OPTIONAL, max_len=consts.CLIENT_DIR_CHARS)
-        self.layout.addWidget(self.dir_field, 0, 4)
+        self.layout.addWidget(self.dir_field, 0, 4, alignment=Qt.AlignTop)
         config_line(self.dir_field, str(self.client.direction))
 
         # See client detail button.
         self.detail_btn = QPushButton(self)
-        self.layout.addWidget(self.detail_btn, 0, 5)
+        self.layout.addWidget(self.detail_btn, 0, 5, alignment=Qt.AlignTop)
         config_btn(self.detail_btn, "D", fixed_width=32)
 
         # Save client data button
         self.save_btn = QPushButton(self)
-        self.layout.addWidget(self.save_btn, 0, 6)
+        self.layout.addWidget(self.save_btn, 0, 6, alignment=Qt.AlignTop)
         config_btn(self.save_btn, "G", fixed_width=32)
 
         # Remove client button.
         self.remove_btn = QPushButton(self)
-        self.layout.addWidget(self.remove_btn, 0, 7)
+        self.layout.addWidget(self.remove_btn, 0, 7, alignment=Qt.AlignTop)
         config_btn(self.remove_btn, "E", fixed_width=32)
 
         # Adjusts size.
@@ -320,7 +321,6 @@ class Controller:
         item = QListWidgetItem(self.main_ui.client_list)
         self.main_ui.client_list.addItem(item)
         client_row = ClientRow(item, self, client, self.client_repo, self.activity_manager, self.accounting_system)
-        item.setSizeHint(client_row.sizeHint())
         self.main_ui.client_list.setItemWidget(item, client_row)
 
         if set_to_current:
