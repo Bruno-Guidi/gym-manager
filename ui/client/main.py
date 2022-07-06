@@ -15,8 +15,9 @@ from ui.accounting.main import AccountingMainUI
 from ui.accounting.operations import ChargeUI
 from ui.client.operations import CreateUI
 from ui.client.operations import SubscribeUI
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_table, \
-    config_date_edit
+from ui.widget_config import (
+    config_lbl, config_line, config_btn, config_layout, config_table,
+    config_date_edit)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex
 
 
@@ -274,6 +275,12 @@ class ClientRow(QWidget):
         self.accounting_main_ui.show()
 
 
+_dummy_client = Client(Number(99_999_999), String("dummy_name", max_len=consts.CLIENT_NAME_CHARS), date.min,
+                       String("dummy_tel", max_len=consts.CLIENT_TEL_CHARS),
+                       String("dummy_dir", max_len=consts.CLIENT_DIR_CHARS),
+                       is_active=True)
+
+
 class Controller:
     def __init__(
             self, main_ui: ClientMainUI, client_repo: ClientRepo, activity_manager: ActivityManager,
@@ -305,6 +312,13 @@ class Controller:
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
+
+        # Sets the correct width for the client list.
+        self.dummy_row = ClientRow(QListWidgetItem(), self, _dummy_client, client_repo, activity_manager,
+                                   accounting_system)
+        # The min width includes the width (obtained with height()) of the vertical scrollbar of the list.
+        self.main_ui.client_list.setMinimumWidth(self.dummy_row.sizeHint().width()
+                                                 + self.main_ui.client_list.verticalScrollBar().height())
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
