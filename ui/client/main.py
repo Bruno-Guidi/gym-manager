@@ -164,7 +164,7 @@ class ClientRow(QWidget):
         config_lbl(self.subscriptions_lbl, "Actividades", font_size=12)
 
         self.subscription_table = QTableWidget(self)
-        self.layout.addWidget(self.subscription_table, 4, 4, 1, 4)
+        self.layout.addWidget(self.subscription_table, 4, 0, 1, 5)
         # config_table(self.subscription_table,
         #              columns={"Nombre": 280, "Último\npago": 100, "Código\npago": 146, "Vencida": 90},
         #              allow_resizing=True)  # ToDo. Set min width.
