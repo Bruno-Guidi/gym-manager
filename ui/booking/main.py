@@ -4,8 +4,9 @@ from datetime import date
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem, \
-    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit
+from PyQt5.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
+    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu)
 
 from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD
 from gym_manager.core import constants
@@ -127,8 +128,13 @@ class BookingMainUI(QMainWindow):
         # Menu bar.
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
-        self.see_history_action = QAction("Historial", self)
-        self.menu_bar.addAction(self.see_history_action)
+
+        # History menu bar.
+        self.history_menu = QMenu("Historial", self)
+        self.menu_bar.addMenu(self.history_menu)
+
+        self.see_history_action = QAction("Ver", self)
+        self.history_menu.addAction(self.see_history_action)
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
