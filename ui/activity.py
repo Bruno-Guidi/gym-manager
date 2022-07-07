@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from PyQt5.QtCore import QRect, Qt, QSize
-from PyQt5.QtWidgets import QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton, \
-    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QCheckBox, QDialog
+from PyQt5.QtWidgets import (
+    QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton,
+    QListWidgetItem, QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QCheckBox, QDialog, QGridLayout)
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Activity, Currency, TextLike
@@ -30,53 +31,6 @@ class ActivityRow(QWidget):
         self.current_height, self.previous_height = height, None
         self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
 
-        def _setup_hidden_ui():
-            # Name.
-            self.name_lbl = QLabel(self.widget)
-            self.name_layout.addWidget(self.name_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.name_lbl, "Nombre", font_size=12, extra_width=name_width)
-
-            self.name_field = Field(String, self.widget, max_len=consts.CLIENT_NAME_CHARS)
-            self.name_layout.addWidget(self.name_field)
-            config_line(self.name_field, str(activity.name), extra_width=name_width, read_only=False)
-
-            # Price.
-            self.price_lbl = QLabel(self.widget)
-            self.price_layout.addWidget(self.price_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.price_lbl, "Precio", font_size=12, extra_width=price_width)
-
-            self.price_field = Field(Currency, self.widget, max_currency=consts.MAX_CURRENCY)
-            self.price_layout.addWidget(self.price_field)
-            config_line(self.price_field, str(activity.price), extra_width=price_width)
-
-            # Charge once.
-            self.charge_once_lbl = QLabel(self.widget)
-            self.charge_once_layout.addWidget(self.charge_once_lbl, alignment=Qt.AlignBottom)
-            config_lbl(self.charge_once_lbl, "Cobro único", font_size=12, extra_width=charge_once_width)
-
-            self.charge_once_checkbox = QCheckBox()
-            self.charge_once_layout.addWidget(self.charge_once_checkbox)
-            config_checkbox(self.charge_once_checkbox, checked=activity.charge_once, extra_width=charge_once_width,
-                            enabled=not activity.locked)
-
-            # Save and delete buttons.
-            self.save_btn = QPushButton(self.widget)
-            self.top_buttons_layout.addWidget(self.save_btn)
-            config_btn(self.save_btn, text="Guardar", extra_width=100)
-
-            self.remove_btn = QPushButton(self.widget)
-            self.top_buttons_layout.addWidget(self.remove_btn)
-            config_btn(self.remove_btn, text="Eliminar", extra_width=100)
-
-            # Description.
-            self.description_lbl = QLabel(self.widget)
-            self.row_layout.addWidget(self.description_lbl)
-            config_lbl(self.description_lbl, "Descripción", font_size=12)
-
-            self.description_text = QTextEdit(self.widget)
-            self.row_layout.addWidget(self.description_text)
-            config_line(self.description_text, str(activity.description))
-
         self._setup_hidden_ui = _setup_hidden_ui
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
@@ -85,64 +39,51 @@ class ActivityRow(QWidget):
         self.is_hidden = False
 
     def _setup_ui(self, height: int, name_width: int, price_width: int, charge_once_width: int):
-        self.widget = QWidget(self)
+        self.layout = QGridLayout(self)
+        self.layout.setAlignment(Qt.AlignLeft)
 
-        self.row_layout = QVBoxLayout(self.widget)
+        # Name.
+        self.name_field = Field(String, self, max_len=consts.ACTIVITY_NAME_CHARS)
+        self.layout.addWidget(self.name_field, 0, 0, alignment=Qt.AlignTop)
+        config_line(self.name_field, str(self.activity.name), font="Inconsolata", fixed_width=name_width)
 
-        self.top_layout = QHBoxLayout()
-        self.row_layout.addLayout(self.top_layout)
-        config_layout(self.top_layout, alignment=Qt.AlignCenter)
+        # Price.
+        self.price_field = Field(Currency, self)
+        self.layout.addWidget(self.price_field, 0, 1, alignment=Qt.AlignTop)
+        config_line(self.price_field, str(self.activity.price), font="Inconsolata", fixed_width=price_width)
 
-        # Name layout.
-        self.name_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.name_layout)
+        # Charge once.
+        self.charge_once_checkbox = QCheckBox(self)
+        self.layout.addWidget(self.charge_once_checkbox, 0, 2, alignment=Qt.AlignTop)
+        config_checkbox(self.charge_once_checkbox, font="Inconsolata", fixed_width=charge_once_width)
 
-        self.name_summary = QLabel(self.widget)
-        self.name_layout.addWidget(self.name_summary, alignment=Qt.AlignTop)
-        config_lbl(self.name_summary, str(self.activity.name), extra_width=name_width, extra_height=30, alignment=Qt.AlignVCenter)
+        # See client detail button.
+        self.detail_btn = QPushButton(self)
+        self.layout.addWidget(self.detail_btn, 0, 3, alignment=Qt.AlignTop)
+        config_btn(self.detail_btn, icon_path="ui/resources/detail.png", icon_size=32)
 
-        self.name_lbl: QLabel | None = None
-        self.name_field: Field | None = None
+        # Save client data button
+        self.save_btn = QPushButton(self)
+        self.layout.addWidget(self.save_btn, 0, 4, alignment=Qt.AlignTop)
+        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=32)
 
-        # Price layout.
-        self.price_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.price_layout)
+        # Remove client button.
+        self.remove_btn = QPushButton(self)
+        self.layout.addWidget(self.remove_btn, 0, 5, alignment=Qt.AlignTop)
+        config_btn(self.remove_btn, icon_path="ui/resources/delete.png", icon_size=32)
 
-        self.price_summary = QLabel(self.widget)
-        self.price_layout.addWidget(self.price_summary, alignment=Qt.AlignTop)
-        config_lbl(self.price_summary, str(self.activity.price), extra_width=price_width, extra_height=30, alignment=Qt.AlignVCenter)
+        # Adjusts size.
+        self.resize(self.minimumWidth(), self.minimumHeight())
 
-        self.price_lbl: QLabel | None = None
-        self.price_field: Field | None = None
-
-        # Admission layout.
-        self.charge_once_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.charge_once_layout)
-
-        self.charge_once_summary = QLabel(self.widget)
-        self.charge_once_layout.addWidget(self.charge_once_summary, alignment=Qt.AlignTop)
-        charge_once_text = "Si" if self.activity.charge_once else "No"
-        config_lbl(self.charge_once_summary, charge_once_text, extra_width=charge_once_width, extra_height=30, alignment=Qt.AlignVCenter)
-
-        self.charge_once_lbl: QLabel | None = None
-        self.charge_once_checkbox: QCheckBox | None = None
-
-        # Detail button.
-        self.top_buttons_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.top_buttons_layout)
-
-        self.detail_btn = QPushButton(self.widget)
-        self.top_buttons_layout.addWidget(self.detail_btn, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, text="Detalle", extra_width=100)
-
-        self.save_btn: QPushButton | None = None
-        self.remove_btn: QPushButton | None = None
-
+    def _setup_hidden_ui(self):
         # Description.
-        self.description_lbl: QLabel | None = None
-        self.description_text: QTextEdit | None = None
+        self.description_lbl = QLabel(self.widget)
+        self.layout.addWidget(self.description_lbl, 1, 0, 1, 5)
+        config_lbl(self.description_lbl, "Descripción", font_size=12)
 
-        self.setGeometry(QRect(0, 0, self.widget.sizeHint().width(), height))
+        self.description_text = QTextEdit(self.widget)
+        self.layout.addWidget(self.description_text, 2, 0, 1, 5)
+        config_line(self.description_text, str(self.activity.description))
 
     def _set_hidden(self, hidden: bool):
         # Hides widgets.
