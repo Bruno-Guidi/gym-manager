@@ -300,57 +300,50 @@ class ActivityMainUI(QMainWindow):
         self.controller = MainController(activity_manager, self, name_width, price_width, charge_once_width)
 
     def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int):
-        self.resize(800, 600)
-
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, 800, 600))
-
-        self.main_layout = QVBoxLayout(self.widget)
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+        config_layout(self.layout, spacing=0)
 
         # Utilities.
         self.utils_layout = QHBoxLayout()
-        self.main_layout.addLayout(self.utils_layout)
-        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=80)
+        self.layout.addLayout(self.utils_layout)
+        config_layout(self.utils_layout, right_margin=180)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
         self.utils_layout.addWidget(self.filter_header)
 
-        self.utils_layout.addItem(QSpacerItem(80, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
-
         self.create_activity_btn = QPushButton(self.widget)
         self.utils_layout.addWidget(self.create_activity_btn)
-        config_btn(self.create_activity_btn, "Nueva actividad", font_size=16)
-
-        self.main_layout.addItem(QSpacerItem(80, 15, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        config_btn(self.create_activity_btn, "Nueva")
 
         # Header.
         self.header_layout = QHBoxLayout()
-        self.main_layout.addLayout(self.header_layout)
-        config_layout(self.header_layout, alignment=Qt.AlignLeft, left_margin=11, spacing=0)
+        self.layout.addLayout(self.header_layout)
+        config_layout(self.header_layout, alignment=Qt.AlignLeft, left_margin=15)
 
         self.name_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Nombre", extra_width=name_width + 6)  # 6 is the spacing.
+        config_lbl(self.name_lbl, "Nombre", fixed_width=name_width)
 
         self.price_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.price_lbl)
-        config_lbl(self.price_lbl, "Precio", extra_width=price_width + 6)  # 6 is the spacing.
+        config_lbl(self.price_lbl, "Precio", fixed_width=price_width)
 
         self.charge_once_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.charge_once_lbl)
-        config_lbl(self.charge_once_lbl, "Cobro único", extra_width=charge_once_width + 6)  # 6 is the spacing.
+        config_lbl(self.charge_once_lbl, "Cobro único", fixed_width=charge_once_width)
 
         # Activities.
         self.activity_list = QListWidget(self.widget)
-        self.main_layout.addWidget(self.activity_list)
+        self.layout.addWidget(self.activity_list)
 
         # Index.
         self.page_index = PageIndex(self)
-        self.main_layout.addWidget(self.page_index)
+        self.layout.addWidget(self.page_index)
+
+        # The height is adjusted in the controller.
 
 
 class CreateController:
