@@ -375,7 +375,7 @@ class BalanceHistoryController:
         fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
                       display=lambda pair: pair[0])
 
-        self._balances: dict[int, tuple[date, String, Balance]] = {}  # ToDo Create a namedtuple to store all this.
+        self._balances: dict[int, tuple[date, String, Balance]] = {}
         self.load_last_n_balances()
 
         # Sets callbacks.
