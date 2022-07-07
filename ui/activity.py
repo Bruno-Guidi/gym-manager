@@ -15,28 +15,24 @@ from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 
 class ActivityRow(QWidget):
     def __init__(
-            self, item: QListWidgetItem, main_ui_controller: MainController, name_width: int, price_width: int,
-            charge_once_width: int, height: int, activity: Activity, activity_manager: ActivityManager
+            self, item: QListWidgetItem, name_width: int, price_width: int, charge_once_width: int,
+            main_ui_controller: MainController, activity: Activity, activity_manager: ActivityManager
     ):
         super().__init__()
+        self.activity = activity
+        self.activity_manager = activity_manager
 
         self.item = item
         self.main_ui_controller = main_ui_controller
 
-        self.activity = activity
-        self.activity_manager = activity_manager
+        self._setup_ui(0, name_width, price_width, charge_once_width)
+        self.item.setSizeHint(self.sizeHint())
 
-        self._setup_ui(height, name_width, price_width, charge_once_width)
-
-        self.current_height, self.previous_height = height, None
-        self.item.setSizeHint(QSize(self.widget.width(), self.current_height))
-
-        self._setup_hidden_ui = _setup_hidden_ui
+        self.is_hidden = False
         self.hidden_ui_loaded = False  # Flag used to load the hidden ui only when it is opened for the first time.
 
         # noinspection PyUnresolvedReferences
         self.detail_btn.clicked.connect(self.hide_detail)
-        self.is_hidden = False
 
     def _setup_ui(self, height: int, name_width: int, price_width: int, charge_once_width: int):
         self.layout = QGridLayout(self)
@@ -77,65 +73,33 @@ class ActivityRow(QWidget):
 
     def _setup_hidden_ui(self):
         # Description.
-        self.description_lbl = QLabel(self.widget)
+        self.description_lbl = QLabel(self)
         self.layout.addWidget(self.description_lbl, 1, 0, 1, 5)
         config_lbl(self.description_lbl, "Descripción", font_size=12)
 
-        self.description_text = QTextEdit(self.widget)
+        self.description_text = QTextEdit(self)
         self.layout.addWidget(self.description_text, 2, 0, 1, 5)
         config_line(self.description_text, str(self.activity.description))
 
         # Adjusts size.
         self.resize(self.minimumWidth(), self.minimumHeight())
 
-    def _set_hidden(self, hidden: bool):
-        # Hides widgets.
-        self.name_lbl.setHidden(hidden)
-        self.name_field.setHidden(hidden)
-        self.price_lbl.setHidden(hidden)
-        self.price_field.setHidden(hidden)
-        self.charge_once_lbl.setHidden(hidden)
-        self.charge_once_checkbox.setHidden(hidden)
-
-        self.description_lbl.setHidden(hidden)
-        self.description_text.setHidden(hidden)
-
-        self.save_btn.setHidden(hidden)
-        self.remove_btn.setHidden(hidden)
-
-        # Updates the height of the widget.
-        self.previous_height, self.current_height = self.current_height, self.previous_height
-
-        new_width = self.widget.width()
-        self.item.setSizeHint(QSize(new_width, self.current_height))
-        self.resize(new_width, self.current_height)
-        self.widget.resize(new_width, self.current_height)
-
-        # Inverts the state of the widget.
-        self.is_hidden = not hidden
-
     def hide_detail(self):
         # Creates the hidden widgets in case it is the first time the detail button is clicked.
         if not self.hidden_ui_loaded:
             self._setup_hidden_ui()
-            # noinspection PyUnresolvedReferences
-            self.save_btn.clicked.connect(self.save_changes)
-            # noinspection PyUnresolvedReferences
-            self.remove_btn.clicked.connect(self.remove)
-            self.hidden_ui_loaded, self.previous_height = True, 350
+            self.hidden_ui_loaded = True
 
-        # Hides previously opened detail.
-        if self.main_ui_controller.opened_now is None:
-            self.main_ui_controller.opened_now = self
-        elif self.main_ui_controller.opened_now.activity != self.activity:
-            self.main_ui_controller.opened_now._set_hidden(True)
-            self.main_ui_controller.opened_now = self
-        else:
-            self.main_ui_controller.opened_now = None
+        # Hides widgets.
+        self.description_lbl.setHidden(self.is_hidden)
+        self.description_text.setHidden(self.is_hidden)
 
-        self.item.listWidget().setCurrentItem(self.item)
+        # Inverts the state of the widget.
+        self.is_hidden = not self.is_hidden
 
-        self._set_hidden(self.is_hidden)  # Hide or show the widgets.
+        # Adjusts size.
+        self.resize(self.minimumWidth(), self.minimumHeight())
+        self.item.setSizeHint(self.sizeHint())
 
     def save_changes(self):
         valid_descr, descr = valid_text_value(self.description_text, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
@@ -215,7 +179,7 @@ class MainController:
         row_height = 50
         item = QListWidgetItem(self.main_ui.activity_list)
         self.main_ui.activity_list.addItem(item)
-        row = ActivityRow(item, self, self.name_width, self.price_width, self.charge_once_width, row_height, activity,
+        row = ActivityRow(item, self.name_width, self.price_width, self.charge_once_width, self, activity,
                           self.activity_manager)
         self.main_ui.activity_list.setItemWidget(item, row)
 
