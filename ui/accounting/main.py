@@ -173,7 +173,7 @@ class AccountingMainUI(QMainWindow):
         self.main_layout.addWidget(self.transaction_table)
         config_table(
             target=self.transaction_table, allow_resizing=True, min_rows_to_show=5,
-            columns={"#": (6, int), "Fecha": (10, int), "Tipo": (8, str), "Método": (8, str),
+            columns={"# Pago": (6, int), "Fecha": (10, int), "Tipo": (8, str), "Método": (8, str),
                      "Cliente": (constants.CLIENT_NAME_CHARS // 2, str), "Monto": (10, int),
                      "Responsable": (constants.CLIENT_NAME_CHARS // 2, str)}
         )
