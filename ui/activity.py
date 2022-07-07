@@ -68,7 +68,7 @@ class ActivityRow(QWidget):
         # See client detail button.
         self.detail_btn = QPushButton(self)
         self.layout.addWidget(self.detail_btn, 0, 4, alignment=Qt.AlignTop)
-        config_btn(self.detail_btn, icon_path="ui/resources/detail.png", icon_size=32)
+        config_btn(self.detail_btn, icon_path="ui/resources/activity_detail.png", icon_size=32)
 
         # Save client data button
         self.save_btn = QPushButton(self)
