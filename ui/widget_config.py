@@ -120,6 +120,7 @@ def config_table(
         allow_resizing: if True, columns can be resized during runtime.
         min_rows_to_show: the minimum height of the table will be (*min_rows_to_show* + 1)*horizontalHeader.height()
     """
+    target.horizontalHeader().setFont(QFont("Inconsolata", font_size))
     target.setFont(QFont("Inconsolata", font_size))  # This font is monospaced.
     target.verticalHeader().setVisible(False)  # Hides rows number.
 
