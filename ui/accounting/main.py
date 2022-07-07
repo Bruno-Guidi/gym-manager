@@ -452,29 +452,25 @@ class BalanceHistoryUI(QMainWindow):
         self.layout.addLayout(self.header_layout)
         config_layout(self.header_layout, left_margin=250, right_margin=250, alignment=Qt.AlignCenter)
 
-        # Last n balances.
-        self.last_n_layout = QVBoxLayout()
-        self.header_layout.addLayout(self.last_n_layout)
+        # Filters.
+        self.filters_layout = QGridLayout()
+        self.header_layout.addLayout(self.filters_layout)
 
         self.last_n_checkbox = QCheckBox(self.widget)
-        self.last_n_layout.addWidget(self.last_n_checkbox)
+        self.filters_layout.addWidget(self.last_n_checkbox, 0, 0)
         config_checkbox(self.last_n_checkbox, "Últimos", checked=True, layout_dir=Qt.LayoutDirection.LeftToRight)
 
-        self.last_n_combobox = QComboBox(self.widget)
-        self.last_n_layout.addWidget(self.last_n_combobox)
-        config_combobox(self.last_n_combobox, extra_width=20)
-
-        # Specific date balance.
-        self.date_layout = QVBoxLayout()
-        self.header_layout.addLayout(self.date_layout)
-
         self.date_checkbox = QCheckBox(self.widget)
-        self.date_layout.addWidget(self.date_checkbox)
+        self.filters_layout.addWidget(self.date_checkbox, 1, 0)
         config_checkbox(self.date_checkbox, "Fecha", checked=False, layout_dir=Qt.LayoutDirection.LeftToRight)
 
         self.date_edit = QDateEdit(self.widget)
-        self.date_layout.addWidget(self.date_edit)
+        self.filters_layout.addWidget(self.date_edit, 1, 1)
         config_date_edit(self.date_edit, date.today(), calendar=True)
+
+        self.last_n_combobox = QComboBox(self.widget)
+        self.filters_layout.addWidget(self.last_n_combobox, 0, 1)
+        config_combobox(self.last_n_combobox, extra_width=20, fixed_width=self.date_edit.width())
 
         # Horizontal spacer.
         self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
