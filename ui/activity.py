@@ -16,7 +16,8 @@ from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 class ActivityRow(QWidget):
     def __init__(
             self, item: QListWidgetItem, name_width: int, price_width: int, charge_once_width: int,
-            main_ui_controller: MainController, activity: Activity, activity_manager: ActivityManager
+            n_subscribers_width: int, main_ui_controller: MainController, activity: Activity,
+            activity_manager: ActivityManager
     ):
         super().__init__()
         self.activity = activity
@@ -25,7 +26,7 @@ class ActivityRow(QWidget):
         self.item = item
         self.main_ui_controller = main_ui_controller
 
-        self._setup_ui(name_width, price_width, charge_once_width)
+        self._setup_ui(name_width, price_width, charge_once_width, n_subscribers_width)
         self.item.setSizeHint(self.sizeHint())
 
         self.is_hidden = False
@@ -38,7 +39,7 @@ class ActivityRow(QWidget):
         # noinspection PyUnresolvedReferences
         self.remove_btn.clicked.connect(self.remove)
 
-    def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int):
+    def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int, n_subscribers_width: int):
         self.layout = QGridLayout(self)
         self.layout.setAlignment(Qt.AlignLeft)
 
@@ -58,19 +59,25 @@ class ActivityRow(QWidget):
         config_checkbox(self.charge_once_checkbox, checked=self.activity.charge_once, font="Inconsolata",
                         fixed_width=charge_once_width)
 
+        # Amount of subscribers.
+        self.n_subs_lbl = QLabel(self)
+        self.layout.addWidget(self.n_subs_lbl, 0, 3, alignment=Qt.AlignTop)
+        config_lbl(self.n_subs_lbl, str(self.activity_manager.n_subscribers(self.activity)), font="Inconsolata",
+                   fixed_width=n_subscribers_width)
+
         # See client detail button.
         self.detail_btn = QPushButton(self)
-        self.layout.addWidget(self.detail_btn, 0, 3, alignment=Qt.AlignTop)
+        self.layout.addWidget(self.detail_btn, 0, 4, alignment=Qt.AlignTop)
         config_btn(self.detail_btn, icon_path="ui/resources/detail.png", icon_size=32)
 
         # Save client data button
         self.save_btn = QPushButton(self)
-        self.layout.addWidget(self.save_btn, 0, 4, alignment=Qt.AlignTop)
+        self.layout.addWidget(self.save_btn, 0, 5, alignment=Qt.AlignTop)
         config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=32)
 
         # Remove client button.
         self.remove_btn = QPushButton(self)
-        self.layout.addWidget(self.remove_btn, 0, 5, alignment=Qt.AlignTop)
+        self.layout.addWidget(self.remove_btn, 0, 6, alignment=Qt.AlignTop)
         config_btn(self.remove_btn, icon_path="ui/resources/delete.png", icon_size=32)
 
         # Adjusts size.
@@ -150,12 +157,13 @@ _dummy_activity = Activity(String("dummy_name", max_len=consts.ACTIVITY_NAME_CHA
 class MainController:
     def __init__(
             self, activity_manager: ActivityManager, main_ui: ActivityMainUI, name_width: int, price_width: int,
-            charge_once_width: int
+            charge_once_width: int, n_subs_width: int
     ):
         self.main_ui = main_ui
         self.activity_manager = activity_manager
 
         self.name_width, self.price_width, self.charge_once_width = name_width, price_width, charge_once_width
+        self.n_subs_width = n_subs_width
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -171,7 +179,7 @@ class MainController:
 
         # Sets the correct width for the activity list. A dummy row is used, so the width is correctly set even if there
         # are no rows to load.
-        self.dummy_row = ActivityRow(QListWidgetItem(), name_width, price_width, charge_once_width, self,
+        self.dummy_row = ActivityRow(QListWidgetItem(), name_width, price_width, charge_once_width, n_subs_width, self,
                                      _dummy_activity, activity_manager)
         # The min width includes the width (obtained with height()) of the vertical scrollbar of the list.
         self.main_ui.activity_list.setMinimumWidth(self.dummy_row.sizeHint().width()
@@ -194,8 +202,8 @@ class MainController:
 
         item = QListWidgetItem(self.main_ui.activity_list)
         self.main_ui.activity_list.addItem(item)
-        row = ActivityRow(item, self.name_width, self.price_width, self.charge_once_width, self, activity,
-                          self.activity_manager)
+        row = ActivityRow(item, self.name_width, self.price_width, self.charge_once_width, self.n_subs_width,
+                          self, activity, self.activity_manager)
         self.main_ui.activity_list.setItemWidget(item, row)
 
     def fill_activity_table(self, filters: list[FilterValuePair]):
@@ -222,11 +230,12 @@ class ActivityMainUI(QMainWindow):
 
     def __init__(self, activity_manager: ActivityManager) -> None:
         super().__init__()
-        name_width, price_width, charge_once_width = 175, 90, 100
-        self._setup_ui(name_width, price_width, charge_once_width)
-        self.controller = MainController(activity_manager, self, name_width, price_width, charge_once_width)
+        name_width, price_width, charge_once_width, n_subscribers_width = 200, 150, 150, 150
+        self._setup_ui(name_width, price_width, charge_once_width, n_subscribers_width)
+        self.controller = MainController(activity_manager, self, name_width, price_width, charge_once_width,
+                                         n_subscribers_width)
 
-    def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int):
+    def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int, n_subscribers_width: int):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
@@ -261,6 +270,10 @@ class ActivityMainUI(QMainWindow):
         self.charge_once_lbl = QLabel(self.widget)
         self.header_layout.addWidget(self.charge_once_lbl)
         config_lbl(self.charge_once_lbl, "Cobro único", fixed_width=charge_once_width)
+
+        self.n_subscribers_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.n_subscribers_lbl)
+        config_lbl(self.n_subscribers_lbl, "Inscriptos", fixed_width=n_subscribers_width)
 
         # Activities.
         self.activity_list = QListWidget(self.widget)
