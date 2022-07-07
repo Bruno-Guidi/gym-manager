@@ -230,7 +230,7 @@ class ActivityMainUI(QMainWindow):
 
     def __init__(self, activity_manager: ActivityManager) -> None:
         super().__init__()
-        name_width, price_width, charge_once_width, n_subscribers_width = 200, 150, 150, 150
+        name_width, price_width, charge_once_width, n_subscribers_width = 200, 150, 150, 135
         self._setup_ui(name_width, price_width, charge_once_width, n_subscribers_width)
         self.controller = MainController(activity_manager, self, name_width, price_width, charge_once_width,
                                          n_subscribers_width)
