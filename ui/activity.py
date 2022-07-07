@@ -339,7 +339,7 @@ class CreateUI(QDialog):
 
         self.name_field = Field(String, parent=self, max_len=consts.ACTIVITY_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre")
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
         # Price.
         self.price_lbl = QLabel(self)
@@ -348,7 +348,7 @@ class CreateUI(QDialog):
 
         self.price_field = Field(Currency, self, max_currency=consts.MAX_CURRENCY)
         self.form_layout.addWidget(self.price_field, 1, 1)
-        config_line(self.price_field, place_holder="000000.00")
+        config_line(self.price_field, place_holder="000000.00", adjust_to_hint=False)
 
         # Charge once.
         self.charge_once_lbl = QLabel(self)
@@ -361,12 +361,12 @@ class CreateUI(QDialog):
 
         # Description.
         self.description_lbl = QLabel(self)
-        self.form_layout.addWidget(self.description_lbl, 3, 0)
+        self.form_layout.addWidget(self.description_lbl, 3, 0, alignment=Qt.AlignTop)
         config_lbl(self.description_lbl, "Descripción")
 
         self.description_text = QTextEdit(self)
         self.form_layout.addWidget(self.description_text, 3, 1)
-        config_line(self.description_text, place_holder="Descripción")
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
