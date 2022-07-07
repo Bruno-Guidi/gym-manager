@@ -137,6 +137,8 @@ class ActivityRow(QWidget):
             activity_list.takeItem(activity_list.row(self.item))
             self.activity_manager.remove(self.activity)
 
+            self.main_ui_controller.refresh_table()
+
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
 
 
@@ -162,7 +164,7 @@ class MainController:
 
         # Configures the page index.
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
-                                       page_len=10, total_len=self.activity_manager.activity_repo.count())
+                                       page_len=2, total_len=self.activity_manager.activity_repo.count())
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -204,13 +206,16 @@ class MainController:
                                                                 self.main_ui.page_index.page_len, filters):
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
+    def refresh_table(self):
+        self.main_ui.filter_header.on_search_click()
+
     # noinspection PyAttributeOutsideInit
     def create_ui(self):
         self._create_ui = CreateUI(self.activity_manager)
         self._create_ui.exec_()
         if self._create_ui.controller.activity is not None:
             self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
-            self.main_ui.page_index.total_len += 1  # ToDo. After removing an activity, update the total_len.
+            self.main_ui.page_index.total_len += 1
 
 
 class ActivityMainUI(QMainWindow):
