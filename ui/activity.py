@@ -90,8 +90,8 @@ class ActivityRow(QWidget):
         config_lbl(self.description_lbl, "Descripción", font_size=12)
 
         self.description_text = QTextEdit(self)
-        self.layout.addWidget(self.description_text, 2, 0, 1, 5)
-        config_line(self.description_text, str(self.activity.description))
+        self.layout.addWidget(self.description_text, 2, 0, 1, 7)
+        config_line(self.description_text, str(self.activity.description), adjust_to_hint=False)
 
         # Adjusts size.
         self.resize(self.minimumWidth(), self.minimumHeight())
