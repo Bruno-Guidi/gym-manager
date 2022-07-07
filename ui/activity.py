@@ -25,7 +25,7 @@ class ActivityRow(QWidget):
         self.item = item
         self.main_ui_controller = main_ui_controller
 
-        self._setup_ui(0, name_width, price_width, charge_once_width)
+        self._setup_ui(name_width, price_width, charge_once_width)
         self.item.setSizeHint(self.sizeHint())
 
         self.is_hidden = False
@@ -33,6 +33,10 @@ class ActivityRow(QWidget):
 
         # noinspection PyUnresolvedReferences
         self.detail_btn.clicked.connect(self.hide_detail)
+        # noinspection PyUnresolvedReferences
+        self.save_btn.clicked.connect(self.save_changes)
+        # noinspection PyUnresolvedReferences
+        self.remove_btn.clicked.connect(self.remove)
 
     def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int):
         self.layout = QGridLayout(self)
@@ -106,16 +110,11 @@ class ActivityRow(QWidget):
         if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            # Updates activity object.
             self.activity.price = self.price_field.value()
             self.activity.description = descr
-
             self.activity_manager.update(self.activity)
-
-            # Updates ui.
-            self.price_summary.setText(str(self.activity.price))
-            self.charge_once_summary.setText("Si" if self.activity.charge_once else "No")
             self.description_text.setText(str(self.activity.description))
+            self.charge_once_checkbox.setChecked(self.activity.charge_once)
 
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
 
@@ -124,18 +123,18 @@ class ActivityRow(QWidget):
             Dialog.info("Error", f"No esta permitido eliminar la actividad '{self.name_field.value()}'.")
             return
 
-        inscriptions, delete = self.activity_manager.n_subscribers(self.activity), False
-        if inscriptions > 0:
-            delete = Dialog.confirm(f"La actividad '{self.activity.name}' tiene {inscriptions} clientes inscriptos. "
+        subscribers, delete = self.activity_manager.n_subscribers(self.activity), False
+        if subscribers > 0:
+            delete = Dialog.confirm(f"La actividad '{self.activity.name}' tiene {subscribers} cliente/s inscripto/s. "
                                     f"¿Desea eliminarla igual?")
 
-        if not delete:  # If the previous confirmation failed, then ask again.
+        if not delete:  # If the previous confirmation failed, or if it didn't show up, then ask one last time.
             delete = Dialog.confirm(f"¿Desea eliminar la actividad '{self.activity.name}'?")
 
         if delete:
-            self.main_ui_controller.opened_now = None
+            activity_list = self.item.listWidget()
+            activity_list.takeItem(activity_list.row(self.item))
             self.activity_manager.remove(self.activity)
-            self.item.listWidget().takeItem(self.item.listWidget().currentRow())
 
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
 
@@ -148,7 +147,6 @@ class MainController:
         self.main_ui = main_ui
 
         self.activity_manager = activity_manager
-        self.opened_now: ActivityRow | None = None
 
         self.current_page, self.page_len = 1, 20
 
