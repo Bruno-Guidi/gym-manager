@@ -295,7 +295,7 @@ class CreateController:
         self.activity_manager = activity_manager
 
         # noinspection PyUnresolvedReferences
-        self.create_ui.ok_btn.clicked.connect(self.create_activity)
+        self.create_ui.confirm_btn.clicked.connect(self.create_activity)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
 
@@ -321,74 +321,64 @@ class CreateUI(QDialog):
         self.controller = CreateController(self, activity_manager)
 
     def _setup_ui(self):
-        self.resize(400, 300)
-
         self.layout = QVBoxLayout(self)
 
-        self.form_layout = QVBoxLayout()
+        # Form.
+        self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
 
         # Name.
-        self.name_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.name_layout)
-        config_layout(self.name_layout, alignment=Qt.AlignLeft)
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_lbl = QLabel()
-        self.name_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "Nombre", font_size=16, extra_width=120)
-
-        self.name_field = Field(String, max_len=consts.ACTIVITY_NAME_CHARS)
-        self.name_layout.addWidget(self.name_field)
-        config_line(self.name_field, place_holder="Nombre", font_size=16)
+        self.name_field = Field(String, parent=self, max_len=consts.ACTIVITY_NAME_CHARS)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre")
 
         # Price.
-        self.price_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.price_layout)
-        config_layout(self.price_layout, alignment=Qt.AlignLeft)
+        self.price_lbl = QLabel(self)
+        self.form_layout.addWidget(self.price_lbl, 1, 0)
+        config_lbl(self.price_lbl, "Precio*")
 
-        self.price_lbl = QLabel()
-        self.price_layout.addWidget(self.price_lbl)
-        config_lbl(self.price_lbl, "Precio", font_size=16, extra_width=120)
-
-        self.price_field = Field(Currency, max_currency=consts.MAX_CURRENCY)
-        self.price_layout.addWidget(self.price_field)
-        config_line(self.price_field, place_holder="Precio", font_size=16)
+        self.price_field = Field(Currency, self, max_currency=consts.MAX_CURRENCY)
+        self.form_layout.addWidget(self.price_field, 1, 1)
+        config_line(self.price_field, place_holder="000000.00")
 
         # Charge once.
-        self.charge_once_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.charge_once_layout)
-        config_layout(self.charge_once_layout, alignment=Qt.AlignLeft)
+        self.charge_once_lbl = QLabel(self)
+        self.form_layout.addWidget(self.charge_once_lbl, 2, 0)
+        config_lbl(self.charge_once_lbl, "Cobro único")
 
-        self.charge_once_lbl = QLabel()
-        self.charge_once_layout.addWidget(self.charge_once_lbl)
-        config_lbl(self.charge_once_lbl, "Cobro único", font_size=16, extra_width=120)
-
-        self.charge_once_checkbox = QCheckBox()
-        self.charge_once_layout.addWidget(self.charge_once_checkbox)
+        self.charge_once_checkbox = QCheckBox(self)
+        self.form_layout.addWidget(self.charge_once_checkbox, 2, 1)
         config_checkbox(self.charge_once_checkbox, checked=False)
 
         # Description.
-        self.description_layout = QHBoxLayout()
-        self.form_layout.addLayout(self.description_layout)
-        config_layout(self.description_layout, alignment=Qt.AlignLeft)
-
         self.description_lbl = QLabel(self)
-        self.description_layout.addWidget(self.description_lbl)
-        config_lbl(self.description_lbl, "Descripción", font_size=16, extra_width=120)
+        self.form_layout.addWidget(self.description_lbl, 3, 0)
+        config_lbl(self.description_lbl, "Descripción")
 
-        self.description_text = QTextEdit()
-        self.description_layout.addWidget(self.description_text)
-        config_line(self.description_text, place_holder="Descripción", font_size=16)
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 3, 1)
+        config_line(self.description_text, place_holder="Descripción")
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
         self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
 
-        self.ok_btn = QPushButton()
-        self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", extra_width=100)
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
 
-        self.cancel_btn = QPushButton()
+        self.cancel_btn = QPushButton(self)
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=100)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
