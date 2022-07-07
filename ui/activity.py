@@ -136,7 +136,8 @@ class ActivityRow(QWidget):
             delete = Dialog.confirm(f"La actividad '{self.activity.name}' tiene {subscribers} cliente/s inscripto/s. "
                                     f"¿Desea eliminarla igual?")
 
-        if not delete:  # If the previous confirmation failed, or if it didn't show up, then ask one last time.
+        # If the previous confirmation failed, or if it didn't show up, then ask one last time.
+        if subscribers == 0 and not delete:
             delete = Dialog.confirm(f"¿Desea eliminar la actividad '{self.activity.name}'?")
 
         if delete:
