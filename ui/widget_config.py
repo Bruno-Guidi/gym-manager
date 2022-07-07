@@ -3,9 +3,10 @@ from typing import Iterable, Callable, Any, Type
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QIcon
-from PyQt5.QtWidgets import QLabel, QLineEdit, QTableWidget, QPushButton, \
-    QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem, \
-    QTextEdit, QCheckBox, QDateEdit, QWidget, QSizePolicy
+from PyQt5.QtWidgets import (
+    QLabel, QLineEdit, QTableWidget, QPushButton,
+    QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem,
+    QTextEdit, QCheckBox, QDateEdit, QWidget, QSizePolicy, QStyledItemDelegate)
 
 
 def config_widget(
@@ -105,6 +106,12 @@ def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], s
     target.setModel(model)
 
 
+class AlignDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super(AlignDelegate, self).initStyleOption(option, index)
+        option.displayAlignment = Qt.AlignJustify
+
+
 def config_table(
         target: QTableWidget, columns: dict[str, tuple[int, type]], n_rows: int = 0, font_size: int = 14,
         allow_resizing: bool = False, min_rows_to_show: int = 0
@@ -156,5 +163,5 @@ def fill_cell(target: QTableWidget, row: int, column: int, data: Any, data_type:
     item = QTableWidgetItem(str(data))
     align = Qt.AlignRight if data_type is int else Qt.AlignLeft
     align = Qt.AlignCenter if data_type is bool else align
-    item.setTextAlignment(align)
+    item.setTextAlignment(align | Qt.AlignVCenter)
     target.setItem(row, column, item)
