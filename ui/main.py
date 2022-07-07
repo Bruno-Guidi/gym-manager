@@ -31,11 +31,11 @@ class Controller:
         # noinspection PyUnresolvedReferences
         self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.activity_ui_btn.clicked.connect(self.show_activity_main_ui)
+        self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.accounting_ui_btn.clicked.connect(self.show_accounting_main_ui)
+        self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.booking_ui_btn.clicked.connect(self.show_booking_main_ui)
+        self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
 
     # noinspection PyAttributeOutsideInit
     def show_client_main_ui(self):

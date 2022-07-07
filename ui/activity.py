@@ -190,6 +190,10 @@ class MainController:
         self.dummy_row.hide_detail()  # This instantiates all the hidden widgets of the dummy row.
         self.main_ui.activity_list.setMinimumHeight(self.dummy_row.sizeHint().height())
 
+        # Fixes the width
+        self.main_ui.setFixedWidth(self.dummy_row.sizeHint().width()
+                                   + self.main_ui.activity_list.verticalScrollBar().sizeHint().height())
+
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_activity_btn.clicked.connect(self.create_ui)
@@ -284,7 +288,7 @@ class ActivityMainUI(QMainWindow):
         self.page_index = PageIndex(self)
         self.layout.addWidget(self.page_index)
 
-        # The height is adjusted in the controller.
+        # The width and height is adjusted in the controller.
 
 
 class CreateController:

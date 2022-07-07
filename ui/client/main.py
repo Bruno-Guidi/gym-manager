@@ -299,6 +299,10 @@ class Controller:
         self.dummy_row.hide_detail()  # This instantiates all the hidden widgets of the dummy row.
         self.main_ui.client_list.setMinimumHeight(self.dummy_row.sizeHint().height())
 
+        # Fixes the width
+        self.main_ui.setFixedWidth(self.dummy_row.sizeHint().width()
+                                   + self.main_ui.client_list.verticalScrollBar().sizeHint().height())
+
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_client_btn.clicked.connect(self.create_ui)
@@ -406,4 +410,4 @@ class ClientMainUI(QMainWindow):
         self.page_index = PageIndex(self.widget)
         self.layout.addWidget(self.page_index)
 
-        # The height is adjusted in the controller.
+        # The width and height is adjusted in the controller.
