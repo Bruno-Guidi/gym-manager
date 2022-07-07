@@ -218,7 +218,7 @@ class Dialog(QDialog):
     def confirm(cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None) -> bool:
         dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True)
         if ok_btn_text is not None:
-            dialog.ok_btn.setText(ok_btn_text)
+            dialog.confirm_btn.setText(ok_btn_text)
         if cancel_btn_text is not None:
             dialog.cancel_btn.setText(cancel_btn_text)
         dialog.exec_()
@@ -235,10 +235,44 @@ class Dialog(QDialog):
         self._setup_ui(title, text, show_cancel_btn)
         self.confirmed = False
         # noinspection PyUnresolvedReferences
-        self.ok_btn.clicked.connect(self.accept)
+        self.confirm_btn.clicked.connect(self.accept)
         if self.cancel_btn is not None:
             # noinspection PyUnresolvedReferences
             self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
+        self.setWindowTitle(title)
+
+        self.layout = QVBoxLayout(self)
+
+        self.text_lbl = QLabel(self)
+        self.layout.addWidget(self.text_lbl, alignment=Qt.AlignCenter)
+        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignJustify)
+        # Adjusts the label size according to the text length
+        self.text_lbl.setWordWrap(True)
+        self.text_lbl.adjustSize()
+        self.text_lbl.setMinimumSize(self.text_lbl.sizeHint())
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn: QPushButton | None = None
+        if show_cancel_btn:
+            self.cancel_btn = QPushButton(self)
+            self.buttons_layout.addWidget(self.cancel_btn)
+            config_btn(self.cancel_btn, "Cancelar")
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
     def accept(self) -> None:
         self.confirmed = True
@@ -247,30 +281,6 @@ class Dialog(QDialog):
     def reject(self) -> None:
         self.confirmed = False
         super().reject()
-
-    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
-        self.resize(300, 120)
-        self.setWindowTitle(title)
-
-        self.layout = QVBoxLayout(self)
-
-        self.question_lbl = QLabel(self)
-        self.layout.addWidget(self.question_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.question_lbl, text=text, extra_width=300)
-
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
-
-        self.ok_btn = QPushButton()
-        self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", extra_width=100)
-
-        self.cancel_btn: QPushButton | None = None
-        if show_cancel_btn:
-            self.cancel_btn = QPushButton()
-            self.buttons_layout.addWidget(self.cancel_btn)
-            config_btn(self.cancel_btn, "Cancelar", extra_width=100)
 
 
 class PageIndex(QWidget):

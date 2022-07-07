@@ -248,7 +248,7 @@ class DailyBalanceController:
         else:
             if self.balance_repo.balance_done(today):
                 overwrite = Dialog.confirm(
-                    f"Ya hay una caja diaria calculada para la fecha {today}. ¿Desea sobreescribirla?", "Si", "No"
+                    f"Ya hay una caja diaria calculada para la fecha {today}.\n¿Desea sobreescribirla?", "Si", "No"
                 )
             if overwrite:
                 # noinspection PyTypeChecker
