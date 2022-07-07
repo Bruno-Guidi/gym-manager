@@ -34,7 +34,7 @@ class ActivityRow(QWidget):
         # noinspection PyUnresolvedReferences
         self.detail_btn.clicked.connect(self.hide_detail)
 
-    def _setup_ui(self, height: int, name_width: int, price_width: int, charge_once_width: int):
+    def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int):
         self.layout = QGridLayout(self)
         self.layout.setAlignment(Qt.AlignLeft)
 
