@@ -115,6 +115,10 @@ class ClientRepo(abc.ABC):
 class ActivityRepo(abc.ABC):
     """Activities repository interface.
     """
+    @abc.abstractmethod
+    def exists(self, name: str | String) -> bool:
+        raise NotImplementedError
+
 
     @abc.abstractmethod
     def get(self, name: str | String) -> Activity:

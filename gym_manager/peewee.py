@@ -221,6 +221,12 @@ class SqliteActivityRepo(ActivityRepo):
         self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(str, String), value_type=Activity, max_len=cache_len)
 
+    def exists(self, name: str | String) -> bool:
+        if self._do_caching and name in self.cache:
+            return True
+
+        return ActivityTable.get_or_none(act_name=name) is not None
+
     # noinspection PyShadowingBuiltins
     def get(self, name: str | String) -> Activity:
         """Retrieves the activity with the given *name* in the repository, if it exists.

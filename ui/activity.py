@@ -303,15 +303,19 @@ class CreateController:
     def create_activity(self):
         valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
                                               max_len=consts.ACTIVITY_DESCR_CHARS)
-        if all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(), valid_descr]):
+        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
+                            valid_descr])
+        if not valid_fields:
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        elif self.activity_manager.activity_repo.exists(self.create_ui.name_field.value()):
+            Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
+        else:
             self.activity = self.activity_manager.create(
                 self.create_ui.name_field.value(), self.create_ui.price_field.value(),
                 self.create_ui.charge_once_checkbox.isChecked(), descr
             )
             Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
             self.create_ui.name_field.window().close()
-        else:
-            Dialog.info("Error", "Hay datos que no son válidos.")
 
 
 class CreateUI(QDialog):
