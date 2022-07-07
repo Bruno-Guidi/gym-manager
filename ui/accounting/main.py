@@ -103,7 +103,7 @@ class MainController:
         self._extract_ui = ExtractUI(self.accounting_system.transaction_repo, self.accounting_system.methods)
         self._extract_ui.exec_()
 
-        extraction, row_count = self._extract_ui.controller.extract_ui, self.main_ui.transaction_table.rowCount()
+        extraction, row_count = self._extract_ui.controller.extraction, self.main_ui.transaction_table.rowCount()
         if (extraction is not None and row_count < self.page_len
                 and self.main_ui.filter_header.passes_filters(extraction)):
             self.transactions[row_count] = extraction
