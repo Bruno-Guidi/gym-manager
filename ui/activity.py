@@ -164,7 +164,7 @@ class MainController:
 
         # Configures the page index.
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
-                                       page_len=2, total_len=self.activity_manager.activity_repo.count())
+                                       page_len=10, total_len=self.activity_manager.activity_repo.count())
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
