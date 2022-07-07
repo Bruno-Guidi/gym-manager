@@ -55,7 +55,8 @@ class ActivityRow(QWidget):
         # Charge once.
         self.charge_once_checkbox = QCheckBox(self)
         self.layout.addWidget(self.charge_once_checkbox, 0, 2, alignment=Qt.AlignTop)
-        config_checkbox(self.charge_once_checkbox, font="Inconsolata", fixed_width=charge_once_width)
+        config_checkbox(self.charge_once_checkbox, checked=self.activity.charge_once, font="Inconsolata",
+                        fixed_width=charge_once_width)
 
         # See client detail button.
         self.detail_btn = QPushButton(self)
@@ -139,16 +140,18 @@ class ActivityRow(QWidget):
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue eliminada correctamente.")
 
 
+_dummy_activity = Activity(String("dummy_name", max_len=consts.ACTIVITY_NAME_CHARS),
+                           Currency("111111.11"), charge_once=True,
+                           description=String("dummy_descr", max_len=consts.ACTIVITY_DESCR_CHARS))
+
+
 class MainController:
     def __init__(
             self, activity_manager: ActivityManager, main_ui: ActivityMainUI, name_width: int, price_width: int,
             charge_once_width: int
     ):
         self.main_ui = main_ui
-
         self.activity_manager = activity_manager
-
-        self.current_page, self.page_len = 1, 20
 
         self.name_width, self.price_width, self.charge_once_width = name_width, price_width, charge_once_width
 
@@ -164,17 +167,29 @@ class MainController:
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
+        # Sets the correct width for the activity list. A dummy row is used, so the width is correctly set even if there
+        # are no rows to load.
+        self.dummy_row = ActivityRow(QListWidgetItem(), name_width, price_width, charge_once_width, self,
+                                     _dummy_activity, activity_manager)
+        # The min width includes the width (obtained with height()) of the vertical scrollbar of the list.
+        self.main_ui.activity_list.setMinimumWidth(self.dummy_row.sizeHint().width()
+                                                   + self.main_ui.activity_list.verticalScrollBar().height())
+
+        # Sets the min height of the client list, so the ui can show at least one activity with its details.
+        self.dummy_row.hide_detail()  # This instantiates all the hidden widgets of the dummy row.
+        self.main_ui.activity_list.setMinimumHeight(self.dummy_row.sizeHint().height())
+
+        # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_activity_btn.clicked.connect(self.create_ui)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
-        if check_limit and len(self.main_ui.activity_list) == self.page_len:
+        if check_limit and len(self.main_ui.activity_list) == self.main_ui.page_index.page_len:
             self.main_ui.activity_list.takeItem(len(self.main_ui.activity_list) - 1)
 
         if check_filters and not self.main_ui.filter_header.passes_filters(activity):
             return
 
-        row_height = 50
         item = QListWidgetItem(self.main_ui.activity_list)
         self.main_ui.activity_list.addItem(item)
         row = ActivityRow(item, self.name_width, self.price_width, self.charge_once_width, self, activity,
@@ -185,7 +200,8 @@ class MainController:
         self.main_ui.activity_list.clear()
 
         self.main_ui.page_index.total_len = self.activity_manager.activity_repo.count(filters)
-        for activity in self.activity_manager.activity_repo.all(self.current_page, self.page_len, filters):
+        for activity in self.activity_manager.activity_repo.all(self.main_ui.page_index.page,
+                                                                self.main_ui.page_index.page_len, filters):
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
     # noinspection PyAttributeOutsideInit
