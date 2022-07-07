@@ -85,6 +85,9 @@ class ActivityRow(QWidget):
         self.layout.addWidget(self.description_text, 2, 0, 1, 5)
         config_line(self.description_text, str(self.activity.description))
 
+        # Adjusts size.
+        self.resize(self.minimumWidth(), self.minimumHeight())
+
     def _set_hidden(self, hidden: bool):
         # Hides widgets.
         self.name_lbl.setHidden(hidden)
