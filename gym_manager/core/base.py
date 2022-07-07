@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import decimal
 import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -8,6 +9,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Callable, TypeAlias
 
 logger = logging.getLogger(__name__)
+decimal.getcontext().rounding = decimal.ROUND_HALF_UP
 
 ONE_MONTH_TD = timedelta(days=30)
 
@@ -165,6 +167,51 @@ class Currency(Validatable):
     """Decimal wrapper that supports a max currency value.
     """
 
+    @classmethod
+    def fmt(
+            cls, currency: Currency, places: int = 2, symbol: str = '$', sep: str = '.', dp_sep: str = ','
+    ) -> str:
+        """Transforms a Currency to str.
+
+        This method was extracted from https://docs.python.org/3/library/decimal.html#recipes.
+
+        Args:
+            currency: currency to transform.
+            places: numbers after the decimal point.
+            symbol: symbol of the currency.
+            sep: int part separator.
+            dp_sep: separator between the int and the decimal part.
+
+        Returns:
+            The Currency as str.
+        """
+        dp_sep = '' if places == 0 else dp_sep
+
+        q = Decimal(10) ** -places  # 2 places --> '0.01'
+        sign, digits, exp = currency.as_primitive().quantize(q).as_tuple()
+        digits = list(map(str, digits))
+
+        result = []
+        build, next = result.append, digits.pop
+        if sign:
+            build(')')
+        for i in range(places):  # Fills positions after the decimal point.
+            build(next() if digits else '0')
+        if places:
+            build(dp_sep)
+        if not digits:
+            build('0')
+        i = 0
+        while len(digits) > 0:
+            build(next())
+            i += 1
+            if i == 3 and len(digits) > 0:
+                i = 0
+                build(sep)
+        build(symbol)
+        build('(' if sign else '')
+        return ''.join(reversed(result))
+
     def __eq__(self, other: Currency) -> bool:
         if isinstance(other, type(self)):
             return self._value == other.as_primitive()
@@ -251,7 +298,7 @@ class Activity:
 
     name: String
     price: Currency = field(compare=False)
-    charge_once: bool = field(compare=False)
+    charge_once: bool = field(compare=False)  # ToDo Move after description.
     description: String = field(compare=False)
     locked: bool = False
 

@@ -6,16 +6,16 @@ from typing import Iterable
 from PyQt5 import QtCore
 from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
-    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox
+    QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox, QSpacerItem, QSizePolicy
 
 from gym_manager.core import system, constants
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
-    NumberEqual, String, Balance
+    NumberEqual, String, Balance, Currency, Transaction
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.system import AccountingSystem
 from ui.accounting.operations import ExtractUI
 from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn, fill_combobox, \
-    config_date_edit, config_checkbox, config_line
+    config_date_edit, config_checkbox, config_line, fill_cell
 from ui.widgets import Dialog, FilterHeader, PageIndex, Field
 
 
@@ -28,6 +28,7 @@ class MainController:
 
         self.accounting_system = accounting_system
         self.current_page, self.page_len = 1, 20
+        self.transactions: dict[int, Transaction] = {}
 
         # Configure the filtering widget.
         filters = (ClientLike("client_name", display_name="Nombre cliente",
@@ -58,11 +59,13 @@ class MainController:
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
-        self.main_ui.generate_balance_action.triggered.connect(self.daily_balance)
+        self.main_ui.generate_balance_action.triggered.connect(self.daily_balance_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.balance_history_action.triggered.connect(self.balance_history_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.register_extraction_action.triggered.connect(self.extraction)
+        self.main_ui.register_extraction_action.triggered.connect(self.extract_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.see_detail_action.triggered.connect(self.detail_ui)
 
     def fill_transaction_table(self, filters: list[FilterValuePair]):
         self.main_ui.transaction_table.setRowCount(0)
@@ -70,25 +73,24 @@ class MainController:
         self.main_ui.page_index.total_len = self.accounting_system.transaction_repo.count(filters)
         transactions = self.accounting_system.transaction_repo.all(self.current_page, self.page_len, filters)
         for row, transaction in enumerate(transactions):
-            self.main_ui.transaction_table.setRowCount(row + 1)
-            self.main_ui.transaction_table.setItem(row, 0, QTableWidgetItem(str(transaction.id)))
-            self.main_ui.transaction_table.setItem(row, 1, QTableWidgetItem(str(transaction.type)))
-            client_name = str(transaction.client.name) if transaction.client is not None else "-"
-            self.main_ui.transaction_table.setItem(row, 2, QTableWidgetItem(client_name))
-            self.main_ui.transaction_table.setItem(row, 3, QTableWidgetItem(str(transaction.when)))
-            self.main_ui.transaction_table.setItem(row, 4, QTableWidgetItem(str(transaction.amount)))
-            self.main_ui.transaction_table.setItem(row, 5, QTableWidgetItem(str(transaction.method)))
-            self.main_ui.transaction_table.setItem(row, 6, QTableWidgetItem(str(transaction.responsible)))
-            self.main_ui.transaction_table.setItem(row, 7, QTableWidgetItem(str(transaction.description)))
+            self.transactions[row] = transaction
+            fill_cell(self.main_ui.transaction_table, row, 0, transaction.id, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row, 1, transaction.when, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row, 2, transaction.type, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row, 3, transaction.method, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row, 4,
+                      transaction.client.name if transaction.client is not None else "-", data_type=str)
+            fill_cell(self.main_ui.transaction_table, row, 5, Currency.fmt(transaction.amount), data_type=int)
+            fill_cell(self.main_ui.transaction_table, row, 6, transaction.responsible, data_type=str)
 
-    def daily_balance(self):
+    def daily_balance_ui(self):
         # noinspection PyAttributeOutsideInit
-        self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
-                                               self.accounting_system.transactions_types(),
-                                               self.accounting_system.methods,
-                                               self.accounting_system.balance_repo)
-        self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
-        self.daily_balance_ui.show()
+        self._daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                                self.accounting_system.balance_repo,
+                                                self.accounting_system.transactions_types(),
+                                                self.accounting_system.methods)
+        self._daily_balance_ui.setWindowModality(Qt.ApplicationModal)
+        self._daily_balance_ui.show()
 
     def balance_history_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -96,22 +98,28 @@ class MainController:
         self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
         self._balance_history_ui.show()
 
-    def extraction(self):
-        self.extract_ui = ExtractUI(self.accounting_system.methods, self.accounting_system.transaction_repo)
-        self.extract_ui.exec_()
+    def extract_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._extract_ui = ExtractUI(self.accounting_system.transaction_repo, self.accounting_system.methods)
+        self._extract_ui.exec_()
 
-        extraction, row_count = self.extract_ui.controller.extraction, self.main_ui.transaction_table.rowCount()
+        extraction, row_count = self._extract_ui.controller.extraction, self.main_ui.transaction_table.rowCount()
         if (extraction is not None and row_count < self.page_len
                 and self.main_ui.filter_header.passes_filters(extraction)):
-            self.main_ui.transaction_table.setRowCount(row_count + 1)
-            self.main_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(extraction.id)))
-            self.main_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(extraction.type)))
-            self.main_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem("-"))
-            self.main_ui.transaction_table.setItem(row_count, 3, QTableWidgetItem(str(extraction.when)))
-            self.main_ui.transaction_table.setItem(row_count, 4, QTableWidgetItem(str(extraction.amount)))
-            self.main_ui.transaction_table.setItem(row_count, 5, QTableWidgetItem(str(extraction.method)))
-            self.main_ui.transaction_table.setItem(row_count, 6, QTableWidgetItem(str(extraction.responsible)))
-            self.main_ui.transaction_table.setItem(row_count, 7, QTableWidgetItem(str(extraction.description)))
+            self.transactions[row_count] = extraction
+            fill_cell(self.main_ui.transaction_table, row_count, 0, extraction.id, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row_count, 1, extraction.when, data_type=int)
+            fill_cell(self.main_ui.transaction_table, row_count, 2, extraction.type, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row_count, 3, extraction.method, data_type=str)
+            fill_cell(self.main_ui.transaction_table, row_count, 4, "-", data_type=str)
+            fill_cell(self.main_ui.transaction_table, row_count, 5, Currency.fmt(extraction.amount), data_type=int)
+            fill_cell(self.main_ui.transaction_table, row_count, 6, extraction.responsible, data_type=str)
+
+    def detail_ui(self):
+        if self.main_ui.transaction_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una transacción.")
+        else:
+            Dialog.info("Detalle", str(self.transactions[self.main_ui.transaction_table.currentRow()].description))
 
 
 class AccountingMainUI(QMainWindow):
@@ -124,21 +132,14 @@ class AccountingMainUI(QMainWindow):
         self.controller = MainController(self, accounting_system, client)
 
     def _setup_ui(self):
-        self.resize(800, 600)
-
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, 800, 600))
-
+        self.setWindowTitle("Contabilidad")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
         self.main_layout = QVBoxLayout(self.widget)
-        config_layout(self.main_layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10)
 
         # Menu bar.
         self.menu_bar = QMenuBar(self)
         self.setMenuBar(self.menu_bar)
-        self.menu_bar.setGeometry(QtCore.QRect(0, 0, 800, 20))
 
         # Balance menu bar.
         self.daily_balance_menu = QMenu("Caja diaria", self)
@@ -151,16 +152,18 @@ class AccountingMainUI(QMainWindow):
         self.daily_balance_menu.addAction(self.balance_history_action)
 
         # Extractions menu bar.
-        self.extraction_menu = QMenu("Extracción", self)
-        self.menu_bar.addMenu(self.extraction_menu)
+        self.transaction_menu = QMenu("Transacciones", self)
+        self.menu_bar.addMenu(self.transaction_menu)
 
-        self.register_extraction_action = QAction("Registrar", self)
-        self.extraction_menu.addAction(self.register_extraction_action)
+        self.register_extraction_action = QAction("Registrar extracción", self)
+        self.transaction_menu.addAction(self.register_extraction_action)
+
+        self.see_detail_action = QAction("Ver detalle", self)
+        self.transaction_menu.addAction(self.see_detail_action)
 
         # Utilities.
         self.utils_layout = QHBoxLayout()
         self.main_layout.addLayout(self.utils_layout)
-        config_layout(self.utils_layout, spacing=0, left_margin=40, top_margin=15, right_margin=40)
 
         # Filtering.
         self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
@@ -170,14 +173,18 @@ class AccountingMainUI(QMainWindow):
         self.transaction_table = QTableWidget(self.widget)
         self.main_layout.addWidget(self.transaction_table)
         config_table(
-            target=self.transaction_table, allow_resizing=True,
-            columns={"#": 100, "Tipo": 70, "Cliente": 175, "Fecha": 100, "Monto": 100, "Método": 120,
-                     "Responsable": 175, "Descripción": 200}
+            target=self.transaction_table, allow_resizing=True, min_rows_to_show=5,
+            columns={"# Pago": (8, int), "Fecha": (10, int), "Tipo": (8, str), "Método": (8, str),
+                     "Cliente": (constants.CLIENT_NAME_CHARS // 2, str), "Monto": (10, int),
+                     "Responsable": (constants.CLIENT_NAME_CHARS // 2, str)}
         )
 
         # Index.
         self.page_index = PageIndex(self)
         self.main_layout.addWidget(self.page_index)
+
+        # Adjusts size.
+        self.setMaximumWidth(self.widget.sizeHint().width())
 
 
 class DailyBalanceController:
@@ -197,23 +204,26 @@ class DailyBalanceController:
         self.balance_repo = balance_repo
         self.balance: Balance | None = None
 
-        self.daily_balance_ui.date_lbl.setText(str(date.today() if when is None else when))
+        config_lbl(self.daily_balance_ui.date_lbl, text=str(date.today() if when is None else when), font_size=18)
+
         if responsible is not None and balance is not None:
             self.daily_balance_ui.responsible_field.setText(str(responsible))
             self.balance = balance
-            self.daily_balance_ui.responsible_field.setEnabled(False)
-            self.daily_balance_ui.confirm_btn.setVisible(False)
+            self.daily_balance_ui.responsible_field.setReadOnly(True)
+            self.daily_balance_ui.confirm_btn.setEnabled(False)
         else:
             self._generate_balance(transaction_types, transaction_methods)  # Generates the balance.
 
         # Shows balance information in the ui.
         types_dict = {trans_type: i + 1 for i, trans_type in enumerate(transaction_types)}
-        methods_dict = {trans_method: i + 2 for i, trans_method in enumerate(transaction_methods)}
-        methods_dict["Total"] = len(methods_dict) + 2
+        methods_dict = {trans_method: i + 3 for i, trans_method in enumerate(transaction_methods)}
+        methods_dict["Total"] = len(methods_dict) + 3
         for trans_type, type_balance in self.balance.items():
             for trans_method, method_balance in type_balance.items():
-                lbl = QLabel(str(method_balance))
-                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type])
+                lbl = QLabel(self.daily_balance_ui.widget)
+                config_lbl(lbl, Currency.fmt(method_balance))
+                self.daily_balance_ui.balance_layout.addWidget(lbl, methods_dict[trans_method], types_dict[trans_type],
+                                                               alignment=Qt.AlignRight)
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
@@ -239,7 +249,7 @@ class DailyBalanceController:
         else:
             if self.balance_repo.balance_done(today):
                 overwrite = Dialog.confirm(
-                    f"Ya hay una caja diaria calculada para la fecha {today}. ¿Desea sobreescribirla?", "Si", "No"
+                    f"Ya hay una caja diaria calculada para la fecha {today}.\n¿Desea sobreescribirla?", "Si", "No"
                 )
             if overwrite:
                 # noinspection PyTypeChecker
@@ -253,9 +263,9 @@ class DailyBalanceUI(QMainWindow):
     def __init__(
             self,
             transaction_repo: TransactionRepo,
+            balance_repo: BalanceRepo,
             transaction_types: Iterable[String],
             transaction_methods: Iterable[String],
-            balance_repo: BalanceRepo,
             when: date | None = None,
             responsible: String | None = None,
             balance: Balance | None = None
@@ -266,67 +276,90 @@ class DailyBalanceUI(QMainWindow):
                                                  transaction_methods, when, responsible, balance)
 
     def _setup_ui(self):
+        self.setWindowTitle("Caja diaria")
         self.widget = QWidget(self)
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
+        config_layout(self.layout, left_margin=20, right_margin=20)
 
-        # Header.
+        # Header layout.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
 
-        self.title = QLabel(self.widget)
-        self.header_layout.addWidget(self.title)
-        config_lbl(self.title, "Caja diaria")
+        # Form labels layout.
+        self.form_lbl_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.form_lbl_layout)
+        config_layout(self.header_layout, left_margin=40, right_margin=40)
 
-        self.date_lbl = QLabel(self.widget)
-        self.header_layout.addWidget(self.date_lbl)
-        config_lbl(self.date_lbl)
+        self.title = QLabel(self.widget)
+        self.form_lbl_layout.addWidget(self.title, alignment=Qt.AlignVCenter)
+        config_lbl(self.title, "Caja diaria", font_size=18)
+
+        self.responsible_lbl = QLabel(self.widget)
+        self.form_lbl_layout.addWidget(self.responsible_lbl, alignment=Qt.AlignVCenter)
+        config_lbl(self.responsible_lbl, "Responsable*", font_size=18)
+
+        # Spacer.
+        self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        # Form data layout.
+        self.form_data_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.form_data_layout)
+
+        self.date_lbl = QLabel(self.widget)  # The widget config is done in the controller.
+        self.form_data_layout.addWidget(self.date_lbl, alignment=Qt.AlignLeft)
+
+        self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
+        self.form_data_layout.addWidget(self.responsible_field, alignment=Qt.AlignVCenter)
+        config_line(self.responsible_field, place_holder="Responsable", font_size=18)
+
+        # Spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # Balance.
         self.balance_layout = QGridLayout()
         self.layout.addLayout(self.balance_layout)
+        self.balance_layout.setHorizontalSpacing(50)
 
         self.method_lbl = QLabel(self.widget)
-        self.method_lbl.setText("Método")
-        self.balance_layout.addWidget(self.method_lbl, 1, 0)
+        self.balance_layout.addWidget(self.method_lbl, 2, 0)
+        config_lbl(self.method_lbl, "Método")
 
-        self.income_lbl = QLabel(self.widget)
-        self.income_lbl.setText("Ingresos")
-        self.balance_layout.addWidget(self.income_lbl, 1, 1)
+        self.charges_lbl = QLabel(self.widget)
+        self.balance_layout.addWidget(self.charges_lbl, 2, 1)
+        config_lbl(self.charges_lbl, "Cobros")
 
-        self.expenses_lbl = QLabel(self.widget)
-        self.expenses_lbl.setText("Egresos")
-        self.balance_layout.addWidget(self.expenses_lbl, 1, 2)
+        self.extractions_lbl = QLabel(self.widget)
+        self.balance_layout.addWidget(self.extractions_lbl, 2, 2)
+        config_lbl(self.extractions_lbl, "Extracciones")
 
         self.cash_lbl = QLabel(self.widget)
-        self.cash_lbl.setText("Efectivo")
-        self.balance_layout.addWidget(self.cash_lbl, 2, 0)
+        self.balance_layout.addWidget(self.cash_lbl, 3, 0)
+        config_lbl(self.cash_lbl, "Efectivo")
 
         self.debit_lbl = QLabel(self.widget)
-        self.debit_lbl.setText("Débito")
-        self.balance_layout.addWidget(self.debit_lbl, 3, 0)
+        self.balance_layout.addWidget(self.debit_lbl, 4, 0)
+        config_lbl(self.debit_lbl, "Débito")
 
         self.credit_lbl = QLabel(self.widget)
-        self.credit_lbl.setText("Crédito")
-        self.balance_layout.addWidget(self.credit_lbl, 4, 0)
+        self.balance_layout.addWidget(self.credit_lbl, 5, 0)
+        config_lbl(self.credit_lbl, "Crédito")
 
         self.total_lbl = QLabel(self.widget)
-        self.total_lbl.setText("TOTAL")
-        self.balance_layout.addWidget(self.total_lbl, 5, 0)
+        self.balance_layout.addWidget(self.total_lbl, 6, 0)
+        config_lbl(self.total_lbl, "TOTAL")
 
-        # Responsible.
-        self.responsible_lbl = QLabel(self.widget)
-        self.balance_layout.addWidget(self.responsible_lbl, 6, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
-        self.balance_layout.addWidget(self.responsible_field, 6, 1, 1, 2)
-        config_line(self.responsible_field, place_holder="Responsable")
+        # Spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Expanding))
 
         # Confirm button.
         self.confirm_btn = QPushButton(self.widget)
-        self.confirm_btn.setText("Cerrar caja")
-        self.layout.addWidget(self.confirm_btn)
+        self.layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
+        config_btn(self.confirm_btn, "Cerrar caja", extra_width=40)
+
+        # Adjusts size.
+        self.setMinimumSize(self.widget.sizeHint())
+        self.setMaximumSize(self.widget.sizeHint())
 
 
 class BalanceHistoryController:
@@ -344,7 +377,7 @@ class BalanceHistoryController:
         fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
                       display=lambda pair: pair[0])
 
-        self._balances: dict[int, tuple[date, String, Balance]] = {}  # ToDo Create a namedtuple to store all this.
+        self._balances: dict[int, tuple[date, String, Balance]] = {}
         self.load_last_n_balances()
 
         # Sets callbacks.
@@ -377,12 +410,10 @@ class BalanceHistoryController:
         for when, responsible, balance in self.balance_repo.all(from_date, to_date):
             row_count = self.history_ui.transaction_table.rowCount()
             self._balances[row_count] = when, responsible, balance
-            self.history_ui.transaction_table.setRowCount(row_count + 1)
-            self.history_ui.transaction_table.setItem(row_count, 0, QTableWidgetItem(str(when)))
-            self.history_ui.transaction_table.setItem(row_count, 1, QTableWidgetItem(str(responsible)))
-            self.history_ui.transaction_table.setItem(row_count, 2, QTableWidgetItem(str(balance["Cobro"]["Total"])))
-            self.history_ui.transaction_table.setItem(row_count, 3,
-                                                      QTableWidgetItem(str(balance["Extracción"]["Total"])))
+            fill_cell(self.history_ui.transaction_table, row_count, 0, when, data_type=int)
+            fill_cell(self.history_ui.transaction_table, row_count, 1, responsible, data_type=str)
+            fill_cell(self.history_ui.transaction_table, row_count, 2, balance["Cobro"]["Total"], data_type=int)
+            fill_cell(self.history_ui.transaction_table, row_count, 3, balance["Extracción"]["Total"], data_type=int)
 
     def load_last_n_balances(self):
         td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
@@ -399,9 +430,9 @@ class BalanceHistoryController:
         else:
             when, responsible, balance = self._balances[self.history_ui.transaction_table.currentRow()]
             self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
+                                                   self.balance_repo,
                                                    self.accounting_system.transactions_types(),
-                                                   self.accounting_system.methods,
-                                                   self.balance_repo, when, responsible, balance)
+                                                   self.accounting_system.methods, when, responsible, balance)
             self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
             self.daily_balance_ui.show()
 
@@ -414,6 +445,7 @@ class BalanceHistoryUI(QMainWindow):
         self.controller = BalanceHistoryController(self, balance_repo, accounting_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Historial de cajas diarias")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
@@ -421,40 +453,44 @@ class BalanceHistoryUI(QMainWindow):
         # Header layout.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
+        config_layout(self.header_layout, left_margin=250, right_margin=250, alignment=Qt.AlignCenter)
 
-        # Last n balances.
-        self.last_n_layout = QVBoxLayout()
-        self.header_layout.addLayout(self.last_n_layout)
+        # Filters.
+        self.filters_layout = QGridLayout()
+        self.header_layout.addLayout(self.filters_layout)
 
         self.last_n_checkbox = QCheckBox(self.widget)
-        self.last_n_layout.addWidget(self.last_n_checkbox)
-        config_checkbox(self.last_n_checkbox, True, "Últimos", direction=Qt.LayoutDirection.LeftToRight)
-
-        self.last_n_combobox = QComboBox(self.widget)
-        self.last_n_layout.addWidget(self.last_n_combobox)
-        config_combobox(self.last_n_combobox)
-
-        # Specific date balance.
-        self.date_layout = QVBoxLayout()
-        self.header_layout.addLayout(self.date_layout)
+        self.filters_layout.addWidget(self.last_n_checkbox, 0, 0)
+        config_checkbox(self.last_n_checkbox, "Últimos", checked=True, layout_dir=Qt.LayoutDirection.LeftToRight)
 
         self.date_checkbox = QCheckBox(self.widget)
-        self.date_layout.addWidget(self.date_checkbox)
-        config_checkbox(self.date_checkbox, False, "Fecha", direction=Qt.LayoutDirection.LeftToRight)
+        self.filters_layout.addWidget(self.date_checkbox, 1, 0)
+        config_checkbox(self.date_checkbox, "Fecha", checked=False, layout_dir=Qt.LayoutDirection.LeftToRight)
 
         self.date_edit = QDateEdit(self.widget)
-        self.date_layout.addWidget(self.date_edit)
-        config_date_edit(self.date_edit, date.today())
+        self.filters_layout.addWidget(self.date_edit, 1, 1)
+        config_date_edit(self.date_edit, date.today(), calendar=True)
+
+        self.last_n_combobox = QComboBox(self.widget)
+        self.filters_layout.addWidget(self.last_n_combobox, 0, 1)
+        config_combobox(self.last_n_combobox, extra_width=20, fixed_width=self.date_edit.width())
+
+        # Horizontal spacer.
+        self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
         # Balance detail button.
         self.detail_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.detail_btn)
-        config_btn(self.detail_btn, "Detalle")
+        config_btn(self.detail_btn, "Detalle", extra_width=20)
 
         # Transactions.
         self.transaction_table = QTableWidget(self.widget)
         self.layout.addWidget(self.transaction_table)
         config_table(
-            target=self.transaction_table, allow_resizing=True,
-            columns={"Fecha": 100, "Responsable": 175, "Cobros": 100, "Extracciones": 100}
+            target=self.transaction_table, allow_resizing=True, min_rows_to_show=1,
+            columns={"Fecha": (10, int), "Responsable": (constants.CLIENT_NAME_CHARS, str), "Cobros": (12, int),
+                     "Extracciones": (12, int)}
         )
+
+        # Adjusts size.
+        self.setFixedWidth(self.sizeHint().width())

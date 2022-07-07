@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from PyQt5.QtCore import QRect, Qt
-from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton
+from PyQt5.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QGridLayout,
+    QSpacerItem, QSizePolicy)
 
 from gym_manager.booking.core import BookingSystem
 from gym_manager.core.system import ActivityManager, AccountingSystem
@@ -27,13 +29,13 @@ class Controller:
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
-        self.main_ui.client_ui_btn.clicked.connect(self.show_client_main_ui)
+        self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.activity_ui_btn.clicked.connect(self.show_activity_main_ui)
+        self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.accounting_ui_btn.clicked.connect(self.show_accounting_main_ui)
+        self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.booking_ui_btn.clicked.connect(self.show_booking_main_ui)
+        self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
 
     # noinspection PyAttributeOutsideInit
     def show_client_main_ui(self):
@@ -68,39 +70,60 @@ class MainUI(QMainWindow):
         self.controller = Controller(self, client_repo, activity_manager, accounting_system, booking_system)
 
     def _setup_ui(self):
-        width, height = 800, 600
-        self.resize(width, height)
+        self.setWindowTitle("Gestor La Cascada")
 
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        self.widget = QWidget(self.central_widget)
-        self.widget.setGeometry(QRect(0, 0, width, height))
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
-        config_layout(self.layout, left_margin=10, top_margin=10, right_margin=10, bottom_margin=10, spacing=10)
 
-        self.name_lbl = QLabel()
+        self.name_lbl = QLabel(self.widget)
         self.layout.addWidget(self.name_lbl)
         config_lbl(self.name_lbl, "La cascada", font_size=28)
 
-        self.first_row_layout = QHBoxLayout()
-        self.layout.addLayout(self.first_row_layout)
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
-        self.client_ui_btn = QPushButton()
-        self.first_row_layout.addWidget(self.client_ui_btn)
-        config_btn(self.client_ui_btn, "Cli", width=80, height=80)
+        self.top_grid_layout = QGridLayout()
+        self.layout.addLayout(self.top_grid_layout)
 
-        self.activity_ui_btn = QPushButton()
-        self.first_row_layout.addWidget(self.activity_ui_btn)
-        config_btn(self.activity_ui_btn, "Act", width=80, height=80)
+        self.clients_btn = QPushButton(self.widget)
+        self.top_grid_layout.addWidget(self.clients_btn, 0, 0, alignment=Qt.AlignCenter)
+        config_btn(self.clients_btn, icon_path="ui/resources/clients.png", icon_size=96)
 
-        self.second_row_layout = QHBoxLayout()
-        self.layout.addLayout(self.second_row_layout)
+        self.clients_lbl = QLabel(self.widget)
+        self.top_grid_layout.addWidget(self.clients_lbl, 1, 0, alignment=Qt.AlignCenter)
+        config_lbl(self.clients_lbl, "Clientes", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
-        self.booking_ui_btn = QPushButton()
-        self.second_row_layout.addWidget(self.booking_ui_btn)
-        config_btn(self.booking_ui_btn, "Turn", width=80, height=80)
+        self.activities_btn = QPushButton(self.widget)
+        self.top_grid_layout.addWidget(self.activities_btn, 0, 1, alignment=Qt.AlignCenter)
+        config_btn(self.activities_btn, icon_path="ui/resources/activities.png", icon_size=96)
 
-        self.accounting_ui_btn = QPushButton()
-        self.second_row_layout.addWidget(self.accounting_ui_btn)
-        config_btn(self.accounting_ui_btn, "Cont", width=80, height=80)
+        self.activities_lbl = QLabel(self.widget)
+        self.top_grid_layout.addWidget(self.activities_lbl, 1, 1, alignment=Qt.AlignCenter)
+        config_lbl(self.activities_lbl, "Actividades", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        self.bottom_grid_layout = QGridLayout()
+        self.layout.addLayout(self.bottom_grid_layout)
+
+        self.bookings_btn = QPushButton(self.widget)
+        self.bottom_grid_layout.addWidget(self.bookings_btn, 0, 0, alignment=Qt.AlignCenter)
+        config_btn(self.bookings_btn, icon_path="ui/resources/bookings.png", icon_size=96)
+
+        self.bookings_lbl = QLabel(self.widget)
+        self.bottom_grid_layout.addWidget(self.bookings_lbl, 1, 0, alignment=Qt.AlignCenter)
+        config_lbl(self.bookings_lbl, "Turnos", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
+        self.accounting_btn = QPushButton(self.widget)
+        self.bottom_grid_layout.addWidget(self.accounting_btn, 0, 1, alignment=Qt.AlignCenter)
+        config_btn(self.accounting_btn, icon_path="ui/resources/accounting.png", icon_size=96)
+
+        self.accounting_lbl = QLabel(self.widget)
+        self.bottom_grid_layout.addWidget(self.accounting_lbl, 1, 1, alignment=Qt.AlignCenter)
+        config_lbl(self.accounting_lbl, "Contabilidad", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
+        # Adjusts size.
+        self.setFixedSize(self.sizeHint())
+

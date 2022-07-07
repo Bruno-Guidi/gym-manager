@@ -270,11 +270,12 @@ class BookingSystem:
 
     def cancel(self, booking: Booking, responsible: str, cancel_fixed: bool = False):
         booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
-        booking.is_fixed = not cancel_fixed
+        # booking.is_fixed = not cancel_fixed
         self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
 
     def register_charge(self, booking: Booking, transaction: Transaction):
         prev_state = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
+        booking.transaction = transaction
         self.repo.update(booking, prev_state)
         if booking.is_fixed:  # ToDo add another booking in weeks_in_advance weeks
             when = booking.when + timedelta(self.weeks_in_advance)

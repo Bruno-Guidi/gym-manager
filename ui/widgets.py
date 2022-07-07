@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import date
 from typing import Type, Any, Callable
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
-    QPushButton, QDateEdit
+    QPushButton, QDateEdit, QSpacerItem, QSizePolicy
 
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
@@ -68,10 +68,13 @@ class FilterHeader(QWidget):
 
     def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool, show_clear_button: bool):
         self.layout = QHBoxLayout(self)
+        config_layout(self.layout, spacing=0)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
 
         self.filter_combobox = QComboBox(self)
         self.layout.addWidget(self.filter_combobox)
-        config_combobox(self.filter_combobox)
 
         self.filter_line_edit = QLineEdit(self)
         self.layout.addWidget(self.filter_line_edit)
@@ -79,17 +82,20 @@ class FilterHeader(QWidget):
 
         self.clear_filter_btn = QPushButton(self)
         self.layout.addWidget(self.clear_filter_btn)
-        config_btn(self.clear_filter_btn, "C")
-        self.clear_filter_btn.setVisible(show_clear_button)  # ToDo move to config_btn.
+        config_btn(self.clear_filter_btn, icon_path=r"ui/resources/clear.png", icon_size=30)
+        self.clear_filter_btn.setVisible(show_clear_button)
 
         self.search_btn = QPushButton(self)
         self.layout.addWidget(self.search_btn)
-        config_btn(self.search_btn, "B")
+        config_btn(self.search_btn, icon_path=r"ui/resources/search.png", icon_size=30)
 
         self.from_layout: QVBoxLayout | None = None
         self.from_lbl: QLabel | None = None
         self.from_date_edit: QDateEdit | None = None
         if date_greater_filtering:
+            # Horizontal spacer.
+            self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
             self.from_layout = QVBoxLayout()
             self.layout.addLayout(self.from_layout)
 
@@ -105,16 +111,22 @@ class FilterHeader(QWidget):
         self.to_lbl: QLabel | None = None
         self.to_date_edit: QDateEdit | None = None
         if date_lesser_filtering:
+            # Horizontal spacer.
+            self.layout.addSpacerItem(QSpacerItem(15, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
+
             self.to_layout = QVBoxLayout()
             self.layout.addLayout(self.to_layout)
 
             self.to_lbl = QLabel(self)
             self.to_layout.addWidget(self.to_lbl)
-            config_lbl(self.to_lbl, "Desde")
+            config_lbl(self.to_lbl, "Hasta")
 
             self.to_date_edit = QDateEdit(self)
             self.to_layout.addWidget(self.to_date_edit)
             config_date_edit(self.to_date_edit, date.today(), calendar=True)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
 
     def config(
             self,
@@ -135,8 +147,9 @@ class FilterHeader(QWidget):
             raise AttributeError("date_lesser_filtering flag was True, but DateLesser filter was not configured.")
 
         # Configuration.
-        self._filter_number = {filter_.name: i for i, filter_ in enumerate(filters)}
         fill_combobox(self.filter_combobox, filters, display=lambda filter_: filter_.display_name)
+        config_combobox(self.filter_combobox)
+        self._filter_number = {filter_.name: i for i, filter_ in enumerate(filters)}
         self._date_greater_filter, self._date_lesser_filter = date_greater_filter, date_lesser_filter
         self.allow_empty_filter = allow_empty_filter
 
@@ -205,7 +218,7 @@ class Dialog(QDialog):
     def confirm(cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None) -> bool:
         dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True)
         if ok_btn_text is not None:
-            dialog.ok_btn.setText(ok_btn_text)
+            dialog.confirm_btn.setText(ok_btn_text)
         if cancel_btn_text is not None:
             dialog.cancel_btn.setText(cancel_btn_text)
         dialog.exec_()
@@ -222,10 +235,44 @@ class Dialog(QDialog):
         self._setup_ui(title, text, show_cancel_btn)
         self.confirmed = False
         # noinspection PyUnresolvedReferences
-        self.ok_btn.clicked.connect(self.accept)
+        self.confirm_btn.clicked.connect(self.accept)
         if self.cancel_btn is not None:
             # noinspection PyUnresolvedReferences
             self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
+        self.setWindowTitle(title)
+
+        self.layout = QVBoxLayout(self)
+
+        self.text_lbl = QLabel(self)
+        self.layout.addWidget(self.text_lbl, alignment=Qt.AlignCenter)
+        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignJustify)
+        # Adjusts the label size according to the text length
+        self.text_lbl.setWordWrap(True)
+        self.text_lbl.adjustSize()
+        self.text_lbl.setMinimumSize(self.text_lbl.sizeHint())
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn: QPushButton | None = None
+        if show_cancel_btn:
+            self.cancel_btn = QPushButton(self)
+            self.buttons_layout.addWidget(self.cancel_btn)
+            config_btn(self.cancel_btn, "Cancelar")
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
     def accept(self) -> None:
         self.confirmed = True
@@ -235,42 +282,15 @@ class Dialog(QDialog):
         self.confirmed = False
         super().reject()
 
-    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
-        self.resize(300, 120)
-        self.setWindowTitle(title)
-
-        self.layout = QVBoxLayout(self)
-
-        self.question_lbl = QLabel(self)
-        self.layout.addWidget(self.question_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.question_lbl, text=text, width=300, word_wrap=True)
-
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        config_layout(self.buttons_layout, alignment=Qt.AlignRight, right_margin=5)
-
-        self.ok_btn = QPushButton()
-        self.buttons_layout.addWidget(self.ok_btn)
-        config_btn(self.ok_btn, "Ok", width=100)
-
-        self.cancel_btn: QPushButton | None = None
-        if show_cancel_btn:
-            self.cancel_btn = QPushButton()
-            self.buttons_layout.addWidget(self.cancel_btn)
-            config_btn(self.cancel_btn, "Cancelar", width=100)
-
 
 class PageIndex(QWidget):
     """
     Setting up a PageIndex:
 
     + Create the widget and add it to a layout of the QMainWindow.
-    + Call (BEFORE FILLING THE TABLE IN DISPLAY) the method config(args). Pass the Callable to run when changing page,
-    the page length, and the total length.
-    + Inside the method that fills the table in display, set the PageIndex total_len property with the amount of
-    expected rows (with the active filters applied).
-    + If it is possible to add or remove rows manually, after each of these actions update the PageIndex total_len
-    property accordingly.
+    + Call (BEFORE FILLING THE TABLE IN DISPLAY) the method config(args). Pass the Callable to run when changing page, the page length, and the total length.
+    + Inside the method that fills the table in display, set the PageIndex total_len property with the amount of expected rows (with the active filters applied).
+    + If it is possible to add or remove rows manually, after each of these actions update the PageIndex total_len property accordingly.
     """
 
     def __init__(self, parent: QWidget | None = None):
@@ -288,22 +308,32 @@ class PageIndex(QWidget):
 
     def _setup_ui(self):
         self.layout = QHBoxLayout(self)
+        config_layout(self.layout)
 
         self.info_lbl = QLabel(self)
-        self.layout.addWidget(self.info_lbl)
-        config_lbl(self.info_lbl)
+        self.layout.addWidget(self.info_lbl, alignment=Qt.AlignRight)
+        config_lbl(self.info_lbl, f"Mostrando xxx - yyy de zzz", font_size=16, alignment=Qt.AlignCenter)
 
         self.prev_btn = QPushButton(self)
         self.layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, "<")
+        config_btn(self.prev_btn, icon_path="ui/resources/prev_page.png", icon_size=32)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(10, 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
         self.index_lbl = QLabel(self)
         self.layout.addWidget(self.index_lbl)
-        config_lbl(self.index_lbl)
+        config_lbl(self.index_lbl, "xxx", font_size=16, alignment=Qt.AlignCenter)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(10, 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
         self.next_btn = QPushButton(self)
         self.layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, ">")
+        config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=32)
+
+        # Horizontal spacer. Adjusts the layout, causing the page_lbl to be in its center.
+        self.layout.addSpacerItem(QSpacerItem(self.info_lbl.width(), 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
 
     @property
     def total_len(self):
