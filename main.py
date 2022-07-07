@@ -19,7 +19,7 @@ QCheckBox::indicator {
 } 
 QCheckBox::indicator::checked {
     image: url(ui/resources/checkbox_checked.png);
-}"
+}
 """
 
 
