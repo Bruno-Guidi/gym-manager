@@ -60,6 +60,7 @@ class CreateUI(QDialog):
         self.controller = CreateController(self, client_repo)
 
     def _setup_ui(self):
+        self.setWindowTitle("Nuevo cliente")
         self.layout = QVBoxLayout(self)
 
         # Form.
@@ -177,6 +178,8 @@ class SubscribeUI(QDialog):
         self.controller = SubscribeController(self, activity_manager, client)
 
     def _setup_ui(self):
+        self.setWindowTitle("Inscribir cliente")
+
         self.layout = QVBoxLayout(self)
 
         self.form_layout = QGridLayout()

@@ -357,6 +357,7 @@ class ClientMainUI(QMainWindow):
         )
 
     def _setup_ui(self, name_width: int, dni_width: int, tel_width: int, dir_width: int):
+        self.setWindowTitle("Clientes")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)

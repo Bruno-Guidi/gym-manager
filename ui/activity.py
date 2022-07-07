@@ -241,6 +241,8 @@ class ActivityMainUI(QMainWindow):
                                          n_subscribers_width)
 
     def _setup_ui(self, name_width: int, price_width: int, charge_once_width: int, n_subscribers_width: int):
+        self.setWindowTitle("Actividades")
+
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
@@ -330,6 +332,7 @@ class CreateUI(QDialog):
         self.controller = CreateController(self, activity_manager)
 
     def _setup_ui(self):
+        self.setWindowTitle("Nueva actividad")
         self.layout = QVBoxLayout(self)
 
         # Form.

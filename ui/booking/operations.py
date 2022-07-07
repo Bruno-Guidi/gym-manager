@@ -91,6 +91,7 @@ class BookUI(QDialog):
         self.controller = BookController(self, client_repo, booking_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Reservar turno")
         self.layout = QVBoxLayout(self)
 
         # Filtering.
@@ -234,6 +235,7 @@ class CancelUI(QDialog):
         self.controller = CancelController(self, booking_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Cancelar turno")
         self.layout = QVBoxLayout(self)
 
         # Filtering.
@@ -402,6 +404,7 @@ class PreChargeUI(QDialog):
         self.controller = PreChargeController(self, booking_system, accounting_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Cobrar turno")
         self.layout = QVBoxLayout(self)
 
         # Filtering.

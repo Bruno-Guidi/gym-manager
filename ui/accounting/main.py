@@ -132,6 +132,7 @@ class AccountingMainUI(QMainWindow):
         self.controller = MainController(self, accounting_system, client)
 
     def _setup_ui(self):
+        self.setWindowTitle("Contabilidad")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.main_layout = QVBoxLayout(self.widget)
@@ -275,6 +276,7 @@ class DailyBalanceUI(QMainWindow):
                                                  transaction_methods, when, responsible, balance)
 
     def _setup_ui(self):
+        self.setWindowTitle("Caja diaria")
         self.widget = QWidget(self)
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
@@ -443,6 +445,7 @@ class BalanceHistoryUI(QMainWindow):
         self.controller = BalanceHistoryController(self, balance_repo, accounting_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Historial de cajas diarias")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)

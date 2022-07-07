@@ -82,6 +82,7 @@ class ChargeUI(QDialog):
         self.controller = ChargeController(self, client, activity, descr, accounting_system, invalid_date_fn, validation_msg, **invalid_date_kwargs)
 
     def _setup_ui(self):
+        self.setWindowTitle("Registrar cobro")
         self.layout = QVBoxLayout(self)
 
         # Form.
@@ -211,6 +212,7 @@ class ExtractUI(QDialog):
         self.controller = ExtractController(self, transaction_repo, transaction_methods)
 
     def _setup_ui(self):
+        self.setWindowTitle("Registrar extracción")
         self.layout = QVBoxLayout(self)
 
         # Form.

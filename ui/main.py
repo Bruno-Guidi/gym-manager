@@ -70,6 +70,8 @@ class MainUI(QMainWindow):
         self.controller = Controller(self, client_repo, activity_manager, accounting_system, booking_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Gestor La Cascada")
+
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)

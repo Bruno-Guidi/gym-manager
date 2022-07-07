@@ -134,6 +134,7 @@ class BookingMainUI(QMainWindow):
         self.controller = Controller(self, client_repo, booking_system, accounting_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Turnos")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
@@ -248,6 +249,7 @@ class HistoryUI(QMainWindow):
         self.controller = HistoryController(self, booking_system)
 
     def _setup_ui(self):
+        self.setWindowTitle("Historial de turnos")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
