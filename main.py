@@ -12,6 +12,17 @@ from gym_manager.core.base import Currency, String
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.main import MainUI
 
+
+stylesheet = """
+QCheckBox::indicator { 
+    width:32px; height: 32px;
+} 
+QCheckBox::indicator::checked {
+    image: url(ui/resources/checkbox_checked.png);
+}"
+"""
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.NOTSET)
 
@@ -19,6 +30,7 @@ if __name__ == "__main__":
     peewee_logger.setLevel(logging.WARNING)
 
     app = QApplication(sys.argv)
+    app.setStyleSheet(stylesheet)
 
     peewee.create_database("test.db")
 
