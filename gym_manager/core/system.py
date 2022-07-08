@@ -20,9 +20,6 @@ class ActivityManager:
         self.activity_repo = activity_repo
         self.sub_repo = sub_repo
 
-    def remove(self, activity: Activity):
-        self.activity_repo.remove(activity, cascade_removing=True)
-
     def activities(self, **active_filters) -> Iterable[Activity]:
         """Retrieves existing activities.
 
