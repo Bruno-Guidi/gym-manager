@@ -289,12 +289,6 @@ class SqliteActivityRepo(ActivityRepo):
         """
         if activity.locked:
             raise PersistenceError(f"The [activity={activity.name}] cannot be removed because its locked.")
-        n_subs = self.n_subscribers(activity)
-        if not cascade_removing and n_subs > 0:
-            raise OperationalError(
-                "An activity with active subscriptions cannot be removed, unless 'cascade_removing' is given",
-                activity=activity, cascade_removing=cascade_removing, subscriptions=n_subs
-            )
 
         if self._do_caching:
             self.cache.pop(activity.name)
