@@ -11,8 +11,9 @@ from playhouse.sqlite_ext import JSONField
 from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
     OperationalError, Balance
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache, \
-    BalanceRepo, FilterValuePair
+from gym_manager.core.persistence import (
+    ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
+    BalanceRepo, FilterValuePair, PersistenceError)
 
 logger = logging.getLogger(__name__)
 
@@ -274,6 +275,8 @@ class SqliteActivityRepo(ActivityRepo):
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
         """
+        if activity.locked:
+            raise PersistenceError(f"The [activity={activity.name}] cannot be removed because its locked.")
         n_subs = self.n_subscribers(activity)
         if not cascade_removing and n_subs > 0:
             raise OperationalError(
