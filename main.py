@@ -1,6 +1,8 @@
 import logging
+import os
 import sys
 from datetime import time
+from logging import config
 
 from PyQt5.QtWidgets import QApplication
 
@@ -12,6 +14,32 @@ from gym_manager.core.base import Currency, String
 from gym_manager.core.system import ActivityManager, AccountingSystem
 from ui.main import MainUI
 
+log_config = {
+    "version": 1,
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "DEBUG"
+    },
+    "handlers": {
+        "console": {
+            "formatter": "std_out",
+            "class": "logging.StreamHandler",
+            "level": "DEBUG"
+        },
+        "file": {
+            "formatter": "std_out",
+            "class": "logging.FileHandler",
+            "level": "DEBUG",
+            "filename": "logs/gym_manager.log"
+        }
+    },
+    "formatters": {
+        "std_out": {
+            "format": "%(asctime)s : %(levelname)s : %(name)s : %(funcName)s : %(message)s",
+            "datefmt": "%d-%m-%Y %I:%M:%S"
+        }
+    },
+}
 
 stylesheet = """
 QCheckBox::indicator { 
@@ -23,12 +51,7 @@ QCheckBox::indicator::checked {
 """
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.NOTSET)
-
-    peewee_logger = logging.getLogger("peewee")
-    peewee_logger.setLevel(logging.WARNING)
-
+def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(stylesheet)
 
@@ -64,3 +87,16 @@ if __name__ == "__main__":
     window.show()
 
     app.exec()
+
+
+if __name__ == "__main__":
+    os.makedirs(os.path.dirname("logs/gym_manager.log"), exist_ok=True)
+    config.dictConfig(log_config)
+    peewee_logger = logging.getLogger("peewee")
+    peewee_logger.setLevel(logging.WARNING)
+
+    # noinspection PyBroadException
+    try:
+        main()
+    except Exception as e:
+        logging.exception(e)
