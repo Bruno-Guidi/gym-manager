@@ -122,9 +122,14 @@ class ActivityRepo(abc.ABC):
     """Activities repository interface.
     """
     @abc.abstractmethod
-    def exists(self, name: str | String) -> bool:
+    def add(self, activity: Activity):
+        """Adds *activity* to the repository.
+        """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def exists(self, name: str | String) -> bool:
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get(self, name: str | String) -> Activity:

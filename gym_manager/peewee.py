@@ -222,6 +222,15 @@ class SqliteActivityRepo(ActivityRepo):
         self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(str, String), value_type=Activity, max_len=cache_len)
 
+    def add(self, activity: Activity):
+        """Adds *activity* to the repository.
+        """
+        ActivityTable.create(act_name=activity.name.as_primitive(),
+                             price=str(activity.price),
+                             charge_once=activity.charge_once,
+                             description=activity.description.as_primitive(),
+                             locked=activity.locked)
+
     def exists(self, name: str | String) -> bool:
         if self._do_caching and name in self.cache:
             return True
