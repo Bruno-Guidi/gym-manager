@@ -273,16 +273,8 @@ class SqliteActivityRepo(ActivityRepo):
             self.cache[record.act_name] = activity
         return activity
 
-    def remove(self, activity: Activity, cascade_removing: bool = False):
-        """Tries to remove the given *activity*.
-
-        If *cascade_removing* is False, and there is at least one client registered in the activity, the removing will
-        fail. If *cascade_removing* is True, the *activity* and all registrations for it will be removed.
-
-        Args:
-            activity: activity to remove.
-            cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
-                only if it has zero registrations.
+    def remove(self, activity: Activity):
+        """Removes the given *activity*.
 
         Raises:
             PersistenceError: if *activity* is locked.
