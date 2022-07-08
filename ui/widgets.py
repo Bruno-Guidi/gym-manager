@@ -161,7 +161,11 @@ class FilterHeader(QWidget):
 
     def passes_filters(self, obj) -> bool:
         for filter_, value in self._generate_filters():
-            if not filter_.passes(obj, value):
+            try:
+                if not filter_.passes(obj, value):
+                    return False
+            except (AttributeError, TypeError):
+                Dialog.info("Error", f"El valor '{value}' no es válido para el filtro '{filter_.display_name}'")
                 return False
         return True
 
