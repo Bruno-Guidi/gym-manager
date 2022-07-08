@@ -120,10 +120,7 @@ class ActivityRow(QWidget):
         else:
             self.activity.price = self.price_field.value()
             self.activity.description = descr
-            self.activity_manager.update(self.activity)
-            self.description_text.setText(str(self.activity.description))
-            self.charge_once_checkbox.setChecked(self.activity.charge_once)
-
+            self.activity.charge_once = self.charge_once_checkbox.isChecked()
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
 
     def remove(self):
