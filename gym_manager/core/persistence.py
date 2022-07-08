@@ -8,6 +8,12 @@ from gym_manager.core.base import Client, Activity, Currency, String, Number, Su
 FilterValuePair: TypeAlias = tuple[Filter, str]
 
 
+class PersistenceError(Exception):
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 class LRUCache:
 
     def __init__(self, key_types: tuple[Type, ...], value_type: Type, max_len: int) -> None:
