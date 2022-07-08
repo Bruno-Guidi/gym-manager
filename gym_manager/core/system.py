@@ -20,20 +20,6 @@ class ActivityManager:
         self.activity_repo = activity_repo
         self.sub_repo = sub_repo
 
-    def activities(self, **active_filters) -> Iterable[Activity]:
-        """Retrieves existing activities.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                apply to the filter.
-        """
-        for activity in self.activity_repo.all():
-            if all([filter_.passes(activity, value) for filter_, value in active_filters.values()]):
-                yield activity
-
-    def n_subscribers(self, activity: Activity) -> int:
-        return self.activity_repo.n_subscribers(activity)
-
     def subscribe(
             self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None
     ) -> Subscription:
