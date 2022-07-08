@@ -317,10 +317,8 @@ class CreateController:
         elif self.activity_manager.activity_repo.exists(self.create_ui.name_field.value()):
             Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
         else:
-            self.activity = self.activity_manager.create(
-                self.create_ui.name_field.value(), self.create_ui.price_field.value(),
-                self.create_ui.charge_once_checkbox.isChecked(), descr
-            )
+            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(),
+                                     self.create_ui.charge_once_checkbox.isChecked(), descr)
             Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
             self.create_ui.name_field.window().close()
 
