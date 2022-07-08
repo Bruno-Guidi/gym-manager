@@ -274,6 +274,9 @@ class SqliteActivityRepo(ActivityRepo):
             activity: activity to remove.
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
+
+        Raises:
+            PersistenceError: if *activity* is locked.
         """
         if activity.locked:
             raise PersistenceError(f"The [activity={activity.name}] cannot be removed because its locked.")

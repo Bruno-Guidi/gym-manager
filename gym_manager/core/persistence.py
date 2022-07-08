@@ -154,6 +154,9 @@ class ActivityRepo(abc.ABC):
             activity: activity to remove.
             cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
                 only if it has zero registrations.
+
+        Raises:
+            PersistenceError: if *activity* is locked.
         """
         raise NotImplementedError
 
