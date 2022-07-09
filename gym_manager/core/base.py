@@ -336,12 +336,12 @@ class Transaction:
     """
 
     id: int
-    type: String
+    type: str
     when: date
     amount: Currency
-    method: String
+    method: str
     responsible: String
-    description: String
+    description: str
     client: Client | None = None
     balance_date: date | None = None
 
