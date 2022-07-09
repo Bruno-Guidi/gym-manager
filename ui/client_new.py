@@ -254,31 +254,29 @@ class ClientMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, activity_repo: ActivityRepo) -> None:
+    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo) -> None:
         self.create_ui = create_ui
 
-        self.activity: Activity | None = None
-        self.activity_repo = activity_repo
+        self.client: Client | None = None
+        self.client_repo = client_repo
 
         # noinspection PyUnresolvedReferences
-        self.create_ui.confirm_btn.clicked.connect(self.create_activity)
+        self.create_ui.confirm_btn.clicked.connect(self.create_client)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
 
     # noinspection PyTypeChecker
-    def create_activity(self):
-        valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
-                                              max_len=constants.ACTIVITY_DESCR_CHARS)
-        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
-                            valid_descr])
-        if not valid_fields:
+    def create_client(self):
+        if not all([self.create_ui.name_field.valid_value(), self.create_ui.dni_field.valid_value(),
+                    self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.activity_repo.exists(self.create_ui.name_field.value()):
-            Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
+        elif self.client_repo.is_active(self.create_ui.dni_field.value()):
+            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
         else:
-            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(), descr)
-            self.activity_repo.add(self.activity)
-            Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
+            self.client = Client(self.create_ui.dni_field.value(), self.create_ui.name_field.value(),
+                                 date.today(), self.create_ui.tel_field.value(), self.create_ui.dir_field.value())
+            self.client_repo.add(self.client)
+            Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
 
