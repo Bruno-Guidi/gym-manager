@@ -104,6 +104,9 @@ def charge(
         client.register_charge(activity, transaction)
         subscription_repo.register_charge(client, activity, transaction)
 
+    logger.info(f"Responsible [responsible={responsible}] charged the client [dni={client.dni}] for the activity "
+                f"[activity_name={activity.name}] with an amount [amount={activity.price}].")
+
     return transaction
 
 
@@ -126,7 +129,7 @@ def extract(
     """
     transaction = transaction_repo.create("Extracción", when, amount, method, responsible, description.as_primitive())
 
-    logger.info(f"Registered [extraction={transaction}]")
+    logger.info(f"Responsible [responsible={responsible}] extracted an amount [amount={amount}].")
 
     return transaction
 
