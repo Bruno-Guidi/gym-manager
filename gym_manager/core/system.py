@@ -99,15 +99,6 @@ class AccountingSystem:
     def transactions_types(self) -> Iterable[String]:
         return self._transaction_types.values()
 
-    def transactions(self, page: int = 1, page_len: int = 15, **filters) -> Iterable[Transaction]:
-        """Retrieves transactions.
-
-        Keyword Args:
-            dict {str: tuple[Filter, str]}. The str key is the filter name, and the str in the tuple is the value to
-                apply to the filter.
-        """
-        yield from self.transaction_repo.all(page, page_len, **filters)
-
     def charge(
             self, when: date, client: Client, activity: Activity, method: String, responsible: String,
             description: String
