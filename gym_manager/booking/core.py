@@ -9,7 +9,6 @@ from typing import Iterable, Generator
 
 from gym_manager.core.base import Client, Activity, Transaction, OperationalError
 from gym_manager.core.persistence import FilterValuePair
-from gym_manager.core.api import AccountingSystem
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
 
@@ -144,8 +143,7 @@ class BookingSystem:
 
     def __init__(
             self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
-            minute_step: int, activity: Activity, repo: BookingRepo, accounting_system: AccountingSystem,
-            weeks_in_advance: int
+            minute_step: int, activity: Activity, repo: BookingRepo, weeks_in_advance: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
@@ -162,7 +160,6 @@ class BookingSystem:
 
         self.activity = activity
         self.repo = repo
-        self.accounting_system = accounting_system
 
     def courts(self) -> Iterable[Court]:
         return self._courts.values()
