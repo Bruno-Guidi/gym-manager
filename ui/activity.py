@@ -180,6 +180,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
+        self.main_ui.remove_btn.clicked.connect(self.remove)
+        # noinspection PyUnresolvedReferences
         self.main_ui.activity_table.itemSelectionChanged.connect(self.refresh_form)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
@@ -229,6 +231,7 @@ class MainController:
     def save_changes(self):
         if self.main_ui.activity_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad.")
+            return
 
         valid_descr, descr = valid_text_value(self.main_ui.description_text, optional=True,
                                               max_len=consts.ACTIVITY_DESCR_CHARS)
@@ -248,6 +251,36 @@ class MainController:
             fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
 
             Dialog.info("Éxito", f"La actividad '{self.main_ui.name_field.value()}' fue actualizada correctamente.")
+
+    def remove(self):
+        if self.main_ui.activity_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad.")
+            return
+
+        activity = self._activities[self.main_ui.activity_table.currentRow()]
+        if activity.locked:
+            Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
+            return
+
+        subscribers, remove = self.activity_repo.n_subscribers(activity), False
+        if subscribers > 0:
+            remove = Dialog.confirm(f"La actividad '{activity.name}' tiene {subscribers} cliente/s inscripto/s. "
+                                    f"\n¿Desea eliminarla igual?")
+
+        # If the previous confirmation failed, or if it didn't show up, then ask one last time.
+        if subscribers == 0 and not remove:
+            remove = Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?")
+
+        if remove:
+            self.activity_repo.remove(activity)
+            self.main_ui.filter_header.on_search_click()  # Refreshes the table.
+
+            # Clears the form.
+            self.main_ui.name_field.clear()
+            self.main_ui.price_field.clear()
+            self.main_ui.description_text.clear()
+
+            Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
 
 
 class ActivityMainUI(QMainWindow):
