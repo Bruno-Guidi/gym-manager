@@ -129,24 +129,6 @@ class AccountingSystem:
     def transactions_types(self) -> Iterable[String]:
         return self._transaction_types.values()
 
-    def charge(
-            self, when: date, client: Client, activity: Activity, method: String, responsible: String,
-            description: String
-    ) -> Transaction:
-        """Charges the *client* for its *activity* subscription.
-        """
-        transaction = self.transaction_repo.create(
-            self._transaction_types["Cobro"], when, activity.price, method, responsible, description, client
-        )
-
-        # For the activities that are not 'charge once', record that the client was charged for it.
-        # A 'charge once' activity is, for example, an activity related to bookings.
-        if not activity.charge_once:
-            client.register_charge(activity, transaction)
-            self.sub_repo.register_charge(client, activity, transaction)
-
-        return transaction
-
 
 def register_extraction(
         when: date, amount: Currency, method: String, responsible: String, description: String,
