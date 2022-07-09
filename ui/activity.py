@@ -178,6 +178,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.create_btn.clicked.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
+        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        # noinspection PyUnresolvedReferences
         self.main_ui.activity_table.itemSelectionChanged.connect(self.refresh_form)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
@@ -212,11 +214,32 @@ class MainController:
             self.main_ui.name_field.setEnabled(not activity.locked)
 
     def create_ui(self):
+        # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.activity_repo)
         self._create_ui.exec_()
         if self._create_ui.controller.activity is not None:
             self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
+
+    def save_changes(self):
+        valid_descr, descr = valid_text_value(self.main_ui.description_text, optional=True,
+                                              max_len=consts.ACTIVITY_DESCR_CHARS)
+        if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            row = self.main_ui.activity_table.currentRow()
+
+            # Updates the activity.
+            activity = self._activities[row]
+            activity.price, activity.description = self.main_ui.price_field.value(), descr
+            self.activity_repo.update(activity)
+
+            # Updates the ui.
+            fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
+            fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int)
+            fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
+
+            Dialog.info("Éxito", f"La actividad '{self.main_ui.name_field.value()}' fue actualizada correctamente.")
 
 
 class ActivityMainUI(QMainWindow):
