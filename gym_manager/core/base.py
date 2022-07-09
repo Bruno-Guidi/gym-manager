@@ -300,8 +300,8 @@ class Activity:
     name: String
     price: Currency = field(compare=False)
     description: String = field(compare=False)
-    charge_once: bool = field(compare=False)
-    locked: bool = False
+    charge_once: bool = field(compare=False, default=False)
+    locked: bool = field(compare=False, default=False)
 
 
 @dataclass
