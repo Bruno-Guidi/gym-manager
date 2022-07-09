@@ -77,7 +77,7 @@ def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
 
 
 # noinspection PyTypeChecker
-def test_base_Subscription_payDayPassed():
+def test_base_Subscription_upToDate():
     subscription = Subscription(date(2022, 8, 8), client=None, activity=None)
 
     # The client wasn't charged for the activity after he signed up. 06/09/2022 is the 30th day after the subscription
