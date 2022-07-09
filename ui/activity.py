@@ -222,6 +222,9 @@ class MainController:
             self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
+        if self.main_ui.activity_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad.")
+
         valid_descr, descr = valid_text_value(self.main_ui.description_text, optional=True,
                                               max_len=consts.ACTIVITY_DESCR_CHARS)
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
