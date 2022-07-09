@@ -3,7 +3,7 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QFrame)
 
 from gym_manager.core import constants as constants
 from gym_manager.core.base import String, Activity, Currency, TextLike
@@ -11,7 +11,7 @@ from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table,
     fill_cell)
-from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
+from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator
 
 
 class MainController:
@@ -158,16 +158,20 @@ class ActivityMainUI(QMainWindow):
 
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
+        self.left_layout.setContentsMargins(10, 0, 10, 0)
+
+        self.layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
+        self.right_layout.setContentsMargins(10, 0, 10, 0)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
         self.left_layout.addWidget(self.filter_header)
 
         # Activities.
-        self.activity_table = QTableWidget(self.widget)
+        self.activity_table = QTableWidget(self.widget)  # ToDO adjust columns width.
         self.left_layout.addWidget(self.activity_table)
         config_table(self.activity_table, allow_resizing=True, min_rows_to_show=10,
                      columns={"Nombre": (8, str), "Precio": (8, int), "Inscriptos": (8, int)})
@@ -177,23 +181,26 @@ class ActivityMainUI(QMainWindow):
         self.left_layout.addWidget(self.page_index)
 
         # Buttons.
+        # Vertical spacer.
+        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
         self.buttons_layout = QHBoxLayout()
         self.right_layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
 
         self.create_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, "C")
+        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
 
         self.save_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, "G")
+        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
 
         self.remove_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, "B")
+        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
 
-        # Vertical spacer.
-        self.right_layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
         # Activity data form.
         self.form_layout = QGridLayout()
@@ -226,8 +233,8 @@ class ActivityMainUI(QMainWindow):
         self.form_layout.addWidget(self.description_text, 3, 0, 1, 2)
         config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
 
-        # Horizontal spacer.
-        self.layout.addItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        # Vertical spacer.
+        self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
 
 class CreateController:
