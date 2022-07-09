@@ -38,10 +38,11 @@ def subscribe(
 
     Raises:
         OperationalError if *activity* is a "charge once" activity.
+        InvalidDate if *when* < *client.admission*.
     """
     if activity.charge_once:
         raise OperationalError(f"Subscriptions to [activity={activity.name}] are not allowed because it is a "
-                               f"'charge_once activity.")
+                               f"'charge_once' activity.")
     if client.admission > when:
         raise InvalidDate(f"[subscription_date={when}] cannot be lesser than [admission_date={client.admission}] of "
                           f"the client")
