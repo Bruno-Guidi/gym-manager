@@ -230,22 +230,22 @@ class ClientMainUI(QMainWindow):
 
         # Telephone.
         self.tel_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.tel_lbl, 3, 0)
+        self.form_layout.addWidget(self.tel_lbl, 2, 0)
         config_lbl(self.tel_lbl, "Teléfono")
 
         self.tel_field = Field(String, self.widget, optional=constants.CLIENT_TEL_OPTIONAL,
                                 max_len=constants.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel_field, 3, 1)
+        self.form_layout.addWidget(self.tel_field, 2, 1)
         config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
 
         # Direction.
         self.dir_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.dir_lbl, 4, 0)
+        self.form_layout.addWidget(self.dir_lbl, 3, 0)
         config_lbl(self.dir_lbl, "Dirección")
 
         self.dir_field = Field(String, self.widget, optional=constants.CLIENT_DIR_OPTIONAL,
                                 max_len=constants.CLIENT_DIR_CHARS)
-        self.form_layout.addWidget(self.dir_field, 4, 1)
+        self.form_layout.addWidget(self.dir_field, 3, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
         # Vertical spacer.
