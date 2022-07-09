@@ -251,17 +251,17 @@ class Client:
     _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
 
     def add(self, subscription: Subscription):
-        """Registers the given *subscription*.
+        """Registers the *subscription*.
         """
         self._subscriptions[subscription.activity.name] = subscription
 
     def unsubscribe(self, activity: Activity):
-        """Unsubscribes the client from the given *activity*.
+        """Unsubscribes the client from *activity*.
         """
         self._subscriptions.pop(activity.name)
 
     def is_subscribed(self, activity: Activity) -> bool:
-        """Returns True if the client subscribed to the *activity*.
+        """Returns True if the client subscribed to *activity*.
         """
         return activity.name in self._subscriptions
 
@@ -287,6 +287,8 @@ class Client:
         self._subscriptions[activity.name].register_charge(transaction)
 
     def up_to_date(self, reference_date: date, activity: Activity) -> bool:
+        """Checks if the *activity *subscription is up-to-date.
+        """
         return self._subscriptions[activity.name].up_to_date(reference_date)
 
 
