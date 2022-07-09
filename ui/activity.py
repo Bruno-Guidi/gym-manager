@@ -205,13 +205,18 @@ class MainController:
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
     def refresh_form(self):
-        if self.main_ui.activity_table.currentRow() < len(self._activities):
+        if self.main_ui.activity_table.currentRow() != -1:
             activity = self._activities[self.main_ui.activity_table.currentRow()]
             self.main_ui.name_field.setText(str(activity.name))
             self.main_ui.price_field.setText(str(activity.price))
             self.main_ui.description_text.setText(str(activity.description))
 
             self.main_ui.name_field.setEnabled(not activity.locked)
+        else:
+            # Clears the form.
+            self.main_ui.name_field.clear()
+            self.main_ui.price_field.clear()
+            self.main_ui.description_text.clear()
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
