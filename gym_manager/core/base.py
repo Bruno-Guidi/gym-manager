@@ -29,6 +29,14 @@ class OperationalError(Exception):
         self.involved_things = involved_things
 
 
+class InvalidDate(Exception):
+    """Exception to be raised when a given date fails to pass a given condition.
+    """
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 class ValidationError(Exception):
     """Exception raised when a validation fails in Validatable.validate(args) method.
     """

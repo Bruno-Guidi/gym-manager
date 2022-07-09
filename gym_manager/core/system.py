@@ -5,19 +5,11 @@ from datetime import date
 from typing import Iterable
 
 from gym_manager.core.base import (
-    String, Transaction, Client, Activity, Subscription, Currency, OperationalError,
-    Balance)
+    String, Transaction, Client, Activity, Subscription, Currency, OperationalError, Balance, InvalidDate
+)
 from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, BalanceRepo
 
 logger = logging.getLogger(__name__)
-
-
-class InvalidDate(Exception):
-    """Exception to be raised when a given date fails to pass a given condition.
-    """
-
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
 
 
 def subscribe(
