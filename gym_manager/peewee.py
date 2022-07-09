@@ -530,10 +530,9 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
     def add(self, subscription: Subscription):
         SubscriptionTable.create(
             when=subscription.when,
-            client=ClientTable.get_by_id(subscription.client.dni.as_primitive()),
-            activity=ActivityTable.get_by_id(subscription.activity.name),
-            transaction=None if subscription.transaction is None else TransactionTable.get_by_id(
-                subscription.transaction.id)
+            client_id=subscription.client.dni.as_primitive(),
+            activity_id=subscription.activity.name.as_primitive(),
+            transaction_id=None if subscription.transaction is None else subscription.transaction.id
         )
 
     def remove(self, subscription: Subscription):
