@@ -314,8 +314,8 @@ class SqliteActivityRepo(ActivityRepo):
             else:
                 activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                     Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                    record.charge_once,
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
+                                    record.charge_once,
                                     record.locked)
                 if self._do_caching:
                     self.cache[activity.name] = activity
