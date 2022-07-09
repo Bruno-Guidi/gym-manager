@@ -260,19 +260,6 @@ class SqliteActivityRepo(ActivityRepo):
 
         raise KeyError(f"There is no activity with the id '{name}'")
 
-    def create(
-            self, name: String, price: Currency, charge_once: bool, description: String, locked: bool = False
-    ) -> Activity:
-        record = ActivityTable.create(act_name=name.as_primitive(),
-                                      price=str(price),
-                                      charge_once=charge_once,
-                                      description=description.as_primitive(),
-                                      locked=locked)
-        activity = Activity(name, price, charge_once, description)
-        if self._do_caching:
-            self.cache[record.act_name] = activity
-        return activity
-
     def remove(self, activity: Activity):
         """Removes the given *activity*.
 
