@@ -39,12 +39,16 @@ def config_line(
 def config_lbl(
         target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
         extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
-        layout_dir=Qt.LayoutDirection.LeftToRight, alignment=None
+        layout_dir=Qt.LayoutDirection.LeftToRight, alignment=None, word_wrap: bool = True, adjust_size: bool = True
 ):
     target.setText(text)
     if alignment is not None:
         target.setAlignment(alignment)
     config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
+    target.setWordWrap(word_wrap)
+    if adjust_size:
+        target.adjustSize()
+        target.setMinimumSize(target.sizeHint())
 
 
 def config_date_edit(
