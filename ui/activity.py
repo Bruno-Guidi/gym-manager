@@ -209,7 +209,8 @@ class MainController:
             self.main_ui.price_field.setText(str(activity.price))
             self.main_ui.description_text.setText(str(activity.description))
 
-    # noinspection PyAttributeOutsideInit
+            self.main_ui.name_field.setEnabled(not activity.locked)
+
     def create_ui(self):
         self._create_ui = CreateUI(self.activity_repo)
         self._create_ui.exec_()
