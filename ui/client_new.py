@@ -5,12 +5,12 @@ from datetime import date
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QListWidget, QCheckBox)
 
 from gym_manager.core import constants as constants
 from gym_manager.core.base import String, TextLike, Client, Number
 from gym_manager.core.persistence import FilterValuePair, ClientRepo
-from ui.widget_config import config_lbl, config_line, config_btn, config_table, fill_cell
+from ui.widget_config import config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator
 
 
@@ -242,6 +242,34 @@ class ClientMainUI(QMainWindow):
                                 max_len=constants.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 3, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
+
+        # Subscriptions data.
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+        # Checkbox that enables showing only subscriptions that aren't up to date.
+        self.only_overdue_subs = QCheckBox(self.widget)
+        self.right_layout.addWidget(self.only_overdue_subs)
+        config_checkbox(self.only_overdue_subs, "Solo actividades inpagas", checked=False)
+
+        # Subscriptions related actions.
+        self.sub_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.sub_layout)
+
+        # Contains buttons.
+        self.sub_buttons_layout = QVBoxLayout()
+        self.sub_layout.addLayout(self.sub_buttons_layout)
+        self.sub_buttons_layout.setAlignment(Qt.AlignTop)
+
+        self.add_sub_btn = QPushButton(self.widget)
+        self.sub_buttons_layout.addWidget(self.add_sub_btn)
+        config_btn(self.add_sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
+
+        self.cancel_sub_btn = QPushButton(self.widget)
+        self.sub_buttons_layout.addWidget(self.cancel_sub_btn)
+        config_btn(self.cancel_sub_btn, icon_path="ui/resources/minus.png", icon_size=32)
+
+        # Subscription table.
+        self.subscription_table = QTableWidget(self.widget)
+        self.sub_layout.addWidget(self.subscription_table)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
