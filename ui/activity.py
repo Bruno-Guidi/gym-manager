@@ -3,7 +3,7 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QFrame)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
 
 from gym_manager.core import constants as constants
 from gym_manager.core.base import String, Activity, Currency, TextLike
@@ -94,7 +94,7 @@ class MainController:
             return
 
         valid_descr, descr = valid_text_value(self.main_ui.description_text, optional=True,
-                                              max_len=consts.ACTIVITY_DESCR_CHARS)
+                                              max_len=constants.ACTIVITY_DESCR_CHARS)
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
@@ -253,7 +253,7 @@ class CreateController:
     # noinspection PyTypeChecker
     def create_activity(self):
         valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
-                                              max_len=consts.ACTIVITY_DESCR_CHARS)
+                                              max_len=constants.ACTIVITY_DESCR_CHARS)
         valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
                             valid_descr])
         if not valid_fields:
@@ -287,7 +287,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, parent=self, max_len=consts.ACTIVITY_NAME_CHARS)
+        self.name_field = Field(String, parent=self, max_len=constants.ACTIVITY_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
@@ -296,7 +296,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.price_lbl, 1, 0)
         config_lbl(self.price_lbl, "Precio*")
 
-        self.price_field = Field(Currency, self, max_currency=consts.MAX_CURRENCY)
+        self.price_field = Field(Currency, self, max_currency=constants.MAX_CURRENCY)
         self.form_layout.addWidget(self.price_field, 1, 1)
         config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
 
