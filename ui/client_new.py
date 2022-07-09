@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+from datetime import date
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QDateEdit)
 
 from gym_manager.core import constants as constants
 from gym_manager.core.base import String, Activity, Currency, TextLike, Client, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair, ClientRepo
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table,
-    fill_cell)
+    fill_cell, config_date_edit)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator
 
 
@@ -20,12 +22,12 @@ class MainController:
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
-        self._clients: dict[str, Client] = {}  # Dict that maps raw client name to the associated client.
+        self._clients: dict[int, Client] = {}  # Dict that maps raw client dni to the associated client.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
-                            translate_fun=lambda activity, value: activity.act_name.contains(value)),)
-        self.main_ui.filter_header.config(filters, on_search_click=self.fill_activity_table)
+                            translate_fun=lambda client, value: client.cli_name.contains(value)), )
+        self.main_ui.filter_header.config(filters, on_search_click=self.fill_client_table)
 
         # Configures the page index.
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
@@ -36,121 +38,116 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        # self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_btn.clicked.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_btn.clicked.connect(self.remove)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.activity_table.itemSelectionChanged.connect(self.refresh_form)
+        self.main_ui.client_table.itemSelectionChanged.connect(self.refresh_form)
 
-    def _add_activity(self, client: Client, check_filters: bool, check_limit: bool = False):
+    def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
             return
 
         if check_filters and not self.main_ui.filter_header.passes_filters(client):
             return
 
-        self._clients[client.name.as_primitive()] = client
+        self._clients[client.dni.as_primitive()] = client
         row = self.main_ui.client_table.rowCount()
         fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str)
-        fill_cell(self.main_ui.client_table, row, 1, client.price, data_type=int)
-        fill_cell(self.main_ui.client_table, row, 2, self.client_repo.n_subscribers(client), data_type=int)
+        fill_cell(self.main_ui.client_table, row, 1, client.dni, data_type=int)
+        fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool)
+        fill_cell(self.main_ui.client_table, row, 3, client.telephone, data_type=str)
+        fill_cell(self.main_ui.client_table, row, 4, client.direction, data_type=str)
 
-    def fill_activity_table(self, filters: list[FilterValuePair]):
+    def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
 
         self.main_ui.page_index.total_len = self.client_repo.count(filters)
-        for activity in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-            self._clients[activity.name.as_primitive()] = activity
-            self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
+        for client in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
+            self._clients[client.dni.as_primitive()] = client
+            self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     def refresh_form(self):
         if self.main_ui.client_table.currentRow() != -1:
-            activity_name = self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 0).text()
-            activity = self._clients[activity_name]
-            self.main_ui.name_field.setText(str(activity.name))
-            self.main_ui.price_field.setText(str(activity.price))
-            self.main_ui.description_text.setText(str(activity.description))
-
-            self.main_ui.name_field.setEnabled(not activity.locked)
+            client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+            self.main_ui.name_field.setText(str(self._clients[client_dni].name))
+            self.main_ui.dni_field.setText(str(self._clients[client_dni].dni))
+            self.main_ui.tel_field.setText(str(self._clients[client_dni].telephone))
+            self.main_ui.dir_field.setText(str(self._clients[client_dni].direction))
         else:
             # Clears the form.
             self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
-            self.main_ui.description_text.clear()
+            self.main_ui.dni_field.clear()
+            self.main_ui.tel_field.clear()
+            self.main_ui.dir_field.clear()
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.client_repo)
         self._create_ui.exec_()
-        if self._create_ui.controller.activity is not None:
-            self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
+        if self._create_ui.controller.client is not None:
+            self._add_client(self._create_ui.controller.client, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
         if self.main_ui.client_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+            Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        valid_descr, descr = valid_text_value(self.main_ui.description_text, optional=True,
-                                              max_len=constants.ACTIVITY_DESCR_CHARS)
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
+        if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel_field.valid_value(),
+                    self.main_ui.dir_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            # Updates the activity.
-            activity_name = self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 0).text()
-            activity = self._clients[activity_name]
-            activity.price, activity.description = self.main_ui.price_field.value(), descr
-            self.client_repo.update(activity)
+            # Updates the client.
+            client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+            self._clients[client_dni].name = self.main_ui.name_field.value()
+            self._clients[client_dni].telephone = self.main_ui.tel_field.value()
+            self._clients[client_dni].direction = self.main_ui.dir_field.value()
+            self.client_repo.update(self._clients[client_dni])
 
             # Updates the ui.
             row = self.main_ui.client_table.currentRow()
-            fill_cell(self.main_ui.client_table, row, 0, activity.name, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 1, activity.price, data_type=int, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 2, self.client_repo.n_subscribers(activity), data_type=int,
-                      increase_row_count=False)
+            client = self._clients[client_dni]
+            fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+            fill_cell(self.main_ui.client_table, row, 1, client.dni, data_type=int, increase_row_count=False)
+            fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool, increase_row_count=False)
+            fill_cell(self.main_ui.client_table, row, 3, client.telephone, data_type=str, increase_row_count=False)
+            fill_cell(self.main_ui.client_table, row, 4, client.direction, data_type=str, increase_row_count=False)
 
-            Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
+            Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
     def remove(self):
         if self.main_ui.client_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+            Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        activity_name = self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 0).text()
-        activity = self._clients[activity_name]
-        if activity.locked:
-            Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
-            return
+        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
 
-        subscribers, remove = self.client_repo.n_subscribers(activity), False
-        if subscribers > 0:
-            remove = Dialog.confirm(f"La actividad '{activity.name}' tiene {subscribers} cliente/s inscripto/s. "
-                                    f"\n¿Desea eliminarla igual?")
-
-        # If the previous confirmation failed, or if it didn't show up, then ask one last time.
-        if subscribers == 0 and not remove:
-            remove = Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?")
+        remove = Dialog.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?")
 
         if remove:
-            self._clients.pop(activity.name.as_primitive())
-            self.client_repo.remove(activity)
+            client = self._clients[client_dni]
+            self._clients.pop(client.dni.as_primitive())
+            self.client_repo.remove(client)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             # Clears the form.
             self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
-            self.main_ui.description_text.clear()
+            self.main_ui.dni_lbl.clear()
+            self.main_ui.tel_field.clear()
+            self.main_ui.dir_field.clear()
 
-            Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
+            Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
 
 class ClientMainUI(QMainWindow):
 
-    def __init__(self) -> None:
+    def __init__(self, client_repo: ClientRepo) -> None:
         super().__init__()
         self._setup_ui()
+        self.controller = MainController(self, client_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Clientes")
