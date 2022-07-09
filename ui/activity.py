@@ -106,11 +106,12 @@ class MainController:
 
             # Updates the ui.
             row = self.main_ui.activity_table.currentRow()
-            fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
-            fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int)
-            fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
+            fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
+            fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int, increase_row_count=False)
+            fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int,
+                      increase_row_count=False)
 
-            Dialog.info("Éxito", f"La actividad '{self.main_ui.name_field.value()}' fue actualizada correctamente.")
+            Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
 
     def remove(self):
         if self.main_ui.activity_table.currentRow() == -1:
