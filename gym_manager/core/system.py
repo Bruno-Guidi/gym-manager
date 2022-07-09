@@ -27,7 +27,7 @@ def subscribe(
     """Subscribes *client* to *activity* and registers the charging for the subscription, if *transaction* is given.
 
     Args:
-        subscription_repo: repository implementation where the subscription will be registered.
+        subscription_repo: repository implementation that registers subscriptions.
         when: date when the subscription is registered.
         client: client to subscribe.
         activity: activity to which the subscription is registered.
