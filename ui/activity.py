@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
 
-from gym_manager.core import constants as consts
+from gym_manager.core import constants as constants
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from ui.widget_config import (
@@ -152,14 +152,15 @@ class ActivityMainUI(QMainWindow):
 
     def _setup_ui(self):
         self.setWindowTitle("Actividades")
-
-        self.widget = QWidget(self)
+        self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
 
-        # Left side of the ui.
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
+
+        self.right_layout = QVBoxLayout()
+        self.layout.addLayout(self.right_layout)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
@@ -174,15 +175,6 @@ class ActivityMainUI(QMainWindow):
         # Index.
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
-
-        # Right side of the ui.
-        self.right_layout = QVBoxLayout()
-        self.layout.addLayout(self.right_layout)
-        self.right_layout.setAlignment(Qt.AlignCenter)
-        self.right_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         # Buttons.
         self.buttons_layout = QHBoxLayout()
@@ -200,17 +192,19 @@ class ActivityMainUI(QMainWindow):
         self.buttons_layout.addWidget(self.remove_btn)
         config_btn(self.remove_btn, "B")
 
-        # Activity form.
+        # Vertical spacer.
+        self.right_layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        # Activity data form.
         self.form_layout = QGridLayout()
         self.right_layout.addLayout(self.form_layout)
-        self.form_layout.setContentsMargins(20, 0, 20, 0)
 
         # Name.
         self.name_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, parent=self.widget, max_len=consts.ACTIVITY_NAME_CHARS)
+        self.name_field = Field(String, self.widget, max_len=constants.ACTIVITY_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
@@ -225,18 +219,15 @@ class ActivityMainUI(QMainWindow):
 
         # Description.
         self.description_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.description_lbl, 2, 0, alignment=Qt.AlignTop)
+        self.form_layout.addWidget(self.description_lbl, 2, 0, 1, 2)
         config_lbl(self.description_lbl, "Descripción")
 
         self.description_text = QTextEdit(self.widget)
-        self.form_layout.addWidget(self.description_text, 2, 1)
+        self.form_layout.addWidget(self.description_text, 3, 0, 1, 2)
         config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
 
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        # Adjusts size.
-        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+        # Horizontal spacer.
+        self.layout.addItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
 
 
 class CreateController:
