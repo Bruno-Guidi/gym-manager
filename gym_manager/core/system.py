@@ -77,6 +77,36 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     )
 
 
+def charge(
+        transaction_repo: TransactionRepo, subscription_repo: SubscriptionRepo, when: date, client: Client,
+        activity: Activity, method: str, responsible: String
+) -> Transaction:
+    """Charges the *client* for its *activity* subscription.
+
+    Args:
+        transaction_repo: repository implementation that registers transactions.
+        subscription_repo: repository implementation that registers subscriptions.
+        when: date when the charging is made.
+        client: client being charged.
+        activity: activity being charged.
+        method: method used in the charging.
+        responsible: responsible for doing the charging.
+
+    Returns:
+        The created transaction.
+    """
+    description = f"Cobro por actividad {activity.name}"
+    transaction = transaction_repo.create("Cobro", when, activity.price, method, responsible, description, client)
+
+    # For the activities that are not 'charge once', record that the client was charged for it.
+    # A 'charge once' activity is, for example, an activity related to bookings.
+    if not activity.charge_once:
+        client.register_charge(activity, transaction)
+        subscription_repo.register_charge(client, activity, transaction)
+
+    return transaction
+
+
 class AccountingSystem:
     """Provides an API to do accounting related things.
     """

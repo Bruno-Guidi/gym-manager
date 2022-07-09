@@ -14,12 +14,6 @@ decimal.getcontext().rounding = decimal.ROUND_HALF_UP
 ONE_MONTH_TD = timedelta(days=30)
 
 
-def pay_day_passed(last_paid_on: date, today: date) -> bool:
-    """The pay day passed if more than 30 days have passed since the payment date (inclusive).
-    """
-    return today - ONE_MONTH_TD >= last_paid_on
-
-
 def invalid_sub_charge_date(subscription: Subscription, charge_date: date) -> bool:
     previous_charge = subscription.transaction
     return (charge_date < subscription.when  # The charging is being made after the subscription was made.
@@ -290,6 +284,9 @@ class Client:
                                    charged_client=transaction.client, client_to_charge=self, activity=activity)
         self._subscriptions[activity.name].register_charge(transaction)
 
+    def up_to_date(self, reference_date: date, activity: Activity) -> bool:
+        return self._subscriptions[activity.name].up_to_date(reference_date)
+
 
 @dataclass
 class Activity:
@@ -313,16 +310,15 @@ class Subscription:
     activity: Activity
     transaction: Transaction | None = None
 
-    def charge_day_passed(self, today: date) -> bool:
-        """Checks if the charge day for the subscription has passed.
+    def up_to_date(self, reference_date: date) -> bool:
+        """Checks if the subscription is up-to-date, meaning the client paid for it in the last 30 days.
 
-        If *today* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged for the
-        activity after he signed up) then the charge day passed.
+        If *reference_date* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged
+        for the activity after the subscription was made) then the subscription IS NOT up-to-date.
         """
         if self.transaction is None:
-            # More than 30 days passed since the client signed up on the activity, so he should be charged.
-            return pay_day_passed(self.when, today)
-        return pay_day_passed(self.transaction.when, today)
+            return reference_date - ONE_MONTH_TD < self.when
+        return reference_date - ONE_MONTH_TD < self.transaction.when
 
     def register_charge(self, transaction: Transaction):
         """Updates the subscription with the given *transaction*.
