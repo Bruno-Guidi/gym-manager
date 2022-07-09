@@ -436,7 +436,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
     # noinspection PyShadowingBuiltins
     def create(
-            self, type: String, when: date, amount: Currency, method: String, responsible: String, description: String,
+            self, type: str, when: date, amount: Currency, method: String, responsible: String, description: String,
             client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
@@ -448,7 +448,7 @@ class SqliteTransactionRepo(TransactionRepo):
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
         record = TransactionTable.create(
-            type=type.as_primitive(),
+            type=type,
             client=ClientTable.get_by_id(client.dni.as_primitive()) if client is not None else None,
             when=when,
             amount=amount.as_primitive(),
