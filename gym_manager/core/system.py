@@ -137,6 +137,12 @@ def extract(
 def generate_balance(transactions: Iterable[Transaction]) -> Balance:
     """Generates the balance from the given *transactions*. The transactions are grouped by type and by method, and then
     summed up.
+
+    Args:
+        transactions: transactions to include in the balance.
+
+    Returns:
+        The generated balance.
     """
     balance = {"Cobro": {}, "Extracción": {}}
     total = "Total"
@@ -152,15 +158,25 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
 
 
 def close_balance(
+        transaction_repo: TransactionRepo,
+        balance_repo: BalanceRepo,
         balance: Balance,
         balance_date: date,
         responsible: String,
-        transactions: Iterable[Transaction],
-        transactions_repo: TransactionRepo,
-        balance_repo: BalanceRepo
+        transactions: Iterable[Transaction]
 ):
+    """Closes the *balance*, save it in the repository and bind the transactions to the balance.
+
+    Args:
+        transaction_repo: repository implementation that registers transactions.
+        balance_repo: repository implementation that registers balances.
+        balance: balance to close.
+        balance_date: date when the balance was done.
+        responsible: responsible for closing the balance.
+        transactions: transactions to include in the balance.
+    """
     balance_repo.add(balance_date, responsible, balance)
     for transaction in transactions:
         transaction.balance_date = balance_date
-        transactions_repo.bind_to_balance(transaction, balance_date)
+        transaction_repo.bind_to_balance(transaction, balance_date)
 
