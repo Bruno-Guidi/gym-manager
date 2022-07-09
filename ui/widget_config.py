@@ -162,8 +162,10 @@ def config_table(
         target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())
 
 
-def fill_cell(target: QTableWidget, row: int, column: int, data: Any, data_type: Type):
-    target.setRowCount(row + 1)
+def fill_cell(target: QTableWidget, row: int, column: int, data: Any, data_type: Type,
+              increase_row_count: bool = True):
+    if increase_row_count:
+        target.setRowCount(row + 1)
     item = QTableWidgetItem(str(data))
     align = Qt.AlignRight if data_type is int else Qt.AlignLeft
     align = Qt.AlignCenter if data_type is bool else align
