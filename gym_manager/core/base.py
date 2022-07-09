@@ -310,7 +310,19 @@ class Subscription:
     when: date
     client: Client
     activity: Activity
-    transaction: Transaction | None = None
+    _transaction: Transaction | None = None
+
+    @property
+    def transaction(self) -> Transaction:
+        return self._transaction
+
+    @transaction.setter
+    def transaction(self, transaction: Transaction):
+        if self.invalid_charge_date(transaction.when):
+            subscription_charge_date = self.when if transaction is None else transaction.when
+            raise OperationalError(f"The [transaction_date={transaction.when}] should be lesser than "
+                                   f"[subscription_charge_date={subscription_charge_date}]")
+        self._transaction = transaction
 
     def up_to_date(self, reference_date: date) -> bool:
         """Checks if the subscription is up-to-date, meaning the client paid for it in the last 30 days.
