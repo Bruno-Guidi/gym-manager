@@ -77,21 +77,6 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     )
 
 
-class ActivityManager:
-    """Provides an API to do activity related things.
-    """
-
-    def __init__(self, activity_repo: ActivityRepo, sub_repo: SubscriptionRepo):
-        self.activity_repo = activity_repo
-        self.sub_repo = sub_repo
-
-    def cancel(self, subscription: Subscription):
-        subscription.client.unsubscribe(subscription.activity)
-        self.sub_repo.remove(subscription)
-        logging.info(
-            f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
-
-
 class AccountingSystem:
     """Provides an API to do accounting related things.
     """
