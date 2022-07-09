@@ -14,16 +14,10 @@ decimal.getcontext().rounding = decimal.ROUND_HALF_UP
 ONE_MONTH_TD = timedelta(days=30)
 
 
-def invalid_sub_charge_date(subscription: Subscription, charge_date: date) -> bool:
-    previous_charge = subscription.transaction
-    return (charge_date < subscription.when  # The charging is being made after the subscription was made.
-            # The charging is being made after the previous charge was made.
-            or (previous_charge is not None and charge_date < previous_charge.when))
-
-
 class OperationalError(Exception):
     """Exception raised when there is an error while doing a system operation.
     """
+
     def __init__(self, cause: str, **involved_things) -> None:
         super().__init__(cause)
         self.involved_things = involved_things
@@ -332,6 +326,14 @@ class Subscription:
         """Updates the subscription with the given *transaction*.
         """
         self.transaction = transaction
+
+    def invalid_charge_date(self, charge_date: date):
+        """Checks if *charge_date* is valid or not.
+        """
+        previous_charge = self.transaction
+        # The charging is being made before the subscription was made, or the charging is being made before the previous
+        # charge was made.
+        return charge_date < self.when or (previous_charge is not None and charge_date < previous_charge.when)
 
 
 @dataclass
