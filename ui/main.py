@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QSpacerItem, QSizePolicy)
 
 from gym_manager.booking.core import BookingSystem
-from gym_manager.core.system import ActivityManager, AccountingSystem
+from gym_manager.core.api import ActivityManager, AccountingSystem
 from ui.accounting.main import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking.main import BookingMainUI

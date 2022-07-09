@@ -12,7 +12,7 @@ from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, 
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
-from gym_manager.core.system import AccountingSystem
+from gym_manager.core.api import AccountingSystem
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
 from ui.widget_config import config_layout, config_btn, config_table, config_date_edit, fill_cell
 from ui.widgets import FilterHeader, PageIndex

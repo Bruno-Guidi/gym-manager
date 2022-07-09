@@ -14,25 +14,21 @@ decimal.getcontext().rounding = decimal.ROUND_HALF_UP
 ONE_MONTH_TD = timedelta(days=30)
 
 
-def pay_day_passed(last_paid_on: date, today: date) -> bool:
-    """The pay day passed if more than 30 days have passed since the payment date (inclusive).
-    """
-    return today - ONE_MONTH_TD >= last_paid_on
-
-
-def invalid_sub_charge_date(subscription: Subscription, charge_date: date) -> bool:
-    previous_charge = subscription.transaction
-    return (charge_date < subscription.when  # The charging is being made after the subscription was made.
-            # The charging is being made after the previous charge was made.
-            or (previous_charge is not None and charge_date < previous_charge.when))
-
-
 class OperationalError(Exception):
     """Exception raised when there is an error while doing a system operation.
     """
+
     def __init__(self, cause: str, **involved_things) -> None:
         super().__init__(cause)
         self.involved_things = involved_things
+
+
+class InvalidDate(Exception):
+    """Exception to be raised when a given date fails to pass a given condition.
+    """
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
 
 
 class ValidationError(Exception):
@@ -255,17 +251,17 @@ class Client:
     _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
 
     def add(self, subscription: Subscription):
-        """Registers the given *subscription*.
+        """Registers the *subscription*.
         """
         self._subscriptions[subscription.activity.name] = subscription
 
     def unsubscribe(self, activity: Activity):
-        """Unsubscribes the client from the given *activity*.
+        """Unsubscribes the client from *activity*.
         """
         self._subscriptions.pop(activity.name)
 
     def is_subscribed(self, activity: Activity) -> bool:
-        """Returns True if the client subscribed to the *activity*.
+        """Returns True if the client subscribed to *activity*.
         """
         return activity.name in self._subscriptions
 
@@ -290,6 +286,11 @@ class Client:
                                    charged_client=transaction.client, client_to_charge=self, activity=activity)
         self._subscriptions[activity.name].register_charge(transaction)
 
+    def up_to_date(self, reference_date: date, activity: Activity) -> bool:
+        """Checks if the *activity *subscription is up-to-date.
+        """
+        return self._subscriptions[activity.name].up_to_date(reference_date)
+
 
 @dataclass
 class Activity:
@@ -298,8 +299,8 @@ class Activity:
 
     name: String
     price: Currency = field(compare=False)
-    charge_once: bool = field(compare=False)  # ToDo Move after description.
     description: String = field(compare=False)
+    charge_once: bool = field(compare=False)
     locked: bool = False
 
 
@@ -311,23 +312,42 @@ class Subscription:
     when: date
     client: Client
     activity: Activity
-    transaction: Transaction | None = None
+    _transaction: Transaction | None = None
 
-    def charge_day_passed(self, today: date) -> bool:
-        """Checks if the charge day for the subscription has passed.
+    @property
+    def transaction(self) -> Transaction:
+        return self._transaction
 
-        If *today* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged for the
-        activity after he signed up) then the charge day passed.
+    @transaction.setter
+    def transaction(self, transaction: Transaction):
+        if self.invalid_charge_date(transaction.when):
+            subscription_charge_date = self.when if transaction is None else transaction.when
+            raise OperationalError(f"The [transaction_date={transaction.when}] should be lesser than "
+                                   f"[subscription_charge_date={subscription_charge_date}]")
+        self._transaction = transaction
+
+    def up_to_date(self, reference_date: date) -> bool:
+        """Checks if the subscription is up-to-date, meaning the client paid for it in the last 30 days.
+
+        If *reference_date* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged
+        for the activity after the subscription was made) then the subscription IS NOT up-to-date.
         """
         if self.transaction is None:
-            # More than 30 days passed since the client signed up on the activity, so he should be charged.
-            return pay_day_passed(self.when, today)
-        return pay_day_passed(self.transaction.when, today)
+            return reference_date - ONE_MONTH_TD < self.when
+        return reference_date - ONE_MONTH_TD < self.transaction.when
 
     def register_charge(self, transaction: Transaction):
         """Updates the subscription with the given *transaction*.
         """
         self.transaction = transaction
+
+    def invalid_charge_date(self, charge_date: date):
+        """Checks if *charge_date* is valid or not.
+        """
+        previous_charge = self.transaction
+        # The charging is being made before the subscription was made, or the charging is being made before the previous
+        # charge was made.
+        return charge_date < self.when or (previous_charge is not None and charge_date < previous_charge.when)
 
 
 @dataclass
@@ -336,12 +356,12 @@ class Transaction:
     """
 
     id: int
-    type: String
+    type: str
     when: date
     amount: Currency
-    method: String
+    method: str
     responsible: String
-    description: String
+    description: str
     client: Client | None = None
     balance_date: date | None = None
 

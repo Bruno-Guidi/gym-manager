@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Number, Client, Activity, Subscription
 from gym_manager.core.persistence import ClientRepo
-from gym_manager.core.system import ActivityManager
+from gym_manager.core.api import ActivityManager
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_btn, fill_combobox, \
     config_combobox
 from ui.widgets import Field, Dialog

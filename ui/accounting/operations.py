@@ -7,10 +7,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, QLineEdit, \
     QDateEdit, QComboBox, QTextEdit, QPushButton, QGridLayout, QSpacerItem, QSizePolicy
 
-from gym_manager.core import constants as consts, system
+from gym_manager.core import constants as consts, api
 from gym_manager.core.base import String, Client, Currency, Activity, Transaction
 from gym_manager.core.persistence import TransactionRepo
-from gym_manager.core.system import AccountingSystem
+from gym_manager.core.api import AccountingSystem
 from ui.widget_config import config_layout, config_lbl, config_line, config_date_edit, config_combobox, fill_combobox, \
     config_btn
 from ui.widgets import Field, valid_text_value, Dialog

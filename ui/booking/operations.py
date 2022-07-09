@@ -11,7 +11,7 @@ from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, 
 from gym_manager.core import constants
 from gym_manager.core.base import TextLike, ClientLike, String, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
-from gym_manager.core.system import AccountingSystem
+from gym_manager.core.api import AccountingSystem
 from ui.accounting.operations import ChargeUI
 from ui.widget_config import config_layout, config_lbl, config_combobox, config_btn, config_checkbox, \
     fill_combobox, config_date_edit, config_line

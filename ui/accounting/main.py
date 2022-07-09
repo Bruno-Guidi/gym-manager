@@ -8,11 +8,11 @@ from PyQt5.QtCore import QRect, Qt
 from PyQt5.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTableWidget, \
     QTableWidgetItem, QGridLayout, QMenuBar, QAction, QMenu, QComboBox, QDateEdit, QCheckBox, QSpacerItem, QSizePolicy
 
-from gym_manager.core import system, constants
+from gym_manager.core import api, constants
 from gym_manager.core.base import Client, DateGreater, ClientLike, DateLesser, TextEqual, TextLike, \
     NumberEqual, String, Balance, Currency, Transaction
 from gym_manager.core.persistence import BalanceRepo, FilterValuePair, TransactionRepo
-from gym_manager.core.system import AccountingSystem
+from gym_manager.core.api import AccountingSystem
 from ui.accounting.operations import ExtractUI
 from ui.widget_config import config_layout, config_lbl, config_table, config_combobox, config_btn, fill_combobox, \
     config_date_edit, config_checkbox, config_line, fill_cell

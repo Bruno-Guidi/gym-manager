@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import FilterValuePair
-from gym_manager.core.system import ActivityManager
+from gym_manager.core.api import ActivityManager
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 
@@ -120,10 +120,7 @@ class ActivityRow(QWidget):
         else:
             self.activity.price = self.price_field.value()
             self.activity.description = descr
-            self.activity_manager.update(self.activity)
-            self.description_text.setText(str(self.activity.description))
-            self.charge_once_checkbox.setChecked(self.activity.charge_once)
-
+            self.activity.charge_once = self.charge_once_checkbox.isChecked()
             Dialog.info("Éxito", f"La actividad '{self.name_field.value()}' fue actualizada correctamente.")
 
     def remove(self):
@@ -317,10 +314,8 @@ class CreateController:
         elif self.activity_manager.activity_repo.exists(self.create_ui.name_field.value()):
             Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
         else:
-            self.activity = self.activity_manager.create(
-                self.create_ui.name_field.value(), self.create_ui.price_field.value(),
-                self.create_ui.charge_once_checkbox.isChecked(), descr
-            )
+            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(),
+                                     self.create_ui.charge_once_checkbox.isChecked(), descr)
             Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
             self.create_ui.name_field.window().close()
 

@@ -11,8 +11,9 @@ from playhouse.sqlite_ext import JSONField
 from gym_manager.core import constants
 from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
     OperationalError, Balance
-from gym_manager.core.persistence import ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache, \
-    BalanceRepo, FilterValuePair
+from gym_manager.core.persistence import (
+    ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
+    BalanceRepo, FilterValuePair, PersistenceError)
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +222,15 @@ class SqliteActivityRepo(ActivityRepo):
         self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(str, String), value_type=Activity, max_len=cache_len)
 
+    def add(self, activity: Activity):
+        """Adds *activity* to the repository.
+        """
+        ActivityTable.create(act_name=activity.name.as_primitive(),
+                             price=str(activity.price),
+                             charge_once=activity.charge_once,
+                             description=activity.description.as_primitive(),
+                             locked=activity.locked)
+
     def exists(self, name: str | String) -> bool:
         if self._do_caching and name in self.cache:
             return True
@@ -263,23 +273,14 @@ class SqliteActivityRepo(ActivityRepo):
             self.cache[record.act_name] = activity
         return activity
 
-    def remove(self, activity: Activity, cascade_removing: bool = False):
-        """Tries to remove the given *activity*.
+    def remove(self, activity: Activity):
+        """Removes the given *activity*.
 
-        If *cascade_removing* is False, and there is at least one client registered in the activity, the removing will
-        fail. If *cascade_removing* is True, the *activity* and all registrations for it will be removed.
-
-        Args:
-            activity: activity to remove.
-            cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
-                only if it has zero registrations.
+        Raises:
+            PersistenceError: if *activity* is locked.
         """
-        n_subs = self.n_subscribers(activity)
-        if not cascade_removing and n_subs > 0:
-            raise OperationalError(
-                "An activity with active subscriptions cannot be removed, unless 'cascade_removing' is given",
-                activity=activity, cascade_removing=cascade_removing, subscriptions=n_subs
-            )
+        if activity.locked:
+            raise PersistenceError(f"The [activity={activity.name}] cannot be removed because its locked.")
 
         if self._do_caching:
             self.cache.pop(activity.name)
@@ -435,7 +436,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
     # noinspection PyShadowingBuiltins
     def create(
-            self, type: String, when: date, amount: Currency, method: String, responsible: String, description: String,
+            self, type: str, when: date, amount: Currency, method: str, responsible: String, description: str,
             client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
@@ -443,17 +444,14 @@ class SqliteTransactionRepo(TransactionRepo):
         Raises:
             AttributeError if the client_repo attribute wasn't set before the execution of the method.
         """
-        if self.client_repo is None:
-            raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
-
         record = TransactionTable.create(
-            type=type.as_primitive(),
-            client=ClientTable.get_by_id(client.dni.as_primitive()) if client is not None else None,
+            type=type,
+            client=client.dni.as_primitive() if client is not None else None,
             when=when,
             amount=amount.as_primitive(),
-            method=method.as_primitive(),
+            method=method,
             responsible=responsible.as_primitive(),
-            description=description.as_primitive()
+            description=description
         )
 
         transaction = Transaction(record.id, type, when, amount, method, responsible, description, client)
@@ -529,10 +527,9 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
     def add(self, subscription: Subscription):
         SubscriptionTable.create(
             when=subscription.when,
-            client=ClientTable.get_by_id(subscription.client.dni.as_primitive()),
-            activity=ActivityTable.get_by_id(subscription.activity.name),
-            transaction=None if subscription.transaction is None else TransactionTable.get_by_id(
-                subscription.transaction.id)
+            client_id=subscription.client.dni.as_primitive(),
+            activity_id=subscription.activity.name.as_primitive(),
+            transaction_id=None if subscription.transaction is None else subscription.transaction.id
         )
 
     def remove(self, subscription: Subscription):

@@ -8,6 +8,12 @@ from gym_manager.core.base import Client, Activity, Currency, String, Number, Su
 FilterValuePair: TypeAlias = tuple[Filter, str]
 
 
+class PersistenceError(Exception):
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 class LRUCache:
 
     def __init__(self, key_types: tuple[Type, ...], value_type: Type, max_len: int) -> None:
@@ -116,9 +122,14 @@ class ActivityRepo(abc.ABC):
     """Activities repository interface.
     """
     @abc.abstractmethod
-    def exists(self, name: str | String) -> bool:
+    def add(self, activity: Activity):
+        """Adds *activity* to the repository.
+        """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def exists(self, name: str | String) -> bool:
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get(self, name: str | String) -> Activity:
@@ -138,16 +149,11 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def remove(self, activity: Activity, cascade_removing: bool = False):
-        """Tries to remove the given *activity*.
+    def remove(self, activity: Activity):
+        """Removes the given *activity*.
 
-        If *cascade_removing* is False, and there is at least one client registered in the activity, the removing will
-        fail. If *cascade_removing* is True, the *activity* and all registrations for it will be removed.
-
-        Args:
-            activity: activity to remove.
-            cascade_removing: if True, remove the activity and all registrations for it. If False, remove the activity
-                only if it has zero registrations.
+        Raises:
+            PersistenceError: if *activity* is locked.
         """
         raise NotImplementedError
 
@@ -212,7 +218,7 @@ class TransactionRepo(abc.ABC):
     # noinspection PyShadowingBuiltins
     @abc.abstractmethod
     def create(
-            self, type: String, when: date, amount: Currency, method: String, responsible: String, description: String,
+            self, type: str, when: date, amount: Currency, method: str, responsible: String, description: str,
             client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
