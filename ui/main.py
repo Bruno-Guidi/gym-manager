@@ -1,73 +1,59 @@
 from __future__ import annotations
 
-from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushButton, QGridLayout,
+    QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy)
 
-from gym_manager.booking.core import BookingSystem
-from gym_manager.core.api import ActivityManager, AccountingSystem
-from ui.accounting.main import AccountingMainUI
-from ui.activity import ActivityMainUI
-from ui.booking.main import BookingMainUI
-from ui.client.main import ClientMainUI
-from gym_manager.core.persistence import ClientRepo
-from ui.widget_config import config_layout, config_lbl, config_btn
+from ui.widget_config import config_lbl, config_btn
 
 
 class Controller:
     def __init__(
-            self, main_ui: MainUI, client_repo: ClientRepo, activity_manager: ActivityManager,
-            accounting_system: AccountingSystem, booking_system: BookingSystem
+            self, main_ui: MainUI
     ):
-        self.client_repo = client_repo
-        self.activity_manager = activity_manager
-        self.accounting_system = accounting_system
-        self.booking_system = booking_system
-
         self.main_ui = main_ui
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
-        self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
+        # self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
+        # self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
+        # self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
+        # self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
 
-    # noinspection PyAttributeOutsideInit
-    def show_client_main_ui(self):
-        self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager, self.accounting_system)
-        self.client_main_ui.setWindowModality(Qt.ApplicationModal)
-        self.client_main_ui.show()
-
-    # noinspection PyAttributeOutsideInit
-    def show_activity_main_ui(self):
-        self.activity_main_ui = ActivityMainUI(self.activity_manager)
-        self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
-        self.activity_main_ui.show()
-
-    # noinspection PyAttributeOutsideInit
-    def show_accounting_main_ui(self):
-        self.accounting_main_ui = AccountingMainUI(self.accounting_system)
-        self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
-        self.accounting_main_ui.show()
-
-    # noinspection PyAttributeOutsideInit
-    def show_booking_main_ui(self):
-        self.booking_main_ui = BookingMainUI(self.client_repo, self.booking_system, self.accounting_system)
-        self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
-        self.booking_main_ui.show()
+    # # noinspection PyAttributeOutsideInit
+    # def show_client_main_ui(self):
+    #     self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager, self.accounting_system)
+    #     self.client_main_ui.setWindowModality(Qt.ApplicationModal)
+    #     self.client_main_ui.show()
+    #
+    # # noinspection PyAttributeOutsideInit
+    # def show_activity_main_ui(self):
+    #     self.activity_main_ui = ActivityMainUI(self.activity_manager)
+    #     self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
+    #     self.activity_main_ui.show()
+    #
+    # # noinspection PyAttributeOutsideInit
+    # def show_accounting_main_ui(self):
+    #     self.accounting_main_ui = AccountingMainUI(self.accounting_system)
+    #     self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
+    #     self.accounting_main_ui.show()
+    #
+    # # noinspection PyAttributeOutsideInit
+    # def show_booking_main_ui(self):
+    #     self.booking_main_ui = BookingMainUI(self.client_repo, self.booking_system, self.accounting_system)
+    #     self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
+    #     self.booking_main_ui.show()
 
 
 class MainUI(QMainWindow):
-    def __init__(self, client_repo: ClientRepo, activity_manager: ActivityManager, accounting_system: AccountingSystem,
-                 booking_system: BookingSystem):
+    def __init__(self):
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(self, client_repo, activity_manager, accounting_system, booking_system)
+        self.controller = Controller(self)
 
     def _setup_ui(self):
         self.setWindowTitle("Gestor La Cascada")
