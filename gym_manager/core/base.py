@@ -247,7 +247,7 @@ class Client:
     admission: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
-    is_active: bool = field(compare=False)
+    is_active: bool = field(compare=False, default=True)
     _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
 
     def add(self, subscription: Subscription):
