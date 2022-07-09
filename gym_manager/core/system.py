@@ -20,6 +20,43 @@ class InvalidDate(Exception):
         super().__init__(*args)
 
 
+def subscribe(
+        subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity,
+        transaction: Transaction | None = None
+) -> Subscription:
+    """Subscribes *client* to *activity* and registers the charging for the subscription, if *transaction* is given.
+
+    Args:
+        subscription_repo: repository implementation where the subscription will be registered.
+        when: date when the subscription is registered.
+        client: client to subscribe.
+        activity: activity to which the subscription is registered.
+        transaction: charging for the subscription. It is optional.
+
+    Returns:
+        The created subscription.
+
+    Raises:
+        OperationalError if *activity* is a "charge once" activity.
+    """
+    if activity.charge_once:
+        raise OperationalError(f"Subscriptions to [activity={activity.name}] are not allowed because it is a "
+                               f"'charge_once activity.")
+    if client.admission > when:
+        raise InvalidDate(f"[subscription_date={when}] cannot be lesser than [admission_date={client.admission}] of "
+                          f"the client")
+
+    subscription = Subscription(when, client, activity, transaction)
+    subscription_repo.add(subscription)
+    client.add(subscription)
+
+    logger.info(
+        f"Client [dni={client.dni}] subscribed to activity [activity_name={activity.name}], with [payment="
+        f"{'None' if transaction is None else transaction.id}].")
+
+    return subscription
+
+
 class ActivityManager:
     """Provides an API to do activity related things.
     """
@@ -27,31 +64,6 @@ class ActivityManager:
     def __init__(self, activity_repo: ActivityRepo, sub_repo: SubscriptionRepo):
         self.activity_repo = activity_repo
         self.sub_repo = sub_repo
-
-    def subscribe(
-            self, when: date, client: Client, activity: Activity, transaction: Transaction | None = None
-    ) -> Subscription:
-        """Subscribes the *client* in the *activity*. If *transaction* is given, then associate it to the subscription.
-
-        Raises:
-            OperationalError if the activity is a charge_once activity, or if the date of the subscription is lesser
-             than the admission date of the client.
-        """
-        if activity.charge_once:
-            raise OperationalError("Subscriptions to 'charge_once' activities are not allowed.", activity=activity)
-        if client.admission > when:
-            raise OperationalError("Subscription date cannot be lesser than client's admission date",
-                                   subscription_date=when, client_admission_date=client.admission)
-
-        sub = Subscription(when, client, activity, transaction)
-        self.sub_repo.add(sub)
-        client.add(sub)
-
-        logger.getChild(type(self).__name__).info(
-            f"Client with [dni={client.dni}] subscribed in the activity with [activity_id={activity.name}], with the "
-            f"payment [payment={'None' if transaction is None else transaction.id}].")
-
-        return sub
 
     def cancel(self, subscription: Subscription):
         subscription.client.unsubscribe(subscription.activity)
