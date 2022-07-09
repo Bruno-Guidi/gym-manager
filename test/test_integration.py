@@ -18,7 +18,7 @@ def test_subscribe():
                     String("dummy_descr", max_len=20), is_active=True)
     client_repo.add(client)
 
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), description=String("dummy_descr", max_len=20),
+    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
                         charge_once=False)
     activity_repo.add(activity)
 
@@ -40,7 +40,7 @@ def test_cancel():
                     String("dummy_descr", max_len=20), is_active=True)
     client_repo.add(client)
 
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), description=String("dummy_descr", max_len=20),
+    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
                         charge_once=False)
     activity_repo.add(activity)
 
@@ -68,7 +68,7 @@ def test_charge_chargeOnceActivity():
                     String("dummy_descr", max_len=20), is_active=True)
     client_repo.add(client)
 
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), description=String("dummy_descr", max_len=20),
+    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
                         charge_once=True)
     activity_repo.add(activity)
 
@@ -93,7 +93,7 @@ def test_charge_notChargeOnceActivity():
                     String("dummy_descr", max_len=20), is_active=True)
     client_repo.add(client)
 
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), description=String("dummy_descr", max_len=20),
+    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
                         charge_once=False)
     activity_repo.add(activity)
 

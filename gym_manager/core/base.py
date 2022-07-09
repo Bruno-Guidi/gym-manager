@@ -299,8 +299,8 @@ class Activity:
 
     name: String
     price: Currency = field(compare=False)
-    charge_once: bool = field(compare=False)  # ToDo Move after description.
     description: String = field(compare=False)
+    charge_once: bool = field(compare=False)
     locked: bool = False
 
 
