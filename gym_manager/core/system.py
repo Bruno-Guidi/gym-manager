@@ -107,29 +107,6 @@ def charge(
     return transaction
 
 
-class AccountingSystem:
-    """Provides an API to do accounting related things.
-    """
-
-    def __init__(
-            self,
-            transaction_repo: TransactionRepo,
-            sub_repo: SubscriptionRepo,
-            balance_repo: BalanceRepo,
-            transaction_types: tuple[str, ...],
-            methods: tuple[str, ...]
-    ) -> None:
-        self.transaction_repo = transaction_repo
-        self.sub_repo = sub_repo
-        self.balance_repo = balance_repo
-        self._transaction_types = {name: String(name, max_len=constants.TRANSACTION_TYPE_CHARS)
-                                   for name in transaction_types}
-        self.methods = tuple(String(name, max_len=constants.TRANSACTION_METHOD_CHARS) for name in methods)
-
-    def transactions_types(self) -> Iterable[String]:
-        return self._transaction_types.values()
-
-
 def register_extraction(
         when: date, amount: Currency, method: String, responsible: String, description: String,
         transaction_repo: TransactionRepo
