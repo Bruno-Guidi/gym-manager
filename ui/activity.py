@@ -160,6 +160,7 @@ class MainController:
     ):
         self.main_ui = main_ui
         self.activity_repo = activity_repo
+        self._activities: dict[int, Activity] = {}  # Dict that maps row number to the activity that displays.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -176,6 +177,8 @@ class MainController:
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_btn.clicked.connect(self.create_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.activity_table.itemSelectionChanged.connect(self.refresh_form)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
@@ -185,6 +188,7 @@ class MainController:
             return
 
         row = self.main_ui.activity_table.rowCount()
+        self._activities[row] = activity
         fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
         fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int)
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
@@ -193,12 +197,17 @@ class MainController:
         self.main_ui.activity_table.setRowCount(0)
 
         self.main_ui.page_index.total_len = self.activity_repo.count(filters)
-        for activity in self.activity_repo.all(self.main_ui.page_index.page,
-                                               self.main_ui.page_index.page_len, filters):
+        activities = self.activity_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters)
+        for i, activity in enumerate(activities):
+            self._activities[i] = activity
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
-    def refresh_table(self):
-        self.main_ui.filter_header.on_search_click()
+    def refresh_form(self):
+        if self.main_ui.activity_table.currentRow() < len(self._activities):
+            activity = self._activities[self.main_ui.activity_table.currentRow()]
+            self.main_ui.name_field.setText(str(activity.name))
+            self.main_ui.price_field.setText(str(activity.price))
+            self.main_ui.description_text.setText(str(activity.description))
 
     # noinspection PyAttributeOutsideInit
     def create_ui(self):
