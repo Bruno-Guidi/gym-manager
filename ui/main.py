@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core.persistence import ActivityRepo
 from ui.activity import ActivityMainUI
+from ui.client_new import ClientMainUI
 from ui.widget_config import config_lbl, config_btn
 
 
@@ -19,7 +20,7 @@ class Controller:
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
-        # self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
+        self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
@@ -27,12 +28,12 @@ class Controller:
         # noinspection PyUnresolvedReferences
         # self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
 
-    # # noinspection PyAttributeOutsideInit
-    # def show_client_main_ui(self):
-    #     self.client_main_ui = ClientMainUI(self.client_repo, self.activity_manager, self.accounting_system)
-    #     self.client_main_ui.setWindowModality(Qt.ApplicationModal)
-    #     self.client_main_ui.show()
-    #
+    # noinspection PyAttributeOutsideInit
+    def show_client_main_ui(self):
+        self.client_main_ui = ClientMainUI()
+        self.client_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.client_main_ui.show()
+
     # noinspection PyAttributeOutsideInit
     def show_activity_main_ui(self):
         self.activity_main_ui = ActivityMainUI(self.activity_repo)
