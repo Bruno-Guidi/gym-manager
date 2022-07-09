@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy)
 
+from ui.activity import ActivityMainUI
 from ui.widget_config import config_lbl, config_btn
 
 
@@ -18,7 +19,7 @@ class Controller:
         # noinspection PyUnresolvedReferences
         # self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
+        self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
         # self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
@@ -30,12 +31,12 @@ class Controller:
     #     self.client_main_ui.setWindowModality(Qt.ApplicationModal)
     #     self.client_main_ui.show()
     #
-    # # noinspection PyAttributeOutsideInit
-    # def show_activity_main_ui(self):
-    #     self.activity_main_ui = ActivityMainUI(self.activity_manager)
-    #     self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
-    #     self.activity_main_ui.show()
-    #
+    # noinspection PyAttributeOutsideInit
+    def show_activity_main_ui(self):
+        self.activity_main_ui = ActivityMainUI()
+        self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.activity_main_ui.show()
+
     # # noinspection PyAttributeOutsideInit
     # def show_accounting_main_ui(self):
     #     self.accounting_main_ui = AccountingMainUI(self.accounting_system)
