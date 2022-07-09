@@ -436,7 +436,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
     # noinspection PyShadowingBuiltins
     def create(
-            self, type: str, when: date, amount: Currency, method: String, responsible: String, description: String,
+            self, type: str, when: date, amount: Currency, method: str, responsible: String, description: str,
             client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
@@ -452,9 +452,9 @@ class SqliteTransactionRepo(TransactionRepo):
             client=ClientTable.get_by_id(client.dni.as_primitive()) if client is not None else None,
             when=when,
             amount=amount.as_primitive(),
-            method=method.as_primitive(),
+            method=method,
             responsible=responsible.as_primitive(),
-            description=description.as_primitive()
+            description=description
         )
 
         transaction = Transaction(record.id, type, when, amount, method, responsible, description, client)

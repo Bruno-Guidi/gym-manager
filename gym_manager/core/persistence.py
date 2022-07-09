@@ -218,7 +218,7 @@ class TransactionRepo(abc.ABC):
     # noinspection PyShadowingBuiltins
     @abc.abstractmethod
     def create(
-            self, type: str, when: date, amount: Currency, method: String, responsible: String, description: String,
+            self, type: str, when: date, amount: Currency, method: str, responsible: String, description: str,
             client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
