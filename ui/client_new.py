@@ -245,34 +245,32 @@ class ClientMainUI(QMainWindow):
 
         # Subscriptions data.
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-        # Checkbox that enables showing only subscriptions that aren't up to date.
-        self.only_overdue_subs = QCheckBox(self.widget)
-        self.right_layout.addWidget(self.only_overdue_subs)
-        config_checkbox(self.only_overdue_subs, "Solo actividades inpagas", checked=False)
 
-        # Subscriptions related actions.
-        self.sub_layout = QHBoxLayout()
+        # Subscription layout.
+        self.sub_layout = QGridLayout()
         self.right_layout.addLayout(self.sub_layout)
 
-        # Contains buttons.
-        self.sub_buttons_layout = QVBoxLayout()
-        self.sub_layout.addLayout(self.sub_buttons_layout)
-        self.sub_buttons_layout.setAlignment(Qt.AlignTop)
+        # Checkbox that enables showing only subscriptions that aren't up-to-date.
+        self.only_overdue_subs = QCheckBox(self.widget)
+        self.sub_layout.addWidget(self.only_overdue_subs, 0, 1)
+        config_checkbox(self.only_overdue_subs, "Solo actividades inpagas", checked=False)
 
         self.add_sub_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.add_sub_btn)
+        self.sub_layout.addWidget(self.add_sub_btn, 1, 0)
         config_btn(self.add_sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
 
         self.cancel_sub_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.cancel_sub_btn)
+        self.sub_layout.addWidget(self.cancel_sub_btn, 2, 0)
         config_btn(self.cancel_sub_btn, icon_path="ui/resources/minus.png", icon_size=32)
 
         # Subscription table.
         self.subscription_table = QTableWidget(self.widget)
-        self.sub_layout.addWidget(self.subscription_table)
+        self.sub_layout.addWidget(self.subscription_table, 1, 1, 3, 1)
+        config_table(self.subscription_table, allow_resizing=False,
+                     columns={"Actividad": (10, str), "Último pago": (10, bool)})
 
         # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+        self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
 
 class CreateController:
