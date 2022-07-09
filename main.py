@@ -69,7 +69,7 @@ def main():
                                     charge_once=True, locked=True)
         activity_repo.add(booking_activity)
 
-    window = MainUI(activity_repo)
+    window = MainUI(client_repo, activity_repo)
     window.show()
 
     app.exec()
