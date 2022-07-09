@@ -4,10 +4,10 @@ import logging
 from datetime import date
 from typing import Iterable
 
-from gym_manager.core import constants
-from gym_manager.core.base import String, Transaction, Client, Activity, Subscription, Currency, OperationalError, \
-    Balance
-from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, ActivityRepo, BalanceRepo
+from gym_manager.core.base import (
+    String, Transaction, Client, Activity, Subscription, Currency, OperationalError,
+    Balance)
+from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, BalanceRepo
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,7 @@ def subscribe(
     subscription_repo.add(subscription)
     client.add(subscription)
 
+    # noinspection PyUnresolvedReferences
     logger.info(
         f"Client [dni={client.dni}] subscribed to activity [activity_name={activity.name}], with [payment="
         f"{'None' if transaction is None else transaction.id}]."
@@ -184,4 +185,3 @@ def close_balance(
 
     logger.info(f"Responsible [responsible={responsible}] closed the balance [balance={balance}] of [balance_date="
                 f"{balance_date}].")
-
