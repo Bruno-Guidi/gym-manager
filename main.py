@@ -66,7 +66,7 @@ def main():
         booking_activity = activity_repo.get("Padel")
     else:
         booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), charge_once=True,
-                                    description=String("", max_len=10), locked=True)
+                                    description=String("d", max_len=10), locked=True)
 
     window = MainUI()
     window.show()
