@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QListWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QCheckBox, QDialog, QGridLayout, QTableWidget)
+    QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
 
 from gym_manager.core import constants as consts
-from gym_manager.core.base import String, Activity, Currency
-from gym_manager.core.persistence import ActivityRepo
-from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox, config_table
+from gym_manager.core.base import String, Activity, Currency, TextLike
+from gym_manager.core.persistence import ActivityRepo, FilterValuePair
+from ui.widget_config import (
+    config_lbl, config_line, config_btn, config_table,
+    fill_cell)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 
 
@@ -113,7 +115,8 @@ from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 #         self.item.setSizeHint(self.sizeHint())
 #
 #     def save_changes(self):
-#         valid_descr, descr = valid_text_value(self.description_text, optional=True, max_len=consts.ACTIVITY_DESCR_CHARS)
+#         valid_descr, descr = valid_text_value(self.description_text, optional=True,
+#         max_len=consts.ACTIVITY_DESCR_CHARS)
 #         if not all([self.name_field.valid_value(), self.price_field.valid_value(), valid_descr]):
 #             Dialog.info("Error", "Hay datos que no son válidos.")
 #         else:
@@ -151,85 +154,64 @@ from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 #                            description=String("dummy_descr", max_len=consts.ACTIVITY_DESCR_CHARS))
 #
 #
-# class MainController:
-#     def __init__(
-#             self, activity_manager: ActivityManager, main_ui: ActivityMainUI, name_width: int, price_width: int,
-#             charge_once_width: int, n_subs_width: int
-#     ):
-#         self.main_ui = main_ui
-#         self.activity_manager = activity_manager
-#
-#         self.name_width, self.price_width, self.charge_once_width = name_width, price_width, charge_once_width
-#         self.n_subs_width = n_subs_width
-#
-#         # Configure the filtering widget.
-#         filters = (TextLike("name", display_name="Nombre", attr="name",
-#                             translate_fun=lambda activity, value: activity.act_name.contains(value)),)
-#         self.main_ui.filter_header.config(filters, on_search_click=self.fill_activity_table)
-#
-#         # Configures the page index.
-#         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
-#                                        page_len=10, total_len=self.activity_manager.activity_repo.count())
-#
-#         # Fills the table.
-#         self.main_ui.filter_header.on_search_click()
-#
-#         # Sets the correct width for the activity list. A dummy row is used, so the width is correctly set even if there
-#         # are no rows to load.
-#         self.dummy_row = ActivityRow(QListWidgetItem(), name_width, price_width, charge_once_width, n_subs_width, self,
-#                                      _dummy_activity, activity_manager)
-#         # The min width includes the width (obtained with height()) of the vertical scrollbar of the list.
-#         self.main_ui.activity_list.setMinimumWidth(self.dummy_row.sizeHint().width()
-#                                                    + self.main_ui.activity_list.verticalScrollBar().height())
-#
-#         # Sets the min height of the client list, so the ui can show at least one activity with its details.
-#         self.dummy_row.hide_detail()  # This instantiates all the hidden widgets of the dummy row.
-#         self.main_ui.activity_list.setMinimumHeight(self.dummy_row.sizeHint().height())
-#
-#         # Fixes the width
-#         self.main_ui.setFixedWidth(self.dummy_row.sizeHint().width()
-#                                    + self.main_ui.activity_list.verticalScrollBar().sizeHint().height())
-#
-#         # Sets callbacks.
-#         # noinspection PyUnresolvedReferences
-#         self.main_ui.create_activity_btn.clicked.connect(self.create_ui)
-#
-#     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
-#         if check_limit and len(self.main_ui.activity_list) == self.main_ui.page_index.page_len:
-#             self.main_ui.activity_list.takeItem(len(self.main_ui.activity_list) - 1)
-#
-#         if check_filters and not self.main_ui.filter_header.passes_filters(activity):
-#             return
-#
-#         item = QListWidgetItem(self.main_ui.activity_list)
-#         self.main_ui.activity_list.addItem(item)
-#         row = ActivityRow(item, self.name_width, self.price_width, self.charge_once_width, self.n_subs_width,
-#                           self, activity, self.activity_manager)
-#         self.main_ui.activity_list.setItemWidget(item, row)
-#
-#     def fill_activity_table(self, filters: list[FilterValuePair]):
-#         self.main_ui.activity_list.clear()
-#
-#         self.main_ui.page_index.total_len = self.activity_manager.activity_repo.count(filters)
-#         for activity in self.activity_manager.activity_repo.all(self.main_ui.page_index.page,
-#                                                                 self.main_ui.page_index.page_len, filters):
-#             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
-#
-#     def refresh_table(self):
-#         self.main_ui.filter_header.on_search_click()
-#
-#     # noinspection PyAttributeOutsideInit
-#     def create_ui(self):
-#         self._create_ui = CreateUI(self.activity_manager)
-#         self._create_ui.exec_()
-#         if self._create_ui.controller.activity is not None:
-#             self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
-#             self.main_ui.page_index.total_len += 1
+class MainController:
+    def __init__(
+            self, main_ui: ActivityMainUI, activity_repo: ActivityRepo
+    ):
+        self.main_ui = main_ui
+        self.activity_repo = activity_repo
+
+        # Configure the filtering widget.
+        filters = (TextLike("name", display_name="Nombre", attr="name",
+                            translate_fun=lambda activity, value: activity.act_name.contains(value)),)
+        self.main_ui.filter_header.config(filters, on_search_click=self.fill_activity_table)
+
+        # Configures the page index.
+        self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
+                                       page_len=10, total_len=self.activity_repo.count())
+
+        # Fills the table.
+        self.main_ui.filter_header.on_search_click()
+
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.main_ui.create_activity_btn.clicked.connect(self.create_ui)
+
+    def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
+        if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
+            self.main_ui.activity_list.takeItem(len(self.main_ui.activity_list) - 1)
+
+        if check_filters and not self.main_ui.filter_header.passes_filters(activity):
+            return
+
+        row = self.main_ui.activity_table.rowCount()
+        fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
+        fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int)
+        fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
+
+    def fill_activity_table(self, filters: list[FilterValuePair]):
+        self.main_ui.activity_list.clear()
+
+        self.main_ui.page_index.total_len = self.activity_repo.count(filters)
+        for activity in self.activity_repo.all(self.main_ui.page_index.page,
+                                               self.main_ui.page_index.page_len, filters):
+            self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
+
+    def refresh_table(self):
+        self.main_ui.filter_header.on_search_click()
+
+    # noinspection PyAttributeOutsideInit
+    def create_ui(self):
+        self._create_ui = CreateUI(self.activity_repo)
+        self._create_ui.exec_()
+        if self._create_ui.controller.activity is not None:
+            self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
+            self.main_ui.page_index.total_len += 1
 
 
 class ActivityMainUI(QMainWindow):
 
-    def __init__(self) -> None:
+    def __init__(self, activity_repo: ActivityRepo) -> None:
         super().__init__()
         self._setup_ui()
         # self.controller = MainController(activity_manager, self, name_width, price_width, charge_once_width,
