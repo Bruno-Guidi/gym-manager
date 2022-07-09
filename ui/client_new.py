@@ -5,15 +5,13 @@ from datetime import date
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QDateEdit)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget)
 
 from gym_manager.core import constants as constants
-from gym_manager.core.base import String, Activity, Currency, TextLike, Client, Number
-from gym_manager.core.persistence import ActivityRepo, FilterValuePair, ClientRepo
-from ui.widget_config import (
-    config_lbl, config_line, config_btn, config_table,
-    fill_cell, config_date_edit)
-from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator
+from gym_manager.core.base import String, TextLike, Client, Number
+from gym_manager.core.persistence import FilterValuePair, ClientRepo
+from ui.widget_config import config_lbl, config_line, config_btn, config_table, fill_cell
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator
 
 
 class MainController:
