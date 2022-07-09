@@ -65,8 +65,8 @@ def main():
     if activity_repo.exists("Padel"):
         booking_activity = activity_repo.get("Padel")
     else:
-        booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), charge_once=True,
-                                    description=String("d", max_len=10), locked=True)
+        booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), String("d", max_len=10),
+                                    charge_once=True, locked=True)
         activity_repo.add(booking_activity)
 
     window = MainUI(activity_repo)
