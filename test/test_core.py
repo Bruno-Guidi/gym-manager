@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Iterable
 
 import pytest
 
@@ -94,3 +95,36 @@ def test_base_Subscription_payDayPassed():
     assert subscription.up_to_date(date(2022, 9, 7))
     assert subscription.up_to_date(date(2022, 10, 6))  # Only 30 days have passed since the charge.
     assert not subscription.up_to_date(date(2022, 10, 7))  # 31 days have passed since the charge.
+
+
+def test_generateBalance():
+    total = "Total"
+    # Transaction types.
+    trans_charge, trans_extract = "Cobro", "Extracción"
+    # Transaction methods.
+    trans_cash, trans_debit, trans_credit = "Efectivo", "Débito", "Crédito"
+
+    # Utility function that creates a generator with some transactions.
+    def transactions_gen() -> Iterable[Transaction]:
+        # noinspection PyTypeChecker
+        to_yield = [
+            Transaction(4, trans_charge, date(2022, 6, 6), Currency("100.99"), trans_cash, None, None),
+            Transaction(5, trans_charge, date(2022, 6, 6), Currency("100.0001"), trans_cash, None, None),
+            Transaction(1, trans_charge, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(6, trans_charge, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(3, trans_extract, date(2022, 6, 6), Currency("100"), trans_cash, None, None),
+            Transaction(7, trans_extract, date(2022, 6, 6), Currency("100"), trans_debit, None, None),
+            Transaction(2, trans_extract, date(2022, 6, 6), Currency("0.0005"), trans_credit, None, None)
+        ]
+        for t in to_yield:
+            yield t
+
+    # Feature to test.
+    balance = system.generate_balance(transactions_gen())
+    expected_balance = {
+        trans_charge: {trans_cash: Currency("200.9901"), trans_debit: Currency("200"), total: Currency("400.9901")},
+        trans_extract: {trans_cash: Currency("100"), trans_debit: Currency("100"), trans_credit: Currency("0.0005"),
+                        total: Currency("200.0005")}
+    }
+
+    assert expected_balance == balance
