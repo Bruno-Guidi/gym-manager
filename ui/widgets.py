@@ -4,8 +4,9 @@ from datetime import date
 from typing import Type, Any, Callable
 
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
-    QPushButton, QDateEdit, QSpacerItem, QSizePolicy
+from PyQt5.QtWidgets import (
+    QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel,
+    QPushButton, QDateEdit, QSpacerItem, QSizePolicy, QFrame)
 
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
@@ -21,6 +22,18 @@ def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> t
     except ValidationError:
         pass  # ToDo self.setStyleSheet("border: 1px solid red")
     return valid, value
+
+
+def Separator(vertical: bool, parent: QWidget | None = None):
+    sep = QFrame(parent)
+    sep.setFrameShape(QFrame.VLine if vertical else QFrame.HLine)
+    sep.setFrameShadow(QFrame.Sunken)
+    if vertical:
+        sep.setFixedWidth(3)
+    else:
+        sep.setFixedHeight(3)
+
+    return sep
 
 
 class Field(QLineEdit):
