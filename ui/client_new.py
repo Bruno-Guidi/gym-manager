@@ -283,13 +283,13 @@ class CreateController:
 
 
 class CreateUI(QDialog):
-    def __init__(self, activity_repo: ActivityRepo) -> None:
+    def __init__(self, client_repo: ClientRepo) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, activity_repo)
+        self.controller = CreateController(self, client_repo)
 
     def _setup_ui(self):
-        self.setWindowTitle("Nueva actividad")
+        self.setWindowTitle("Nuevo cliente")
         self.layout = QVBoxLayout(self)
 
         # Form.
@@ -302,27 +302,36 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, parent=self, max_len=constants.ACTIVITY_NAME_CHARS)
+        self.name_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
-        # Price.
-        self.price_lbl = QLabel(self)
-        self.form_layout.addWidget(self.price_lbl, 1, 0)
-        config_lbl(self.price_lbl, "Precio*")
+        # DNI.
+        self.dni_lbl = QLabel(self)
+        self.form_layout.addWidget(self.dni_lbl, 1, 0)
+        config_lbl(self.dni_lbl, "DNI*")
 
-        self.price_field = Field(Currency, self, max_currency=constants.MAX_CURRENCY)
-        self.form_layout.addWidget(self.price_field, 1, 1)
-        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
+        self.dni_field = Field(Number, self, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI)
+        self.form_layout.addWidget(self.dni_field, 1, 1)
+        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
-        # Description.
-        self.description_lbl = QLabel(self)
-        self.form_layout.addWidget(self.description_lbl, 2, 0, alignment=Qt.AlignTop)
-        config_lbl(self.description_lbl, "Descripción")
+        # Telephone.
+        self.tel_lbl = QLabel(self)
+        self.form_layout.addWidget(self.tel_lbl, 2, 0)
+        config_lbl(self.tel_lbl, "Teléfono")
 
-        self.description_text = QTextEdit(self)
-        self.form_layout.addWidget(self.description_text, 2, 1)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+        self.tel_field = Field(String, self, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS)
+        self.form_layout.addWidget(self.tel_field, 2, 1)
+        config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
+
+        # Direction.
+        self.dir_lbl = QLabel(self)
+        self.form_layout.addWidget(self.dir_lbl, 3, 0)
+        config_lbl(self.dir_lbl, "Dirección")
+
+        self.dir_field = Field(String, self, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS)
+        self.form_layout.addWidget(self.dir_field, 3, 1)
+        config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
