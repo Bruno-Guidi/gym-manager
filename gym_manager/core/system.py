@@ -154,6 +154,8 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
         balance[transaction.type][transaction.method].increase(transaction.amount)
         balance[transaction.type][total].increase(transaction.amount)
 
+    logger.info(f"Generated balance [balance={balance}].")
+
     return balance
 
 
@@ -179,4 +181,7 @@ def close_balance(
     for transaction in transactions:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
+
+    logger.info(f"Responsible [responsible={responsible}] closed the balance [balance={balance}] of [balance_date="
+                f"{balance_date}].")
 
