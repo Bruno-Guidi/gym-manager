@@ -230,6 +230,8 @@ class SqliteActivityRepo(ActivityRepo):
                              charge_once=activity.charge_once,
                              description=activity.description.as_primitive(),
                              locked=activity.locked)
+        if self._do_caching:
+            self.cache[activity.name] = activity
 
     def exists(self, name: str | String) -> bool:
         if self._do_caching and name in self.cache:
@@ -251,9 +253,8 @@ class SqliteActivityRepo(ActivityRepo):
         for record in ActivityTable.select().where(ActivityTable.act_name == name):
             activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                 Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                record.charge_once,
                                 String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
-                                record.locked)
+                                record.charge_once, record.locked)
             if self._do_caching:
                 self.cache[name] = activity
             return activity
