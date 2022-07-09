@@ -46,6 +46,9 @@ def subscribe(
     if client.admission > when:
         raise InvalidDate(f"[subscription_date={when}] cannot be lesser than [admission_date={client.admission}] of "
                           f"the client")
+    if transaction is not None and transaction.client != client:
+        raise OperationalError(f"The subscribed [client={client.name}] is not the charged [client="
+                               f"{transaction.client.name}].")
 
     subscription = Subscription(when, client, activity, transaction)
     subscription_repo.add(subscription)
@@ -56,6 +59,13 @@ def subscribe(
         f"{'None' if transaction is None else transaction.id}].")
 
     return subscription
+
+
+def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> None:
+    subscription.client.unsubscribe(subscription.activity)
+    subscription_repo.remove(subscription)
+    logging.info(
+        f"'Client' [{subscription.client.dni}] unsubscribed from the 'activity' [{subscription.activity.name}].")
 
 
 class ActivityManager:
