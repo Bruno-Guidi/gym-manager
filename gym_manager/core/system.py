@@ -107,12 +107,24 @@ def charge(
     return transaction
 
 
-def register_extraction(
-        when: date, amount: Currency, method: String, responsible: String, description: String,
-        transaction_repo: TransactionRepo
+def extract(
+        transaction_repo: TransactionRepo, when: date, amount: Currency, method: str, responsible: String,
+        description: String
 ) -> Transaction:
-    transaction_type = String("Extracción", max_len=constants.TRANSACTION_TYPE_CHARS)
-    transaction = transaction_repo.create(transaction_type, when, amount, method, responsible, description)
+    """Registers an extraction.
+
+    Args:
+        transaction_repo: repository implementation that registers transactions.
+        when: date when the charging is made.
+        amount: extracted amount.
+        method: method used in the charging.
+        responsible: responsible for doing the charging.
+        description: description of the extraction.
+
+    Returns:
+        The created transaction.
+    """
+    transaction = transaction_repo.create("Extracción", when, amount, method, responsible, description.as_primitive())
 
     logger.info(f"Registered [extraction={transaction}]")
 
