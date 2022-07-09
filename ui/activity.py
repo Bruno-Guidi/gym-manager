@@ -175,7 +175,7 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_activity_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_btn.clicked.connect(self.create_ui)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
@@ -190,7 +190,7 @@ class MainController:
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
 
     def fill_activity_table(self, filters: list[FilterValuePair]):
-        self.main_ui.activity_list.clear()
+        self.main_ui.activity_table.setRowCount(0)
 
         self.main_ui.page_index.total_len = self.activity_repo.count(filters)
         for activity in self.activity_repo.all(self.main_ui.page_index.page,
@@ -214,8 +214,7 @@ class ActivityMainUI(QMainWindow):
     def __init__(self, activity_repo: ActivityRepo) -> None:
         super().__init__()
         self._setup_ui()
-        # self.controller = MainController(activity_manager, self, name_width, price_width, charge_once_width,
-        #                                  n_subscribers_width)
+        self.controller = MainController(self, activity_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Actividades")
@@ -330,8 +329,7 @@ class CreateController:
         elif self.activity_repo.exists(self.create_ui.name_field.value()):
             Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
         else:
-            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(),
-                                     self.create_ui.charge_once_checkbox.isChecked(), descr)
+            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(), descr)
             self.activity_repo.add(self.activity)
             Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
             self.create_ui.name_field.window().close()
