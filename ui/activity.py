@@ -179,7 +179,7 @@ class MainController:
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
-            self.main_ui.activity_list.takeItem(len(self.main_ui.activity_list) - 1)
+            return
 
         if check_filters and not self.main_ui.filter_header.passes_filters(activity):
             return
