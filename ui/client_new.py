@@ -176,7 +176,8 @@ class ClientMainUI(QMainWindow):
         self.client_table = QTableWidget(self.widget)  # ToDO adjust columns width.
         self.left_layout.addWidget(self.client_table)
         config_table(self.client_table, allow_resizing=True, min_rows_to_show=10,
-                     columns={"Nombre": (8, str), "DNI": (8, int), "Ingreso": (8, int)})
+                     columns={"Nombre": (8, str), "DNI": (8, int), "Ingreso": (8, bool), "Teléfono": (8, str),
+                              "Dirección": (8, str)})
 
         # Index.
         self.page_index = PageIndex(self.widget)
@@ -228,24 +229,24 @@ class ClientMainUI(QMainWindow):
         config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
         # Telephone.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 3, 0)
-        config_lbl(self.name_lbl, "Teléfono")
+        self.tel_lbl = QLabel(self.widget)
+        self.form_layout.addWidget(self.tel_lbl, 3, 0)
+        config_lbl(self.tel_lbl, "Teléfono")
 
-        self.name_field = Field(String, self.widget, optional=constants.CLIENT_TEL_OPTIONAL,
+        self.tel_field = Field(String, self.widget, optional=constants.CLIENT_TEL_OPTIONAL,
                                 max_len=constants.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.name_field, 3, 1)
-        config_line(self.name_field, place_holder="Teléfono", adjust_to_hint=False)
+        self.form_layout.addWidget(self.tel_field, 3, 1)
+        config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
 
         # Direction.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 4, 0)
-        config_lbl(self.name_lbl, "Dirección")
+        self.dir_lbl = QLabel(self.widget)
+        self.form_layout.addWidget(self.dir_lbl, 4, 0)
+        config_lbl(self.dir_lbl, "Dirección")
 
-        self.name_field = Field(String, self.widget, optional=constants.CLIENT_DIR_OPTIONAL,
+        self.dir_field = Field(String, self.widget, optional=constants.CLIENT_DIR_OPTIONAL,
                                 max_len=constants.CLIENT_DIR_CHARS)
-        self.form_layout.addWidget(self.name_field, 4, 1)
-        config_line(self.name_field, place_holder="Dirección", adjust_to_hint=False)
+        self.form_layout.addWidget(self.dir_field, 4, 1)
+        config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
