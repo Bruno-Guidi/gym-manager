@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Activity, Currency
+from gym_manager.core.persistence import ActivityRepo
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox, config_table
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 
@@ -319,7 +320,39 @@ class ActivityMainUI(QMainWindow):
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
-        self.setMinimumSize(self.sizeHint())
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class CreateController:
+
+    def __init__(self, create_ui: CreateUI, activity_repo: ActivityRepo) -> None:
+        self.create_ui = create_ui
+
+        self.activity: Activity | None = None
+        self.activity_repo = activity_repo
+
+        # noinspection PyUnresolvedReferences
+        self.create_ui.confirm_btn.clicked.connect(self.create_activity)
+        # noinspection PyUnresolvedReferences
+        self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+
+    # noinspection PyTypeChecker
+    def create_activity(self):
+        valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
+                                              max_len=consts.ACTIVITY_DESCR_CHARS)
+        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
+                            valid_descr])
+        if not valid_fields:
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        elif self.activity_repo.exists(self.create_ui.name_field.value()):
+            Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
+        else:
+            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(),
+                                     self.create_ui.charge_once_checkbox.isChecked(), descr)
+            self.activity_repo.add(self.activity)
+            Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
+            self.create_ui.name_field.window().close()
 
 
 # class CreateController:
