@@ -12,6 +12,14 @@ from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, Acti
 logger = logging.getLogger(__name__)
 
 
+class InvalidDate(Exception):
+    """Exception to be raised when a given date fails to pass a given condition.
+    """
+
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 class ActivityManager:
     """Provides an API to do activity related things.
     """
