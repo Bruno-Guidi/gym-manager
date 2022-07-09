@@ -226,7 +226,7 @@ class ClientMainUI(QMainWindow):
         self.dni_field = Field(Number, self.widget, min_value=constants.CLIENT_MIN_DNI,
                                max_value=constants.CLIENT_MAX_DNI)
         self.form_layout.addWidget(self.dni_field, 1, 1)
-        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
+        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False, enabled=False)
 
         # Telephone.
         self.tel_lbl = QLabel(self.widget)
