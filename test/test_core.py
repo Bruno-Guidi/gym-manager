@@ -4,12 +4,12 @@ from typing import Iterable
 import pytest
 
 from gym_manager import peewee
-from gym_manager.core import system
+from gym_manager.core import api
 from gym_manager.core.base import (
     Activity, String, Currency, OperationalError, Client, Number, Transaction,
     Subscription)
 from gym_manager.core.persistence import PersistenceError
-from gym_manager.core.system import InvalidDate
+from gym_manager.core.api import InvalidDate
 
 
 def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
@@ -31,7 +31,7 @@ def test_subscribe_activityChargeOnce_raisesOperationalError():
                         charge_once=True, locked=True)
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
-        system.subscribe(subscription_repo=None, when=date(2022, 2, 2), client=client, activity=activity)
+        api.subscribe(subscription_repo=None, when=date(2022, 2, 2), client=client, activity=activity)
     assert str(op_error.value) == ("Subscriptions to [activity=dummy_name] are not allowed because it is a "
                                    "'charge_once' activity.")
 
@@ -49,8 +49,8 @@ def test_subscribe_invalidClients_raisesOperationalError():
 
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
-        system.subscribe(subscription_repo=None, when=date(2022, 2, 2), client=other, activity=activity,
-                         transaction=transaction)
+        api.subscribe(subscription_repo=None, when=date(2022, 2, 2), client=other, activity=activity,
+                      transaction=transaction)
     assert str(op_error.value) == "The subscribed [client=2] is not the charged [client=1]."
 
     # Swaps client's positions.
@@ -59,8 +59,8 @@ def test_subscribe_invalidClients_raisesOperationalError():
                               client=other)
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
-        system.subscribe(subscription_repo=None, when=date(2022, 2, 2), client=client, activity=activity,
-                         transaction=transaction)
+        api.subscribe(subscription_repo=None, when=date(2022, 2, 2), client=client, activity=activity,
+                      transaction=transaction)
     assert str(op_error.value) == "The subscribed [client=1] is not the charged [client=2]."
 
 
@@ -73,7 +73,7 @@ def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
                         charge_once=False, locked=True)
     with pytest.raises(InvalidDate):
         # noinspection PyTypeChecker
-        system.subscribe(subscription_repo=None, when=lesser, client=client, activity=activity)
+        api.subscribe(subscription_repo=None, when=lesser, client=client, activity=activity)
 
 
 # noinspection PyTypeChecker
@@ -120,7 +120,7 @@ def test_generateBalance():
             yield t
 
     # Feature to test.
-    balance = system.generate_balance(transactions_gen())
+    balance = api.generate_balance(transactions_gen())
     expected_balance = {
         trans_charge: {trans_cash: Currency("200.9901"), trans_debit: Currency("200"), total: Currency("400.9901")},
         trans_extract: {trans_cash: Currency("100"), trans_debit: Currency("100"), trans_credit: Currency("0.0005"),

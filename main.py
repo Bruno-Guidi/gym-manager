@@ -11,7 +11,7 @@ from gym_manager.core import constants as consts
 from gym_manager.booking import peewee as booking_peewee
 from gym_manager.booking.core import BookingSystem, Duration, Court
 from gym_manager.core.base import Currency, String, Activity
-from gym_manager.core.system import ActivityManager, AccountingSystem
+from gym_manager.core.api import ActivityManager, AccountingSystem
 from ui.main import MainUI
 
 log_config = {

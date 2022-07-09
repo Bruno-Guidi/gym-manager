@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as consts
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import FilterValuePair
-from gym_manager.core.system import ActivityManager
+from gym_manager.core.api import ActivityManager
 from ui.widget_config import config_lbl, config_line, config_btn, config_layout, config_checkbox
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex
 

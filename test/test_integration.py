@@ -1,7 +1,7 @@
 from datetime import date
 
 from gym_manager import peewee
-from gym_manager.core import system
+from gym_manager.core import api
 from gym_manager.core.base import Client, Number, String, Activity, Currency, Subscription
 
 
@@ -23,7 +23,7 @@ def test_subscribe():
     activity_repo.add(activity)
 
     # Feature being tested.
-    system.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
+    api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
     assert activity_repo.n_subscribers(activity) == 1
 
 
@@ -49,7 +49,7 @@ def test_cancel():
     subscription_repo.add(subscription)
 
     # Feature being tested.
-    system.cancel(subscription_repo, subscription)
+    api.cancel(subscription_repo, subscription)
     assert activity_repo.n_subscribers(activity) == 0
 
 
@@ -73,8 +73,8 @@ def test_charge_chargeOnceActivity():
     activity_repo.add(activity)
 
     # Feature being tested.
-    system.charge(transaction_repo, subscription_repo, date(2022, 2, 2), client, activity, "dummy_method",
-                  responsible=String("dummy_resp", max_len=20))
+    api.charge(transaction_repo, subscription_repo, date(2022, 2, 2), client, activity, "dummy_method",
+                     responsible=String("dummy_resp", max_len=20))
     assert len([t for t in transaction_repo.all()]) == 1
 
 
@@ -102,6 +102,6 @@ def test_charge_notChargeOnceActivity():
     subscription_repo.add(subscription)
 
     # Feature being tested.
-    system.charge(transaction_repo, subscription_repo, date(2022, 2, 2), client, activity, "dummy_method",
-                  responsible=String("dummy_resp", max_len=20))
+    api.charge(transaction_repo, subscription_repo, date(2022, 2, 2), client, activity, "dummy_method",
+                     responsible=String("dummy_resp", max_len=20))
     assert len([t for t in transaction_repo.all()]) == 1 and client.up_to_date(date(2022, 2, 2), activity)

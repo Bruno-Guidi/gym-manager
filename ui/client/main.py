@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as consts
 from gym_manager.core.base import Client, String, Number, Subscription, TextLike, invalid_sub_charge_date
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
-from gym_manager.core.system import ActivityManager, AccountingSystem
+from gym_manager.core.api import ActivityManager, AccountingSystem
 from ui.accounting.main import AccountingMainUI
 from ui.accounting.operations import ChargeUI
 from ui.client.operations import CreateUI
