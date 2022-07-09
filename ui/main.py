@@ -5,15 +5,17 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy)
 
+from gym_manager.core.persistence import ActivityRepo
 from ui.activity import ActivityMainUI
 from ui.widget_config import config_lbl, config_btn
 
 
 class Controller:
     def __init__(
-            self, main_ui: MainUI
+            self, main_ui: MainUI, activity_repo: ActivityRepo
     ):
         self.main_ui = main_ui
+        self.activity_repo = activity_repo
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
@@ -33,7 +35,7 @@ class Controller:
     #
     # noinspection PyAttributeOutsideInit
     def show_activity_main_ui(self):
-        self.activity_main_ui = ActivityMainUI()
+        self.activity_main_ui = ActivityMainUI(self.activity_repo)
         self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
         self.activity_main_ui.show()
 
@@ -51,10 +53,10 @@ class Controller:
 
 
 class MainUI(QMainWindow):
-    def __init__(self):
+    def __init__(self, activity_repo: ActivityRepo):
         super().__init__()
         self._setup_ui()
-        self.controller = Controller(self)
+        self.controller = Controller(self, activity_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Gestor La Cascada")

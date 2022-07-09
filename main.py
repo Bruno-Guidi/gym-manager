@@ -67,8 +67,9 @@ def main():
     else:
         booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), charge_once=True,
                                     description=String("d", max_len=10), locked=True)
+        activity_repo.add(booking_activity)
 
-    window = MainUI()
+    window = MainUI(activity_repo)
     window.show()
 
     app.exec()
