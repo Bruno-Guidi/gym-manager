@@ -134,20 +134,17 @@ def extract(
     return transaction
 
 
-def generate_balance(
-        transactions: Iterable[Transaction],
-        transaction_types: Iterable[String],
-        transaction_methods: Iterable[String]
-):
-    """Generates the balance of the day *when*. The transactions are grouped by type and by method, and then summed up.
+def generate_balance(transactions: Iterable[Transaction]) -> Balance:
+    """Generates the balance from the given *transactions*. The transactions are grouped by type and by method, and then
+    summed up.
     """
-    total = String("Total", max_len=constants.TRANSACTION_TYPE_CHARS)
-    balance = {trans_type: {trans_method: Currency(0) for trans_method in transaction_methods}
-               for trans_type in transaction_types}
-    for trans_type in transaction_types:
-        balance[trans_type][total] = Currency(0)
+    balance = {"Cobro": {}, "Extracción": {}}
+    total = "Total"
+    balance["Cobro"][total], balance["Extracción"][total] = Currency(0), Currency(0)
 
     for transaction in transactions:
+        if transaction.method not in balance[transaction.type]:
+            balance[transaction.type][transaction.method] = Currency(0)
         balance[transaction.type][transaction.method].increase(transaction.amount)
         balance[transaction.type][total].increase(transaction.amount)
 
