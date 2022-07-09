@@ -444,12 +444,9 @@ class SqliteTransactionRepo(TransactionRepo):
         Raises:
             AttributeError if the client_repo attribute wasn't set before the execution of the method.
         """
-        if self.client_repo is None:
-            raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
-
         record = TransactionTable.create(
             type=type,
-            client=ClientTable.get_by_id(client.dni.as_primitive()) if client is not None else None,
+            client=client.dni.as_primitive() if client is not None else None,
             when=when,
             amount=amount.as_primitive(),
             method=method,
