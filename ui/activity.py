@@ -20,7 +20,7 @@ class MainController:
     ):
         self.main_ui = main_ui
         self.activity_repo = activity_repo
-        self._activities: dict[int, Activity] = {}  # Dict that maps row number to the activity that displays.
+        self._activities: dict[str, Activity] = {}  # Dict that maps raw activity name to the associated activity.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -51,8 +51,8 @@ class MainController:
         if check_filters and not self.main_ui.filter_header.passes_filters(activity):
             return
 
+        self._activities[activity.name.as_primitive()] = activity
         row = self.main_ui.activity_table.rowCount()
-        self._activities[row] = activity
         fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
         fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int)
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
@@ -61,14 +61,14 @@ class MainController:
         self.main_ui.activity_table.setRowCount(0)
 
         self.main_ui.page_index.total_len = self.activity_repo.count(filters)
-        activities = self.activity_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters)
-        for i, activity in enumerate(activities):
-            self._activities[i] = activity
+        for activity in self.activity_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
+            self._activities[activity.name.as_primitive()] = activity
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
     def refresh_form(self):
         if self.main_ui.activity_table.currentRow() != -1:
-            activity = self._activities[self.main_ui.activity_table.currentRow()]
+            activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
+            activity = self._activities[activity_name]
             self.main_ui.name_field.setText(str(activity.name))
             self.main_ui.price_field.setText(str(activity.price))
             self.main_ui.description_text.setText(str(activity.description))
@@ -98,14 +98,14 @@ class MainController:
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            row = self.main_ui.activity_table.currentRow()
-
             # Updates the activity.
-            activity = self._activities[row]
+            activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
+            activity = self._activities[activity_name]
             activity.price, activity.description = self.main_ui.price_field.value(), descr
             self.activity_repo.update(activity)
 
             # Updates the ui.
+            row = self.main_ui.activity_table.currentRow()
             fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
             fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int)
             fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
@@ -117,7 +117,8 @@ class MainController:
             Dialog.info("Error", "Seleccione una actividad.")
             return
 
-        activity = self._activities[self.main_ui.activity_table.currentRow()]
+        activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
+        activity = self._activities[activity_name]
         if activity.locked:
             Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
             return
@@ -132,6 +133,7 @@ class MainController:
             remove = Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?")
 
         if remove:
+            self._activities.pop(activity.name.as_primitive())
             self.activity_repo.remove(activity)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
