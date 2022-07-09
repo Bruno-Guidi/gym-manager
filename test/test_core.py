@@ -97,6 +97,19 @@ def test_base_Subscription_upToDate():
     assert not subscription.up_to_date(date(2022, 10, 7))  # 31 days have passed since the charge.
 
 
+# noinspection PyTypeChecker
+def test_base_Subscription_invalidChargeDate():
+    subscription = Subscription(date(2022, 8, 8), client=None, activity=None)
+    # The subscription wasn't paid yet.
+    assert subscription.invalid_charge_date(date(2022, 8, 7))
+    assert not subscription.invalid_charge_date(date(2022, 8, 8))
+
+    # The subscription was already paid.
+    subscription.transaction = Transaction(1, None, date(2022, 8, 10), None, None, None, None)
+    assert subscription.invalid_charge_date(date(2022, 8, 9))
+    assert not subscription.invalid_charge_date(date(2022, 8, 10))
+
+
 def test_generateBalance():
     total = "Total"
     # Transaction types.
