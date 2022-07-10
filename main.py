@@ -58,7 +58,7 @@ def main():
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    subscription_repo = peewee.SqliteSubscriptionRepo()
     balance_repo = peewee.SqliteBalanceRepo()
 
     booking_activity: Activity
@@ -69,7 +69,7 @@ def main():
                                     charge_once=True, locked=True)
         activity_repo.add(booking_activity)
 
-    window = MainUI(client_repo, activity_repo)
+    window = MainUI(client_repo, activity_repo, subscription_repo)
     window.show()
 
     app.exec()
