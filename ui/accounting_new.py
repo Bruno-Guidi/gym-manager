@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable
+from typing import Iterable, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -9,12 +9,12 @@ from PyQt5.QtWidgets import (
     QComboBox, QTextEdit, QSpacerItem, QSizePolicy)
 
 from gym_manager.core import api, constants
-from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client
+from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Activity
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
     fill_combobox)
-from ui.widgets import Separator, Field
+from ui.widgets import Separator, Field, Dialog
 
 
 class MainController:
@@ -172,69 +172,53 @@ class ChargeController:
     def __init__(
             self,
             charge_ui: ChargeUI,
+            transaction_repo: TransactionRepo,
             client: Client,
             amount: Currency,
-            transaction_methods: Iterable[str],
             description: String
     ) -> None:
         self.charge_ui = charge_ui
+        self.transaction_repo = transaction_repo
+        self.client, self.amount = client, amount
+        self.transaction: Transaction | None = None
 
         # Sets ui fields.
         self.charge_ui.client_line.setText(str(client.name))
         self.charge_ui.amount_line.setText(Currency.fmt(amount))
-        fill_combobox(self.charge_ui.method_combobox, transaction_methods, display=lambda method: method)
+        fill_combobox(self.charge_ui.method_combobox, transaction_repo.methods,
+                      display=lambda method: method)
         self.charge_ui.descr_text.setText(str(description))
 
-        # self.transaction: Transaction | None = None
-        # self.client, self.activity = client, activity
-        # self.accounting_system = accounting_system
-        #
-        # # Function used to do an extra validation to the transaction date, that can't be done with the information
-        # # available in this context.
-        # self.invalid_date_fn = invalid_date_fn
-        # self.validation_msg = validation_msg
-        # self.invalid_date_kwargs = invalid_date_kwargs
-        #
         # Sets callbacks
         # noinspection PyUnresolvedReferences
         self.charge_ui.confirm_btn.clicked.connect(self.charge)
         # noinspection PyUnresolvedReferences
         self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
 
-    # noinspection PyTypeChecker
-    # noinspection PyArgumentList
     def charge(self):
-        pass
-        # valid_descr, descr = valid_text_value(self.charge_ui.descr_text, optional=False,
-        #                                       max_len=consts.TRANSACTION_DESCR_CHARS)
-        # if not (self.charge_ui.responsible_field.valid_value() and valid_descr):
-        #     Dialog.info("Error", "Hay datos que no son válidos.")
-        # else:
-        #     transaction_date = self.charge_ui.when_date_edit.date().toPyDate()
-        #     if self.invalid_date_fn is not None and self.invalid_date_fn(transaction_date, **self.invalid_date_kwargs):
-        #         Dialog.info("Error", self.validation_msg)
-        #     else:
-        #         self.transaction = self.accounting_system.charge(
-        #             transaction_date, self.client, self.activity,
-        #             self.charge_ui.method_combobox.currentData(Qt.UserRole),
-        #             self.charge_ui.responsible_field.value(),
-        #             descr
-        #         )
-        #         Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
-        #         self.charge_ui.descr_text.window().close()
+        if not self.charge_ui.responsible_field.valid_value():
+            Dialog.info("Error", "El campo 'Responsable' no es válido.")
+        else:
+            # noinspection PyTypeChecker
+            self.transaction = self.transaction_repo.create(
+                "Cobro", date.today(), self.amount, self.charge_ui.method_combobox.currentText(),
+                self.charge_ui.responsible_field.value(), self.charge_ui.descr_text.toPlainText(), self.client
+            )
+            Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
+            self.charge_ui.descr_text.window().close()
 
 
 class ChargeUI(QDialog):
     def __init__(
             self,
+            transaction_repo: TransactionRepo,
             client: Client,
             amount: Currency,
-            transaction_methods: Iterable[str],
             description: String
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = ChargeController(self, client, amount, transaction_methods, description)
+        self.controller = ChargeController(self, transaction_repo, client, amount, description)
 
     def _setup_ui(self):
         self.setWindowTitle("Registrar cobro")
