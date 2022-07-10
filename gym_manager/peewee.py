@@ -518,10 +518,11 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.dni.as_primitive())
                                          & (SubscriptionTable.activity_id == subscription.activity.name)).execute()
 
-    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
+    def update(self, subscription: Subscription):
         """Registers in the repository that the *client* was charged for the *activity*.
         """
-        sub_record = SubscriptionTable.get_by_id((client.dni.as_primitive(), activity.name))
-        trans_record = TransactionTable.get_by_id(transaction.id)
-        sub_record.transaction = trans_record
+        sub_record = SubscriptionTable.get_by_id((subscription.client.dni.as_primitive(),
+                                                  subscription.activity.name.as_primitive()))
+        if subscription.transaction is not None:
+            sub_record.transaction_id = subscription.transaction.id
         sub_record.save()

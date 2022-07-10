@@ -190,8 +190,8 @@ class SubscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
-        """Registers in the repository that the client was charged for the activity subscription.
+    def update(self, subscription: Subscription):
+        """Updates the subscription.
         """
         raise NotImplementedError
 
