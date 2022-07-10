@@ -12,7 +12,8 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
-from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo
+from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
+from ui.accounting_new import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox)
@@ -25,11 +26,13 @@ class MainController:
             main_ui: ClientMainUI,
             client_repo: ClientRepo,
             subscription_repo: SubscriptionRepo,
+            transaction_repo: TransactionRepo,
             activities_fn: Callable[[], Iterable[Activity]]
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
         self.subscription_repo = subscription_repo
+        self.transaction_repo = transaction_repo
         self.activities_fn = activities_fn
         self._clients: dict[int, Client] = {}  # Dict that maps raw client dni to the associated client.
         self._subscriptions: dict[str, Subscription] = {}  # Maps raw activity name to subs of the selected client.
@@ -57,6 +60,8 @@ class MainController:
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
         self.main_ui.overdue_subs_checkbox.stateChanged.connect(self.fill_subscription_table)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_sub_btn.clicked.connect(self.charge_sub)
         # noinspection PyUnresolvedReferences
         self.main_ui.add_sub_btn.clicked.connect(self.add_sub)
         # noinspection PyUnresolvedReferences
@@ -179,6 +184,28 @@ class MainController:
                 last_paid_date = None if sub.transaction is None else sub.transaction.when
                 fill_cell(self.main_ui.subscription_table, i, 1, "-" if last_paid_date is None else last_paid_date,
                           data_type=bool)
+
+    def charge_sub(self):
+        if self.main_ui.client_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un cliente.")
+            return
+
+        if self.main_ui.subscription_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad.")
+            return
+
+        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+        activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
+
+        # noinspection PyAttributeOutsideInit
+        self._charge_ui = ChargeUI(
+            self._clients[client_dni], self._subscriptions[activity_name].activity.price, self.transaction_repo.methods,
+            description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS)
+        )
+        self._charge_ui.exec_()
+        # if self._charge_ui.controller.client is not None:
+        #     self._add_client(self._charge_ui.controller.client, check_filters=True, check_limit=True)
+        #     self.main_ui.page_index.total_len += 1
 
     def add_sub(self):
         if self.main_ui.client_table.currentRow() == -1:
