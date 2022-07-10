@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo
 from ui.activity import ActivityMainUI
-from ui.client_new import ClientMainUI
+from ui.client import ClientMainUI
 from ui.widget_config import config_lbl, config_btn
 
 

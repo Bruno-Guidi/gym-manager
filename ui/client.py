@@ -7,7 +7,7 @@ from typing import Iterable, Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QListWidget, QCheckBox, QComboBox,
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
     QLineEdit)
 
 from gym_manager.core import constants as constants, api
