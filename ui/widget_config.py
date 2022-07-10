@@ -28,11 +28,13 @@ def config_line(
         target: QLineEdit | QTextEdit, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
         adjust_to_hint: bool = True, extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0,
         enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight, place_holder: str = "",
-        read_only: bool = False
+        read_only: bool = False, alignment=None
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
     target.setReadOnly(read_only)
+    if alignment is not None:
+        target.setAlignment(alignment)
     config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
