@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Iterable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit)
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit, QDialog,
+    QComboBox, QTextEdit, QSpacerItem, QSizePolicy)
 
-from gym_manager.core import api
-from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction
+from gym_manager.core import api, constants
+from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
-from ui.widget_config import config_table, config_lbl, config_btn, config_line, fill_cell
-from ui.widgets import Separator
+from ui.widget_config import (
+    config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
+    fill_combobox)
+from ui.widgets import Separator, Field
 
 
 class MainController:
@@ -162,3 +166,144 @@ class AccountingMainUI(QMainWindow):
         #     columns={"Fecha": (10, int), "Responsable": (12, str), "Cobros": (12, int),
         #              "Extracciones": (12, int)}
         # )
+
+
+class ChargeController:
+    def __init__(
+            self,
+            charge_ui: ChargeUI,
+            client: Client,
+            amount: Currency,
+            transaction_methods: Iterable[str],
+            description: String
+    ) -> None:
+        self.charge_ui = charge_ui
+
+        # Sets ui fields.
+        self.charge_ui.client_line.setText(str(client.name))
+        self.charge_ui.amount_line.setText(Currency.fmt(amount))
+        fill_combobox(self.charge_ui.method_combobox, transaction_methods, display=lambda method: method)
+        self.charge_ui.descr_text.setText(str(description))
+
+        # self.transaction: Transaction | None = None
+        # self.client, self.activity = client, activity
+        # self.accounting_system = accounting_system
+        #
+        # # Function used to do an extra validation to the transaction date, that can't be done with the information
+        # # available in this context.
+        # self.invalid_date_fn = invalid_date_fn
+        # self.validation_msg = validation_msg
+        # self.invalid_date_kwargs = invalid_date_kwargs
+        #
+        # Sets callbacks
+        # noinspection PyUnresolvedReferences
+        self.charge_ui.confirm_btn.clicked.connect(self.charge)
+        # noinspection PyUnresolvedReferences
+        self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
+
+    # noinspection PyTypeChecker
+    # noinspection PyArgumentList
+    def charge(self):
+        pass
+        # valid_descr, descr = valid_text_value(self.charge_ui.descr_text, optional=False,
+        #                                       max_len=consts.TRANSACTION_DESCR_CHARS)
+        # if not (self.charge_ui.responsible_field.valid_value() and valid_descr):
+        #     Dialog.info("Error", "Hay datos que no son válidos.")
+        # else:
+        #     transaction_date = self.charge_ui.when_date_edit.date().toPyDate()
+        #     if self.invalid_date_fn is not None and self.invalid_date_fn(transaction_date, **self.invalid_date_kwargs):
+        #         Dialog.info("Error", self.validation_msg)
+        #     else:
+        #         self.transaction = self.accounting_system.charge(
+        #             transaction_date, self.client, self.activity,
+        #             self.charge_ui.method_combobox.currentData(Qt.UserRole),
+        #             self.charge_ui.responsible_field.value(),
+        #             descr
+        #         )
+        #         Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
+        #         self.charge_ui.descr_text.window().close()
+
+
+class ChargeUI(QDialog):
+    def __init__(
+            self,
+            client: Client,
+            amount: Currency,
+            transaction_methods: Iterable[str],
+            description: String
+    ) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = ChargeController(self, client, amount, transaction_methods, description)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Registrar cobro")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+
+        # Client.
+        self.client_lbl = QLabel(self)
+        self.form_layout.addWidget(self.client_lbl, 0, 0)
+        config_lbl(self.client_lbl, "Cliente")
+
+        self.client_line = QLineEdit(self)
+        self.form_layout.addWidget(self.client_line, 0, 1)
+        config_line(self.client_line, read_only=True)
+
+        # Method.
+        self.method_lbl = QLabel(self)
+        self.form_layout.addWidget(self.method_lbl, 1, 0)
+        config_lbl(self.method_lbl, "Método")
+
+        self.method_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.method_combobox, 1, 1)
+        config_combobox(self.method_combobox, fixed_width=self.client_line.width())
+
+        # Amount.
+        self.amount_lbl = QLabel(self)
+        self.form_layout.addWidget(self.amount_lbl, 2, 0)
+        config_lbl(self.amount_lbl, "Monto")
+
+        self.amount_line = QLineEdit(parent=self)
+        self.form_layout.addWidget(self.amount_line, 2, 1)
+        config_line(self.amount_line, enabled=False)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 3, 0)
+        config_lbl(self.responsible_lbl, "Responsable*")
+
+        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 3, 1)
+        config_line(self.responsible_field)
+
+        # Description.
+        self.descr_lbl = QLabel(self)
+        self.form_layout.addWidget(self.descr_lbl, 5, 0, alignment=Qt.AlignTop)
+        config_lbl(self.descr_lbl, "Descripción")
+
+        self.descr_text = QTextEdit(self)
+        self.form_layout.addWidget(self.descr_text, 5, 1)
+        config_line(self.descr_text, enabled=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setFixedSize(self.sizeHint())
