@@ -199,13 +199,20 @@ class MainController:
 
         # noinspection PyAttributeOutsideInit
         self._charge_ui = ChargeUI(
-            self._clients[client_dni], self._subscriptions[activity_name].activity.price, self.transaction_repo.methods,
+            self.transaction_repo, self._clients[client_dni], self._subscriptions[activity_name].activity.price,
             description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS)
         )
         self._charge_ui.exec_()
-        # if self._charge_ui.controller.client is not None:
-        #     self._add_client(self._charge_ui.controller.client, check_filters=True, check_limit=True)
-        #     self.main_ui.page_index.total_len += 1
+        api.register_subscription_charge(self.subscription_repo, self._subscriptions[activity_name],
+                                         self._charge_ui.controller.transaction)
+        if self._charge_ui.controller.transaction is not None:
+            # Updates the last charged date of the subscription.
+            fill_cell(self.main_ui.subscription_table, self.main_ui.subscription_table.currentRow(), 1,
+                      self._charge_ui.controller.transaction.when, data_type=bool)
+            # If 'only overdue' filtering is active, then remove the activity from the table, because it is no longer
+            # overdue.
+            if self.main_ui.overdue_subs_checkbox.isChecked():
+                self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
 
     def add_sub(self):
         if self.main_ui.client_table.currentRow() == -1:
