@@ -288,11 +288,6 @@ class Client:
         """
         return self._subscriptions.values()
 
-    def up_to_date(self, reference_date: date, activity: Activity) -> bool:
-        """Checks if the *activity* subscription is up-to-date.
-        """
-        return self._subscriptions[activity.name].up_to_date(reference_date)
-
 
 @dataclass
 class Activity:
