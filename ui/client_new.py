@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QLineEdit)
 
 from gym_manager.core import constants as constants, api
-from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription
+from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
@@ -56,6 +56,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
+        self.main_ui.overdue_subs_checkbox.stateChanged.connect(self.fill_subscription_table)
+        # noinspection PyUnresolvedReferences
         self.main_ui.add_sub_btn.clicked.connect(self.add_sub)
         # noinspection PyUnresolvedReferences
         self.main_ui.cancel_sub_btn.clicked.connect(self.cancel_sub)
@@ -92,14 +94,7 @@ class MainController:
             self.main_ui.tel_field.setText(str(self._clients[client_dni].telephone))
             self.main_ui.dir_field.setText(str(self._clients[client_dni].direction))
 
-            # Fills subscriptions table.
-            self.main_ui.subscription_table.setRowCount(0)  # Clears the table.
-            for i, subscription in enumerate(self._clients[client_dni].subscriptions()):
-                self._subscriptions[subscription.activity.name.as_primitive()] = subscription
-                fill_cell(self.main_ui.subscription_table, i, 0, subscription.activity.name, data_type=str)
-                last_paid_date = None if subscription.transaction is None else subscription.transaction.when
-                fill_cell(self.main_ui.subscription_table, i, 1, "-" if last_paid_date is None else last_paid_date,
-                          data_type=bool)
+            self.fill_subscription_table()
 
         else:
             # Clears the form.
@@ -165,6 +160,24 @@ class MainController:
             self.main_ui.dir_field.clear()
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
+
+    def fill_subscription_table(self):
+        if self.main_ui.client_table.currentRow() == -1:
+            self.main_ui.overdue_subs_checkbox.setChecked(not self.main_ui.overdue_subs_checkbox.isChecked())
+            Dialog.info("Error", "Seleccione un cliente.")
+            return
+
+        self.main_ui.subscription_table.setRowCount(0)  # Clears the table.
+
+        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+
+        for i, sub in enumerate(self._clients[client_dni].subscriptions()):
+            self._subscriptions[sub.activity.name.as_primitive()] = sub
+            if not discard_subscription(self.main_ui.overdue_subs_checkbox.isChecked(), sub.up_to_date(date.today())):
+                fill_cell(self.main_ui.subscription_table, i, 0, sub.activity.name, data_type=str)
+                last_paid_date = None if sub.transaction is None else sub.transaction.when
+                fill_cell(self.main_ui.subscription_table, i, 1, "-" if last_paid_date is None else last_paid_date,
+                          data_type=bool)
 
     def add_sub(self):
         if self.main_ui.client_table.currentRow() == -1:
@@ -320,9 +333,9 @@ class ClientMainUI(QMainWindow):
         self.right_layout.addLayout(self.sub_layout)
 
         # Checkbox that enables showing only subscriptions that aren't up-to-date.
-        self.only_overdue_subs = QCheckBox(self.widget)
-        self.sub_layout.addWidget(self.only_overdue_subs, 0, 1)
-        config_checkbox(self.only_overdue_subs, "Solo actividades inpagas", checked=False)
+        self.overdue_subs_checkbox = QCheckBox(self.widget)
+        self.sub_layout.addWidget(self.overdue_subs_checkbox, 0, 1)
+        config_checkbox(self.overdue_subs_checkbox, "Solo actividades inpagas", checked=False)
 
         self.add_sub_btn = QPushButton(self.widget)
         self.sub_layout.addWidget(self.add_sub_btn, 1, 0)
