@@ -35,10 +35,10 @@ class MainController:
 
         # Calculates charges of the day.
         self.balance = api.generate_balance(self._today_transactions)
-        self.acc_main_ui.today_charges_line.setText(str(self.balance.get("Cobros", Currency(0))))
+        self.acc_main_ui.today_charges_line.setText(str(self.balance.get("Cobro", Currency(0))))
 
         # Shows transactions of the day.
-        for i, transaction in self._today_transactions:
+        for i, transaction in enumerate(self._today_transactions):
             fill_cell(self.acc_main_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
             fill_cell(self.acc_main_ui.transaction_table, i, 1, transaction.amount, data_type=int)
             fill_cell(self.acc_main_ui.transaction_table, i, 2, transaction.description, data_type=str)
