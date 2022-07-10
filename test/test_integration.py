@@ -49,7 +49,7 @@ def test_cancel():
     subscription_repo.add(subscription)
 
     # Feature being tested.
-    api.cancel(subscription_repo, client, activity)
+    api.cancel(subscription_repo, subscription)
     assert activity_repo.n_subscribers(activity) == 0
 
 

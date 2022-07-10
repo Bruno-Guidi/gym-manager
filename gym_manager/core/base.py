@@ -270,11 +270,8 @@ class Client:
 
     def unsubscribe(self, activity: Activity):
         """Unsubscribes the client from *activity*.
-
-        Returns
-            The Subscription object associated to the subscription.
         """
-        return self._subscriptions.pop(activity.name)
+        self._subscriptions.pop(activity.name)
 
     def is_subscribed(self, activity: Activity) -> bool:
         """Returns True if the client subscribed to *activity*.
