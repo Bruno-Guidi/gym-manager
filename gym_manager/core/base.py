@@ -288,17 +288,6 @@ class Client:
         """
         return self._subscriptions.values()
 
-    def register_charge(self, activity: Activity, transaction: Transaction):
-        """Registers that the client was charged for the *activity* subscription.
-
-        Raises:
-            OperationalError if the client being charged is not the client that is subscribed.
-        """
-        if self != transaction.client:
-            raise OperationalError("A client is being charged for an activity to which he is not subscribed.",
-                                   charged_client=transaction.client, client_to_charge=self, activity=activity)
-        self._subscriptions[activity.name].transaction = transaction
-
     def up_to_date(self, reference_date: date, activity: Activity) -> bool:
         """Checks if the *activity* subscription is up-to-date.
         """
