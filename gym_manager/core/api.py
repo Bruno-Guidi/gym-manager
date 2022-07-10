@@ -80,14 +80,14 @@ def register_subscription_charge(
         subscription: subscription being charged.
         transaction: transaction generated when the client was charged.
     """
-    if not subscription.activity.charge_once:
+    if subscription.activity.charge_once:
         raise OperationalError(f"The [activity={subscription.activity.name}] is not subscribeable")
     if subscription.client != transaction.client:
         raise OperationalError(f"The [client={transaction.client.name}] is being charged for the [activity="
                                f"{subscription.activity.name}] done by the [client={subscription.client.name}].")
 
     subscription.transaction = transaction  # Links the transaction with the subscription.
-    subscription_repo.update(transaction.client, subscription)
+    subscription_repo.update(subscription)
 
     logger.info(f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
                 f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
