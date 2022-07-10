@@ -21,6 +21,9 @@ class MainController:
     def __init__(self, acc_main_ui: AccountingMainUI, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
         self.acc_main_ui = acc_main_ui
         self.transaction_repo = transaction_repo
+        self._types_dict: dict[str, int] = {type_: i + 2 for i, type_ in enumerate(("Cobro", "Extracción"))}
+        self._methods_dict: dict[str, int] = {method: i + 1 for i, method
+                                              in enumerate((*transaction_repo.methods, "Total"))}
         self.balance_repo = balance_repo
 
         self._date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
@@ -40,8 +43,18 @@ class MainController:
         # Shows transactions of the day.
         for i, transaction in enumerate(self._today_transactions):
             fill_cell(self.acc_main_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
-            fill_cell(self.acc_main_ui.transaction_table, i, 1, transaction.amount, data_type=int)
-            fill_cell(self.acc_main_ui.transaction_table, i, 2, transaction.description, data_type=str)
+            name = transaction.client.name if transaction.client is not None else "-"
+            fill_cell(self.acc_main_ui.transaction_table, i, 1, name, data_type=str)
+            fill_cell(self.acc_main_ui.transaction_table, i, 2, transaction.amount, data_type=int)
+            fill_cell(self.acc_main_ui.transaction_table, i, 3, transaction.description, data_type=str)
+
+        # Fills detailed balance.
+        for type_name, row in self._types_dict.items():
+            type_balance = self.balance[type_name]
+            for method_name, col in self._methods_dict.items():
+                lbl = QLabel(self.acc_main_ui.widget)
+                config_lbl(lbl, Currency.fmt(type_balance.get(method_name, Currency(0))))
+                self.acc_main_ui.detail_layout.addWidget(lbl, row, col)
 
 
 class AccountingMainUI(QMainWindow):
