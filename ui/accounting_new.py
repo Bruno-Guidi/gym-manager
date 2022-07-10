@@ -54,7 +54,7 @@ class MainController:
             for method_name, col in self._methods_dict.items():
                 lbl = QLabel(self.acc_main_ui.widget)
                 config_lbl(lbl, Currency.fmt(type_balance.get(method_name, Currency(0))))
-                self.acc_main_ui.detail_layout.addWidget(lbl, row, col)
+                self.acc_main_ui.detail_layout.addWidget(lbl, row, col, alignment=Qt.AlignRight)
 
 
 class AccountingMainUI(QMainWindow):
@@ -105,7 +105,8 @@ class AccountingMainUI(QMainWindow):
         self.transaction_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.transaction_table)
         config_table(self.transaction_table, allow_resizing=False,
-                     columns={"Responsable": (8, str), "Monto": (8, int), "Descripción": (12, str)})
+                     columns={"Responsable": (8, str), "Cliente": (8, str), "Monto": (8, int),
+                              "Descripción": (12, str)})
 
         self.left_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
@@ -133,19 +134,19 @@ class AccountingMainUI(QMainWindow):
         config_lbl(self.extractions_lbl, "Extracciones")
 
         self.cash_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.cash_lbl, 1, 1)
+        self.detail_layout.addWidget(self.cash_lbl, 1, 1, alignment=Qt.AlignCenter)
         config_lbl(self.cash_lbl, "Efectivo")
 
         self.debit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.debit_lbl, 1, 2)
+        self.detail_layout.addWidget(self.debit_lbl, 1, 2, alignment=Qt.AlignCenter)
         config_lbl(self.debit_lbl, "Débito")
 
         self.credit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.credit_lbl, 1, 3)
+        self.detail_layout.addWidget(self.credit_lbl, 1, 3, alignment=Qt.AlignCenter)
         config_lbl(self.credit_lbl, "Crédito")
 
         self.total_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.total_lbl, 1, 4)
+        self.detail_layout.addWidget(self.total_lbl, 1, 4, alignment=Qt.AlignCenter)
         config_lbl(self.total_lbl, "TOTAL")
 
         # # Filters.
