@@ -392,7 +392,7 @@ class SqliteTransactionRepo(TransactionRepo):
     """
 
     # noinspection PyProtectedMember
-    def __init__(self, methods: Iterable[str], cache_len: int = 50) -> None:
+    def __init__(self, methods: Iterable[str] | None = None, cache_len: int = 50) -> None:
         super().__init__(methods)
         TransactionTable._meta.database.create_tables([TransactionTable])
 
