@@ -62,7 +62,7 @@ class AccountingMainUI(QMainWindow):
 
         # Balance date label.
         self.day_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.day_lbl, 0, 0, 1, 3, alignment=Qt.AlignCenter)
+        self.detail_layout.addWidget(self.day_lbl, 0, 0, 1, 5, alignment=Qt.AlignCenter)
         config_lbl(self.day_lbl, "dd/mm/aaaa", font_size=18)
 
         # Detailed balance layout.
@@ -71,27 +71,27 @@ class AccountingMainUI(QMainWindow):
         config_lbl(self.method_lbl, "Método")
 
         self.charges_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.charges_lbl, 1, 1)
+        self.detail_layout.addWidget(self.charges_lbl, 2, 0)
         config_lbl(self.charges_lbl, "Cobros")
 
         self.extractions_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.extractions_lbl, 1, 2)
+        self.detail_layout.addWidget(self.extractions_lbl, 3, 0)
         config_lbl(self.extractions_lbl, "Extracciones")
 
         self.cash_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.cash_lbl, 2, 0)
+        self.detail_layout.addWidget(self.cash_lbl, 1, 1)
         config_lbl(self.cash_lbl, "Efectivo")
 
         self.debit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.debit_lbl, 3, 0)
+        self.detail_layout.addWidget(self.debit_lbl, 1, 2)
         config_lbl(self.debit_lbl, "Débito")
 
         self.credit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.credit_lbl, 4, 0)
+        self.detail_layout.addWidget(self.credit_lbl, 1, 3)
         config_lbl(self.credit_lbl, "Crédito")
 
         self.total_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.total_lbl, 5, 0)
+        self.detail_layout.addWidget(self.total_lbl, 1, 4)
         config_lbl(self.total_lbl, "TOTAL")
 
         # Transactions included in the balance.
