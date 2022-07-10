@@ -1,14 +1,14 @@
 import logging
 import os
 import sys
-from datetime import time
+from datetime import time, date
 from logging import config
 
 from PyQt5.QtWidgets import QApplication
 
 from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
-from gym_manager.core.base import Currency, String, Activity
+from gym_manager.core.base import Currency, String, Activity, Client, Number, Subscription
 from ui.main import MainUI
 
 log_config = {
@@ -68,6 +68,13 @@ def main():
         booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), String("d", max_len=10),
                                     charge_once=True, locked=True)
         activity_repo.add(booking_activity)
+
+    # test_cli = Client(Number(666), String("TestCli", max_len=20), date(2022, 5, 8), String("TestTel", max_len=20),
+    #                   String("TestDesc", max_len=20))
+    # client_repo.add(test_cli)
+
+    # subscription_repo.add(Subscription(date(2022, 5, 8), test_cli, activity_repo.get("Gym")))
+    # ToDo test adding transactions, when they are working again.
 
     window = MainUI(client_repo, activity_repo, subscription_repo)
     window.show()
