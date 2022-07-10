@@ -24,8 +24,6 @@ def discard_subscription(only_overdue: bool, up_to_date: bool) -> bool:
     Returns:
         True if a subscription should be discarded, False otherwise.
     """
-    print(only_overdue, only_overdue and up_to_date, not(only_overdue and up_to_date))
-    # return not only_overdue or not (only_overdue and up_to_date)
     return only_overdue and up_to_date
 
 
