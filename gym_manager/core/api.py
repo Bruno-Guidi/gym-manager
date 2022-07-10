@@ -71,23 +71,27 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
 
 
 def register_subscription_charge(
-        subscription_repo: SubscriptionRepo, transaction: Transaction, activity: Activity
+        subscription_repo: SubscriptionRepo, subscription: Subscription, transaction: Transaction
 ):
     """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
         subscription_repo: repository implementation that registers subscriptions.
+        subscription: subscription being charged.
         transaction: transaction generated when the client was charged.
-        activity: subscribed activity.
     """
-    # For the activities that are not 'charge once', record that the client was charged for it.
-    # A 'charge once' activity is, for example, an activity related to bookings.
-    if not activity.charge_once:
-        transaction.client.register_charge(activity, transaction)
-        subscription_repo.register_charge(transaction.client, activity, transaction)
+    if not subscription.activity.charge_once:
+        raise OperationalError(f"The [activity={subscription.activity.name}] is not subscribeable")
+    if subscription.client != transaction.client:
+        raise OperationalError(f"The [client={transaction.client.name}] is being charged for the [activity="
+                               f"{subscription.activity.name}] done by the [client={subscription.client.name}].")
+
+    subscription.transaction = transaction  # Links the transaction with the subscription.
+    subscription_repo.update(transaction.client, subscription)
 
     logger.info(f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
-                f" for the activity [activity_name={activity.name}] with an amount [amount={activity.price}].")
+                f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
+                f"{subscription.activity.price}].")
 
 
 def extract(
