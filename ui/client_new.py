@@ -409,7 +409,7 @@ class CreateUI(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
-class SubController:
+class AddSubController:
     def __init__(
             self, subscribe_ui: AddSubUI, subscription_repo: SubscriptionRepo, activities: Iterable[Activity],
             client: Client
@@ -446,7 +446,7 @@ class AddSubUI(QDialog):
     def __init__(self, subscription_repo: SubscriptionRepo, activities: Iterable[Activity], client: Client) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = SubController(self, subscription_repo, activities, client)
+        self.controller = AddSubController(self, subscription_repo, activities, client)
 
     def _setup_ui(self):
         self.setWindowTitle("Inscribir cliente")
