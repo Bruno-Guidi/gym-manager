@@ -70,37 +70,24 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     )
 
 
-def charge(
-        transaction_repo: TransactionRepo, subscription_repo: SubscriptionRepo, when: date, client: Client,
-        activity: Activity, method: str, responsible: String
-) -> Transaction:
-    """Charges the *client* for its *activity* subscription.
+def register_subscription_charge(
+        subscription_repo: SubscriptionRepo, transaction: Transaction, activity: Activity
+):
+    """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
-        transaction_repo: repository implementation that registers transactions.
         subscription_repo: repository implementation that registers subscriptions.
-        when: date when the charging is made.
-        client: client being charged.
+        transaction: transaction generated when the client was charged.
         activity: activity being charged.
-        method: method used in the charging.
-        responsible: responsible for doing the charging.
-
-    Returns:
-        The created transaction.
     """
-    description = f"Cobro por actividad {activity.name}"
-    transaction = transaction_repo.create("Cobro", when, activity.price, method, responsible, description, client)
-
     # For the activities that are not 'charge once', record that the client was charged for it.
     # A 'charge once' activity is, for example, an activity related to bookings.
     if not activity.charge_once:
-        client.register_charge(activity, transaction)
-        subscription_repo.register_charge(client, activity, transaction)
+        transaction.client.register_charge(activity, transaction)
+        subscription_repo.register_charge(transaction.client, activity, transaction)
 
-    logger.info(f"Responsible [responsible={responsible}] charged the client [dni={client.dni}] for the activity "
-                f"[activity_name={activity.name}] with an amount [amount={activity.price}].")
-
-    return transaction
+    logger.info(f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
+                f" for the activity [activity_name={activity.name}] with an amount [amount={activity.price}].")
 
 
 def extract(
