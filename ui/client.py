@@ -226,11 +226,12 @@ class ClientMainUI(QMainWindow):
             self,
             client_repo: ClientRepo,
             subscription_repo: SubscriptionRepo,
+            transaction_repo: TransactionRepo,
             activities_fn: Callable[[], Iterable[Activity]]
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, subscription_repo, activities_fn)
+        self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, activities_fn)
 
     def _setup_ui(self):
         self.setWindowTitle("Clientes")
