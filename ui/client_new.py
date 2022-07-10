@@ -1,30 +1,40 @@
 from __future__ import annotations
 
+import itertools
 from datetime import date
+from typing import Iterable, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QListWidget, QCheckBox)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QListWidget, QCheckBox, QComboBox)
 
-from gym_manager.core import constants as constants
-from gym_manager.core.base import String, TextLike, Client, Number
-from gym_manager.core.persistence import FilterValuePair, ClientRepo
-from ui.widget_config import config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox
+from gym_manager.core import constants as constants, api
+from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription
+from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo
+from ui.widget_config import (
+    config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
+    config_combobox, fill_combobox)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator
 
 
 class MainController:
     def __init__(
-            self, main_ui: ClientMainUI, client_repo: ClientRepo
+            self,
+            main_ui: ClientMainUI,
+            client_repo: ClientRepo,
+            subscription_repo: SubscriptionRepo,
+            activities_fn: Callable[[], Iterable[Activity]]
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
+        self.subscription_repo = subscription_repo
+        self.activities_fn = activities_fn
         self._clients: dict[int, Client] = {}  # Dict that maps raw client dni to the associated client.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
-                            translate_fun=lambda client, value: client.cli_name.contains(value)), )
+                            translate_fun=lambda client, value: client.cli_name.contains(value)),)
         self.main_ui.filter_header.config(filters, on_search_click=self.fill_client_table)
 
         # Configures the page index.
@@ -42,7 +52,9 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_btn.clicked.connect(self.remove)
         # noinspection PyUnresolvedReferences
-        self.main_ui.client_table.itemSelectionChanged.connect(self.refresh_form)
+        self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.add_sub_btn.clicked.connect(self.add_sub)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
@@ -67,13 +79,22 @@ class MainController:
             self._clients[client.dni.as_primitive()] = client
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
-    def refresh_form(self):
+    def update_client_info(self):
         if self.main_ui.client_table.currentRow() != -1:
             client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+            # Fills the form.
             self.main_ui.name_field.setText(str(self._clients[client_dni].name))
             self.main_ui.dni_field.setText(str(self._clients[client_dni].dni))
             self.main_ui.tel_field.setText(str(self._clients[client_dni].telephone))
             self.main_ui.dir_field.setText(str(self._clients[client_dni].direction))
+
+            # Fills subscriptions table.
+            for i, subscription in self._clients[client_dni].subscriptions():
+                fill_cell(self.main_ui.subscription_table, i, 0, subscription.activity.name, data_type=str)
+                last_paid_date = None if subscription.transaction is None else subscription.transaction.when
+                fill_cell(self.main_ui.subscription_table, i, 1, "-" if last_paid_date is None else last_paid_date,
+                          data_type=bool)
+
         else:
             # Clears the form.
             self.main_ui.name_field.clear()
@@ -139,13 +160,29 @@ class MainController:
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
+    def add_sub(self):
+        if self.main_ui.client_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un cliente.")
+            return
+
+        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+        # noinspection PyAttributeOutsideInit
+        self._subscribe_ui = AddSubUI(self.subscription_repo, (activity for activity in self.activities_fn()),
+                                      self._clients[client_dni])
+        self._subscribe_ui.exec_()
+
 
 class ClientMainUI(QMainWindow):
 
-    def __init__(self, client_repo: ClientRepo) -> None:
+    def __init__(
+            self,
+            client_repo: ClientRepo,
+            subscription_repo: SubscriptionRepo,
+            activities_fn: Callable[[], Iterable[Activity]]
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo)
+        self.controller = MainController(self, client_repo, subscription_repo, activities_fn)
 
     def _setup_ui(self):
         self.setWindowTitle("Clientes")
@@ -229,7 +266,7 @@ class ClientMainUI(QMainWindow):
         config_lbl(self.tel_lbl, "Teléfono")
 
         self.tel_field = Field(String, self.widget, optional=constants.CLIENT_TEL_OPTIONAL,
-                                max_len=constants.CLIENT_TEL_CHARS)
+                               max_len=constants.CLIENT_TEL_CHARS)
         self.form_layout.addWidget(self.tel_field, 2, 1)
         config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
 
@@ -239,7 +276,7 @@ class ClientMainUI(QMainWindow):
         config_lbl(self.dir_lbl, "Dirección")
 
         self.dir_field = Field(String, self.widget, optional=constants.CLIENT_DIR_OPTIONAL,
-                                max_len=constants.CLIENT_DIR_CHARS)
+                               max_len=constants.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 3, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
@@ -372,7 +409,7 @@ class CreateUI(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
-class SubscribeController:
+class SubController:
     def __init__(
             self, subscribe_ui: AddSubUI, subscription_repo: SubscriptionRepo, activities: Iterable[Activity],
             client: Client
@@ -380,15 +417,36 @@ class SubscribeController:
         self.subscribe_ui = subscribe_ui
         self.subscription_repo = subscription_repo
         self.client = client
+        self.subscription: Subscription | None = None
 
+        activities = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity) or activity.charge_once,
+                                           activities)
         fill_combobox(self.subscribe_ui.activity_combobox, activities, display=lambda activity: str(activity.name))
+
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.subscribe_ui.confirm_btn.clicked.connect(self.add_sub)
+        # noinspection PyUnresolvedReferences
+        self.subscribe_ui.cancel_btn.clicked.connect(self.subscribe_ui.reject)
+
+    def add_sub(self):
+        if self.subscribe_ui.activity_combobox.count() == 0:
+            Dialog.info("Error", "No hay actividades disponibles.")
+        elif not self.subscribe_ui.responsible_field.valid_value():
+            Dialog.info("Error", "El campo responsable no es válido.")
+        else:
+            activity: Activity = self.subscribe_ui.activity_combobox.currentData(Qt.UserRole)
+            self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
+            Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
+                                 f"'{activity.name}'.")
+            self.subscribe_ui.activity_combobox.window().close()
 
 
 class AddSubUI(QDialog):
     def __init__(self, subscription_repo: SubscriptionRepo, activities: Iterable[Activity], client: Client) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = SubscribeController(self, subscription_repo, activities, client)
+        self.controller = SubController(self, subscription_repo, activities, client)
 
     def _setup_ui(self):
         self.setWindowTitle("Inscribir cliente")
