@@ -148,8 +148,7 @@ def close_balance(
         balance_repo: BalanceRepo,
         balance: Balance,
         balance_date: date,
-        responsible: String,
-        transactions: Iterable[Transaction]
+        responsible: String
 ):
     """Closes the *balance*, save it in the repository and bind the transactions to the balance.
 
@@ -159,10 +158,15 @@ def close_balance(
         balance: balance to close.
         balance_date: date when the balance was done.
         responsible: responsible for closing the balance.
-        transactions: transactions to include in the balance.
     """
     balance_repo.add(balance_date, responsible, balance)
-    for transaction in transactions:
+
+    if balance_repo.balance_done(balance_date):
+        transaction_gen = transaction_repo.all(page=1, balance_date=balance_date)
+    else:
+        transaction_gen = transaction_repo.all(page=1, include_closed=False)
+
+    for transaction in transaction_gen:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
 
