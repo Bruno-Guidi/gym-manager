@@ -200,6 +200,9 @@ class TransactionRepo(abc.ABC):
     """Transaction repository interface.
     """
 
+    def __init__(self, methods: Iterable[str]) -> None:
+        self.methods = methods
+
     # noinspection PyShadowingBuiltins
     @abc.abstractmethod
     def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
