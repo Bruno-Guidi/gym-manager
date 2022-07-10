@@ -56,6 +56,14 @@ class MainController:
                 config_lbl(lbl, Currency.fmt(type_balance.get(method_name, Currency(0))))
                 self.acc_main_ui.detail_layout.addWidget(lbl, row, col, alignment=Qt.AlignRight)
 
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.acc_main_ui.close_balance_btn.clicked.connect(self.close_balance)
+
+    def close_balance(self):
+        self._daily_balance_ui = DailyBalanceUI()
+        self._daily_balance_ui.exec_()
+
 
 class AccountingMainUI(QMainWindow):
     def __init__(self, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
@@ -180,6 +188,93 @@ class AccountingMainUI(QMainWindow):
         #     columns={"Fecha": (10, int), "Responsable": (12, str), "Cobros": (12, int),
         #              "Extracciones": (12, int)}
         # )
+
+
+class DailyBalanceUI(QDialog):
+    def __init__(self) -> None:
+        super().__init__()
+        self._setup_ui()
+
+    def _setup_ui(self):
+        self.setWindowTitle("Cerrar caja diaria")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 0, 0)
+        config_lbl(self.responsible_lbl, "Responsable*")
+
+        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 0, 1)
+        config_line(self.responsible_field)
+
+        # Cash amount.
+        self.cash_lbl = QLabel(self)
+        self.form_layout.addWidget(self.cash_lbl, 1, 0)
+        config_lbl(self.cash_lbl, "Caja Efectivo")
+
+        self.cash_line = QLineEdit(parent=self)
+        self.form_layout.addWidget(self.cash_line, 1, 1)
+        config_line(self.cash_line, enabled=False)
+
+        # Debit amount.
+        self.debit_lbl = QLabel(self)
+        self.form_layout.addWidget(self.debit_lbl, 2, 0)
+        config_lbl(self.debit_lbl, "Caja Débito")
+
+        self.debit_line = QLineEdit(parent=self)
+        self.form_layout.addWidget(self.debit_line, 2, 1)
+        config_line(self.debit_line, enabled=False)
+
+        # Credit amount.
+        self.credit_lbl = QLabel(self)
+        self.form_layout.addWidget(self.credit_lbl, 3, 0)
+        config_lbl(self.credit_lbl, "Caja Crédito")
+
+        self.credit_line = QLineEdit(parent=self)
+        self.form_layout.addWidget(self.credit_line, 3, 1)
+        config_line(self.credit_line, enabled=False)
+
+        # Extracted amount.
+        self.extract_lbl = QLabel(self)
+        self.form_layout.addWidget(self.extract_lbl, 4, 0)
+        config_lbl(self.extract_lbl, "Monto extracción*")
+
+        self.extract_field = Field(Currency, self)  # ToDo check that the currency is always positive.
+        self.form_layout.addWidget(self.extract_field, 4, 1)
+        config_line(self.extract_field, place_holder="00000,00")
+
+        # Method.
+        self.method_lbl = QLabel(self)
+        self.form_layout.addWidget(self.method_lbl, 5, 0)
+        config_lbl(self.method_lbl, "Método extracción")
+
+        self.method_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.method_combobox, 5, 1)
+        config_combobox(self.method_combobox, fixed_width=self.extract_field.width())
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setFixedSize(self.sizeHint())
 
 
 class ChargeController:
