@@ -287,7 +287,7 @@ class Client:
         self._subscriptions[activity.name].register_charge(transaction)
 
     def up_to_date(self, reference_date: date, activity: Activity) -> bool:
-        """Checks if the *activity *subscription is up-to-date.
+        """Checks if the *activity* subscription is up-to-date.
         """
         return self._subscriptions[activity.name].up_to_date(reference_date)
 
