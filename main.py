@@ -76,7 +76,7 @@ def main():
     # subscription_repo.add(Subscription(date(2022, 5, 8), test_cli, activity_repo.get("Gym")))
     # ToDo test adding transactions, when they are working again.
 
-    window = MainUI(client_repo, activity_repo, subscription_repo)
+    window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo)
     window.show()
 
     app.exec()
