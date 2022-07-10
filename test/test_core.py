@@ -7,7 +7,7 @@ from gym_manager import peewee
 from gym_manager.core import api
 from gym_manager.core.base import (
     Activity, String, Currency, OperationalError, Client, Number, Transaction,
-    Subscription)
+    Subscription, discard_subscription)
 from gym_manager.core.persistence import PersistenceError
 from gym_manager.core.api import InvalidDate
 
@@ -141,3 +141,10 @@ def test_generateBalance():
     }
 
     assert expected_balance == balance
+
+
+def test_base_filterOverdue():
+    assert discard_subscription(only_overdue=True, up_to_date=True)
+    assert not discard_subscription(only_overdue=True, up_to_date=False)
+    assert not discard_subscription(only_overdue=False, up_to_date=True)
+    assert not discard_subscription(only_overdue=False, up_to_date=False)

@@ -14,6 +14,21 @@ decimal.getcontext().rounding = decimal.ROUND_HALF_UP
 ONE_MONTH_TD = timedelta(days=30)
 
 
+def discard_subscription(only_overdue: bool, up_to_date: bool) -> bool:
+    """Determines if a subscription should be discarded or not.
+
+    Args:
+        only_overdue: if True, up-to-date subscription should be discarded.
+        up_to_date: if True, the subscription is up-to-date.
+
+    Returns:
+        True if a subscription should be discarded, False otherwise.
+    """
+    print(only_overdue, only_overdue and up_to_date, not(only_overdue and up_to_date))
+    # return not only_overdue or not (only_overdue and up_to_date)
+    return only_overdue and up_to_date
+
+
 class OperationalError(Exception):
     """Exception raised when there is an error while doing a system operation.
     """
