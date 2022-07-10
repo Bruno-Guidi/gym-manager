@@ -420,35 +420,35 @@ class CreateUI(QDialog):
 
 class AddSubController:
     def __init__(
-            self, subscribe_ui: AddSubUI, subscription_repo: SubscriptionRepo, activities: Iterable[Activity],
+            self, add_sub_ui: AddSubUI, subscription_repo: SubscriptionRepo, activities: Iterable[Activity],
             client: Client
     ):
-        self.subscribe_ui = subscribe_ui
+        self.add_sub_ui = add_sub_ui
         self.subscription_repo = subscription_repo
         self.client = client
         self.subscription: Subscription | None = None
 
         activities = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity) or activity.charge_once,
                                            activities)
-        fill_combobox(self.subscribe_ui.activity_combobox, activities, display=lambda activity: str(activity.name))
+        fill_combobox(self.add_sub_ui.activity_combobox, activities, display=lambda activity: str(activity.name))
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.subscribe_ui.confirm_btn.clicked.connect(self.add_sub)
+        self.add_sub_ui.confirm_btn.clicked.connect(self.add_sub)
         # noinspection PyUnresolvedReferences
-        self.subscribe_ui.cancel_btn.clicked.connect(self.subscribe_ui.reject)
+        self.add_sub_ui.cancel_btn.clicked.connect(self.add_sub_ui.reject)
 
     def add_sub(self):
-        if self.subscribe_ui.activity_combobox.count() == 0:
+        if self.add_sub_ui.activity_combobox.count() == 0:
             Dialog.info("Error", "No hay actividades disponibles.")
-        elif not self.subscribe_ui.responsible_field.valid_value():
+        elif not self.add_sub_ui.responsible_field.valid_value():
             Dialog.info("Error", "El campo responsable no es válido.")
         else:
-            activity: Activity = self.subscribe_ui.activity_combobox.currentData(Qt.UserRole)
+            activity: Activity = self.add_sub_ui.activity_combobox.currentData(Qt.UserRole)
             self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
             Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
                                  f"'{activity.name}'.")
-            self.subscribe_ui.activity_combobox.window().close()
+            self.add_sub_ui.activity_combobox.window().close()
 
 
 class AddSubUI(QDialog):
