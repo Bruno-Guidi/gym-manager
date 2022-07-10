@@ -78,7 +78,7 @@ def register_subscription_charge(
     Args:
         subscription_repo: repository implementation that registers subscriptions.
         transaction: transaction generated when the client was charged.
-        activity: activity being charged.
+        activity: subscribed activity.
     """
     # For the activities that are not 'charge once', record that the client was charged for it.
     # A 'charge once' activity is, for example, an activity related to bookings.
