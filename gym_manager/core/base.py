@@ -297,7 +297,7 @@ class Client:
         if self != transaction.client:
             raise OperationalError("A client is being charged for an activity to which he is not subscribed.",
                                    charged_client=transaction.client, client_to_charge=self, activity=activity)
-        self._subscriptions[activity.name].register_charge(transaction)
+        self._subscriptions[activity.name].transaction = transaction
 
     def up_to_date(self, reference_date: date, activity: Activity) -> bool:
         """Checks if the *activity* subscription is up-to-date.
@@ -348,11 +348,6 @@ class Subscription:
         if self.transaction is None:
             return reference_date - ONE_MONTH_TD < self.when
         return reference_date - ONE_MONTH_TD < self.transaction.when
-
-    def register_charge(self, transaction: Transaction):
-        """Updates the subscription with the given *transaction*.
-        """
-        self.transaction = transaction
 
     def invalid_charge_date(self, charge_date: date):
         """Checks if *charge_date* is valid or not.
