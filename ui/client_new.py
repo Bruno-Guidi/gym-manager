@@ -370,3 +370,67 @@ class CreateUI(QDialog):
 
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class SubscribeController:
+    def __init__(
+            self, subscribe_ui: AddSubUI, subscription_repo: SubscriptionRepo, activities: Iterable[Activity],
+            client: Client
+    ):
+        self.subscribe_ui = subscribe_ui
+        self.subscription_repo = subscription_repo
+        self.client = client
+
+        fill_combobox(self.subscribe_ui.activity_combobox, activities, display=lambda activity: str(activity.name))
+
+
+class AddSubUI(QDialog):
+    def __init__(self, subscription_repo: SubscriptionRepo, activities: Iterable[Activity], client: Client) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = SubscribeController(self, subscription_repo, activities, client)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Inscribir cliente")
+
+        self.layout = QVBoxLayout(self)
+
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+
+        # Responsible
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 1, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 1, 1)
+        config_line(self.responsible_field, place_holder="Responsable")
+
+        # Activity.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Actividad")
+
+        self.activity_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.activity_combobox, 0, 1)
+        config_combobox(self.activity_combobox, fixed_width=self.responsible_field.width())
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
