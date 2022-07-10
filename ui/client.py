@@ -167,6 +167,7 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
+        self._subscriptions = {}  # Clears the dict.
         self.main_ui.subscription_table.setRowCount(0)  # Clears the table.
 
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
@@ -214,6 +215,7 @@ class MainController:
         self._cancel_sub_ui = CancelSubUI(self.subscription_repo, self._subscriptions[activity_name])
         self._cancel_sub_ui.exec_()
 
+        self._subscriptions.pop(activity_name)
         self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
 
 
