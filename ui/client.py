@@ -337,17 +337,21 @@ class ClientMainUI(QMainWindow):
         self.sub_layout.addWidget(self.overdue_subs_checkbox, 0, 1)
         config_checkbox(self.overdue_subs_checkbox, "Solo actividades inpagas", checked=False)
 
+        self.charge_sub_btn = QPushButton(self.widget)
+        self.sub_layout.addWidget(self.charge_sub_btn, 1, 0)
+        config_btn(self.charge_sub_btn, icon_path="ui/resources/charge.png", icon_size=32)
+
         self.add_sub_btn = QPushButton(self.widget)
-        self.sub_layout.addWidget(self.add_sub_btn, 1, 0)
+        self.sub_layout.addWidget(self.add_sub_btn, 2, 0)
         config_btn(self.add_sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
 
         self.cancel_sub_btn = QPushButton(self.widget)
-        self.sub_layout.addWidget(self.cancel_sub_btn, 2, 0)
+        self.sub_layout.addWidget(self.cancel_sub_btn, 3, 0)
         config_btn(self.cancel_sub_btn, icon_path="ui/resources/minus.png", icon_size=32)
 
         # Subscription table.
         self.subscription_table = QTableWidget(self.widget)
-        self.sub_layout.addWidget(self.subscription_table, 1, 1, 3, 1)
+        self.sub_layout.addWidget(self.subscription_table, 1, 1, 4, 1)
         config_table(self.subscription_table, allow_resizing=False,
                      columns={"Actividad": (10, str), "Último pago": (10, bool)})
 
