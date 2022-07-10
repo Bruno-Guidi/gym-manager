@@ -1,26 +1,51 @@
+from __future__ import annotations
+
 from datetime import date
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QCheckBox, QDateEdit, QComboBox,
-    QSpacerItem, QSizePolicy, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit)
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit)
 
-from ui.widget_config import (
-    config_layout, config_checkbox, config_date_edit, config_combobox, config_table,
-    config_lbl, config_btn, config_line)
+from gym_manager.core import api
+from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction
+from gym_manager.core.persistence import TransactionRepo, BalanceRepo
+from ui.widget_config import config_table, config_lbl, config_btn, config_line, fill_cell
 from ui.widgets import Separator
 
 
 class MainController:
-    pass
+    def __init__(self, acc_main_ui: AccountingMainUI, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
+        self.acc_main_ui = acc_main_ui
+        self.transaction_repo = transaction_repo
+        self.balance_repo = balance_repo
+
+        self._date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
+                                                translate_fun=lambda trans, when: trans.when >= when)
+        self._date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
+                                              translate_fun=lambda trans, when: trans.when <= when)
+        today = str(date.today())
+        _filters = [(self._date_greater_filter, today), (self._date_lesser_filter, today)]
+
+        self._today_transactions: list[Transaction] = [t for t in transaction_repo.all(filters=_filters,
+                                                                                       include_closed=True)]
+
+        # Calculates charges of the day.
+        self.balance = api.generate_balance(self._today_transactions)
+        self.acc_main_ui.today_charges_line.setText(str(self.balance.get("Cobros", Currency(0))))
+
+        # Shows transactions of the day.
+        for i, transaction in self._today_transactions:
+            fill_cell(self.acc_main_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
+            fill_cell(self.acc_main_ui.transaction_table, i, 1, transaction.amount, data_type=int)
+            fill_cell(self.acc_main_ui.transaction_table, i, 2, transaction.description, data_type=str)
 
 
 class AccountingMainUI(QMainWindow):
-    def __init__(self):
+    def __init__(self, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
         super().__init__()
         self._setup_ui()
 
-        self.controller = MainController()
+        self.controller = MainController(self, transaction_repo, balance_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Contabilidad")
@@ -137,5 +162,3 @@ class AccountingMainUI(QMainWindow):
         #     columns={"Fecha": (10, int), "Responsable": (12, str), "Cobros": (12, int),
         #              "Extracciones": (12, int)}
         # )
-
-
