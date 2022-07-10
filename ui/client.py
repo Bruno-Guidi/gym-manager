@@ -215,8 +215,9 @@ class MainController:
         self._cancel_sub_ui = CancelSubUI(self.subscription_repo, self._subscriptions[activity_name])
         self._cancel_sub_ui.exec_()
 
-        self._subscriptions.pop(activity_name)
-        self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
+        if self._cancel_sub_ui.controller.cancelled:
+            self._subscriptions.pop(activity_name)
+            self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
 
 
 class ClientMainUI(QMainWindow):
@@ -553,6 +554,8 @@ class CancelSubController:
         self.subscription_repo = subscription_repo
         self.subscription = subscription
 
+        self.cancelled = False
+
         self.cancel_sub_ui.activity_line.setText(str(subscription.activity.name))
 
         # Sets callbacks.
@@ -566,6 +569,7 @@ class CancelSubController:
             Dialog.info("Error", "El campo 'Responsable' no es válido.")
         else:
             api.cancel(self.subscription_repo, self.subscription)
+            self.cancelled = True
             Dialog.info("Éxito", f"La inscripción del cliente '{self.subscription.client.name}' a la actividad "
                                  f"'{self.subscription.activity.name}' fue cancelada.")
             self.cancel_sub_ui.activity_line.window().close()
