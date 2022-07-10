@@ -89,7 +89,8 @@ class MainController:
             self.main_ui.dir_field.setText(str(self._clients[client_dni].direction))
 
             # Fills subscriptions table.
-            for i, subscription in self._clients[client_dni].subscriptions():
+            self.main_ui.subscription_table.setRowCount(0)  # Clears the table.
+            for i, subscription in enumerate(self._clients[client_dni].subscriptions()):
                 fill_cell(self.main_ui.subscription_table, i, 0, subscription.activity.name, data_type=str)
                 last_paid_date = None if subscription.transaction is None else subscription.transaction.when
                 fill_cell(self.main_ui.subscription_table, i, 1, "-" if last_paid_date is None else last_paid_date,
@@ -170,6 +171,14 @@ class MainController:
         self._subscribe_ui = AddSubUI(self.subscription_repo, (activity for activity in self.activities_fn()),
                                       self._clients[client_dni])
         self._subscribe_ui.exec_()
+
+        subscription = self._subscribe_ui.controller.subscription
+        if subscription is not None:
+            row = self.main_ui.subscription_table.rowCount()
+            fill_cell(self.main_ui.subscription_table, row, 0, subscription.activity.name, data_type=str)
+            last_paid_date = None if subscription.transaction is None else subscription.transaction.when
+            fill_cell(self.main_ui.subscription_table, row, 1, "-" if last_paid_date is None else last_paid_date,
+                      data_type=bool)
 
 
 class ClientMainUI(QMainWindow):
