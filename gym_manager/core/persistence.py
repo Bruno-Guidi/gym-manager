@@ -200,7 +200,7 @@ class TransactionRepo(abc.ABC):
     """Transaction repository interface.
     """
 
-    def __init__(self, methods: Iterable[str]) -> None:
+    def __init__(self, methods: Iterable[str] | None = None) -> None:
         self.methods = methods
 
     # noinspection PyShadowingBuiltins
