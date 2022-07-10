@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -9,7 +8,7 @@ from PyQt5.QtWidgets import (
     QComboBox, QTextEdit, QSpacerItem, QSizePolicy)
 
 from gym_manager.core import api, constants
-from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Activity
+from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Balance
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
@@ -61,7 +60,7 @@ class MainController:
         self.acc_main_ui.close_balance_btn.clicked.connect(self.close_balance)
 
     def close_balance(self):
-        self._daily_balance_ui = DailyBalanceUI()
+        self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.balance)
         self._daily_balance_ui.exec_()
 
 
@@ -190,10 +189,58 @@ class AccountingMainUI(QMainWindow):
         # )
 
 
+class DailyBalanceController:
+    def __init__(
+            self, daily_balance_ui: DailyBalanceUI, balance_repo: BalanceRepo, transaction_repo: TransactionRepo,
+            balance: Balance
+    ):
+        self.daily_balance_ui = daily_balance_ui
+        self.balance_repo = balance_repo
+        self.transaction_repo = transaction_repo
+        self.balance = balance
+
+        # Fills line edits.
+        self.daily_balance_ui.cash_line.setText(Currency.fmt(self.balance["Cobro"].get("Efectivo", Currency(0))))
+        self.daily_balance_ui.debit_line.setText(Currency.fmt(self.balance["Cobro"].get("Débito", Currency(0))))
+        self.daily_balance_ui.credit_line.setText(Currency.fmt(self.balance["Cobro"].get("Crédito", Currency(0))))
+
+        # Fills method combobox.
+        fill_combobox(self.daily_balance_ui.method_combobox, transaction_repo.methods, lambda method: method)
+
+        # Sets callbacks
+        # noinspection PyUnresolvedReferences
+        self.daily_balance_ui.confirm_btn.clicked.connect(self.close_balance)
+        # noinspection PyUnresolvedReferences
+        self.daily_balance_ui.cancel_btn.clicked.connect(self.daily_balance_ui.reject)
+
+    def close_balance(self):
+        if not (self.daily_balance_ui.responsible_field.valid_value()
+                and self.daily_balance_ui.extract_field.valid_value()):
+            Dialog.info("Error", "Hay campos que no son válidos.")
+        else:
+            overwrite, today = True, date.today()
+            if self.balance_repo.balance_done(today):
+                overwrite = Dialog.confirm(  # ToDo block balance if it was already done for the day.
+                    f"Ya hay una caja diaria calculada para la fecha {today}.\n¿Desea sobreescribirla?", "Si", "No"
+                )
+            if overwrite:
+                # noinspection PyTypeChecker
+                self.transaction_repo.create("Extracción", today, self.daily_balance_ui.extract_field.value(),
+                                             self.daily_balance_ui.method_combobox.currentText(),
+                                             self.daily_balance_ui.responsible_field.value(),
+                                             description=f"Extracción al cierre de caja diaria del día {today}.")
+                # noinspection PyTypeChecker
+                api.close_balance(self.transaction_repo, self.balance_repo, self.balance, today,
+                                  self.daily_balance_ui.responsible_field.value())
+                Dialog.info("Éxito", "Caja diaria calculada correctamente.")
+                self.daily_balance_ui.confirm_btn.window().close()
+
+
 class DailyBalanceUI(QDialog):
-    def __init__(self) -> None:
+    def __init__(self, balance_repo: BalanceRepo, transaction_repo: TransactionRepo, balance: Balance) -> None:
         super().__init__()
         self._setup_ui()
+        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, balance)
 
     def _setup_ui(self):
         self.setWindowTitle("Cerrar caja diaria")
@@ -219,7 +266,7 @@ class DailyBalanceUI(QDialog):
 
         self.cash_line = QLineEdit(parent=self)
         self.form_layout.addWidget(self.cash_line, 1, 1)
-        config_line(self.cash_line, enabled=False)
+        config_line(self.cash_line, enabled=False, alignment=Qt.AlignRight)
 
         # Debit amount.
         self.debit_lbl = QLabel(self)
@@ -228,7 +275,7 @@ class DailyBalanceUI(QDialog):
 
         self.debit_line = QLineEdit(parent=self)
         self.form_layout.addWidget(self.debit_line, 2, 1)
-        config_line(self.debit_line, enabled=False)
+        config_line(self.debit_line, enabled=False, alignment=Qt.AlignRight)
 
         # Credit amount.
         self.credit_lbl = QLabel(self)
@@ -237,7 +284,7 @@ class DailyBalanceUI(QDialog):
 
         self.credit_line = QLineEdit(parent=self)
         self.form_layout.addWidget(self.credit_line, 3, 1)
-        config_line(self.credit_line, enabled=False)
+        config_line(self.credit_line, enabled=False, alignment=Qt.AlignRight)
 
         # Extracted amount.
         self.extract_lbl = QLabel(self)
@@ -246,7 +293,7 @@ class DailyBalanceUI(QDialog):
 
         self.extract_field = Field(Currency, self)  # ToDo check that the currency is always positive.
         self.form_layout.addWidget(self.extract_field, 4, 1)
-        config_line(self.extract_field, place_holder="00000,00")
+        config_line(self.extract_field, place_holder="00000,00", alignment=Qt.AlignRight)
 
         # Method.
         self.method_lbl = QLabel(self)
