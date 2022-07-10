@@ -410,15 +410,8 @@ class SqliteTransactionRepo(TransactionRepo):
         if self._do_caching and id in self.cache:
             return self.cache[id]
 
-        transaction = Transaction(id,
-                                  String(type, max_len=constants.TRANSACTION_TYPE_CHARS),
-                                  when,
-                                  Currency(amount, max_currency=constants.MAX_CURRENCY),
-                                  String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
-                                  String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
-                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS),
-                                  client,
-                                  balance_date)
+        transaction = Transaction(id, type, when, Currency(amount, max_currency=constants.MAX_CURRENCY), method,
+                                  responsible, description, client, balance_date)
         if self._do_caching:
             self.cache[id] = transaction
         return transaction
