@@ -55,18 +55,19 @@ def subscribe(
     return subscription
 
 
-def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> None:
+def cancel(subscription_repo: SubscriptionRepo, client: Client, activity: Activity) -> None:
     """Cancels the *subscription*.
 
     Args:
         subscription_repo: repository implementation that registers subscriptions.
-        subscription: subscription to cancel.
+        client: client to unsubscribe.
+        activity: activity to unsubscribe.
     """
-    subscription.client.unsubscribe(subscription.activity)
+    subscription = client.unsubscribe(activity)
     subscription_repo.remove(subscription)
 
     logger.info(
-        f"Client [dni={subscription.client.dni}] unsubscribed of activity [activity_name={subscription.activity.name}]."
+        f"Client [dni={client.dni}] unsubscribed of activity [activity_name={activity.name}]."
     )
 
 
