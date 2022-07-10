@@ -38,41 +38,9 @@ class AccountingMainUI(QMainWindow):
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
 
-        # Filters.
-        self.filters_layout = QHBoxLayout()
-        self.left_layout.addLayout(self.filters_layout)
-
-        self.last_n_checkbox = QCheckBox(self.widget)
-        self.filters_layout.addWidget(self.last_n_checkbox)
-        config_checkbox(self.last_n_checkbox, "Últimos", checked=True, layout_dir=Qt.LayoutDirection.LeftToRight)
-
-        self.date_edit = QDateEdit(self.widget)
-        self.filters_layout.addWidget(self.date_edit)
-        config_date_edit(self.date_edit, date.today(), calendar=True)
-
-        self.date_checkbox = QCheckBox(self.widget)
-        self.filters_layout.addWidget(self.date_checkbox)
-        config_checkbox(self.date_checkbox, "Fecha", checked=False, layout_dir=Qt.LayoutDirection.LeftToRight)
-
-        self.last_n_combobox = QComboBox(self.widget)
-        self.filters_layout.addWidget(self.last_n_combobox)
-        config_combobox(self.last_n_combobox, extra_width=20, fixed_width=self.date_edit.width())
-
-        # Horizontal spacer.
-        self.left_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
-
-        # Transactions.
-        self.balance_table = QTableWidget(self.widget)
-        self.left_layout.addWidget(self.balance_table)
-        config_table(
-            target=self.balance_table, allow_resizing=True, min_rows_to_show=1,
-            columns={"Fecha": (10, int), "Responsable": (12, str), "Cobros": (12, int),
-                     "Extracciones": (12, int)}
-        )
-
         # Today info layout.
         self.today_layout = QGridLayout()
-        self.right_layout.addLayout(self.today_layout)
+        self.left_layout.addLayout(self.today_layout)
 
         self.today_charges_lbl = QLabel(self.widget)
         self.today_layout.addWidget(self.today_charges_lbl, 0, 0)
@@ -86,11 +54,11 @@ class AccountingMainUI(QMainWindow):
         self.today_layout.addWidget(self.close_balance_btn, 0, 1, 2, 1)
         config_btn(self.close_balance_btn, "Cerrar caja", font_size=16)
 
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+        self.left_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
         # Balance detail.
         self.detail_layout = QGridLayout()
-        self.right_layout.addLayout(self.detail_layout)
+        self.left_layout.addLayout(self.detail_layout)
 
         # Balance date label.
         self.day_lbl = QLabel(self.widget)
@@ -128,12 +96,44 @@ class AccountingMainUI(QMainWindow):
 
         # Transactions included in the balance.
         self.transactions_lbl = QLabel(self.widget)
-        self.right_layout.addWidget(self.transactions_lbl)
+        self.left_layout.addWidget(self.transactions_lbl)
         config_lbl(self.transactions_lbl, "Transacciones", font_size=16)
 
         self.transaction_table = QTableWidget(self.widget)
-        self.right_layout.addWidget(self.transaction_table)
+        self.left_layout.addWidget(self.transaction_table)
         config_table(self.transaction_table, allow_resizing=False,
                      columns={"Responsable": (8, str), "Monto": (8, int), "Descripción": (12, str)})
+
+        # Filters.
+        self.filters_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.filters_layout)
+
+        self.last_n_checkbox = QCheckBox(self.widget)
+        self.filters_layout.addWidget(self.last_n_checkbox)
+        config_checkbox(self.last_n_checkbox, "Últimos", checked=True, layout_dir=Qt.LayoutDirection.LeftToRight)
+
+        self.date_edit = QDateEdit(self.widget)
+        self.filters_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today(), calendar=True)
+
+        self.date_checkbox = QCheckBox(self.widget)
+        self.filters_layout.addWidget(self.date_checkbox)
+        config_checkbox(self.date_checkbox, "Fecha", checked=False, layout_dir=Qt.LayoutDirection.LeftToRight)
+
+        self.last_n_combobox = QComboBox(self.widget)
+        self.filters_layout.addWidget(self.last_n_combobox)
+        config_combobox(self.last_n_combobox, extra_width=20, fixed_width=self.date_edit.width())
+
+        # Horizontal spacer.
+        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+
+        # Transactions.
+        self.balance_table = QTableWidget(self.widget)
+        self.right_layout.addWidget(self.balance_table)
+        config_table(
+            target=self.balance_table, allow_resizing=True, min_rows_to_show=1,
+            columns={"Fecha": (10, int), "Responsable": (12, str), "Cobros": (12, int),
+                     "Extracciones": (12, int)}
+        )
 
 
