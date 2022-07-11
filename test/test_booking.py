@@ -42,7 +42,15 @@ class MockBookingRepo(BookingRepo):
 
 def test_FixedBookingHandler_bookingAvailable():
     booking_repo = MockBookingRepo()
-    fixed_handler = FixedBookingHandler(courts=("1", "2"), fixed_bookings=booking_repo.all_fixed())
+    # noinspection PyTypeChecker
+    fixed_handler = FixedBookingHandler(
+        courts=("1", "2"), fixed_bookings=[
+            FixedBooking("1", client=None, start=time(9, 0), end=time(10, 0), day_of_week=0),
+            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
+            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
+            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)
+        ]
+    )
 
     assert fixed_handler.booking_available(0, "1", time(8, 0), Duration(60, "1h"))
     assert not fixed_handler.booking_available(0, "1", time(8, 0), Duration(120, "2h"))
