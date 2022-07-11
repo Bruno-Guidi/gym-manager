@@ -2,8 +2,9 @@ import logging
 from datetime import date, time
 from typing import Generator
 
-from peewee import Model, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch, \
-    JOIN, DateField
+from peewee import (
+    Model, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch,
+    JOIN, DateField, CompositeKey)
 
 from gym_manager import peewee
 from gym_manager.booking.core import (
@@ -32,6 +33,19 @@ class BookingTable(Model):
         database = peewee.DATABASE_PROXY
 
 
+class FixedBookingTable(Model):
+    day_of_week = IntegerField()
+    court = CharField()
+    start = TimeField()
+    client = ForeignKeyField(peewee.ClientTable, backref="fixed_bookings")
+    end = TimeField()
+    activated_again = DateField(null=True)
+
+    class Meta:
+        database = peewee.DATABASE_PROXY
+        primary_key = CompositeKey("day_of_week", "court", "start")
+
+
 class SqliteBookingRepo(BookingRepo):
 
     def __init__(
@@ -41,7 +55,7 @@ class SqliteBookingRepo(BookingRepo):
             transaction_repo: TransactionRepo,
             cache_len: int = 100
     ) -> None:
-        BookingTable._meta.database.create_tables([BookingTable])
+        BookingTable._meta.database.create_tables([BookingTable, FixedBookingTable])
 
         self.courts = {court.name: court for court in existing_courts}
         self.client_repo = client_repo
@@ -52,7 +66,13 @@ class SqliteBookingRepo(BookingRepo):
 
     def add(self, booking: IBooking):
         if isinstance(booking, FixedBooking):
-            pass
+            booking: FixedBooking
+            FixedBookingTable.create(day_of_week=booking.day_of_week,
+                                     court=booking.court,
+                                     start=booking.start,
+                                     client_id=booking.client.dni.as_primitive(),
+                                     end=booking.end,
+                                     activated_again=booking.activated_again)
         elif isinstance(booking, Booking):
             pass
 
