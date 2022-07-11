@@ -150,7 +150,7 @@ class MainController:
 
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
 
-        remove = Dialog.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?")
+        remove = Dialog.confirm_with_resp(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?")
 
         if remove:
             client = self._clients[client_dni]
@@ -475,6 +475,15 @@ class CreateUI(QDialog):
         self.dir_field = Field(String, self, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 3, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 4, 0)
+        config_lbl(self.responsible_lbl, "Responsable*")
+
+        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 4, 1)
+        config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
