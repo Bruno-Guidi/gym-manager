@@ -206,7 +206,7 @@ class BookingSystem:
 
     def __init__(
             self, activity: Activity, repo: BookingRepo, durations: tuple[Duration, ...], courts_names: tuple[str, ...],
-            start: time, end: time, minute_step: int, weeks_in_advance: int
+            start: time, end: time, minute_step: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
@@ -219,10 +219,10 @@ class BookingSystem:
                                            in self.create_blocks(start, end, minute_step)}
 
         self._bookings: dict[date, list[Booking]] = {}
-        self.weeks_in_advance = weeks_in_advance
 
         self.activity = activity
         self.repo = repo
+        self.fixed_booking_handler = FixedBookingHandler(courts_names, self.repo.all_fixed())
 
     def courts(self) -> Iterable[Court]:
         return self._courts.values()
