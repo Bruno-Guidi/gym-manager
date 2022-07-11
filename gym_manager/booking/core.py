@@ -5,7 +5,7 @@ import itertools
 from collections import namedtuple
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Iterable, Generator
+from typing import Iterable, Generator, TypeAlias
 
 from gym_manager.core.base import Client, Activity, Transaction, OperationalError
 from gym_manager.core.persistence import FilterValuePair
@@ -159,6 +159,38 @@ class Booking:
         prev_state = self.state
         self.state.update(new_state, updated_by)
         return prev_state
+
+
+class FixedBooking(IBooking):
+
+    def __init__(self, court: str, client: Client, start: time, end: time, day_of_week: int):
+        super().__init__(court, client, start, end)
+        self.day_of_week = day_of_week
+
+    def update_state(self, new_state: str, updated_by: str) -> State:
+        """Updates the current state of the booking, and return the previous one.
+        """
+        raise NotImplementedError
+
+
+DayBookings: TypeAlias = dict[time, FixedBooking]
+CourtBookings: TypeAlias = dict[str, DayBookings]
+
+
+class FixedBookingHandler:
+    def __init__(self, courts: Iterable[str], fixed_bookings: list[FixedBooking]):
+        self._bookings: list[CourtBookings] = [{court: {} for court in courts} for _ in range(0, 7)]
+        for booking in fixed_bookings:
+            self._bookings[booking.day_of_week][booking.court][booking.start] = booking
+        print(str(self._bookings))
+
+    def booking_available(self, day_of_week: int, court: str, start_block: Block, duration: Duration) -> bool:
+        day_bookings = self._bookings[day_of_week][court].values()
+        end = combine(date.min, start_block.start, duration).time()
+        for fixed_booking in day_bookings:
+            if fixed_booking.collides(start_block.start, end):
+                return False
+        return True
 
 
 class BookingSystem:
