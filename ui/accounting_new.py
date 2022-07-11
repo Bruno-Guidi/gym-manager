@@ -260,7 +260,6 @@ class BalanceHistoryController:
     def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo):
         self.history_ui = history_ui
         self.balance_repo = balance_repo
-        # self.accounting_system = accounting_system
 
         self.updated_date_checkbox()
 
@@ -279,6 +278,8 @@ class BalanceHistoryController:
         self.history_ui.last_n_combobox.currentIndexChanged.connect(self.load_last_n_balances)
         # noinspection PyUnresolvedReferences
         self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.balance_table.connect(self.refresh_balance_info)
 
     def update_last_n_checkbox(self):
         """Callback called when the state of date_checkbox changes.
@@ -295,7 +296,7 @@ class BalanceHistoryController:
     def _load_balance_table(self, from_date: date, to_date: date):
         self.history_ui.balance_table.setRowCount(0)
 
-        for when, responsible, balance in self.balance_repo.all(from_date, to_date):
+        for when, responsible, balance, _ in self.balance_repo.all(from_date, to_date):
             row_count = self.history_ui.balance_table.rowCount()
             self._balances[row_count] = when, responsible, balance
             fill_cell(self.history_ui.balance_table, row_count, 0, when, data_type=int)
@@ -313,6 +314,9 @@ class BalanceHistoryController:
     def load_date_balance(self):
         when = self.history_ui.date_edit.date().toPyDate()
         self._load_balance_table(from_date=when, to_date=when)
+
+    def refresh_balance_info(self):
+        print("refreshing")  # ToDo requires Balance rework.
 
 
 class BalanceHistoryUI(QMainWindow):
