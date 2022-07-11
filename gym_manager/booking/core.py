@@ -276,54 +276,58 @@ class BookingSystem:
             raise OperationalError("Both 'when' and 'filters' arguments cannot be missing when querying bookings",
                                    when=when, filters=filters)
 
-    def out_of_range(self, start_block: Block, duration: Duration) -> bool:
+    def out_of_range(self, start: time, duration: Duration) -> bool:
         """Returns True if a booking that starts at *start_block* and has the duration *duration* is out of the time
         range that is valid, False otherwise.
         """
-        end = combine(date.min, start_block.start, duration).time()
-        return start_block.start < self.start or end > self.end
+        end = combine(date.min, start, duration).time()
+        return start < self.start or end > self.end
 
-    def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
+    def booking_available(self, when: date, court: Court, start: time, duration: Duration) -> bool:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
         duration *duration*. Otherwise, return False.
 
         Raises:
             OperationalError if the booking time is out of range.
         """
-        if self.out_of_range(start_block, duration):
-            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
+        if self.out_of_range(start, duration):
+            raise OperationalError("Solicited booking time is out of range.", start_block=start,
                                    duration=duration, start=self.start, end=self.end)
-        end = combine(date.min, start_block.start, duration).time()
+
+        if not self.fixed_booking_handler.booking_available(when.weekday(), court.name, start, duration):
+            return False
+
+        end = combine(date.min, start, duration).time()
         for booking in self.repo.all((BOOKING_TO_HAPPEN, BOOKING_PAID), when):
-            if booking.court == court and booking.collides(start_block.start, end):
+            if booking.collides(start, end):
                 return False
         return True
 
     def book(
-            self, court: Court, client: Client, is_fixed: bool, when: date, start_block: Block, duration: Duration
+            self, court: Court, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
     ) -> list[Booking]:
         """Creates a Booking with the given data.
 
         Raises:
             OperationalError if the booking time is out of range, or if there is no available time for the booking.
         """
-        if self.out_of_range(start_block, duration):
-            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
+        if self.out_of_range(start, duration):
+            raise OperationalError("Solicited booking time is out of range.", start_block=start,
                                    duration=duration, start=self.start, end=self.end)
-        if not self.booking_available(when, court, start_block, duration):
-            raise OperationalError("There is no available time for the booking.", start=start_block.start,
+        if not self.booking_available(when, court, start, duration):
+            raise OperationalError("There is no available time for the booking.", start=start,
                                    duration=duration)
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
-        end = combine(date.min, start_block.start, duration).time()
-        bookings = [self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)]
+        end = combine(date.min, start, duration).time()
+        bookings = [self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start, end)]
 
         # If the booking is fixed, then create *weeks_in_advance* more bookings in advance.
         if is_fixed:
             for i in range(self.weeks_in_advance - 1):
                 when = when + ONE_WEEK_TD
                 bookings.append(
-                    self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)
+                    self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start, end)
                 )
 
         return bookings
