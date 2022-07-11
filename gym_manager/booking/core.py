@@ -96,19 +96,9 @@ class State:
 
 class IBooking(abc.ABC):
 
-    @property
-    @abc.abstractmethod
-    def start(self) -> time:
-        """Start time of the booking.
-        """
-        raise NotImplementedError
-
-    @property
-    @abc.abstractmethod
-    def end(self) -> time:
-        """End time of the booking.
-        """
-        raise NotImplementedError
+    def __init__(self, start: time, end: time):
+        self.start = start
+        self.end = end
 
     # noinspection PyChainedComparisons
     def collides(self, start: time, end: time) -> bool:
