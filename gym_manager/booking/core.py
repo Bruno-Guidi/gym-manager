@@ -306,8 +306,8 @@ class BookingSystem:
             OperationalError if the booking time is out of range.
         """
         if self.out_of_range(start, duration):
-            raise OperationalError("Solicited booking time is out of range.", start_block=start,
-                                   duration=duration, start=self.start, end=self.end)
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
+                                   f"of the range [booking_start={self.start}, booking_end={self.end}].")
 
         if not self.fixed_booking_handler.booking_available(when, court, start, duration):
             return False
