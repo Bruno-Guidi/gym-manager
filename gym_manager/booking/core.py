@@ -365,12 +365,6 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def create(
-            self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
-    ) -> Booking:
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def update(self, booking: Booking, prev_state: State):
         raise NotImplementedError
 

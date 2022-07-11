@@ -84,22 +84,6 @@ class SqliteBookingRepo(BookingRepo):
         raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                f"SqliteBookingRepo.")
 
-    def create(
-            self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
-    ) -> Booking:
-        record = BookingTable.create(when=when,
-                                     court=court.name,
-                                     client=peewee.ClientTable.get_by_id(client.dni.as_primitive()),
-                                     start=start,
-                                     end=end,
-                                     is_fixed=is_fixed,
-                                     state=state.name,
-                                     updated_by=state.updated_by)
-
-        booking = Booking(record.id, court, client, is_fixed, state, when, start, end)
-        self.cache[booking.id] = booking
-        return booking
-
     def update(self, booking: Booking, prev_state: State):
         record = BookingTable.get_by_id(booking.id)
         # Updates the booking.
