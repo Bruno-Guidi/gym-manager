@@ -373,6 +373,10 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def all_fixed(self) -> list[FixedBooking]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
         """
