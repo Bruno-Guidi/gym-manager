@@ -126,7 +126,7 @@ class IBooking(abc.ABC):
 
 
 @dataclass
-class Booking:
+class TempBooking:
     court: str
     client: Client
     is_fixed: bool
@@ -233,7 +233,7 @@ class BookingSystem:
         self._blocks: dict[time, Block] = {block.start: block for block
                                            in self.create_blocks(start, end, minute_step)}
 
-        self._bookings: dict[date, list[Booking]] = {}
+        self._bookings: dict[date, list[TempBooking]] = {}
 
         self.activity = activity
         self.repo = repo
@@ -270,7 +270,7 @@ class BookingSystem:
 
     def bookings(
             self, states: tuple[str, ...], when: date | None = None, filters: list[FilterValuePair] | None = None
-    ) -> Iterable[tuple[Booking, int, int]]:
+    ) -> Iterable[tuple[TempBooking, int, int]]:
         """Retrieves bookings with its start and end block number.
 
         Args:
@@ -320,7 +320,7 @@ class BookingSystem:
 
     def book(
             self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
-    ) -> Booking:
+    ) -> IBooking:
         """Creates a Booking with the given data.
 
         Raises:
@@ -338,12 +338,12 @@ class BookingSystem:
         if is_fixed:
             booking = FixedBooking(court, client, start, end, when.weekday())
         else:
-            booking = Booking(court, client, False, State(BOOKING_TO_HAPPEN), when, start, end)
+            booking = TempBooking(court, client, False, State(BOOKING_TO_HAPPEN), when, start, end)
 
         self.repo.add(booking)
         return booking
 
-    def cancel(self, booking: Booking, responsible: str, cancel_fixed: bool = False):
+    def cancel(self, booking: TempBooking, responsible: str, cancel_fixed: bool = False):
         booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
         # booking.is_fixed = not cancel_fixed
         self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
@@ -364,11 +364,11 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update(self, booking: Booking, prev_state: State):
+    def update(self, booking: TempBooking, prev_state: State):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cancel(self, booking: Booking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
+    def cancel(self, booking: TempBooking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -378,7 +378,7 @@ class BookingRepo(abc.ABC):
             when: date | None = None,
             court: str | None = None,
             filters: list[FilterValuePair] | None = None
-    ) -> Generator[Booking, None, None]:
+    ) -> Generator[TempBooking, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod

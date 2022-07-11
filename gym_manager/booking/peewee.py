@@ -8,7 +8,7 @@ from peewee import (
 
 from gym_manager import peewee
 from gym_manager.booking.core import (
-    Booking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, IBooking,
+    TempBooking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, IBooking,
     FixedBooking)
 from gym_manager.core.base import Transaction
 from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
@@ -60,7 +60,7 @@ class SqliteBookingRepo(BookingRepo):
         self.transaction_repo = transaction_repo
 
         self._do_caching = cache_len > 0
-        self.cache = LRUCache((int,), Booking, max_len=cache_len)
+        self.cache = LRUCache((int,), TempBooking, max_len=cache_len)
 
     def add(self, booking: IBooking):
         if isinstance(booking, FixedBooking):
@@ -71,8 +71,8 @@ class SqliteBookingRepo(BookingRepo):
                                      client_id=booking.client.dni.as_primitive(),
                                      end=booking.end,
                                      activated_again=booking.activated_again)
-        elif isinstance(booking, Booking):
-            booking: Booking
+        elif isinstance(booking, TempBooking):
+            booking: TempBooking
             BookingTable.create(when=datetime.combine(booking.when, booking.start),
                                 court=booking.court,
                                 client_id=booking.client.dni.as_primitive(),
@@ -87,10 +87,10 @@ class SqliteBookingRepo(BookingRepo):
     def charge(self, booking: IBooking, balance_date: date, transaction: Transaction):
         if isinstance(booking, FixedBooking):
             # ToDo update last transaction in the table
-            # Creates a Booking based on the FixedBooking, so the charging is registered.
-            booking = Booking(booking.court, booking.client, True, State(BOOKING_TO_HAPPEN), balance_date,
-                              booking.start, booking.end, transaction)
-        elif not isinstance(booking, Booking):
+            # Creates a TempBooking based on the FixedBooking, so the charging is registered.
+            booking = TempBooking(booking.court, booking.client, True, State(BOOKING_TO_HAPPEN), balance_date,
+                                  booking.start, booking.end, transaction)
+        elif not isinstance(booking, TempBooking):
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                    f"SqliteBookingRepo.")
 
@@ -103,7 +103,7 @@ class SqliteBookingRepo(BookingRepo):
                              updated_by=transaction.responsible,
                              transaction_id=transaction.id).execute()
 
-    def update(self, booking: Booking, prev_state: State):
+    def update(self, booking: TempBooking, prev_state: State):
         record = BookingTable.get_by_id(booking.id)
         # Updates the booking.
         record.is_fixed = booking.is_fixed
@@ -113,7 +113,7 @@ class SqliteBookingRepo(BookingRepo):
             record.transaction = TransactionTable.get_by_id(booking.transaction.id)
         record.save()
 
-    def cancel(self, booking: Booking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
+    def cancel(self, booking: TempBooking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
         # There is a problem with this approach. If a fixed booking is created, *weeks_in_advance* - 1 bookings will be
         # created in advance, to avoid another booking to step on the fixed one. Now suppose a new fixed booking is
         # created, with the same start and client, but after *weeks_in_advance* weeks of the first fixed booking. If the
@@ -152,7 +152,7 @@ class SqliteBookingRepo(BookingRepo):
             when: date | None = None,
             court: str | None = None,
             filters: list[FilterValuePair] | None = None
-    ) -> Generator[Booking, None, None]:
+    ) -> Generator[TempBooking, None, None]:
         bookings_q = BookingTable.select()
         if states is not None:
             bookings_q = bookings_q.where(BookingTable.state.in_(states))
@@ -170,7 +170,7 @@ class SqliteBookingRepo(BookingRepo):
                 bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
         for record in prefetch(bookings_q, TransactionTable.select()):
-            booking: Booking
+            booking: TempBooking
             if self._do_caching and record.id in self.cache:
                 booking = self.cache[record.id]
             else:
@@ -183,7 +183,7 @@ class SqliteBookingRepo(BookingRepo):
                         trans_record.method, trans_record.responsible, trans_record.description
                     )
 
-                booking = Booking(
+                booking = TempBooking(
                     record.id, self.courts[record.court], client, record.is_fixed,
                     State(record.state, record.updated_by), record.when, record.start, record.end, transaction
                 )

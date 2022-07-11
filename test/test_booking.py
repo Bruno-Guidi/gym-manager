@@ -2,22 +2,29 @@ from datetime import date, time
 from typing import Generator
 
 from gym_manager.booking.core import (
-    Duration, BookingRepo, Booking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem, BOOKING_TO_HAPPEN)
-from gym_manager.core.base import Client, Activity, String, Currency
+    Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
+    BOOKING_TO_HAPPEN, IBooking)
+from gym_manager.core.base import Client, Activity, String, Currency, Transaction
 from gym_manager.core.persistence import FilterValuePair
 
 
 class MockBookingRepo(BookingRepo):
 
+    def add(self, booking: IBooking):
+        pass
+
+    def charge(self, booking: IBooking, balance_date: date, transaction: Transaction):
+        pass
+
     def create(
             self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
-    ) -> Booking:
+    ) -> TempBooking:
         pass
 
-    def update(self, booking: Booking, prev_state: State):
+    def update(self, booking: TempBooking, prev_state: State):
         pass
 
-    def cancel(self, booking: Booking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
+    def cancel(self, booking: TempBooking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
         pass
 
     def all(
@@ -26,15 +33,15 @@ class MockBookingRepo(BookingRepo):
             when: date | None = None,
             court: str | None = None,
             filters: list[FilterValuePair] | None = None
-    ) -> Generator[Booking, None, None]:
+    ) -> Generator[TempBooking, None, None]:
         # noinspection PyTypeChecker
         to_yield = [
-            Booking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
-                    start=time(8, 0), end=time(9, 0)),
-            Booking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
-                    start=time(12, 0), end=time(13, 0)),
-            Booking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
-                    start=time(16, 0), end=time(17, 0))
+            TempBooking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
+                        start=time(8, 0), end=time(9, 0)),
+            TempBooking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
+                        start=time(12, 0), end=time(13, 0)),
+            TempBooking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
+                        start=time(16, 0), end=time(17, 0))
         ]
 
         for booking in to_yield:

@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox,
     QCheckBox, QPushButton, QDialog, QDateEdit, QLineEdit, QHBoxLayout, QSpacerItem, QSizePolicy)
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, current_block_start
+from gym_manager.booking.core import BookingSystem, TempBooking, BOOKING_TO_HAPPEN, current_block_start
 from gym_manager.core import constants
 from gym_manager.core.base import TextLike, ClientLike, String, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
@@ -18,7 +18,7 @@ from ui.widget_config import config_layout, config_lbl, config_combobox, config_
 from ui.widgets import Dialog, Field, FilterHeader
 
 
-def booking_summary(booking: Booking):
+def booking_summary(booking: TempBooking):
     return f"{booking.client.name.as_primitive()} - {booking.when.strftime(constants.DATE_FORMAT)} - {booking.court.name}"
 
 
@@ -27,7 +27,7 @@ class BookController:
     def __init__(self, book_ui: BookUI, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
         self.client_repo = client_repo
         self.booking_system = booking_system
-        self.booking: Booking | None = None
+        self.booking: TempBooking | None = None
 
         self.book_ui = book_ui
 
@@ -172,7 +172,7 @@ class CancelController:
 
     def __init__(self, cancel_ui: CancelUI, booking_system: BookingSystem) -> None:
         self.booking_system = booking_system
-        self.booking: Booking | None = None
+        self.booking: TempBooking | None = None
 
         self.cancel_ui = cancel_ui
 
@@ -196,7 +196,7 @@ class CancelController:
                       booking_summary)
 
     def _update_form(self):
-        booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
+        booking: TempBooking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
         self.cancel_ui.client_line.setText(str(booking.client.name))
         self.cancel_ui.court_line.setText(booking.court.name)
         self.cancel_ui.date_edit.setDate(booking.when)
@@ -205,7 +205,7 @@ class CancelController:
         self.cancel_ui.fixed_line.setText("Si" if booking.is_fixed else "No")
 
     def cancel(self):
-        self.booking: Booking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
+        self.booking: TempBooking = self.cancel_ui.booking_combobox.currentData(Qt.UserRole)
 
         if self.booking is None:
             Dialog.info("Error", "Seleccione una reserva.")
@@ -347,7 +347,7 @@ class PreChargeController:
     ) -> None:
         self.booking_system = booking_system
         self.accounting_system = accounting_system
-        self.booking: Booking | None = None
+        self.booking: TempBooking | None = None
 
         self.pre_charge_ui = pre_charge_ui
 
@@ -371,7 +371,7 @@ class PreChargeController:
                       booking_summary)
 
     def _update_form(self):
-        booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
+        booking: TempBooking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
         self.pre_charge_ui.client_line.setText(str(booking.client.name))
         self.pre_charge_ui.court_line.setText(booking.court.name)
         self.pre_charge_ui.date_edit.setDate(booking.when)
@@ -380,7 +380,7 @@ class PreChargeController:
         self.pre_charge_ui.fixed_line.setText("Si" if booking.is_fixed else "No")
 
     def charge(self):
-        self.booking: Booking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
+        self.booking: TempBooking = self.pre_charge_ui.booking_combobox.currentData(Qt.UserRole)
 
         if self.booking is None:
             Dialog.info("Error", "Seleccione un turno.")
