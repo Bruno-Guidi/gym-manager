@@ -348,14 +348,9 @@ class BookingSystem:
         # booking.is_fixed = not cancel_fixed
         self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
 
-    def register_charge(self, booking: Booking, transaction: Transaction):
-        prev_state = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
+    def register_charge(self, booking: IBooking, booking_date: date, transaction: Transaction):
         booking.transaction = transaction
-        self.repo.update(booking, prev_state)
-        if booking.is_fixed:  # ToDo add another booking in weeks_in_advance weeks
-            when = booking.when + timedelta(self.weeks_in_advance)
-            self.repo.create(booking.court, booking.client, booking.is_fixed, State(BOOKING_TO_HAPPEN),
-                             when, booking.start, booking.end)
+        self.repo.charge(booking, booking_date, transaction)  # ToDo test method.
 
 
 class BookingRepo(abc.ABC):
