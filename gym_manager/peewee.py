@@ -365,11 +365,22 @@ class SqliteBalanceRepo(BalanceRepo):
         BalanceTable.create(when=when, responsible=responsible.as_primitive(),
                             balance_dict=self.balance_to_json(balance))
 
-    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, String, Balance], None, None]:
+    def all(
+            self, from_date: date, to_date: date
+            ) -> Generator[tuple[date, String, Balance, list[Transaction]], None, None]:
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
-        for record in balance_q:
+        transaction_q = TransactionTable.select()
+        for record in prefetch(balance_q, transaction_q):
+            transactions = []
+            for transaction_record in record.transactions:
+                transactions.append(
+                    Transaction(transaction_record.id, transaction_record.type, transaction_record.when,
+                                Currency(transaction_record.amount), transaction_record.method,
+                                String(transaction_record.responsible, max_len=constants.CLIENT_NAME_CHARS),
+                                transaction_record.description,
+                                balance_date=transaction_record.balance_id))
             yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
-                   self.json_to_balance(record.balance_dict))
+                   self.json_to_balance(record.balance_dict), transactions)
 
 
 class TransactionTable(Model):
