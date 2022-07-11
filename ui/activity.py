@@ -126,12 +126,12 @@ class MainController:
 
         subscribers, remove = self.activity_repo.n_subscribers(activity), False
         if subscribers > 0:
-            remove = Dialog.confirm(f"La actividad '{activity.name}' tiene {subscribers} cliente/s inscripto/s. "
-                                    f"\n¿Desea eliminarla igual?")
+            remove = Dialog.confirm_with_resp(f"La actividad '{activity.name}' tiene {subscribers} cliente/s "
+                                              f"inscripto/s. \n¿Desea eliminarla igual?")
 
         # If the previous confirmation failed, or if it didn't show up, then ask one last time.
         if subscribers == 0 and not remove:
-            remove = Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?")
+            remove = Dialog.confirm_with_resp(f"¿Desea eliminar la actividad '{activity.name}'?")
 
         if remove:
             self._activities.pop(activity.name.as_primitive())
