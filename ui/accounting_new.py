@@ -395,14 +395,9 @@ class BalanceHistoryUI(QMainWindow):
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
 
-        # Header layout.
-        self.header_layout = QHBoxLayout()
-        self.left_layout.addLayout(self.header_layout)
-        config_layout(self.header_layout, left_margin=100, right_margin=100, alignment=Qt.AlignCenter)
-
         # Filters.
         self.filters_layout = QGridLayout()
-        self.header_layout.addLayout(self.filters_layout)
+        self.left_layout.addLayout(self.filters_layout)
 
         self.last_n_checkbox = QCheckBox(self.widget)
         self.filters_layout.addWidget(self.last_n_checkbox, 0, 0)
@@ -420,21 +415,12 @@ class BalanceHistoryUI(QMainWindow):
         self.filters_layout.addWidget(self.last_n_combobox, 0, 1)
         config_combobox(self.last_n_combobox, extra_width=20, fixed_width=self.date_edit.width())
 
-        # Horizontal spacer.
-        self.header_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
-
-        # Balance detail button.
-        self.detail_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.detail_btn)
-        config_btn(self.detail_btn, "Detalle", extra_width=20)
-
         # Balances.
         self.balance_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.balance_table)
         config_table(
             target=self.balance_table, allow_resizing=True, min_rows_to_show=1,
-            columns={"Fecha": (10, int), "Responsable": (12, str), "Cobros": (12, int),
-                     "Extracciones": (12, int)}
+            columns={"Fecha": (10, int), "Responsable": (12, str), "Total": (12, int)}
         )
 
         # Balance detail.
