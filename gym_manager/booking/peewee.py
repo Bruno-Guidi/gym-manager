@@ -1,10 +1,10 @@
 import logging
-from datetime import date, time
+from datetime import date, time, datetime
 from typing import Generator
 
 from peewee import (
     Model, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch,
-    JOIN, DateField, CompositeKey)
+    JOIN, DateField, CompositeKey, DateTimeField)
 
 from gym_manager import peewee
 from gym_manager.booking.core import (
@@ -18,11 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class BookingTable(Model):
-    id = IntegerField(primary_key=True)
-    when = DateField()
+    when = DateTimeField(primary_key=True)
     court = CharField()
     client = ForeignKeyField(peewee.ClientTable, backref="bookings")
-    start = TimeField()
     end = TimeField()
     is_fixed = BooleanField()
     state = CharField()
@@ -74,7 +72,14 @@ class SqliteBookingRepo(BookingRepo):
                                      end=booking.end,
                                      activated_again=booking.activated_again)
         elif isinstance(booking, Booking):
-            pass
+            booking: Booking
+            BookingTable.create(when=datetime.combine(booking.when, booking.start),
+                                court=booking.court,
+                                client_id=booking.client.dni.as_primitive(),
+                                end=booking.end,
+                                is_fixed=False,
+                                state=booking.state.name,
+                                updated_by=booking.state.updated_by)
 
         raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                f"SqliteBookingRepo.")
