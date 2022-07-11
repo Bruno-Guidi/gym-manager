@@ -14,8 +14,8 @@ def test_subscribe():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), String("dummy_tel", max_len=20),
-                    String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
     client_repo.add(client)
 
     activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
@@ -36,8 +36,8 @@ def test_cancel():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), String("dummy_tel", max_len=20),
-                    String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
     client_repo.add(client)
 
     activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
@@ -64,8 +64,8 @@ def test_charge_notChargeOnceActivity():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), String("dummy_tel", max_len=20),
-                    String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
     client_repo.add(client)
 
     activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
