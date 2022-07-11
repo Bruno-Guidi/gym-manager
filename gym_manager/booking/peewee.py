@@ -111,6 +111,7 @@ class SqliteBookingRepo(BookingRepo):
             self,
             states: tuple[str, ...] | None = None,
             when: date | None = None,
+            court: str | None = None,
             filters: list[FilterValuePair] | None = None
     ) -> Generator[Booking, None, None]:
         bookings_q = BookingTable.select()
@@ -120,6 +121,8 @@ class SqliteBookingRepo(BookingRepo):
             year, month, day = when.year, when.month, when.day
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
                                           day == BookingTable.when.day)
+        if court is not None:
+            bookings_q = bookings_q.where(BookingTable.court == court)
         if filters is not None:
             # The left outer join is required because bookings might be filtered by the client name, which isn't
             # an attribute of BookingTable.

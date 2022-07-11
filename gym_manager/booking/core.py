@@ -367,6 +367,7 @@ class BookingRepo(abc.ABC):
             self,
             states: tuple[str, ...] | None = None,
             when: date | None = None,
+            court: str | None = None,
             filters: list[FilterValuePair] | None = None
     ) -> Generator[Booking, None, None]:
         raise NotImplementedError
