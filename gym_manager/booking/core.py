@@ -94,6 +94,30 @@ class State:
         self._updated_by = updated_by
 
 
+class IBooking(abc.ABC):
+    @abc.abstractmethod
+    def collides(self, start: time, end: time) -> bool:
+        """Determines if a hypothetical booking with the given start and end time will collide with this booking.
+
+        There are four possible situations where a collision won't happen:
+        1. start < end < b.start < b.end.
+        2. start < end <= b.start < b.end.
+        3. b.start < b.end < start < end.
+        4. b.start < b.end <= start < end.
+        The remaining possibilities involve a partial or total collision.
+
+        Returns:
+            True if there is a collision, False otherwise.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def update_state(self, new_state: str, updated_by: str) -> State:
+        """Updates the current state of the booking, and return the previous one.
+        """
+        raise NotImplementedError
+
+
 @dataclass
 class Booking:
     id: int
