@@ -127,6 +127,7 @@ class SqliteClientRepo(ClientRepo):
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
+                            birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=client.is_active).execute()
@@ -139,6 +140,7 @@ class SqliteClientRepo(ClientRepo):
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
+                            birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=False).execute()
@@ -150,6 +152,7 @@ class SqliteClientRepo(ClientRepo):
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
+                            birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
