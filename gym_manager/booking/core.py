@@ -162,7 +162,10 @@ class Booking:
 
 class FixedBooking(IBooking):
 
-    def __init__(self, court: str, client: Client, start: time, end: time, day_of_week: int):
+    def __init__(
+            self, court: str, client: Client, start: time, end: time, day_of_week: int,
+            activated_again: date | None = None
+    ):
         super().__init__(court, client, start, end)
         self.day_of_week = day_of_week
 
