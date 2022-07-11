@@ -168,6 +168,20 @@ class FixedBooking(IBooking):
     ):
         super().__init__(court, client, start, end)
         self.day_of_week = day_of_week
+        # In theory this attr should be set to None after the date passes, but because of how collides(args) is
+        # implemented, there is no need to do it.
+        self.activated_again = activated_again
+
+    def collides(self, start: time, end: time, when: date | None = None) -> bool:
+        # If there is no activated_again date, then the fixed booking was never inactive.
+        # If there is activated_date, but it is previous to the date of the new booking, the fixed booking is active
+        # again.
+        # In both cases, delegates the evaluation to super().collides(args).
+        if self.activated_again is None or when >= self.activated_again:
+            return super().collides(start, end)
+        # If *when* is previous to the date when the fixed booking is "active" again, then there is no collision.
+        # Note: when < date (when before date) is equivalent to when >= date.
+        return False
 
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
