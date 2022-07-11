@@ -184,11 +184,11 @@ class FixedBookingHandler:
             self._bookings[booking.day_of_week][booking.court][booking.start] = booking
         print(str(self._bookings))
 
-    def booking_available(self, day_of_week: int, court: str, start_block: Block, duration: Duration) -> bool:
+    def booking_available(self, day_of_week: int, court: str, start: time, duration: Duration) -> bool:
         day_bookings = self._bookings[day_of_week][court].values()
-        end = combine(date.min, start_block.start, duration).time()
+        end = combine(date.min, start, duration).time()
         for fixed_booking in day_bookings:
-            if fixed_booking.collides(start_block.start, end):
+            if fixed_booking.collides(start, end):
                 return False
         return True
 
