@@ -454,8 +454,8 @@ class SqliteTransactionRepo(TransactionRepo):
         if not include_closed:  # Filter used when generating a balance for a day that wasn't closed.
             transactions_q = transactions_q.where(TransactionTable.balance.is_null())
         if include_closed and balance_date is not None:  # Filter used when generating a balance for a closed day.
-            transactions_q = transactions_q.where(TransactionTable.balance == balance_date,  # Trans in that balance.
-                                                  TransactionTable.balance.is_null())  # Trans after the closed balance.
+            transactions_q = transactions_q.where((TransactionTable.balance == balance_date) |  # Trans in that balance.
+                                                  (TransactionTable.balance.is_null()))  # Trans after the closed balance.
         if filters is not None:  # Generic filters.
             # The left outer join is required because transactions might be filtered by the client name, which isn't
             # an attribute of TransactionTable.
