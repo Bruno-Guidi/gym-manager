@@ -496,7 +496,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
         record = TransactionTable.get_by_id(transaction.id)
-        record.balance = balance_date
+        record.balance_id = balance_date
         record.save()
 
 
