@@ -95,7 +95,22 @@ class State:
 
 
 class IBooking(abc.ABC):
+
+    @property
     @abc.abstractmethod
+    def start(self) -> time:
+        """Start time of the booking.
+        """
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def end(self) -> time:
+        """End time of the booking.
+        """
+        raise NotImplementedError
+
+    # noinspection PyChainedComparisons
     def collides(self, start: time, end: time) -> bool:
         """Determines if a hypothetical booking with the given start and end time will collide with this booking.
 
@@ -109,7 +124,7 @@ class IBooking(abc.ABC):
         Returns:
             True if there is a collision, False otherwise.
         """
-        raise NotImplementedError
+        return not (start < self.start and end <= self.start or start >= self.end and end > self.end)
 
     @abc.abstractmethod
     def update_state(self, new_state: str, updated_by: str) -> State:
