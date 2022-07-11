@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
-from ui.accounting_new import ChargeUI
+from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox)

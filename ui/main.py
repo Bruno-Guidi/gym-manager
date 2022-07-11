@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QSpacerItem, QSizePolicy)
 
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
-from ui.accounting_new import AccountingMainUI
+from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.client import ClientMainUI
 from ui.widget_config import config_lbl, config_btn
