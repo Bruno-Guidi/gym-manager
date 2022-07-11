@@ -198,13 +198,12 @@ class FixedBookingHandler:
         self._bookings: list[CourtBookings] = [{court: {} for court in courts} for _ in range(0, 7)]
         for booking in fixed_bookings:
             self._bookings[booking.day_of_week][booking.court][booking.start] = booking
-        print(str(self._bookings))
 
-    def booking_available(self, day_of_week: int, court: str, start: time, duration: Duration) -> bool:
-        day_bookings = self._bookings[day_of_week][court].values()
+    def booking_available(self, when: date, court: str, start: time, duration: Duration) -> bool:
+        day_bookings = self._bookings[when.weekday()][court].values()
         end = combine(date.min, start, duration).time()
         for fixed_booking in day_bookings:
-            if fixed_booking.collides(start, end):
+            if fixed_booking.collides(start, end, when):
                 return False
         return True
 
@@ -310,7 +309,7 @@ class BookingSystem:
             raise OperationalError("Solicited booking time is out of range.", start_block=start,
                                    duration=duration, start=self.start, end=self.end)
 
-        if not self.fixed_booking_handler.booking_available(when.weekday(), court, start, duration):
+        if not self.fixed_booking_handler.booking_available(when, court, start, duration):
             return False
 
         end = combine(date.min, start, duration).time()
