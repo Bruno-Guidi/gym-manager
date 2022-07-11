@@ -3,17 +3,17 @@ from typing import Generator
 
 from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
-    BOOKING_TO_HAPPEN, IBooking)
+    BOOKING_TO_HAPPEN, Booking)
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction
 from gym_manager.core.persistence import FilterValuePair
 
 
 class MockBookingRepo(BookingRepo):
 
-    def add(self, booking: IBooking):
+    def add(self, booking: Booking):
         pass
 
-    def charge(self, booking: IBooking, balance_date: date, transaction: Transaction):
+    def charge(self, booking: Booking, balance_date: date, transaction: Transaction):
         pass
 
     def create(

@@ -8,7 +8,7 @@ from peewee import (
 
 from gym_manager import peewee
 from gym_manager.booking.core import (
-    TempBooking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, IBooking,
+    TempBooking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, Booking,
     FixedBooking)
 from gym_manager.core.base import Transaction
 from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
@@ -62,7 +62,7 @@ class SqliteBookingRepo(BookingRepo):
         self._do_caching = cache_len > 0
         self.cache = LRUCache((int,), TempBooking, max_len=cache_len)
 
-    def add(self, booking: IBooking):
+    def add(self, booking: Booking):
         if isinstance(booking, FixedBooking):
             booking: FixedBooking
             FixedBookingTable.create(day_of_week=booking.day_of_week,
@@ -84,7 +84,7 @@ class SqliteBookingRepo(BookingRepo):
         raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                f"SqliteBookingRepo.")
 
-    def charge(self, booking: IBooking, balance_date: date, transaction: Transaction):
+    def charge(self, booking: Booking, balance_date: date, transaction: Transaction):
         if isinstance(booking, FixedBooking):
             # ToDo update last transaction in the table
             # Creates a TempBooking based on the FixedBooking, so the charging is registered.

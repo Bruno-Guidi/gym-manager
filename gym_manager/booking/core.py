@@ -94,7 +94,7 @@ class State:
         self._updated_by = updated_by
 
 
-class IBooking(abc.ABC):
+class Booking(abc.ABC):
 
     def __init__(self, court: str, client: Client, start: time, end: time):
         self.court = court
@@ -160,7 +160,7 @@ class TempBooking:
         return prev_state
 
 
-class FixedBooking(IBooking):
+class FixedBooking(Booking):
 
     def __init__(
             self, court: str, client: Client, start: time, end: time, day_of_week: int,
@@ -320,7 +320,7 @@ class BookingSystem:
 
     def book(
             self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
-    ) -> IBooking:
+    ) -> Booking:
         """Creates a Booking with the given data.
 
         Raises:
@@ -348,7 +348,7 @@ class BookingSystem:
         # booking.is_fixed = not cancel_fixed
         self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
 
-    def register_charge(self, booking: IBooking, booking_date: date, transaction: Transaction):
+    def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
         booking.transaction = transaction
         self.repo.charge(booking, booking_date, transaction)  # ToDo test method.
 
@@ -356,11 +356,11 @@ class BookingSystem:
 class BookingRepo(abc.ABC):
 
     @abc.abstractmethod
-    def add(self, booking: IBooking):
+    def add(self, booking: Booking):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def charge(self, booking: IBooking, balance_date: date, transaction: Transaction):
+    def charge(self, booking: Booking, balance_date: date, transaction: Transaction):
         raise NotImplementedError
 
     @abc.abstractmethod
