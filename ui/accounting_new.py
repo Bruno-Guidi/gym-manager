@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -66,7 +66,7 @@ class MainController:
         self._daily_balance_ui.exec_()
 
     def balance_history(self):
-        self._history_ui = BalanceHistoryUI()
+        self._history_ui = BalanceHistoryUI(self.balance_repo)
         self._history_ui.setWindowModality(Qt.ApplicationModal)
         self._history_ui.show()
 
@@ -299,87 +299,75 @@ class DailyBalanceUI(QDialog):
         self.setFixedSize(self.sizeHint())
 
 
-# class BalanceHistoryController:
-#     ONE_WEEK_TD = ("7 días", timedelta(days=7))
-#     TWO_WEEK_TD = ("14 días", timedelta(days=14))
-#     ONE_MONTH_TD = ("30 días", timedelta(days=30))
-#
-#     def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo, accounting_system: AccountingSystem):
-#         self.history_ui = history_ui
-#         self.balance_repo = balance_repo
-#         self.accounting_system = accounting_system
-#
-#         self.updated_date_checkbox()
-#
-#         fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
-#                       display=lambda pair: pair[0])
-#
-#         self._balances: dict[int, tuple[date, String, Balance]] = {}
-#         self.load_last_n_balances()
-#
-#         # Sets callbacks.
-#         # noinspection PyUnresolvedReferences
-#         self.history_ui.last_n_checkbox.stateChanged.connect(self.updated_date_checkbox)
-#         # noinspection PyUnresolvedReferences
-#         self.history_ui.date_checkbox.stateChanged.connect(self.update_last_n_checkbox)
-#         # noinspection PyUnresolvedReferences
-#         self.history_ui.last_n_combobox.currentIndexChanged.connect(self.load_last_n_balances)
-#         # noinspection PyUnresolvedReferences
-#         self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
-#         # noinspection PyUnresolvedReferences
-#         self.history_ui.detail_btn.clicked.connect(self.balance_detail_ui)
-#
-#     def update_last_n_checkbox(self):
-#         """Callback called when the state of date_checkbox changes.
-#         """
-#         self.history_ui.last_n_checkbox.setChecked(not self.history_ui.date_checkbox.isChecked())
-#         self.history_ui.last_n_combobox.setEnabled(not self.history_ui.date_checkbox.isChecked())
-#
-#     def updated_date_checkbox(self):
-#         """Callback called when the state of last_n_checkbox changes.
-#         """
-#         self.history_ui.date_checkbox.setChecked(not self.history_ui.last_n_checkbox.isChecked())
-#         self.history_ui.date_edit.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
-#
-#     def _load_balance_table(self, from_date: date, to_date: date):
-#         self.history_ui.transaction_table.setRowCount(0)
-#
-#         for when, responsible, balance in self.balance_repo.all(from_date, to_date):
-#             row_count = self.history_ui.transaction_table.rowCount()
-#             self._balances[row_count] = when, responsible, balance
-#             fill_cell(self.history_ui.transaction_table, row_count, 0, when, data_type=int)
-#             fill_cell(self.history_ui.transaction_table, row_count, 1, responsible, data_type=str)
-#             fill_cell(self.history_ui.transaction_table, row_count, 2, balance["Cobro"]["Total"], data_type=int)
-#             fill_cell(self.history_ui.transaction_table, row_count, 3, balance["Extracción"]["Total"], data_type=int)
-#
-#     def load_last_n_balances(self):
-#         td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
-#         self._load_balance_table(from_date=date.today() - td, to_date=date.today())
-#
-#     def load_date_balance(self):
-#         when = self.history_ui.date_edit.date().toPyDate()
-#         self._load_balance_table(from_date=when, to_date=when)
-#
-#     def balance_detail_ui(self):
-#         # noinspection PyAttributeOutsideInit
-#         if self.history_ui.transaction_table.currentRow() == -1:
-#             Dialog.info("Error", "Seleccione una caja diaria.")
-#         else:
-#             when, responsible, balance = self._balances[self.history_ui.transaction_table.currentRow()]
-#             self.daily_balance_ui = DailyBalanceUI(self.accounting_system.transaction_repo,
-#                                                    self.balance_repo,
-#                                                    self.accounting_system.transactions_types(),
-#                                                    self.accounting_system.methods, when, responsible, balance)
-#             self.daily_balance_ui.setWindowModality(Qt.ApplicationModal)
-#             self.daily_balance_ui.show()
+class BalanceHistoryController:
+    ONE_WEEK_TD = ("7 días", timedelta(days=7))
+    TWO_WEEK_TD = ("14 días", timedelta(days=14))
+    ONE_MONTH_TD = ("30 días", timedelta(days=30))
+
+    def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo):
+        self.history_ui = history_ui
+        self.balance_repo = balance_repo
+        # self.accounting_system = accounting_system
+
+        self.updated_date_checkbox()
+
+        fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
+                      display=lambda pair: pair[0])
+
+        self._balances: dict[int, tuple[date, String, Balance]] = {}
+        self.load_last_n_balances()
+
+        # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.history_ui.last_n_checkbox.stateChanged.connect(self.updated_date_checkbox)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.date_checkbox.stateChanged.connect(self.update_last_n_checkbox)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.last_n_combobox.currentIndexChanged.connect(self.load_last_n_balances)
+        # noinspection PyUnresolvedReferences
+        self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
+
+    def update_last_n_checkbox(self):
+        """Callback called when the state of date_checkbox changes.
+        """
+        self.history_ui.last_n_checkbox.setChecked(not self.history_ui.date_checkbox.isChecked())
+        self.history_ui.last_n_combobox.setEnabled(not self.history_ui.date_checkbox.isChecked())
+
+    def updated_date_checkbox(self):
+        """Callback called when the state of last_n_checkbox changes.
+        """
+        self.history_ui.date_checkbox.setChecked(not self.history_ui.last_n_checkbox.isChecked())
+        self.history_ui.date_edit.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
+
+    def _load_balance_table(self, from_date: date, to_date: date):
+        self.history_ui.balance_table.setRowCount(0)
+
+        for when, responsible, balance in self.balance_repo.all(from_date, to_date):
+            row_count = self.history_ui.balance_table.rowCount()
+            self._balances[row_count] = when, responsible, balance
+            fill_cell(self.history_ui.balance_table, row_count, 0, when, data_type=int)
+            fill_cell(self.history_ui.balance_table, row_count, 1, responsible, data_type=str)
+            total = balance["Cobro"].get("Total") - balance["Extracción"].get("Total")
+            fill_cell(self.history_ui.balance_table, row_count, 2, total, data_type=int)
+
+        if self.history_ui.balance_table.rowCount() != 0:
+            self.history_ui.balance_table.selectRow(1)
+
+    def load_last_n_balances(self):
+        td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
+        self._load_balance_table(from_date=date.today() - td, to_date=date.today())
+
+    def load_date_balance(self):
+        when = self.history_ui.date_edit.date().toPyDate()
+        self._load_balance_table(from_date=when, to_date=when)
 
 
 class BalanceHistoryUI(QMainWindow):
-    def __init__(self):
+    def __init__(self, balance_repo: BalanceRepo):
         super().__init__()
         self._setup_ui()
 
-        # self.controller = BalanceHistoryController(self, balance_repo)
+        self.controller = BalanceHistoryController(self, balance_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Historial de cajas diarias")
