@@ -203,9 +203,9 @@ class MainController:
             description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS)
         )
         self._charge_ui.exec_()
-        api.register_subscription_charge(self.subscription_repo, self._subscriptions[activity_name],
-                                         self._charge_ui.controller.transaction)
         if self._charge_ui.controller.transaction is not None:
+            api.register_subscription_charge(self.subscription_repo, self._subscriptions[activity_name],
+                                             self._charge_ui.controller.transaction)
             # Updates the last charged date of the subscription.
             fill_cell(self.main_ui.subscription_table, self.main_ui.subscription_table.currentRow(), 1,
                       self._charge_ui.controller.transaction.when, data_type=bool)
