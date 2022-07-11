@@ -96,7 +96,9 @@ class State:
 
 class IBooking(abc.ABC):
 
-    def __init__(self, start: time, end: time):
+    def __init__(self, court: str, client: Client, start: time, end: time):
+        self.court = court
+        self.client = client
         self.start = start
         self.end = end
 
