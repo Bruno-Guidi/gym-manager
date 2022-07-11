@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QLineEdit)
+    QLineEdit, QDateEdit)
 
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
@@ -16,7 +16,7 @@ from gym_manager.core.persistence import FilterValuePair, ClientRepo, Subscripti
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
-    config_combobox, fill_combobox)
+    config_combobox, fill_combobox, config_date_edit)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator
 
 
@@ -291,8 +291,8 @@ class ClientMainUI(QMainWindow):
         self.client_table = QTableWidget(self.widget)  # ToDO adjust columns width.
         self.left_layout.addWidget(self.client_table)
         config_table(self.client_table, allow_resizing=True, min_rows_to_show=10,
-                     columns={"Nombre": (8, str), "DNI": (8, int), "Ingreso": (8, bool), "Teléfono": (8, str),
-                              "Dirección": (8, str)})
+                     columns={"Nombre": (8, str), "DNI": (8, int), "Ingreso": (8, bool), "Edad": (8, int),
+                              "Teléfono": (8, str), "Dirección": (8, str)})
 
         # Index.
         self.page_index = PageIndex(self.widget)
@@ -419,8 +419,9 @@ class CreateController:
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
         else:
-            self.client = Client(self.create_ui.dni_field.value(), self.create_ui.name_field.value(),
-                                 date.today(), self.create_ui.tel_field.value(), self.create_ui.dir_field.value())
+            self.client = Client(self.create_ui.dni_field.value(), self.create_ui.name_field.value(), date.today(),
+                                 self.create_ui.birth_date_edit.date().toPyDate(), self.create_ui.tel_field.value(),
+                                 self.create_ui.dir_field.value())
             self.client_repo.add(self.client)
             Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
@@ -459,31 +460,40 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.dni_field, 1, 1)
         config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
+        # Birthday.
+        self.birth_lbl = QLabel(self)
+        self.form_layout.addWidget(self.birth_lbl, 2, 0)
+        config_lbl(self.birth_lbl, "Nacimiento")
+
+        self.birth_date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.birth_date_edit, 2, 1)
+        config_date_edit(self.birth_date_edit, date.today(), calendar=True)
+
         # Telephone.
         self.tel_lbl = QLabel(self)
-        self.form_layout.addWidget(self.tel_lbl, 2, 0)
+        self.form_layout.addWidget(self.tel_lbl, 3, 0)
         config_lbl(self.tel_lbl, "Teléfono")
 
         self.tel_field = Field(String, self, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel_field, 2, 1)
+        self.form_layout.addWidget(self.tel_field, 3, 1)
         config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
 
         # Direction.
         self.dir_lbl = QLabel(self)
-        self.form_layout.addWidget(self.dir_lbl, 3, 0)
+        self.form_layout.addWidget(self.dir_lbl, 4, 0)
         config_lbl(self.dir_lbl, "Dirección")
 
         self.dir_field = Field(String, self, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS)
-        self.form_layout.addWidget(self.dir_field, 3, 1)
+        self.form_layout.addWidget(self.dir_field, 4, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 4, 0)
+        self.form_layout.addWidget(self.responsible_lbl, 5, 0)
         config_lbl(self.responsible_lbl, "Responsable*")
 
         self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-        self.form_layout.addWidget(self.responsible_field, 4, 1)
+        self.form_layout.addWidget(self.responsible_field, 5, 1)
         config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Vertical spacer.

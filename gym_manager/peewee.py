@@ -33,6 +33,7 @@ class ClientTable(Model):
     dni = IntegerField(primary_key=True)
     cli_name = CharField()
     admission = DateField()
+    birth_day = DateField()
     telephone = CharField()
     direction = CharField()
     is_active = BooleanField()
@@ -61,6 +62,7 @@ class SqliteClientRepo(ClientRepo):
         client = Client(Number(raw.dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI),
                         String(raw.cli_name, max_len=constants.CLIENT_NAME_CHARS),
                         raw.admission,
+                        raw.birth_day,
                         String(raw.telephone, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS),
                         String(raw.direction, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS),
                         raw.is_active)
