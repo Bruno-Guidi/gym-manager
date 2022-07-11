@@ -329,7 +329,7 @@ class BookingSystem:
         if self.out_of_range(start, duration):
             raise OperationalError("Solicited booking time is out of range.", start_block=start,
                                    duration=duration, start=self.start, end=self.end)
-        if not self.booking_available(when, court, start, duration):
+        if not self.booking_available(when, court.name, start, duration):
             raise OperationalError("There is no available time for the booking.", start=start,
                                    duration=duration)
 
