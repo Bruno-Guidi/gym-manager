@@ -246,6 +246,9 @@ class Currency(Validatable):
     def increase(self, other_currency: Currency) -> None:
         self._value += other_currency.as_primitive()
 
+    def __sub__(self, other: Currency) -> Currency:
+        return Currency(self._value - other.as_primitive())
+
 
 Balance: TypeAlias = dict[str, dict[str, Currency]]
 
