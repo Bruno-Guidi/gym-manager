@@ -398,7 +398,7 @@ class BalanceHistoryUI(QMainWindow):
         # Header layout.
         self.header_layout = QHBoxLayout()
         self.left_layout.addLayout(self.header_layout)
-        config_layout(self.header_layout, left_margin=250, right_margin=250, alignment=Qt.AlignCenter)
+        config_layout(self.header_layout, left_margin=100, right_margin=100, alignment=Qt.AlignCenter)
 
         # Filters.
         self.filters_layout = QGridLayout()
