@@ -21,9 +21,12 @@ class MockBookingRepo(BookingRepo):
         pass
 
     def all(
-            self, states: tuple[str, ...] | None = None, when: date | None = None,
+            self,
+            states: tuple[str, ...] | None = None,
+            when: date | None = None,
+            court: str | None = None,
             filters: list[FilterValuePair] | None = None
-            ) -> Generator[Booking, None, None]:
+    ) -> Generator[Booking, None, None]:
         pass
 
     def all_fixed(self) -> list[FixedBooking]:
@@ -39,13 +42,15 @@ class MockBookingRepo(BookingRepo):
 
 def test_FixedBookingHandler_bookingAvailable():
     booking_repo = MockBookingRepo()
-    fixed_handler = FixedBookingHandler(courts=("1", ), fixed_bookings=booking_repo.all_fixed())
+    fixed_handler = FixedBookingHandler(courts=("1", "2"), fixed_bookings=booking_repo.all_fixed())
 
     assert fixed_handler.booking_available(0, "1", time(8, 0), Duration(60, "1h"))
     assert not fixed_handler.booking_available(0, "1", time(8, 0), Duration(120, "2h"))
     assert not fixed_handler.booking_available(0, "1", time(13, 0), Duration(120, "2h"))
     assert not fixed_handler.booking_available(0, "1", time(15, 0), Duration(60, "1h"))
     assert fixed_handler.booking_available(0, "1", time(16, 0), Duration(60, "1h"))
+    # The booking "collides" with a booking of other court.
+    assert fixed_handler.booking_available(0, "2", time(8, 0), Duration(120, "2h"))
 
 
 def test_bookingAvailable_withNonFixed():
