@@ -261,7 +261,7 @@ class Client:
     dni: Number
     name: String = field(compare=False)
     admission: date = field(compare=False)
-    _birth_day: date = field(compare=False)
+    birth_day: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
     is_active: bool = field(compare=False, default=True)
@@ -269,7 +269,7 @@ class Client:
 
     def age(self) -> int:
         today = date.today()
-        return today.year - self._birth_day.year - ((today.month, today.day) < (self._birth_day.month, self._birth_day.day))
+        return today.year - self.birth_day.year - ((today.month, today.day) < (self.birth_day.month, self.birth_day.day))
 
     def add(self, subscription: Subscription):
         """Registers the *subscription*.
