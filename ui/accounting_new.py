@@ -147,10 +147,16 @@ class DailyBalanceController:
                 )
             if overwrite:
                 # noinspection PyTypeChecker
-                self.transaction_repo.create("Extracción", today, self.daily_balance_ui.extract_field.value(),
-                                             self.daily_balance_ui.method_combobox.currentText(),
-                                             self.daily_balance_ui.responsible_field.value(),
-                                             description=f"Extracción al cierre de caja diaria del día {today}.")
+                t = self.transaction_repo.create("Extracción", today, self.daily_balance_ui.extract_field.value(),
+                                                 self.daily_balance_ui.method_combobox.currentText(),
+                                                 self.daily_balance_ui.responsible_field.value(),
+                                                 description=f"Extracción al cierre de caja diaria del día {today}.")
+                # ToDo refactor this into Balance class.
+                if self.daily_balance_ui.method_combobox.currentText() not in self.balance["Extracción"]:
+                    self.balance["Extracción"][self.daily_balance_ui.method_combobox.currentText()] = Currency(0)
+                self.balance["Extracción"][self.daily_balance_ui.method_combobox.currentText()].increase(t.amount)
+                self.balance["Extracción"]["Total"].increase(t.amount)
+
                 # noinspection PyTypeChecker
                 api.close_balance(self.transaction_repo, self.balance_repo, self.balance, today,
                                   self.daily_balance_ui.responsible_field.value())
