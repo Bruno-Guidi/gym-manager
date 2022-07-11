@@ -79,8 +79,9 @@ class MainController:
         fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str)
         fill_cell(self.main_ui.client_table, row, 1, client.dni, data_type=int)
         fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool)
-        fill_cell(self.main_ui.client_table, row, 3, client.telephone, data_type=str)
-        fill_cell(self.main_ui.client_table, row, 4, client.direction, data_type=str)
+        fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int)
+        fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str)
+        fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str)
 
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
@@ -136,10 +137,8 @@ class MainController:
             row = self.main_ui.client_table.currentRow()
             client = self._clients[client_dni]
             fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 1, client.dni, data_type=int, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 3, client.telephone, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 4, client.direction, data_type=str, increase_row_count=False)
+            fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
+            fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
