@@ -127,8 +127,7 @@ class IBooking(abc.ABC):
 
 @dataclass
 class Booking:
-    id: int
-    court: Court
+    court: str
     client: Client
     is_fixed: bool
     state: State
@@ -283,7 +282,7 @@ class BookingSystem:
         end = combine(date.min, start, duration).time()
         return start < self.start or end > self.end
 
-    def booking_available(self, when: date, court: Court, start: time, duration: Duration) -> bool:
+    def booking_available(self, when: date, court: str, start: time, duration: Duration) -> bool:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
         duration *duration*. Otherwise, return False.
 
@@ -294,7 +293,7 @@ class BookingSystem:
             raise OperationalError("Solicited booking time is out of range.", start_block=start,
                                    duration=duration, start=self.start, end=self.end)
 
-        if not self.fixed_booking_handler.booking_available(when.weekday(), court.name, start, duration):
+        if not self.fixed_booking_handler.booking_available(when.weekday(), court, start, duration):
             return False
 
         end = combine(date.min, start, duration).time()
