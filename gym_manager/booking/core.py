@@ -319,33 +319,29 @@ class BookingSystem:
         return True
 
     def book(
-            self, court: Court, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
-    ) -> list[Booking]:
+            self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
+    ) -> Booking:
         """Creates a Booking with the given data.
 
         Raises:
             OperationalError if the booking time is out of range, or if there is no available time for the booking.
         """
         if self.out_of_range(start, duration):
-            raise OperationalError("Solicited booking time is out of range.", start_block=start,
-                                   duration=duration, start=self.start, end=self.end)
-        if not self.booking_available(when, court.name, start, duration):
-            raise OperationalError("There is no available time for the booking.", start=start,
-                                   duration=duration)
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
+                                   f"of the range [booking_start={self.start}, booking_end={self.end}].")
+        if not self.booking_available(when, court, start, duration):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] collides "
+                                   f"with existing booking/s.")
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start, duration).time()
-        bookings = [self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start, end)]
-
-        # If the booking is fixed, then create *weeks_in_advance* more bookings in advance.
         if is_fixed:
-            for i in range(self.weeks_in_advance - 1):
-                when = when + ONE_WEEK_TD
-                bookings.append(
-                    self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start, end)
-                )
+            booking = FixedBooking(court, client, start, end, when.weekday())
+        else:
+            booking = Booking(court, client, False, State(BOOKING_TO_HAPPEN), when, start, end)
 
-        return bookings
+        self.repo.add(booking)
+        return booking
 
     def cancel(self, booking: Booking, responsible: str, cancel_fixed: bool = False):
         booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
