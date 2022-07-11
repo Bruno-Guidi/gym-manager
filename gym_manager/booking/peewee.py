@@ -6,9 +6,11 @@ from peewee import Model, CharField, ForeignKeyField, BooleanField, TimeField, I
     JOIN, DateField
 
 from gym_manager import peewee
-from gym_manager.booking.core import Booking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN
+from gym_manager.booking.core import (
+    Booking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, IBooking,
+    FixedBooking)
 from gym_manager.core.base import Client
-from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair
+from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
 from gym_manager.peewee import TransactionTable
 
 logger = logging.getLogger(__name__)
@@ -47,6 +49,15 @@ class SqliteBookingRepo(BookingRepo):
 
         self._do_caching = cache_len > 0
         self.cache = LRUCache((int,), Booking, max_len=cache_len)
+
+    def add(self, booking: IBooking):
+        if isinstance(booking, FixedBooking):
+            pass
+        elif isinstance(booking, Booking):
+            pass
+
+        raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
+                               f"SqliteBookingRepo.")
 
     def create(
             self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time

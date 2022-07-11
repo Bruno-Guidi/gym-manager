@@ -363,6 +363,11 @@ class BookingSystem:
 
 
 class BookingRepo(abc.ABC):
+
+    @abc.abstractmethod
+    def add(self, booking: IBooking):
+        raise NotImplementedError
+
     @abc.abstractmethod
     def create(
             self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
