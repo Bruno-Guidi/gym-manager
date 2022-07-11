@@ -365,6 +365,10 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def charge(self, booking: IBooking, balance_date: date, transaction: Transaction):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def update(self, booking: Booking, prev_state: State):
         raise NotImplementedError
 

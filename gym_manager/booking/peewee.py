@@ -1,5 +1,5 @@
 import logging
-from datetime import date, time, datetime
+from datetime import date, datetime
 from typing import Generator
 
 from peewee import (
@@ -10,7 +10,7 @@ from gym_manager import peewee
 from gym_manager.booking.core import (
     Booking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, IBooking,
     FixedBooking)
-from gym_manager.core.base import Client
+from gym_manager.core.base import Transaction
 from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
 from gym_manager.peewee import TransactionTable
 
@@ -83,6 +83,25 @@ class SqliteBookingRepo(BookingRepo):
 
         raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                f"SqliteBookingRepo.")
+
+    def charge(self, booking: IBooking, balance_date: date, transaction: Transaction):
+        if isinstance(booking, FixedBooking):
+            # ToDo update last transaction in the table
+            # Creates a Booking based on the FixedBooking, so the charging is registered.
+            booking = Booking(booking.court, booking.client, True, State(BOOKING_TO_HAPPEN), balance_date,
+                              booking.start, booking.end, transaction)
+        elif not isinstance(booking, Booking):
+            raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
+                                   f"SqliteBookingRepo.")
+
+        BookingTable.replace(when=datetime.combine(booking.when, booking.start),
+                             court=booking.court,
+                             client_id=booking.client.dni.as_primitive(),
+                             end=booking.end,
+                             is_fixed=booking.is_fixed,
+                             state=State(BOOKING_TO_HAPPEN),
+                             updated_by=transaction.responsible,
+                             transaction_id=transaction.id).execute()
 
     def update(self, booking: Booking, prev_state: State):
         record = BookingTable.get_by_id(booking.id)
