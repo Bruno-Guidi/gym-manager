@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 import itertools
 from collections import namedtuple
-from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator, TypeAlias
 
@@ -125,16 +124,16 @@ class Booking(abc.ABC):
         raise NotImplementedError
 
 
-@dataclass
-class TempBooking:
-    court: str
-    client: Client
-    is_fixed: bool
-    state: State
-    when: date
-    start: time
-    end: time
-    transaction: Transaction | None = None
+class TempBooking(Booking):
+
+    def __init__(
+            self, court: str, client: Client, start: time, end: time, state: State, when: date,
+            transaction: Transaction | None = None, is_fixed: bool = False):
+        super().__init__(court, client, start, end)
+        self.state = state
+        self.when = when
+        self.transaction = transaction
+        self.is_fixed = is_fixed
 
     # noinspection PyChainedComparisons
     def collides(self, start: time, end: time) -> bool:
@@ -338,7 +337,7 @@ class BookingSystem:
         if is_fixed:
             booking = FixedBooking(court, client, start, end, when.weekday())
         else:
-            booking = TempBooking(court, client, False, State(BOOKING_TO_HAPPEN), when, start, end)
+            booking = TempBooking(court, client, start, end, State(BOOKING_TO_HAPPEN), when)
 
         self.repo.add(booking)
         return booking

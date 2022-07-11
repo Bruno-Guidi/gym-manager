@@ -88,8 +88,8 @@ class SqliteBookingRepo(BookingRepo):
         if isinstance(booking, FixedBooking):
             # ToDo update last transaction in the table
             # Creates a TempBooking based on the FixedBooking, so the charging is registered.
-            booking = TempBooking(booking.court, booking.client, True, State(BOOKING_TO_HAPPEN), balance_date,
-                                  booking.start, booking.end, transaction)
+            booking = TempBooking(booking.court, booking.client, booking.start, booking.end, State(BOOKING_TO_HAPPEN),
+                                  balance_date, transaction, is_fixed=True)
         elif not isinstance(booking, TempBooking):
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                    f"SqliteBookingRepo.")
