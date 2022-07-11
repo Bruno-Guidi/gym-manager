@@ -1,17 +1,14 @@
 import logging
 import os
 import sys
-from datetime import time
+from datetime import time, date
 from logging import config
 
 from PyQt5.QtWidgets import QApplication
 
 from gym_manager import peewee
-from gym_manager.core import constants as consts
 from gym_manager.booking import peewee as booking_peewee
-from gym_manager.booking.core import BookingSystem, Duration, Court
-from gym_manager.core.base import Currency, String, Activity
-from gym_manager.core.api import ActivityManager, AccountingSystem
+from gym_manager.core.base import Currency, String, Activity, Client, Number, Subscription
 from ui.main import MainUI
 
 log_config = {
@@ -58,34 +55,28 @@ def main():
     peewee.create_database("test.db")
 
     activity_repo = peewee.SqliteActivityRepo()
-    transaction_repo = peewee.SqliteTransactionRepo()
+    transaction_repo = peewee.SqliteTransactionRepo(methods=("Efectivo", "Débito", "Crédito"))
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     transaction_repo.client_repo = client_repo
-    inscription_repo = peewee.SqliteSubscriptionRepo()
+    subscription_repo = peewee.SqliteSubscriptionRepo()
     balance_repo = peewee.SqliteBalanceRepo()
 
     booking_activity: Activity
     if activity_repo.exists("Padel"):
         booking_activity = activity_repo.get("Padel")
     else:
-        booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), charge_once=True,
-                                    description=String("", max_len=10), locked=True)
+        booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), String("d", max_len=10),
+                                    charge_once=True, locked=True)
+        activity_repo.add(booking_activity)
 
-    activity_manager = ActivityManager(activity_repo, inscription_repo)
-    accounting_system = AccountingSystem(transaction_repo, inscription_repo, balance_repo,
-                                         transaction_types=("Cobro", "Extracción"),
-                                         methods=("Efectivo", "Débito", "Crédito"))
+    # test_cli = Client(Number(666), String("TestCli", max_len=20), date(2022, 5, 8), String("TestTel", max_len=20),
+    #                   String("TestDesc", max_len=20))
+    # client_repo.add(test_cli)
 
-    booking_repo = booking_peewee.SqliteBookingRepo((Court("1", 1), Court("2", 2), Court("3", 3)), client_repo,
-                                                    transaction_repo)
-    booking_system = BookingSystem(courts_names=("1", "2", "3"),
-                                   durations=(Duration(30, "30m"), Duration(60, "1h"), Duration(90, "1h30m")),
-                                   start=time(8, 0), end=time(23, 0), minute_step=30,
-                                   activity=booking_activity, repo=booking_repo,
-                                   accounting_system=accounting_system,
-                                   weeks_in_advance=8)
+    # subscription_repo.add(Subscription(date(2022, 5, 8), test_cli, activity_repo.get("Gym")))
+    # ToDo test adding transactions, when they are working again.
 
-    window = MainUI(client_repo, activity_manager, accounting_system, booking_system)
+    window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo)
     window.show()
 
     app.exec()

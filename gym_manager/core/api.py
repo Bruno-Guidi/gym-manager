@@ -70,37 +70,28 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     )
 
 
-def charge(
-        transaction_repo: TransactionRepo, subscription_repo: SubscriptionRepo, when: date, client: Client,
-        activity: Activity, method: str, responsible: String
-) -> Transaction:
-    """Charges the *client* for its *activity* subscription.
+def register_subscription_charge(
+        subscription_repo: SubscriptionRepo, subscription: Subscription, transaction: Transaction
+):
+    """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
-        transaction_repo: repository implementation that registers transactions.
         subscription_repo: repository implementation that registers subscriptions.
-        when: date when the charging is made.
-        client: client being charged.
-        activity: activity being charged.
-        method: method used in the charging.
-        responsible: responsible for doing the charging.
-
-    Returns:
-        The created transaction.
+        subscription: subscription being charged.
+        transaction: transaction generated when the client was charged.
     """
-    description = f"Cobro por actividad {activity.name}"
-    transaction = transaction_repo.create("Cobro", when, activity.price, method, responsible, description, client)
+    if subscription.activity.charge_once:
+        raise OperationalError(f"The [activity={subscription.activity.name}] is not subscribeable")
+    if subscription.client != transaction.client:
+        raise OperationalError(f"The [client={transaction.client.name}] is being charged for the [activity="
+                               f"{subscription.activity.name}] done by the [client={subscription.client.name}].")
 
-    # For the activities that are not 'charge once', record that the client was charged for it.
-    # A 'charge once' activity is, for example, an activity related to bookings.
-    if not activity.charge_once:
-        client.register_charge(activity, transaction)
-        subscription_repo.register_charge(client, activity, transaction)
+    subscription.transaction = transaction  # Links the transaction with the subscription.
+    subscription_repo.update(subscription)
 
-    logger.info(f"Responsible [responsible={responsible}] charged the client [dni={client.dni}] for the activity "
-                f"[activity_name={activity.name}] with an amount [amount={activity.price}].")
-
-    return transaction
+    logger.info(f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
+                f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
+                f"{subscription.activity.price}].")
 
 
 def extract(
@@ -157,8 +148,7 @@ def close_balance(
         balance_repo: BalanceRepo,
         balance: Balance,
         balance_date: date,
-        responsible: String,
-        transactions: Iterable[Transaction]
+        responsible: String
 ):
     """Closes the *balance*, save it in the repository and bind the transactions to the balance.
 
@@ -168,10 +158,15 @@ def close_balance(
         balance: balance to close.
         balance_date: date when the balance was done.
         responsible: responsible for closing the balance.
-        transactions: transactions to include in the balance.
     """
     balance_repo.add(balance_date, responsible, balance)
-    for transaction in transactions:
+
+    if balance_repo.balance_done(balance_date):
+        transaction_gen = transaction_repo.all(page=1, balance_date=balance_date)
+    else:
+        transaction_gen = transaction_repo.all(page=1, include_closed=False)
+
+    for transaction in transaction_gen:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
 

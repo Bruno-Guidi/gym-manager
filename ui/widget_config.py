@@ -28,23 +28,29 @@ def config_line(
         target: QLineEdit | QTextEdit, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
         adjust_to_hint: bool = True, extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0,
         enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight, place_holder: str = "",
-        read_only: bool = False
+        read_only: bool = False, alignment=None
 ):
     target.setText(text)
     target.setPlaceholderText(place_holder)
     target.setReadOnly(read_only)
+    if alignment is not None:
+        target.setAlignment(alignment)
     config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
 
 
 def config_lbl(
         target: QLabel, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
         extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
-        layout_dir=Qt.LayoutDirection.LeftToRight, alignment=None
+        layout_dir=Qt.LayoutDirection.LeftToRight, alignment=None, word_wrap: bool = True, adjust_size: bool = True
 ):
     target.setText(text)
     if alignment is not None:
         target.setAlignment(alignment)
     config_widget(target, font, font_size, adjust_to_hint, extra_width, extra_height, fixed_width, enabled, layout_dir)
+    target.setWordWrap(word_wrap)
+    if adjust_size:
+        target.adjustSize()
+        target.setMinimumSize(target.sizeHint())
 
 
 def config_date_edit(
@@ -158,8 +164,10 @@ def config_table(
         target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())
 
 
-def fill_cell(target: QTableWidget, row: int, column: int, data: Any, data_type: Type):
-    target.setRowCount(row + 1)
+def fill_cell(target: QTableWidget, row: int, column: int, data: Any, data_type: Type,
+              increase_row_count: bool = True):
+    if increase_row_count:
+        target.setRowCount(row + 1)
     item = QTableWidgetItem(str(data))
     align = Qt.AlignRight if data_type is int else Qt.AlignLeft
     align = Qt.AlignCenter if data_type is bool else align

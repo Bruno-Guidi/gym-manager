@@ -33,6 +33,7 @@ class ClientTable(Model):
     dni = IntegerField(primary_key=True)
     cli_name = CharField()
     admission = DateField()
+    birth_day = DateField()
     telephone = CharField()
     direction = CharField()
     is_active = BooleanField()
@@ -61,6 +62,7 @@ class SqliteClientRepo(ClientRepo):
         client = Client(Number(raw.dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI),
                         String(raw.cli_name, max_len=constants.CLIENT_NAME_CHARS),
                         raw.admission,
+                        raw.birth_day,
                         String(raw.telephone, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS),
                         String(raw.direction, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS),
                         raw.is_active)
@@ -125,6 +127,7 @@ class SqliteClientRepo(ClientRepo):
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
+                            birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=client.is_active).execute()
@@ -137,6 +140,7 @@ class SqliteClientRepo(ClientRepo):
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
+                            birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=False).execute()
@@ -148,6 +152,7 @@ class SqliteClientRepo(ClientRepo):
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
                             admission=client.admission,
+                            birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
@@ -230,6 +235,8 @@ class SqliteActivityRepo(ActivityRepo):
                              charge_once=activity.charge_once,
                              description=activity.description.as_primitive(),
                              locked=activity.locked)
+        if self._do_caching:
+            self.cache[activity.name] = activity
 
     def exists(self, name: str | String) -> bool:
         if self._do_caching and name in self.cache:
@@ -251,27 +258,13 @@ class SqliteActivityRepo(ActivityRepo):
         for record in ActivityTable.select().where(ActivityTable.act_name == name):
             activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                 Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                record.charge_once,
                                 String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
-                                record.locked)
+                                record.charge_once, record.locked)
             if self._do_caching:
                 self.cache[name] = activity
             return activity
 
         raise KeyError(f"There is no activity with the id '{name}'")
-
-    def create(
-            self, name: String, price: Currency, charge_once: bool, description: String, locked: bool = False
-    ) -> Activity:
-        record = ActivityTable.create(act_name=name.as_primitive(),
-                                      price=str(price),
-                                      charge_once=charge_once,
-                                      description=description.as_primitive(),
-                                      locked=locked)
-        activity = Activity(name, price, charge_once, description)
-        if self._do_caching:
-            self.cache[record.act_name] = activity
-        return activity
 
     def remove(self, activity: Activity):
         """Removes the given *activity*.
@@ -314,8 +307,8 @@ class SqliteActivityRepo(ActivityRepo):
             else:
                 activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                     Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                    record.charge_once,
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
+                                    record.charge_once,
                                     record.locked)
                 if self._do_caching:
                     self.cache[activity.name] = activity
@@ -377,11 +370,22 @@ class SqliteBalanceRepo(BalanceRepo):
         BalanceTable.create(when=when, responsible=responsible.as_primitive(),
                             balance_dict=self.balance_to_json(balance))
 
-    def all(self, from_date: date, to_date: date) -> Generator[tuple[date, String, Balance], None, None]:
+    def all(
+            self, from_date: date, to_date: date
+            ) -> Generator[tuple[date, String, Balance, list[Transaction]], None, None]:
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
-        for record in balance_q:
+        transaction_q = TransactionTable.select()
+        for record in prefetch(balance_q, transaction_q):
+            transactions = []
+            for transaction_record in record.transactions:
+                transactions.append(
+                    Transaction(transaction_record.id, transaction_record.type, transaction_record.when,
+                                Currency(transaction_record.amount), transaction_record.method,
+                                String(transaction_record.responsible, max_len=constants.CLIENT_NAME_CHARS),
+                                transaction_record.description,
+                                balance_date=transaction_record.balance_id))
             yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
-                   self.json_to_balance(record.balance_dict))
+                   self.json_to_balance(record.balance_dict), transactions)
 
 
 class TransactionTable(Model):
@@ -393,7 +397,7 @@ class TransactionTable(Model):
     method = CharField()
     responsible = CharField()
     description = CharField()
-    balance = ForeignKeyField(BalanceTable, backref="balance_date", null=True, on_delete="SET NULL")
+    balance = ForeignKeyField(BalanceTable, backref="transactions", null=True, on_delete="SET NULL")
 
     class Meta:
         database = DATABASE_PROXY
@@ -404,7 +408,8 @@ class SqliteTransactionRepo(TransactionRepo):
     """
 
     # noinspection PyProtectedMember
-    def __init__(self, cache_len: int = 50) -> None:
+    def __init__(self, methods: Iterable[str] | None = None, cache_len: int = 50) -> None:
+        super().__init__(methods)
         TransactionTable._meta.database.create_tables([TransactionTable])
 
         self.client_repo: ClientRepo | None = None
@@ -421,15 +426,8 @@ class SqliteTransactionRepo(TransactionRepo):
         if self._do_caching and id in self.cache:
             return self.cache[id]
 
-        transaction = Transaction(id,
-                                  String(type, max_len=constants.TRANSACTION_TYPE_CHARS),
-                                  when,
-                                  Currency(amount, max_currency=constants.MAX_CURRENCY),
-                                  String(method, max_len=constants.TRANSACTION_METHOD_CHARS),
-                                  String(responsible, max_len=constants.TRANSACTION_RESP_CHARS),
-                                  String(description, max_len=constants.TRANSACTION_DESCR_CHARS),
-                                  client,
-                                  balance_date)
+        transaction = Transaction(id, type, when, Currency(amount, max_currency=constants.MAX_CURRENCY), method,
+                                  responsible, description, client, balance_date)
         if self._do_caching:
             self.cache[id] = transaction
         return transaction
@@ -468,10 +466,12 @@ class SqliteTransactionRepo(TransactionRepo):
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
         transactions_q = TransactionTable.select()
+        # ToDo I THINK this flag isn't necessary, but i need to do check it.
         if not include_closed:  # Filter used when generating a balance for a day that wasn't closed.
             transactions_q = transactions_q.where(TransactionTable.balance.is_null())
         if include_closed and balance_date is not None:  # Filter used when generating a balance for a closed day.
-            transactions_q = transactions_q.where(TransactionTable.balance == balance_date)
+            transactions_q = transactions_q.where((TransactionTable.balance == balance_date) |  # Trans in that balance.
+                                                  (TransactionTable.balance.is_null()))  # Trans after the closed balance.
         if filters is not None:  # Generic filters.
             # The left outer join is required because transactions might be filtered by the client name, which isn't
             # an attribute of TransactionTable.
@@ -501,7 +501,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
         record = TransactionTable.get_by_id(transaction.id)
-        record.balance = balance_date
+        record.balance_id = balance_date
         record.save()
 
 
@@ -536,10 +536,11 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.dni.as_primitive())
                                          & (SubscriptionTable.activity_id == subscription.activity.name)).execute()
 
-    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
+    def update(self, subscription: Subscription):
         """Registers in the repository that the *client* was charged for the *activity*.
         """
-        sub_record = SubscriptionTable.get_by_id((client.dni.as_primitive(), activity.name))
-        trans_record = TransactionTable.get_by_id(transaction.id)
-        sub_record.transaction = trans_record
+        sub_record = SubscriptionTable.get_by_id((subscription.client.dni.as_primitive(),
+                                                  subscription.activity.name.as_primitive()))
+        if subscription.transaction is not None:
+            sub_record.transaction_id = subscription.transaction.id
         sub_record.save()

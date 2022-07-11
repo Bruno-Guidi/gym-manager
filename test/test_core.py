@@ -7,7 +7,7 @@ from gym_manager import peewee
 from gym_manager.core import api
 from gym_manager.core.base import (
     Activity, String, Currency, OperationalError, Client, Number, Transaction,
-    Subscription)
+    Subscription, discard_subscription)
 from gym_manager.core.persistence import PersistenceError
 from gym_manager.core.api import InvalidDate
 
@@ -25,8 +25,8 @@ def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
 
 
 def test_subscribe_activityChargeOnce_raisesOperationalError():
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), String("dummy_tel", max_len=20),
-                    String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
     activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
                         charge_once=True, locked=True)
     with pytest.raises(OperationalError) as op_error:
@@ -37,10 +37,10 @@ def test_subscribe_activityChargeOnce_raisesOperationalError():
 
 
 def test_subscribe_invalidClients_raisesOperationalError():
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), String("dummy_tel", max_len=20),
-                    String("dummy_descr", max_len=20), is_active=True)
-    other = Client(Number(2), String("dummy_name", max_len=20), date(2022, 2, 1), String("dummy_tel", max_len=20),
-                   String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+    other = Client(Number(2), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
+                   String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
     activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
                         charge_once=False, locked=True)
     # noinspection PyTypeChecker
@@ -67,8 +67,8 @@ def test_subscribe_invalidClients_raisesOperationalError():
 def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
     lesser, greater = date(2022, 2, 1), date(2022, 2, 2)
 
-    client = Client(Number(1), String("dummy_name", max_len=20), greater, String("dummy_tel", max_len=20),
-                    String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name", max_len=20), greater, date(2022, 2, 1),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
     activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
                         charge_once=False, locked=True)
     with pytest.raises(InvalidDate):
@@ -141,3 +141,28 @@ def test_generateBalance():
     }
 
     assert expected_balance == balance
+
+
+def test_base_filterOverdue():
+    assert discard_subscription(only_overdue=True, up_to_date=True)
+    assert not discard_subscription(only_overdue=True, up_to_date=False)
+    assert not discard_subscription(only_overdue=False, up_to_date=True)
+    assert not discard_subscription(only_overdue=False, up_to_date=False)
+
+
+def test_base_Client_age():
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 12, 15),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+
+    assert client.age() == 23
+
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 7, 12),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+
+    assert client.age() == 23
+
+    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 7, 11),
+                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+
+    assert client.age() == 24
+

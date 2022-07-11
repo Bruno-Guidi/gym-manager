@@ -14,6 +14,19 @@ decimal.getcontext().rounding = decimal.ROUND_HALF_UP
 ONE_MONTH_TD = timedelta(days=30)
 
 
+def discard_subscription(only_overdue: bool, up_to_date: bool) -> bool:
+    """Determines if a subscription should be discarded or not.
+
+    Args:
+        only_overdue: if True, up-to-date subscription should be discarded.
+        up_to_date: if True, the subscription is up-to-date.
+
+    Returns:
+        True if a subscription should be discarded, False otherwise.
+    """
+    return only_overdue and up_to_date
+
+
 class OperationalError(Exception):
     """Exception raised when there is an error while doing a system operation.
     """
@@ -233,6 +246,9 @@ class Currency(Validatable):
     def increase(self, other_currency: Currency) -> None:
         self._value += other_currency.as_primitive()
 
+    def __sub__(self, other: Currency) -> Currency:
+        return Currency(self._value - other.as_primitive())
+
 
 Balance: TypeAlias = dict[str, dict[str, Currency]]
 
@@ -245,10 +261,15 @@ class Client:
     dni: Number
     name: String = field(compare=False)
     admission: date = field(compare=False)
+    birth_day: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
-    is_active: bool = field(compare=False)
+    is_active: bool = field(compare=False, default=True)
     _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
+
+    def age(self) -> int:
+        today = date.today()
+        return today.year - self.birth_day.year - ((today.month, today.day) < (self.birth_day.month, self.birth_day.day))
 
     def add(self, subscription: Subscription):
         """Registers the *subscription*.
@@ -275,22 +296,6 @@ class Client:
         """
         return self._subscriptions.values()
 
-    def register_charge(self, activity: Activity, transaction: Transaction):
-        """Registers that the client was charged for the *activity* subscription.
-
-        Raises:
-            OperationalError if the client being charged is not the client that is subscribed.
-        """
-        if self != transaction.client:
-            raise OperationalError("A client is being charged for an activity to which he is not subscribed.",
-                                   charged_client=transaction.client, client_to_charge=self, activity=activity)
-        self._subscriptions[activity.name].register_charge(transaction)
-
-    def up_to_date(self, reference_date: date, activity: Activity) -> bool:
-        """Checks if the *activity *subscription is up-to-date.
-        """
-        return self._subscriptions[activity.name].up_to_date(reference_date)
-
 
 @dataclass
 class Activity:
@@ -300,8 +305,8 @@ class Activity:
     name: String
     price: Currency = field(compare=False)
     description: String = field(compare=False)
-    charge_once: bool = field(compare=False)
-    locked: bool = False
+    charge_once: bool = field(compare=False, default=False)
+    locked: bool = field(compare=False, default=False)
 
 
 @dataclass
@@ -335,11 +340,6 @@ class Subscription:
         if self.transaction is None:
             return reference_date - ONE_MONTH_TD < self.when
         return reference_date - ONE_MONTH_TD < self.transaction.when
-
-    def register_charge(self, transaction: Transaction):
-        """Updates the subscription with the given *transaction*.
-        """
-        self.transaction = transaction
 
     def invalid_charge_date(self, charge_date: date):
         """Checks if *charge_date* is valid or not.

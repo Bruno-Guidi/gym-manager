@@ -141,14 +141,6 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def create(
-            self, name: String, price: Currency, charge_once: bool, description: String, locked: bool = False
-    ) -> Activity:
-        """Creates an activity with the given data, and returns it.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def remove(self, activity: Activity):
         """Removes the given *activity*.
 
@@ -198,8 +190,8 @@ class SubscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_charge(self, client: Client, activity: Activity, transaction: Transaction):
-        """Registers in the repository that the client was charged for the activity subscription.
+    def update(self, subscription: Subscription):
+        """Updates the subscription.
         """
         raise NotImplementedError
 
@@ -207,6 +199,9 @@ class SubscriptionRepo(abc.ABC):
 class TransactionRepo(abc.ABC):
     """Transaction repository interface.
     """
+
+    def __init__(self, methods: Iterable[str] | None = None) -> None:
+        self.methods = methods
 
     # noinspection PyShadowingBuiltins
     @abc.abstractmethod

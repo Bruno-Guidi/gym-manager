@@ -3,14 +3,17 @@ from __future__ import annotations
 from datetime import date
 from typing import Type, Any, Callable
 
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtWidgets import QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel, \
-    QPushButton, QDateEdit, QSpacerItem, QSizePolicy
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (
+    QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel,
+    QPushButton, QDateEdit, QSpacerItem, QSizePolicy, QFrame)
 
+from gym_manager.core import constants
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
-from ui.widget_config import fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout, \
-    config_date_edit
+from ui.widget_config import (
+    fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
+    config_date_edit)
 
 
 def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> tuple[bool, Any]:
@@ -21,6 +24,18 @@ def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> t
     except ValidationError:
         pass  # ToDo self.setStyleSheet("border: 1px solid red")
     return valid, value
+
+
+def Separator(vertical: bool, parent: QWidget | None = None):
+    sep = QFrame(parent)
+    sep.setFrameShape(QFrame.VLine if vertical else QFrame.HLine)
+    sep.setFrameShadow(QFrame.Sunken)
+    if vertical:
+        sep.setFixedWidth(3)
+    else:
+        sep.setFixedHeight(3)
+
+    return sep
 
 
 class Field(QLineEdit):
@@ -217,6 +232,18 @@ class FilterHeader(QWidget):
 
 
 class Dialog(QDialog):
+    @classmethod
+    def confirm_with_resp(
+            cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None
+    ) -> tuple[bool, String]:
+        dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True, with_responsible=True)
+        if ok_btn_text is not None:
+            dialog.confirm_btn.setText(ok_btn_text)
+        if cancel_btn_text is not None:
+            dialog.cancel_btn.setText(cancel_btn_text)
+        dialog.exec_()
+        # noinspection PyTypeChecker
+        return dialog.confirmed, dialog.responsible_field.value()
 
     @classmethod
     def confirm(cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None) -> bool:
@@ -234,9 +261,9 @@ class Dialog(QDialog):
         dialog.exec_()
         return True
 
-    def __init__(self, title: str, text: str, show_cancel_btn: bool) -> None:
+    def __init__(self, title: str, text: str, show_cancel_btn: bool, with_responsible: bool = False) -> None:
         super().__init__()
-        self._setup_ui(title, text, show_cancel_btn)
+        self._setup_ui(title, text, show_cancel_btn, with_responsible)
         self.confirmed = False
         # noinspection PyUnresolvedReferences
         self.confirm_btn.clicked.connect(self.accept)
@@ -244,7 +271,7 @@ class Dialog(QDialog):
             # noinspection PyUnresolvedReferences
             self.cancel_btn.clicked.connect(self.reject)
 
-    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
+    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool, with_responsible: bool = False):
         self.setWindowTitle(title)
 
         self.layout = QVBoxLayout(self)
@@ -256,6 +283,20 @@ class Dialog(QDialog):
         self.text_lbl.setWordWrap(True)
         self.text_lbl.adjustSize()
         self.text_lbl.setMinimumSize(self.text_lbl.sizeHint())
+
+        # Responsible.
+        self.responsible_field: Field | None = None
+        if with_responsible:
+            self.responsible_layout = QHBoxLayout()
+            self.layout.addLayout(self.responsible_layout)
+
+            self.responsible_lbl = QLabel(self)
+            self.responsible_layout.addWidget(self.responsible_lbl)
+            config_lbl(self.responsible_lbl, "Responsable*")
+
+            self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
+            self.responsible_layout.addWidget(self.responsible_field)
+            config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -279,6 +320,9 @@ class Dialog(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
     def accept(self) -> None:
+        if self.responsible_field is not None and not self.responsible_field.valid_value():
+            return
+
         self.confirmed = True
         super().accept()
 
@@ -316,7 +360,7 @@ class PageIndex(QWidget):
 
         self.info_lbl = QLabel(self)
         self.layout.addWidget(self.info_lbl, alignment=Qt.AlignRight)
-        config_lbl(self.info_lbl, f"Mostrando xxx - yyy de zzz", font_size=16, alignment=Qt.AlignCenter)
+        config_lbl(self.info_lbl, f"xxx - yyy, de zzz", font_size=16, alignment=Qt.AlignCenter)
 
         self.prev_btn = QPushButton(self)
         self.layout.addWidget(self.prev_btn)
@@ -356,7 +400,7 @@ class PageIndex(QWidget):
 
     def _update(self):
         roof = self.page * self.page_len if self.page * self.page_len < self.total_len else self.total_len
-        self.info_lbl.setText(f"Mostrando {(self.page - 1) * self.page_len + 1} - {roof} de {self.total_len}")
+        self.info_lbl.setText(f"{(self.page - 1) * self.page_len + 1} - {roof}, de {self.total_len}")
         self.index_lbl.setText(str(self.page))
 
         self.prev_btn.setEnabled(self.page != 1)
