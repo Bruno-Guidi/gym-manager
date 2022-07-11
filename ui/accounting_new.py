@@ -390,7 +390,7 @@ class BalanceHistoryUI(QMainWindow):
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
 
-        self.layout.addWidget(Separator(vertical=True, parent=self.widget))  # Horizontal line.
+        self.layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
@@ -436,6 +436,47 @@ class BalanceHistoryUI(QMainWindow):
             columns={"Fecha": (10, int), "Responsable": (12, str), "Cobros": (12, int),
                      "Extracciones": (12, int)}
         )
+
+        # Balance detail.
+        self.detail_layout = QGridLayout()
+        self.right_layout.addLayout(self.detail_layout)
+        self.detail_layout.setAlignment(Qt.AlignLeft)
+
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+
+        # Balance date label.
+        self.detail_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.detail_lbl, 0, 0, 1, 5)
+        config_lbl(self.detail_lbl, "Detalle", font_size=18)
+
+        # Detailed balance layout.
+        self.method_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.method_lbl, 1, 0)
+        config_lbl(self.method_lbl, "Método")
+
+        self.charges_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.charges_lbl, 2, 0)
+        config_lbl(self.charges_lbl, "Cobros")
+
+        self.extractions_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.extractions_lbl, 3, 0)
+        config_lbl(self.extractions_lbl, "Extracciones")
+
+        self.cash_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.cash_lbl, 1, 1, alignment=Qt.AlignCenter)
+        config_lbl(self.cash_lbl, "Efectivo")
+
+        self.debit_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.debit_lbl, 1, 2, alignment=Qt.AlignCenter)
+        config_lbl(self.debit_lbl, "Débito")
+
+        self.credit_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.credit_lbl, 1, 3, alignment=Qt.AlignCenter)
+        config_lbl(self.credit_lbl, "Crédito")
+
+        self.total_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.total_lbl, 1, 4, alignment=Qt.AlignCenter)
+        config_lbl(self.total_lbl, "TOTAL")
 
         # Transactions of the balance.
         self.transactions_lbl = QLabel(self.widget)
