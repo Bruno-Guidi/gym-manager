@@ -413,7 +413,8 @@ class CreateController:
     # noinspection PyTypeChecker
     def create_client(self):
         if not all([self.create_ui.name_field.valid_value(), self.create_ui.dni_field.valid_value(),
-                    self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value()]):
+                    self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value(),
+                    self.create_ui.responsible_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
