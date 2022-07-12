@@ -81,8 +81,9 @@ class SqliteBookingRepo(BookingRepo):
                                 state=booking.state.name,
                                 updated_by=booking.state.updated_by)
 
-        raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
-                               f"SqliteBookingRepo.")
+        else:
+            raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
+                                   f"SqliteBookingRepo.")
 
     def charge(self, booking: Booking, balance_date: date, transaction: Transaction):
         if isinstance(booking, FixedBooking):
