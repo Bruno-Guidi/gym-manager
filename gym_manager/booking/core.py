@@ -390,7 +390,7 @@ class BookingSystem:
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start, duration).time()
         if is_fixed:
-            booking = FixedBooking(court, client, start, end, when)
+            booking = FixedBooking(court, client, start, end, when.weekday(), when)
             self.fixed_booking_handler.add(booking)
         else:
             booking = TempBooking(court, client, start, end, when)
