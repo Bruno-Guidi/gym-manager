@@ -6,7 +6,7 @@ from collections import namedtuple
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator, TypeAlias
 
-from gym_manager.core.base import Client, Activity, Transaction, OperationalError
+from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String
 from gym_manager.core.persistence import FilterValuePair
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
@@ -129,6 +129,12 @@ class Booking(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def cancel(self, when: date, definitely_cancelled: bool):
+        """Do something after the booking is cancelled. What will be done depends on each implementation.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
         """
@@ -160,6 +166,11 @@ class TempBooking(Booking):
         # Checks that the date of the booking remains the same. If it is the same, then pass and do nothing.
         if when != self.when:
             raise OperationalError(f"It is not possible to change the attribute 'when' of a 'TempBooking'.")
+
+    def cancel(self, when: date, definitely_cancelled: bool):
+        """Does nothing.
+        """
+        pass
 
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
@@ -205,6 +216,13 @@ class FixedBooking(Booking):
     @when.setter
     def when(self, when: date):
         self._last_when = when
+
+    def cancel(self, when: date, definitely_cancelled: bool):
+        """
+        """
+        # If the booking is cancelled definitely, do nothing because the booking will be removed.
+        if not definitely_cancelled:
+            pass
 
     def is_active(self, reference_date: date) -> bool:
         """Determines if the booking is active.
@@ -365,10 +383,8 @@ class BookingSystem:
         self.repo.add(booking)
         return booking
 
-    def cancel(self, booking: TempBooking, responsible: str, cancel_fixed: bool = False):
-        booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
-        # booking.is_fixed = not cancel_fixed
-        self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
+    def cancel(self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True):
+        pass
 
     def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
         booking.transaction, booking.when = transaction, booking_date
