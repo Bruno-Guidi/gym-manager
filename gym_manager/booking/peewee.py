@@ -92,7 +92,7 @@ class SqliteBookingRepo(BookingRepo):
                                       client_id=booking.client.dni.as_primitive(),
                                       end=booking.end,
                                       transaction_id=booking.transaction.id,
-                                      activated_again=booking.activated_again).execute()
+                                      inactive_dates=booking.inactive_dates).execute()
             # Creates a TempBooking based on the FixedBooking, so the charging is registered.
             booking = TempBooking(booking.court, booking.client, booking.start, booking.end, booking.when, transaction,
                                   is_fixed=True)
