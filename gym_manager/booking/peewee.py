@@ -37,6 +37,7 @@ class FixedBookingTable(Model):
     start = TimeField()
     client = ForeignKeyField(peewee.ClientTable, backref="fixed_bookings")
     end = TimeField()
+    transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_fixed_booking", null=True)
     activated_again = DateField(null=True)
 
     class Meta:
@@ -63,6 +64,8 @@ class SqliteBookingRepo(BookingRepo):
         self.cache = LRUCache((int,), TempBooking, max_len=cache_len)
 
     def add(self, booking: Booking):
+        # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
+        # associated transaction.
         if isinstance(booking, FixedBooking):
             booking: FixedBooking
             FixedBookingTable.create(day_of_week=booking.day_of_week,
