@@ -11,7 +11,7 @@ from gym_manager import peewee
 from gym_manager.booking.core import (
     TempBooking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, Booking,
     FixedBooking)
-from gym_manager.core.base import Transaction
+from gym_manager.core.base import Transaction, String
 from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
 from gym_manager.peewee import TransactionTable
 
@@ -108,6 +108,23 @@ class SqliteBookingRepo(BookingRepo):
                              is_fixed=booking.is_fixed,
                              transaction_id=transaction.id).execute()
 
+    def cancel(self, booking: Booking, responsible: String, cancel_date: date, definitely_cancelled: bool = True):
+        # if booking is FixedBooking, update the record.
+        # if definitely_cancelled, remove record (it doesn't matter which type is booking).
+        # create record in the historic.
+        if isinstance(booking, FixedBooking):
+            if definitely_cancelled:  # The FixedBooking is temporally cancelled.
+                FixedBookingTable.delete_by_id((booking.day_of_week, booking.court, booking.start))
+            else:  # The FixedBooking is definitely cancelled.
+                FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
+                                          client_id=booking.client.dni.as_primitive(), end=booking.end,
+                                          transaction_id=booking.transaction.id, inactive_dates=booking.inactive_dates
+                                          ).execute()
+        elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
+            BookingTable.delete_by_id(datetime.combine(booking.when, booking.start))
+
+        # Registers information about the cancellation.
+
     def update(self, booking: TempBooking, prev_state: State):
         record = BookingTable.get_by_id(booking.id)
         # Updates the booking.
@@ -117,39 +134,6 @@ class SqliteBookingRepo(BookingRepo):
         if booking.transaction is not None:
             record.transaction = TransactionTable.get_by_id(booking.transaction.id)
         record.save()
-
-    def cancel(self, booking: TempBooking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
-        # There is a problem with this approach. If a fixed booking is created, *weeks_in_advance* - 1 bookings will be
-        # created in advance, to avoid another booking to step on the fixed one. Now suppose a new fixed booking is
-        # created, with the same start and client, but after *weeks_in_advance* weeks of the first fixed booking. If the
-        # first fixed booking is cancelled definitely, but after the week number 5, with this approach the remaining 3
-        # bookings related to the first one will be deleted, but the first 5 related to the second one will be deleted
-        # too. This is because both fixed bookings are virtually the same, even when they don't.
-
-        # Another problem of this approach is that the booking history is bloated with the bookings that were made in
-        # advance and cancelled, when they were never actively cancelled.
-
-        # Deletes the booking.
-        record = BookingTable.get_by_id(booking.id)
-        record.state, record.updated_by = booking.state.name, booking.state.updated_by
-        record.save()
-        # Deletes the bookings created in advance.
-        if cancel_fixed:
-            when = booking.when
-            for i in range(weeks_in_advance - 1):
-                when = when + ONE_WEEK_TD
-                # (when, start, client, state) isn't the PK of the table, but even so, there shouldn't be two bookings
-                # whose state is BOOKING_TO_HAPPEN. Because of this, the query should always return only one record.
-                # If there is any problem regarding booking cancelling, this should be the first place to look at.
-                record = BookingTable.get_or_none(when=when,
-                                                  start=booking.start,
-                                                  client_id=booking.client.dni.as_primitive(),
-                                                  state=BOOKING_TO_HAPPEN)
-                if record is None:
-                    break
-                record.state, record.updated_by = booking.state.name, booking.state.updated_by
-                record.save()
-                self.cache[record.id].update_state(record.state, record.updated_by)
 
     def all_temporal(
             self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None
