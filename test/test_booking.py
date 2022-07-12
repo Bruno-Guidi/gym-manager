@@ -345,3 +345,36 @@ def test_integration_cancelTemporary_fixedBooking():
             and len(all_fixed) == 1  # The FixedBooking wasn't removed.
             and (all_fixed[0].inactive_dates == [{"from": date(2022, 7, 11), "to": date(2022, 7, 18)}])
             and len([c for c in booking_repo.cancelled()]) == 1)
+
+
+def test_integration_cancelDefinitely_fixedBooking():
+    # Set up.
+    peewee.create_database(":memory:")
+
+    activity_repo = peewee.SqliteActivityRepo()
+    balance_repo = peewee.SqliteBalanceRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+
+    dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
+                          String("TestTel", max_len=20), String("TestDir", max_len=20))
+    client_repo.add(dummy_client)
+    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    # noinspection PyTypeChecker
+    booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
+                                   start=time(8, 0), end=time(18, 0), minute_step=60)
+
+    booking_date = date(2022, 7, 11)
+    booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
+    transaction = transaction_repo.create("dummy_type", booking_date, dummy_activity.price, "dummy_method",
+                                          String("TestResp", max_len=20), "test_desc", dummy_client)
+
+    # Feature being test.
+    booking_system.cancel(booking, String("TestResp", max_len=20), booking_date, True)
+
+    all_fixed = [b for b in booking_repo.all_fixed()]
+    # noinspection PyUnresolvedReferences
+    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"))  # Available time.
+            and len(all_fixed) == 0  # The FixedBooking was removed.
+            and len([c for c in booking_repo.cancelled()]) == 1)
