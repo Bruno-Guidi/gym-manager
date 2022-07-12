@@ -357,10 +357,7 @@ class BookingRepo(abc.ABC):
 
     @abc.abstractmethod
     def all_temporal(
-            self,
-            when: date | None = None,
-            court: str | None = None,
-            filters: list[FilterValuePair] | None = None
+            self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[TempBooking, None, None]:
         raise NotImplementedError
 

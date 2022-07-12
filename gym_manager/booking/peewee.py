@@ -23,8 +23,6 @@ class BookingTable(Model):
     client = ForeignKeyField(peewee.ClientTable, backref="bookings")
     end = TimeField()
     is_fixed = BooleanField()
-    state = CharField()
-    updated_by = CharField()
     transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_booking", null=True)
 
     class Meta:
@@ -150,10 +148,7 @@ class SqliteBookingRepo(BookingRepo):
                 self.cache[record.id].update_state(record.state, record.updated_by)
 
     def all_temporal(
-            self,
-            when: date | None = None,
-            court: str | None = None,
-            filters: list[FilterValuePair] | None = None
+            self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[TempBooking, None, None]:
         bookings_q = BookingTable.select()
         if when is not None:
@@ -183,10 +178,8 @@ class SqliteBookingRepo(BookingRepo):
                         trans_record.method, trans_record.responsible, trans_record.description
                     )
 
-                booking = TempBooking(
-                    record.id, self.courts[record.court], client, record.is_fixed,
-                    State(record.state, record.updated_by), record.when, record.start, record.end, transaction
-                )
+                booking = TempBooking(record.court, client, record.start, record.end,
+                                      State(record.state, record.updated_by), record.when, transaction, record.is_fixed)
                 if self._do_caching:
                     self.cache[record.id] = booking
                     logger.getChild(type(self).__name__).info(
