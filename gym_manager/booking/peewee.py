@@ -1,10 +1,11 @@
 import logging
-from datetime import date, datetime, time
+from datetime import date, datetime
 from typing import Generator
 
 from peewee import (
     Model, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch,
-    JOIN, DateField, CompositeKey, DateTimeField)
+    JOIN, CompositeKey, DateTimeField)
+from playhouse.sqlite_ext import JSONField
 
 from gym_manager import peewee
 from gym_manager.booking.core import (
@@ -36,7 +37,7 @@ class FixedBookingTable(Model):
     client = ForeignKeyField(peewee.ClientTable, backref="fixed_bookings")
     end = TimeField()
     transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_fixed_booking", null=True)
-    activated_again = DateField(null=True)
+    inactive_dates = JSONField()
 
     class Meta:
         database = peewee.DATABASE_PROXY
@@ -71,7 +72,7 @@ class SqliteBookingRepo(BookingRepo):
                                      start=booking.start,
                                      client_id=booking.client.dni.as_primitive(),
                                      end=booking.end,
-                                     activated_again=booking.activated_again)
+                                     inactive_dates=[])
         elif isinstance(booking, TempBooking):
             booking: TempBooking
             BookingTable.create(when=datetime.combine(booking.when, booking.start),
