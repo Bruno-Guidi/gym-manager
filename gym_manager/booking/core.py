@@ -139,12 +139,6 @@ class Booking(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def update_state(self, new_state: str, updated_by: str) -> State:
-        """Updates the current state of the booking, and return the previous one.
-        """
-        raise NotImplementedError
-
 
 class TempBooking(Booking):
 
@@ -180,13 +174,6 @@ class TempBooking(Booking):
         """Does nothing.
         """
         pass
-
-    def update_state(self, new_state: str, updated_by: str) -> State:
-        """Updates the current state of the booking, and return the previous one.
-        """
-        prev_state = self.state
-        self.state.update(new_state, updated_by)
-        return prev_state
 
 
 class FixedBooking(Booking):
@@ -246,11 +233,6 @@ class FixedBooking(Booking):
             if reference_date >= date_range["from"] and reference_date < date_range["to"]:
                 return False
         return True
-
-    def update_state(self, new_state: str, updated_by: str) -> State:
-        """Updates the current state of the booking, and return the previous one.
-        """
-        raise NotImplementedError
 
 
 DayBookings: TypeAlias = dict[time, FixedBooking]
