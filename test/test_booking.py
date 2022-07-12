@@ -7,7 +7,7 @@ from gym_manager import peewee
 from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
     Booking, time_range, Block)
-from gym_manager.booking.peewee import SqliteBookingRepo
+from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
 
@@ -76,6 +76,16 @@ def test_timeRange():
     assert [td for td in time_range(time(8, 0), time(9, 30), minute_step=30)] == expected
 
 
+def test_serializeInactiveDates():
+    result = [{"from": "2022-10-10", "to": "2022-10-12"}, {"from": "2022-10-12", "to": "2022-10-14"},
+              {"from": "2022-10-14", "to": "2022-10-16"}, {"from": "2022-10-16", "to": "2022-10-18"}]
+    to_serialize = [{"from": date(2022, 10, 10), "to": date(2022, 10, 12)},
+                    {"from": date(2022, 10, 12), "to": date(2022, 10, 14)},
+                    {"from": date(2022, 10, 14), "to": date(2022, 10, 16)},
+                    {"from": date(2022, 10, 16), "to": date(2022, 10, 18)}]
+    assert result == serialize_inactive_dates(to_serialize)
+
+
 def test_TempBooking_collides():
     # noinspection PyTypeChecker
     b = TempBooking("dummy_court", client=None, start=time(8, 30), end=time(12, 0), when=None)
@@ -110,7 +120,8 @@ def test_TempBooking_collides():
 
 def test_BookingSystem_blocks():
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(courts_names=("1", "2"), durations=(), start=time(8, 0), end=time(12, 0), minute_step=60,
+    booking_system = BookingSystem(courts_names=("1", "2"), durations=(), start=time(8, 0), end=time(12, 0),
+                                   minute_step=60,
                                    activity=None, repo=MockBookingRepo())
 
     # start is under the booking system start.
@@ -128,8 +139,8 @@ def test_BookingSystem_blocks():
 
 def test_BookingSystem_blockRange():
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(courts_names=("1", "2"), durations=(), start=time(8, 0), end=time(12, 0), minute_step=60,
-                                   activity=None, repo=MockBookingRepo())
+    booking_system = BookingSystem(courts_names=("1", "2"), durations=(), start=time(8, 0), end=time(12, 0),
+                                   minute_step=60, activity=None, repo=MockBookingRepo())
 
     # start and end in range.
     assert booking_system.block_range(time(8, 0), time(12, 0)) == (0, 4)

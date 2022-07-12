@@ -16,6 +16,10 @@ from gym_manager.peewee import TransactionTable
 logger = logging.getLogger(__name__)
 
 
+def serialize_inactive_dates(inactive_dates: list[dict[str, date]]):
+    return [{key: str(date_) for key, date_ in date_range.items()} for date_range in inactive_dates]
+
+
 class BookingTable(Model):
     when = DateTimeField(primary_key=True)
     court = CharField()
