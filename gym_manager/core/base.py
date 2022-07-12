@@ -267,8 +267,8 @@ class Client:
     is_active: bool = field(compare=False, default=True)
     _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
 
-    def age(self) -> int:
-        today = date.today()
+    def age(self, reference_date: date | None = None) -> int:
+        today = date.today() if reference_date is None else reference_date
         return today.year - self.birth_day.year - ((today.month, today.day) < (self.birth_day.month, self.birth_day.day))
 
     def add(self, subscription: Subscription):
@@ -356,14 +356,14 @@ class Transaction:
     """
 
     id: int
-    type: str
-    when: date
-    amount: Currency
-    method: str
-    responsible: String
-    description: str
-    client: Client | None = None
-    balance_date: date | None = None
+    type: str = field(compare=False)
+    when: date = field(compare=False)
+    amount: Currency = field(compare=False)
+    method: str = field(compare=False)
+    responsible: String = field(compare=False)
+    description: str = field(compare=False)
+    client: Client | None = field(compare=False, default=None)
+    balance_date: date | None = field(compare=False, default=None)
 
 
 class Filter(abc.ABC):

@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu)
 
-from gym_manager.booking.core import BookingSystem, Booking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD
+from gym_manager.booking.core import BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
@@ -54,7 +54,7 @@ class Controller:
         return new_font
 
     def _load_booking(
-            self, booking: Booking, start: int | None = None, end: int | None = None
+            self, booking: TempBooking, start: int | None = None, end: int | None = None
     ):
         if start is None or end is None:
             start, end = self.booking_system.block_range(booking.start, booking.end)

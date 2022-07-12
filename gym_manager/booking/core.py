@@ -3,11 +3,10 @@ from __future__ import annotations
 import abc
 import itertools
 from collections import namedtuple
-from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
-from typing import Iterable, Generator
+from typing import Iterable, Generator, TypeAlias
 
-from gym_manager.core.base import Client, Activity, Transaction, OperationalError
+from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String
 from gym_manager.core.persistence import FilterValuePair
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
@@ -55,6 +54,10 @@ def current_block_start(blocks: Iterable[Block], when: date) -> time:
 Court = namedtuple("Court", ["name", "id"])
 
 
+Cancellation = namedtuple("Cancellation", ["cancel_datetime", "responsible", "client", "when", "court", "start", "end",
+                                           "is_fixed", "definitely_cancelled"])
+
+
 class Duration:
 
     def __init__(self, minutes: int, as_str: str) -> None:
@@ -94,23 +97,20 @@ class State:
         self._updated_by = updated_by
 
 
-@dataclass
-class Booking:
-    id: int
-    court: Court
-    client: Client
-    is_fixed: bool
-    state: State
-    when: date
-    start: time
-    end: time
-    transaction: Transaction | None = None
+class Booking(abc.ABC):
+
+    def __init__(self, court: str, client: Client, start: time, end: time, transaction: Transaction | None = None):
+        self.court = court
+        self.client = client
+        self.start = start
+        self.end = end
+        self.transaction = transaction
 
     # noinspection PyChainedComparisons
-    def collides(self, start: time, end: time) -> bool:
+    def _base_collides(self, start: time, end: time) -> bool:
         """Determines if a hypothetical booking with the given start and end time will collide with this booking.
 
-        There are four possible situations where a collision wont happen:
+        There are four possible situations where a collision won't happen:
         1. start < end < b.start < b.end.
         2. start < end <= b.start < b.end.
         3. b.start < b.end < start < end.
@@ -122,12 +122,166 @@ class Booking:
         """
         return not (start < self.start and end <= self.start or start >= self.end and end > self.end)
 
-    def update_state(self, new_state: str, updated_by: str) -> State:
-        """Updates the current state of the booking, and return the previous one.
+    @property
+    @abc.abstractmethod
+    def is_fixed(self) -> bool:
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def when(self) -> date:
+        raise NotImplementedError
+
+    @when.setter
+    @abc.abstractmethod
+    def when(self, when: date):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def cancel(self, when: date):
+        """Do something after the booking is cancelled. What will be done depends on each implementation.
         """
-        prev_state = self.state
-        self.state.update(new_state, updated_by)
-        return prev_state
+        raise NotImplementedError
+
+
+class TempBooking(Booking):
+
+    def __init__(
+            self, court: str, client: Client, start: time, end: time, when: date,
+            transaction: Transaction | None = None, is_fixed: bool = False
+    ):
+        super().__init__(court, client, start, end, transaction)
+        self._when = when
+        self._is_fixed = is_fixed
+
+    def __eq__(self, other: TempBooking) -> bool:
+        if isinstance(other, type(self)):
+            return (self.court == other.court and self.when == other.when and self.start == other.start
+                    and self.end == other.end)
+        return NotImplemented
+
+    def collides(self, start: time, end: time) -> bool:
+        return super()._base_collides(start, end)
+
+    @property
+    def is_fixed(self) -> bool:
+        return self._is_fixed
+
+    @property
+    def when(self) -> date:
+        return self._when
+
+    @when.setter
+    def when(self, when: date):
+        # Checks that the date of the booking remains the same. If it is the same, then pass and do nothing.
+        if when != self.when:
+            raise OperationalError(f"It is not possible to change the attribute 'when' of a 'TempBooking'.")
+
+    def cancel(self, when: date):
+        """Does nothing.
+        """
+        pass
+
+
+class FixedBooking(Booking):
+
+    def __init__(
+            self, court: str, client: Client, start: time, end: time, day_of_week: int, last_when: date,
+            inactive_dates: list[dict[str, date]] | None = None, transaction: Transaction | None = None
+    ):
+        if day_of_week != last_when.weekday():
+            raise OperationalError(f"The [day_of_week={day_of_week}] of the fixed booking is different than the "
+                                   f"[day_of_week={last_when.weekday()}] of [last_when={last_when}]")
+        super().__init__(court, client, start, end, transaction)
+        self.day_of_week = day_of_week
+        # In theory this attr should be set to None after the date passes, but because of how collides(args) is
+        # implemented, there is no need to do it.
+        self.inactive_dates = [] if inactive_dates is None else inactive_dates
+        self._last_when = last_when
+
+    def __eq__(self, other: FixedBooking) -> bool:
+        if isinstance(other, type(self)):
+            return (self.court == other.court and self.day_of_week == other.day_of_week and self.start == other.start
+                    and self.end == other.end)
+        return NotImplemented
+
+    def collides(self, start: time, end: time, when: date, is_fixed: bool) -> bool:
+        base_collides = super()._base_collides(start, end)
+        if not base_collides:
+            # If there is no collision, nothing else matter. The new booking won't collide with this booking.
+            return False
+        if self.is_active(when):
+            # If there is a collision and this booking is active, then the new booking will collide with this one,
+            # regardless of whether the booking is fixed or not.
+            return True
+        # If there is a collision and this booking isn't active, then the new booking will collide with this one only if
+        # the new one will be fixed.
+        return is_fixed
+
+    @property
+    def is_fixed(self) -> bool:
+        return True
+
+    @property
+    def when(self) -> date:
+        return self._last_when
+
+    @when.setter
+    def when(self, when: date):
+        if self.day_of_week != when.weekday():
+            raise OperationalError(f"The [day_of_week={self.day_of_week}] of the fixed booking is different than the "
+                                   f"[day_of_week={when.weekday()}] of [when={when}]")
+
+        self._last_when = when
+
+    def cancel(self, when: date):
+        """Adds a new entry in the inactive dates list.
+        """
+        self.inactive_dates.append({"from": when, "to": when + ONE_WEEK_TD})
+
+    def is_active(self, reference_date: date) -> bool:
+        """Determines if the booking is active. The booking will be active if *reference_date* is not between any of the
+        existing date ranges in *self.inactive_dates*.
+        """
+        for date_range in self.inactive_dates:
+            # If the booking is cancelled for one week on '2022/07/12', then the booking on '2022/07/12' is not active,
+            # and on '2022/07/19' it is active again.
+            # noinspection PyChainedComparisons
+            if reference_date >= date_range["from"] and reference_date < date_range["to"]:
+                return False
+        return True
+
+
+DayBookings: TypeAlias = dict[time, FixedBooking]
+CourtBookings: TypeAlias = dict[str, DayBookings]
+
+
+class FixedBookingHandler:
+    def __init__(self, courts: Iterable[str], fixed_bookings: Iterable[FixedBooking]):
+        self._bookings: list[CourtBookings] = [{court: {} for court in courts} for _ in range(0, 7)]
+        for booking in fixed_bookings:
+            self._bookings[booking.day_of_week][booking.court][booking.start] = booking
+
+    def booking_available(self, when: date, court: str, start: time, duration: Duration, is_fixed: bool) -> bool:
+        day_bookings = self._bookings[when.weekday()][court].values()
+        end = combine(date.min, start, duration).time()
+        for fixed_booking in day_bookings:
+            if fixed_booking.collides(start, end, when, is_fixed):
+                return False
+        return True
+
+    def all(self, when: date) -> Iterable[FixedBooking]:
+        court_bookings: CourtBookings = self._bookings[when.weekday()]
+        for day_bookings in court_bookings.values():
+            for fixed_booking in day_bookings.values():
+                if fixed_booking.is_active(when):
+                    yield fixed_booking
+
+    def add(self, booking: FixedBooking):
+        self._bookings[booking.when.weekday()][booking.court][booking.start] = booking
+
+    def cancel(self, booking: Booking):
+        self._bookings[booking.when.weekday()][booking.court].pop(booking.start)
 
 
 class BookingSystem:
@@ -142,8 +296,8 @@ class BookingSystem:
             yield Block(i, block_start, block_end)
 
     def __init__(
-            self, courts_names: tuple[str, ...], durations: tuple[Duration, ...], start: time, end: time,
-            minute_step: int, activity: Activity, repo: BookingRepo, weeks_in_advance: int
+            self, activity: Activity, repo: BookingRepo, durations: tuple[Duration, ...], courts_names: tuple[str, ...],
+            start: time, end: time, minute_step: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
@@ -155,11 +309,11 @@ class BookingSystem:
         self._blocks: dict[time, Block] = {block.start: block for block
                                            in self.create_blocks(start, end, minute_step)}
 
-        self._bookings: dict[date, list[Booking]] = {}
-        self.weeks_in_advance = weeks_in_advance
+        self._bookings: dict[date, list[TempBooking]] = {}
 
         self.activity = activity
         self.repo = repo
+        self.fixed_booking_handler = FixedBookingHandler(courts_names, self.repo.all_fixed())
 
     def courts(self) -> Iterable[Court]:
         return self._courts.values()
@@ -190,118 +344,116 @@ class BookingSystem:
         else:
             return self._blocks[start].number, self._blocks[end].number
 
-    def bookings(
-            self, states: tuple[str, ...], when: date | None = None, filters: list[FilterValuePair] | None = None
-    ) -> Iterable[tuple[Booking, int, int]]:
+    def bookings(self, when: date) -> Iterable[tuple[TempBooking, int, int]]:
         """Retrieves bookings with its start and end block number.
-
-        Args:
-            states: allows filtering of bookings depending on their states.
-            when: if given, filter bookings of that day. This filtering has priority over filtering with kwargs.
-            **filters: if given, and *when* is None, filter bookings that pass the Filter implementations received.
-
-        Raises:
-            OperationalError if given both when and filters are missing.
         """
-        if when is not None:
-            for booking in self.repo.all(states, when):
-                yield booking, *self.block_range(booking.start, booking.end)
-        elif len(filters) > 0:
-            for booking in self.repo.all(states, filters):
-                yield booking, *self.block_range(booking.start, booking.end)
-        else:
-            raise OperationalError("Both 'when' and 'filters' arguments cannot be missing when querying bookings",
-                                   when=when, filters=filters)
+        bookings = itertools.chain.from_iterable((self.repo.all_temporal(when), self.fixed_booking_handler.all(when)))
+        for booking in bookings:
+            yield booking, *self.block_range(booking.start, booking.end)
 
-    def out_of_range(self, start_block: Block, duration: Duration) -> bool:
+    def out_of_range(self, start: time, duration: Duration) -> bool:
         """Returns True if a booking that starts at *start_block* and has the duration *duration* is out of the time
         range that is valid, False otherwise.
         """
-        end = combine(date.min, start_block.start, duration).time()
-        return start_block.start < self.start or end > self.end
+        end = combine(date.min, start, duration).time()
+        return start < self.start or end > self.end
 
-    def booking_available(self, when: date, court: Court, start_block: Block, duration: Duration) -> bool:
+    def booking_available(self, when: date, court: str, start: time, duration: Duration, is_fixed: bool) -> bool:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
         duration *duration*. Otherwise, return False.
 
         Raises:
             OperationalError if the booking time is out of range.
         """
-        if self.out_of_range(start_block, duration):
-            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
-                                   duration=duration, start=self.start, end=self.end)
-        end = combine(date.min, start_block.start, duration).time()
-        for booking in self.repo.all((BOOKING_TO_HAPPEN, BOOKING_PAID), when):
-            if booking.court == court and booking.collides(start_block.start, end):
+        if self.out_of_range(start, duration):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
+                                   f"of the range [booking_start={self.start}, booking_end={self.end}].")
+
+        if not self.fixed_booking_handler.booking_available(when, court, start, duration, is_fixed):
+            return False
+
+        end = combine(date.min, start, duration).time()
+        for booking in self.repo.all_temporal(when, court):
+            if booking.collides(start, end):
                 return False
         return True
 
     def book(
-            self, court: Court, client: Client, is_fixed: bool, when: date, start_block: Block, duration: Duration
-    ) -> list[Booking]:
+            self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
+    ) -> Booking:
         """Creates a Booking with the given data.
 
         Raises:
             OperationalError if the booking time is out of range, or if there is no available time for the booking.
         """
-        if self.out_of_range(start_block, duration):
-            raise OperationalError("Solicited booking time is out of range.", start_block=start_block,
-                                   duration=duration, start=self.start, end=self.end)
-        if not self.booking_available(when, court, start_block, duration):
-            raise OperationalError("There is no available time for the booking.", start=start_block.start,
-                                   duration=duration)
+        if self.out_of_range(start, duration):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
+                                   f"of the range [booking_start={self.start}, booking_end={self.end}].")
+        if not self.booking_available(when, court, start, duration, is_fixed):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] collides "
+                                   f"with existing booking/s.")
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
-        end = combine(date.min, start_block.start, duration).time()
-        bookings = [self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)]
-
-        # If the booking is fixed, then create *weeks_in_advance* more bookings in advance.
+        end = combine(date.min, start, duration).time()
         if is_fixed:
-            for i in range(self.weeks_in_advance - 1):
-                when = when + ONE_WEEK_TD
-                bookings.append(
-                    self.repo.create(court, client, is_fixed, State(BOOKING_TO_HAPPEN), when, start_block.start, end)
-                )
+            booking = FixedBooking(court, client, start, end, when.weekday(), when)
+            self.fixed_booking_handler.add(booking)
+        else:
+            booking = TempBooking(court, client, start, end, when)
 
-        return bookings
+        self.repo.add(booking)
+        return booking
 
-    def cancel(self, booking: Booking, responsible: str, cancel_fixed: bool = False):
-        booking.update_state(BOOKING_CANCELLED, updated_by=responsible)
-        # booking.is_fixed = not cancel_fixed
-        self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
+    def cancel(
+            self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
+            cancel_datetime: datetime | None = None
+    ):
+        if definitely_cancelled and booking.is_fixed:
+            self.fixed_booking_handler.cancel(booking)
+        if not definitely_cancelled:
+            booking.cancel(booking_date)
+        cancel_datetime = datetime.now() if cancel_datetime is None else cancel_datetime
+        # ToDo here should go the call to ResponsibleLogger, so the id of the new log is generated, and can be used to as FK in the cancellations log.
+        self.repo.cancel(booking, definitely_cancelled)
+        self.repo.log_cancellation(cancel_datetime, responsible, booking, definitely_cancelled)
 
-    def register_charge(self, booking: Booking, transaction: Transaction):
-        prev_state = booking.update_state(BOOKING_PAID, transaction.responsible.as_primitive())
-        booking.transaction = transaction
-        self.repo.update(booking, prev_state)
-        if booking.is_fixed:  # ToDo add another booking in weeks_in_advance weeks
-            when = booking.when + timedelta(self.weeks_in_advance)
-            self.repo.create(booking.court, booking.client, booking.is_fixed, State(BOOKING_TO_HAPPEN),
-                             when, booking.start, booking.end)
+    def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
+        booking.transaction, booking.when = transaction, booking_date
+        self.repo.charge(booking, transaction)
 
 
 class BookingRepo(abc.ABC):
+
     @abc.abstractmethod
-    def create(
-            self, court: Court, client: Client, is_fixed: bool, state: State, when: date, start: time, end: time
-    ) -> Booking:
+    def add(self, booking: Booking):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update(self, booking: Booking, prev_state: State):
+    def charge(self, booking: Booking, transaction: Transaction):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cancel(self, booking: Booking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
+    def cancel(self, booking: Booking, definitely_cancelled: bool = True):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(
-            self,
-            states: tuple[str, ...] | None = None,
-            when: date | None = None,
-            filters: list[FilterValuePair] | None = None
-    ) -> Generator[Booking, None, None]:
+    def log_cancellation(
+            self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
+    ):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def all_temporal(
+            self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[TempBooking, None, None]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def all_fixed(self) -> Generator[FixedBooking, None, None]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod
