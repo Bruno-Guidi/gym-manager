@@ -4,7 +4,7 @@ from typing import Generator
 
 from peewee import (
     Model, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch,
-    JOIN, CompositeKey, DateTimeField)
+    JOIN, CompositeKey, DateTimeField, DateField)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager import peewee
@@ -44,6 +44,22 @@ class FixedBookingTable(Model):
         primary_key = CompositeKey("day_of_week", "court", "start")
 
 
+class CancelledLog(Model):
+    id = IntegerField(primary_key=True)
+    cancel_datetime = DateTimeField()
+    responsible = CharField()
+    client = ForeignKeyField(peewee.ClientTable, backref="cancelled_bookings")
+    when = DateField()
+    court = CharField()
+    start = TimeField()
+    end = TimeField()
+    is_fixed = BooleanField()
+    definitely_cancelled = BooleanField()
+
+    class Meta:
+        database = peewee.DATABASE_PROXY
+
+
 class SqliteBookingRepo(BookingRepo):
 
     def __init__(
@@ -53,7 +69,7 @@ class SqliteBookingRepo(BookingRepo):
             transaction_repo: TransactionRepo,
             cache_len: int = 100
     ) -> None:
-        BookingTable._meta.database.create_tables([BookingTable, FixedBookingTable])
+        BookingTable._meta.database.create_tables([BookingTable, FixedBookingTable, CancelledLog])
 
         self.courts = {court.name: court for court in existing_courts}
         self.client_repo = client_repo
@@ -123,17 +139,20 @@ class SqliteBookingRepo(BookingRepo):
         elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
             BookingTable.delete_by_id(datetime.combine(booking.when, booking.start))
 
-        # Registers information about the cancellation.
-
-    def update(self, booking: TempBooking, prev_state: State):
-        record = BookingTable.get_by_id(booking.id)
-        # Updates the booking.
-        record.is_fixed = booking.is_fixed
-        record.state = booking.state.name
-        record.updated_by = booking.state.updated_by
-        if booking.transaction is not None:
-            record.transaction = TransactionTable.get_by_id(booking.transaction.id)
-        record.save()
+    def log_cancellation(
+            self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
+    ):
+        CancelledLog.create(
+            cancel_datetime=cancel_datetime,
+            responsible=responsible.as_primitive(),
+            client_id=booking.client.dni.as_primitive(),
+            when=booking.when,
+            court=booking.court,
+            start=booking.start,
+            end=booking.end,
+            is_fixed=booking.is_fixed,
+            definitely_cancelled=definitely_cancelled
+        )
 
     def all_temporal(
             self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None

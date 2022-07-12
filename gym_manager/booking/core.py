@@ -424,11 +424,13 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update(self, booking: TempBooking, prev_state: State):
+    def cancel(self, booking: Booking, definitely_cancelled: bool = True):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cancel(self, booking: Booking, definitely_cancelled: bool = True):
+    def log_cancellation(
+            self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
+    ):
         raise NotImplementedError
 
     @abc.abstractmethod
