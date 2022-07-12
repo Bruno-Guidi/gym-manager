@@ -264,6 +264,12 @@ class FixedBookingHandler:
                 if fixed_booking.is_active(when):
                     yield fixed_booking
 
+    def add(self, booking: FixedBooking):
+        self._bookings[booking.when.weekday()][booking.court][booking.start] = booking
+
+    def cancel(self, booking: Booking):
+        self._bookings[booking.when.weekday()][booking.court].pop(booking.start)
+
 
 class BookingSystem:
     """API to do booking related things.
@@ -377,7 +383,8 @@ class BookingSystem:
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start, duration).time()
         if is_fixed:
-            booking = FixedBooking(court, client, start, end, when.weekday())
+            booking = FixedBooking(court, client, start, end, when)
+            self.fixed_booking_handler.add(booking)
         else:
             booking = TempBooking(court, client, start, end, when)
 
@@ -388,7 +395,9 @@ class BookingSystem:
             self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
             cancel_datetime: datetime | None = None
     ):
-        if not definitely_cancelled:
+        if definitely_cancelled:
+            self.fixed_booking_handler.cancel(booking)
+        else:
             booking.cancel(booking_date)
         cancel_datetime = datetime.now() if cancel_datetime is None else cancel_datetime
         # ToDo here should go the call to ResponsibleLogger, so the id of the new log is generated, and can be used to as FK in the cancellations log.
