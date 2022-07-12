@@ -197,13 +197,24 @@ def test_FixedBookingHandler_bookingAvailable():
         ]
     )
 
-    assert fixed_handler.booking_available(date(2022, 7, 11), "1", time(8, 0), Duration(60, "1h"))
-    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(8, 0), Duration(120, "2h"))
-    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(13, 0), Duration(120, "2h"))
-    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(15, 0), Duration(60, "1h"))
-    assert fixed_handler.booking_available(date(2022, 7, 11), "1", time(16, 0), Duration(60, "1h"))
+    assert fixed_handler.booking_available(date(2022, 7, 11), "1", time(8, 0), Duration(60, "1h"), is_fixed=False)
+    assert fixed_handler.booking_available(date(2022, 7, 11), "1", time(8, 0), Duration(60, "1h"), is_fixed=True)
+
+    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(8, 0), Duration(120, "2h"), is_fixed=False)
+    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(8, 0), Duration(120, "2h"), is_fixed=True)
+
+    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(13, 0), Duration(120, "2h"), is_fixed=False)
+    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(13, 0), Duration(120, "2h"), is_fixed=True)
+
+    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(15, 0), Duration(60, "1h"), is_fixed=False)
+    assert not fixed_handler.booking_available(date(2022, 7, 11), "1", time(15, 0), Duration(60, "1h"), is_fixed=True)
+
+    assert fixed_handler.booking_available(date(2022, 7, 11), "1", time(16, 0), Duration(60, "1h"), is_fixed=False)
+    assert fixed_handler.booking_available(date(2022, 7, 11), "1", time(16, 0), Duration(60, "1h"), is_fixed=True)
+
     # The booking "collides" with a booking of other court.
-    assert fixed_handler.booking_available(date(2022, 7, 11), "2", time(8, 0), Duration(120, "2h"))
+    assert fixed_handler.booking_available(date(2022, 7, 11), "2", time(8, 0), Duration(120, "2h"), is_fixed=False)
+    assert fixed_handler.booking_available(date(2022, 7, 11), "2", time(8, 0), Duration(120, "2h"), is_fixed=True)
 
 
 def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
@@ -221,16 +232,27 @@ def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
     )
 
     # In theory collides with the first booking, but because it is inactive it doesn't.
-    assert fixed_handler.booking_available(date(2022, 7, 18), "1", time(9, 0), Duration(60, "1h"))
+    assert fixed_handler.booking_available(date(2022, 7, 18), "1", time(9, 0), Duration(60, "1h"), is_fixed=False)
+    # It is not possible to create a fixed booking that occupies time of an existing (but cancelled) fixed booking.
+    assert not fixed_handler.booking_available(date(2022, 7, 18), "1", time(9, 0), Duration(60, "1h"), is_fixed=True)
+
     # Collides with the first booking, because in the given date it is activated again.
-    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(9, 0), Duration(60, "1h"))
+    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(9, 0), Duration(60, "1h"), is_fixed=False)
+    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(9, 0), Duration(60, "1h"), is_fixed=True)
+
     # In theory collides with the second booking, but because it is inactive it doesn't.
     # But there is another booking that is active, so after all the new booking collides.
-    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(11, 0), Duration(180, "3h"))
+    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(11, 0), Duration(180, "3h"), is_fixed=False)
+    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(11, 0), Duration(180, "3h"), is_fixed=True)
+
     # In theory collides with the second booking, but because it is inactive it doesn't.
-    assert fixed_handler.booking_available(date(2022, 7, 25), "1", time(10, 0), Duration(60, "1h"))
+    assert fixed_handler.booking_available(date(2022, 7, 25), "1", time(10, 0), Duration(60, "1h"), is_fixed=False)
+    # It is not possible to create a fixed booking that occupies time of an existing (but cancelled) fixed booking.
+    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(10, 0), Duration(60, "1h"), is_fixed=True)
+
     # Collides with the second booking, because the date is after the date that its active again.
-    assert not fixed_handler.booking_available(date(2022, 8, 1), "1", time(10, 0), Duration(60, "1h"))
+    assert not fixed_handler.booking_available(date(2022, 8, 1), "1", time(10, 0), Duration(60, "1h"), is_fixed=False)
+    assert not fixed_handler.booking_available(date(2022, 8, 1), "1", time(10, 0), Duration(60, "1h"), is_fixed=True)
 
 
 def test_BookingSystem_bookingAvailable():
@@ -240,10 +262,10 @@ def test_BookingSystem_bookingAvailable():
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
-    assert booking_system.booking_available(date(2022, 7, 11), "1", time(9, 0), Duration(60, "1h"))
-    assert booking_system.booking_available(date(2022, 7, 11), "1", time(17, 0), Duration(60, "1h"))
-    assert not booking_system.booking_available(date(2022, 7, 11), "1", time(9, 0), Duration(120, "2h"))
-    assert not booking_system.booking_available(date(2022, 7, 11), "1", time(15, 0), Duration(60, "1h"))
+    assert booking_system.booking_available(date(2022, 7, 11), "1", time(9, 0), Duration(60, "1h"), is_fixed=False)
+    assert booking_system.booking_available(date(2022, 7, 11), "1", time(17, 0), Duration(60, "1h"), is_fixed=False)
+    assert not booking_system.booking_available(date(2022, 7, 11), "1", time(9, 0), Duration(120, "2h"), is_fixed=False)
+    assert not booking_system.booking_available(date(2022, 7, 11), "1", time(15, 0), Duration(60, "1h"), is_fixed=False)
 
 
 def test_BookingSystem_bookings():
@@ -343,7 +365,8 @@ def test_integration_cancelTemporary_fixedBooking():
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
-    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"))  # Available time.
+    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"), is_fixed=False)
+            and not booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"), is_fixed=True)
             and len(all_fixed) == 1  # The FixedBooking wasn't removed.
             and (all_fixed[0].inactive_dates == [{"from": date(2022, 7, 11), "to": date(2022, 7, 18)}])
             and len([c for c in booking_repo.cancelled()]) == 1)
@@ -377,7 +400,8 @@ def test_integration_cancelDefinitely_fixedBooking():
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
-    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"))  # Available time.
+    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"), is_fixed=False)
+            and booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"), is_fixed=True)
             and len(all_fixed) == 0  # The FixedBooking was removed.
             and len([c for c in booking_repo.cancelled()]) == 1)
 
@@ -408,6 +432,7 @@ def test_integration_cancelDefinitely_tempBooking():
 
     all_temp = [b for b in booking_repo.all_temporal()]
     # noinspection PyUnresolvedReferences
-    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"))  # Available time.
+    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"), is_fixed=False)
+            and booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"), is_fixed=True)
             and len(all_temp) == 0  # The FixedBooking was removed.
             and len([c for c in booking_repo.cancelled()]) == 1)
