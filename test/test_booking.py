@@ -4,7 +4,7 @@ from typing import Generator
 from gym_manager import peewee
 from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
-    BOOKING_TO_HAPPEN, Booking)
+    Booking)
 from gym_manager.booking.peewee import SqliteBookingRepo
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number
 from gym_manager.core.persistence import FilterValuePair
@@ -109,7 +109,7 @@ def test_FixedBookingHandler_bookingAvailable():
 
 
 def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
-    booking_repo = MockBookingRepo()
+    MockBookingRepo()
     # noinspection PyTypeChecker
     fixed_handler = FixedBookingHandler(
         courts=("1", "2"), fixed_bookings=[

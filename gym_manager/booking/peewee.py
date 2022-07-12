@@ -8,9 +8,7 @@ from peewee import (
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager import peewee
-from gym_manager.booking.core import (
-    TempBooking, BookingRepo, Court, State, ONE_WEEK_TD, BOOKING_TO_HAPPEN, Booking,
-    FixedBooking)
+from gym_manager.booking.core import TempBooking, BookingRepo, Court, Booking, FixedBooking
 from gym_manager.core.base import Transaction, String
 from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
 from gym_manager.peewee import TransactionTable
