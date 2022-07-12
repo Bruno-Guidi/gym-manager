@@ -112,23 +112,23 @@ def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
     fixed_handler = FixedBookingHandler(
         courts=("1", "2"), fixed_bookings=[
             FixedBooking("1", client=None, start=time(9, 0), end=time(10, 0), day_of_week=0,
-                         activated_again=date(2022, 7, 18)),
+                         inactive_dates=[{"from": date(2022, 7, 18), "to": date(2022, 7, 25)}]),
             FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0,
-                         activated_again=date(2022, 7, 25)),
+                         inactive_dates=[{"from": date(2022, 7, 25), "to": date(2022, 8, 1)}]),
             FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
             FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)
         ]
     )
 
     # In theory collides with the first booking, but because it is inactive it doesn't.
-    assert fixed_handler.booking_available(date(2022, 7, 11), "1", time(9, 0), Duration(60, "1h"))
+    assert fixed_handler.booking_available(date(2022, 7, 18), "1", time(9, 0), Duration(60, "1h"))
     # Collides with the first booking, because in the given date it is activated again.
-    assert not fixed_handler.booking_available(date(2022, 7, 18), "1", time(9, 0), Duration(60, "1h"))
+    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(9, 0), Duration(60, "1h"))
     # In theory collides with the second booking, but because it is inactive it doesn't.
     # But there is another booking that is active, so after all the new booking collides.
-    assert not fixed_handler.booking_available(date(2022, 7, 18), "1", time(11, 0), Duration(180, "3h"))
+    assert not fixed_handler.booking_available(date(2022, 7, 25), "1", time(11, 0), Duration(180, "3h"))
     # In theory collides with the second booking, but because it is inactive it doesn't.
-    assert fixed_handler.booking_available(date(2022, 7, 18), "1", time(10, 0), Duration(60, "1h"))
+    assert fixed_handler.booking_available(date(2022, 7, 25), "1", time(10, 0), Duration(60, "1h"))
     # Collides with the second booking, because the date is after the date that its active again.
     assert not fixed_handler.booking_available(date(2022, 8, 1), "1", time(10, 0), Duration(60, "1h"))
 
