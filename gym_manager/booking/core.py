@@ -145,6 +145,12 @@ class TempBooking(Booking):
         self._when = when
         self.is_fixed = is_fixed
 
+    def __eq__(self, other: TempBooking) -> bool:
+        if isinstance(other, type(self)):
+            return (self.court == other.court and self.when == other.when and self.start == other.start
+                    and self.end == other.end)
+        return NotImplemented
+
     @property
     def when(self) -> date:
         return self._when
@@ -175,6 +181,12 @@ class FixedBooking(Booking):
         # implemented, there is no need to do it.
         self.activated_again = activated_again
         self._last_when: date | None = None
+
+    def __eq__(self, other: FixedBooking) -> bool:
+        if isinstance(other, type(self)):
+            return (self.court == other.court and self.day_of_week == other.day_of_week and self.start == other.start
+                    and self.end == other.end)
+        return NotImplemented
 
     def collides(self, start: time, end: time, when: date | None = None) -> bool:
         # If there is no activated_again date, then the fixed booking was never inactive.
