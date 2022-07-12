@@ -144,5 +144,5 @@ def test_integration_registerCharge_fixedBooking():
 
     booking_system.register_charge(booking, booking_date, transaction)
 
-    # ToDo. Last check requires all(args) to be fixed
+    # The length of all temporal bookings is checked to ensure that the charge was registered.
     assert booking.transaction == transaction and len([b for b in booking_repo.all_temporal()]) == 1
