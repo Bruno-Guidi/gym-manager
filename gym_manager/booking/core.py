@@ -178,7 +178,7 @@ CourtBookings: TypeAlias = dict[str, DayBookings]
 
 
 class FixedBookingHandler:
-    def __init__(self, courts: Iterable[str], fixed_bookings: list[FixedBooking]):
+    def __init__(self, courts: Iterable[str], fixed_bookings: Iterable[FixedBooking]):
         self._bookings: list[CourtBookings] = [{court: {} for court in courts} for _ in range(0, 7)]
         for booking in fixed_bookings:
             self._bookings[booking.day_of_week][booking.court][booking.start] = booking
@@ -366,7 +366,7 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all_fixed(self) -> list[FixedBooking]:
+    def all_fixed(self) -> Generator[FixedBooking, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod
