@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Generator
 
 from peewee import (
@@ -59,7 +59,7 @@ class SqliteBookingRepo(BookingRepo):
         self.transaction_repo = transaction_repo
 
         self._do_caching = cache_len > 0
-        self.cache = LRUCache((int,), TempBooking, max_len=cache_len)
+        self.cache = LRUCache((date,), TempBooking, max_len=cache_len)
 
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
@@ -100,8 +100,6 @@ class SqliteBookingRepo(BookingRepo):
                              client_id=booking.client.dni.as_primitive(),
                              end=booking.end,
                              is_fixed=booking.is_fixed,
-                             state=State(BOOKING_TO_HAPPEN),
-                             updated_by=transaction.responsible,
                              transaction_id=transaction.id).execute()
 
     def update(self, booking: TempBooking, prev_state: State):
@@ -166,8 +164,8 @@ class SqliteBookingRepo(BookingRepo):
 
         for record in prefetch(bookings_q, TransactionTable.select()):
             booking: TempBooking
-            if self._do_caching and record.id in self.cache:
-                booking = self.cache[record.id]
+            if self._do_caching and record.when in self.cache:
+                booking = self.cache[record.when]
             else:
                 client = self.client_repo.get(record.client_id)
 
@@ -178,12 +176,14 @@ class SqliteBookingRepo(BookingRepo):
                         trans_record.method, trans_record.responsible, trans_record.description
                     )
 
-                booking = TempBooking(record.court, client, record.start, record.end,
-                                      State(record.state, record.updated_by), record.when, transaction, record.is_fixed)
+                when = record.when.date()
+                start = record.when.time()
+                booking = TempBooking(record.court, client, start, record.end, when, transaction,
+                                      record.is_fixed)
                 if self._do_caching:
-                    self.cache[record.id] = booking
+                    self.cache[record.when] = booking
                     logger.getChild(type(self).__name__).info(
-                        f"Booking with [id={record.id}] not in cache. The booking will be created from raw data."
+                        f"Booking with [id={record.when}] not in cache. The booking will be created from raw data."
                     )
             yield booking
 

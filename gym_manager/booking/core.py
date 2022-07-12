@@ -297,7 +297,7 @@ class BookingSystem:
             return False
 
         end = combine(date.min, start, duration).time()
-        for booking in self.repo.all_temporal((BOOKING_TO_HAPPEN, BOOKING_PAID), when, court):
+        for booking in self.repo.all_temporal(when, court):
             if booking.collides(start, end):
                 return False
         return True
