@@ -149,7 +149,7 @@ class SqliteBookingRepo(BookingRepo):
                 record.save()
                 self.cache[record.id].update_state(record.state, record.updated_by)
 
-    def all(
+    def all_temporal(
             self,
             states: tuple[str, ...] | None = None,
             when: date | None = None,

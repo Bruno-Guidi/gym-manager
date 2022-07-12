@@ -266,10 +266,10 @@ class BookingSystem:
             OperationalError if given both when and filters are missing.
         """
         if when is not None:
-            for booking in self.repo.all(states, when):
+            for booking in self.repo.all_temporal(states, when):
                 yield booking, *self.block_range(booking.start, booking.end)
         elif len(filters) > 0:
-            for booking in self.repo.all(states, filters):
+            for booking in self.repo.all_temporal(states, filters):
                 yield booking, *self.block_range(booking.start, booking.end)
         else:
             raise OperationalError("Both 'when' and 'filters' arguments cannot be missing when querying bookings",
@@ -297,7 +297,7 @@ class BookingSystem:
             return False
 
         end = combine(date.min, start, duration).time()
-        for booking in self.repo.all((BOOKING_TO_HAPPEN, BOOKING_PAID), when, court):
+        for booking in self.repo.all_temporal((BOOKING_TO_HAPPEN, BOOKING_PAID), when, court):
             if booking.collides(start, end):
                 return False
         return True
@@ -356,7 +356,7 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def all(
+    def all_temporal(
             self,
             states: tuple[str, ...] | None = None,
             when: date | None = None,

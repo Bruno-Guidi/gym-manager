@@ -29,7 +29,7 @@ class MockBookingRepo(BookingRepo):
     def cancel(self, booking: TempBooking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
         pass
 
-    def all(
+    def all_temporal(
             self,
             states: tuple[str, ...] | None = None,
             when: date | None = None,
@@ -145,4 +145,4 @@ def test_integration_registerCharge_fixedBooking():
     booking_system.register_charge(booking, booking_date, transaction)
 
     # ToDo. Last check requires all(args) to be fixed
-    assert booking.transaction == transaction and len([b for b in booking_repo.all()]) == 1
+    assert booking.transaction == transaction and len([b for b in booking_repo.all_temporal()]) == 1
