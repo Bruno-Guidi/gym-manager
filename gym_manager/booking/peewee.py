@@ -139,9 +139,11 @@ class SqliteBookingRepo(BookingRepo):
             if definitely_cancelled:  # The FixedBooking is temporally cancelled.
                 FixedBookingTable.delete_by_id((booking.day_of_week, booking.court, booking.start))
             else:  # The FixedBooking is definitely cancelled.
+                transaction_id = None if booking.transaction is None else booking.transaction.id
                 FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
                                           client_id=booking.client.dni.as_primitive(), end=booking.end,
-                                          transaction_id=booking.transaction.id, inactive_dates=booking.inactive_dates
+                                          transaction_id=transaction_id,
+                                          inactive_dates=serialize_inactive_dates(booking.inactive_dates)
                                           ).execute()
         elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
             BookingTable.delete_by_id(datetime.combine(booking.when, booking.start))
