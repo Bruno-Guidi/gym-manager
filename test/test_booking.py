@@ -67,9 +67,23 @@ def test_FixedBooking_isActive():
 
     assert booking.is_active(date(2022, 7, 12))
 
-    booking.activated_again = date(2022, 7, 19)
+    # There is only one period of inactivity.
+    booking.inactive_dates = [{"from": date(2022, 7, 12), "to": date(2022, 7, 19)}]
     assert (not booking.is_active(date(2022, 7, 12)) and not booking.is_active(date(2022, 7, 18))
             and booking.is_active(date(2022, 7, 19)))
+
+    # There are two consecutive periods of inactivity.
+    booking.inactive_dates = [{"from": date(2022, 7, 12), "to": date(2022, 7, 19)},
+                              {"from": date(2022, 7, 19), "to": date(2022, 7, 26)}]
+    assert (not booking.is_active(date(2022, 7, 12)) and not booking.is_active(date(2022, 7, 19))
+            and not booking.is_active(date(2022, 7, 25)) and booking.is_active(date(2022, 7, 26)))
+
+    # There are two non-consecutive periods of inactivity.
+    booking.inactive_dates = [{"from": date(2022, 7, 12), "to": date(2022, 7, 19)},
+                              {"from": date(2022, 7, 26), "to": date(2022, 8, 2)}]
+    assert (not booking.is_active(date(2022, 7, 12)) and booking.is_active(date(2022, 7, 19))
+            and not booking.is_active(date(2022, 7, 26)) and not booking.is_active(date(2022, 8, 1))
+            and booking.is_active(date(2022, 8, 2)))
 
 
 def test_FixedBookingHandler_bookingAvailable():

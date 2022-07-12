@@ -184,13 +184,13 @@ class FixedBooking(Booking):
 
     def __init__(
             self, court: str, client: Client, start: time, end: time, day_of_week: int,
-            inactive_dates: list[dict[str, date]], transaction: Transaction | None = None
+            inactive_dates: list[dict[str, date]] | None = None, transaction: Transaction | None = None
     ):
         super().__init__(court, client, start, end, transaction)
         self.day_of_week = day_of_week
         # In theory this attr should be set to None after the date passes, but because of how collides(args) is
         # implemented, there is no need to do it.
-        self.inactive_dates = inactive_dates
+        self.inactive_dates = [] if inactive_dates is None else inactive_dates
         self._last_when: date | None = None
 
     def __eq__(self, other: FixedBooking) -> bool:
@@ -229,7 +229,12 @@ class FixedBooking(Booking):
         existing date ranges in *self.inactive_dates*.
         """
         for date_range in self.inactive_dates:
-            return reference_date < date_range["from"] or reference_date > date_range["to"]
+            # If the booking is cancelled for one week on '2022/07/12', then the booking on '2022/07/12' is not active,
+            # and on '2022/07/19' it is active again.
+            # noinspection PyChainedComparisons
+            if reference_date >= date_range["from"] and reference_date < date_range["to"]:
+                return False  # ToDo inclusive check?
+        return True
 
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
@@ -375,7 +380,7 @@ class BookingSystem:
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start, duration).time()
         if is_fixed:
-            booking = FixedBooking(court, client, start, end, when.weekday(), inactive_dates=[])
+            booking = FixedBooking(court, client, start, end, when.weekday())
         else:
             booking = TempBooking(court, client, start, end, when)
 
