@@ -108,7 +108,7 @@ class SqliteBookingRepo(BookingRepo):
                              is_fixed=booking.is_fixed,
                              transaction_id=transaction.id).execute()
 
-    def cancel(self, booking: Booking, responsible: String, cancel_date: date, definitely_cancelled: bool = True):
+    def cancel(self, booking: Booking, definitely_cancelled: bool = True):
         # if booking is FixedBooking, update the record.
         # if definitely_cancelled, remove record (it doesn't matter which type is booking).
         # create record in the historic.
