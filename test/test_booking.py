@@ -132,6 +132,45 @@ def test_BookingSystem_bookingAvailable():
     assert not booking_system.booking_available(date(2022, 7, 11), "1", time(15, 0), Duration(60, "1h"))
 
 
+def test_BookingSystem_bookings():
+    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    booking_repo = MockBookingRepo()
+    # noinspection PyTypeChecker
+    booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
+                                   start=time(8, 0), end=time(18, 0), minute_step=60)
+
+    # noinspection PyTypeChecker
+    expected = [TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
+                            start=time(8, 0), end=time(9, 0)),
+                TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
+                            start=time(12, 0), end=time(13, 0)),
+                TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
+                            start=time(16, 0), end=time(17, 0)),
+                FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
+                FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
+                FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)]
+    result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 11))]
+    assert result == expected
+
+    # noinspection PyTypeChecker
+    expected = [FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
+                FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
+                FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)]
+    result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 18))]
+    assert result == expected
+
+    # noinspection PyTypeChecker
+    expected = [TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
+                            start=time(16, 0), end=time(17, 0)),
+                TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
+                            start=time(16, 0), end=time(17, 0)),
+                FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1)]
+    result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 12))]
+    assert result == expected
+
+    assert [] == [b for b, _, _ in booking_system.bookings(date(2022, 7, 13))]
+
+
 def test_integration_registerCharge_fixedBooking():
     # Set up.
     peewee.create_database(":memory:")

@@ -306,28 +306,12 @@ class BookingSystem:
         else:
             return self._blocks[start].number, self._blocks[end].number
 
-    def bookings(
-            self, states: tuple[str, ...], when: date | None = None, filters: list[FilterValuePair] | None = None
-    ) -> Iterable[tuple[TempBooking, int, int]]:
+    def bookings(self, when: date) -> Iterable[tuple[TempBooking, int, int]]:
         """Retrieves bookings with its start and end block number.
-
-        Args:
-            states: allows filtering of bookings depending on their states.
-            when: if given, filter bookings of that day. This filtering has priority over filtering with kwargs.
-            **filters: if given, and *when* is None, filter bookings that pass the Filter implementations received.
-
-        Raises:
-            OperationalError if given both when and filters are missing.
         """
-        if when is not None:
-            for booking in self.repo.all_temporal(states, when):
-                yield booking, *self.block_range(booking.start, booking.end)
-        elif len(filters) > 0:
-            for booking in self.repo.all_temporal(states, filters):
-                yield booking, *self.block_range(booking.start, booking.end)
-        else:
-            raise OperationalError("Both 'when' and 'filters' arguments cannot be missing when querying bookings",
-                                   when=when, filters=filters)
+        bookings = itertools.chain.from_iterable((self.repo.all_temporal(when), self.fixed_booking_handler.all(when)))
+        for booking in bookings:
+            yield booking, *self.block_range(booking.start, booking.end)
 
     def out_of_range(self, start: time, duration: Duration) -> bool:
         """Returns True if a booking that starts at *start_block* and has the duration *duration* is out of the time
