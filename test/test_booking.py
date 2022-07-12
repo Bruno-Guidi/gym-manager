@@ -26,7 +26,7 @@ class MockBookingRepo(BookingRepo):
     def update(self, booking: TempBooking, prev_state: State):
         pass
 
-    def cancel(self, booking: TempBooking, cancel_fixed: bool = False, weeks_in_advance: int | None = None):
+    def cancel(self, booking: Booking, responsible: String, cancel_date: date, definitely_cancelled: bool = True):
         pass
 
     def all_temporal(
