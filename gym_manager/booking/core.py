@@ -364,8 +364,8 @@ class BookingSystem:
         self.repo.cancel(booking, cancel_fixed, self.weeks_in_advance)
 
     def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
-        booking.transaction = transaction
-        self.repo.charge(booking, booking_date, transaction)  # ToDo test method.
+        booking.transaction, booking.when = transaction, booking_date
+        self.repo.charge(booking, transaction)
 
 
 class BookingRepo(abc.ABC):
@@ -375,7 +375,7 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def charge(self, booking: Booking, balance_date: date, transaction: Transaction):
+    def charge(self, booking: Booking, transaction: Transaction):
         raise NotImplementedError
 
     @abc.abstractmethod
