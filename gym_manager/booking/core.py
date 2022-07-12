@@ -186,15 +186,15 @@ class TempBooking(Booking):
 class FixedBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, day_of_week: int,
+            self, court: str, client: Client, start: time, end: time, when: date,
             inactive_dates: list[dict[str, date]] | None = None, transaction: Transaction | None = None
     ):
         super().__init__(court, client, start, end, transaction)
-        self.day_of_week = day_of_week
+        self.day_of_week = when.weekday()
         # In theory this attr should be set to None after the date passes, but because of how collides(args) is
         # implemented, there is no need to do it.
         self.inactive_dates = [] if inactive_dates is None else inactive_dates
-        self._last_when: date | None = None
+        self._last_when = when
 
     def __eq__(self, other: FixedBooking) -> bool:
         if isinstance(other, type(self)):
