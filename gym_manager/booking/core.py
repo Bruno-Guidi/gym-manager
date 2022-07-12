@@ -262,11 +262,11 @@ class FixedBookingHandler:
         for booking in fixed_bookings:
             self._bookings[booking.day_of_week][booking.court][booking.start] = booking
 
-    def booking_available(self, when: date, court: str, start: time, duration: Duration) -> bool:
+    def booking_available(self, when: date, court: str, start: time, duration: Duration, is_fixed: bool) -> bool:
         day_bookings = self._bookings[when.weekday()][court].values()
         end = combine(date.min, start, duration).time()
         for fixed_booking in day_bookings:
-            if fixed_booking.collides(start, end, when):
+            if fixed_booking.collides(start, end, when, is_fixed):
                 return False
         return True
 
@@ -358,7 +358,7 @@ class BookingSystem:
         end = combine(date.min, start, duration).time()
         return start < self.start or end > self.end
 
-    def booking_available(self, when: date, court: str, start: time, duration: Duration) -> bool:
+    def booking_available(self, when: date, court: str, start: time, duration: Duration, is_fixed: bool) -> bool:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
         duration *duration*. Otherwise, return False.
 
@@ -369,7 +369,7 @@ class BookingSystem:
             raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
                                    f"of the range [booking_start={self.start}, booking_end={self.end}].")
 
-        if not self.fixed_booking_handler.booking_available(when, court, start, duration):
+        if not self.fixed_booking_handler.booking_available(when, court, start, duration, is_fixed):
             return False
 
         end = combine(date.min, start, duration).time()
@@ -389,7 +389,7 @@ class BookingSystem:
         if self.out_of_range(start, duration):
             raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
                                    f"of the range [booking_start={self.start}, booking_end={self.end}].")
-        if not self.booking_available(when, court, start, duration):
+        if not self.booking_available(when, court, start, duration, is_fixed):
             raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] collides "
                                    f"with existing booking/s.")
 
