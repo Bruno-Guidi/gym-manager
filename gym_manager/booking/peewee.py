@@ -207,14 +207,15 @@ class SqliteBookingRepo(BookingRepo):
 
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
-            transaction_record: TransactionTable = record.transaction
-            transaction = self.transaction_repo.from_record(
-                transaction_record.id, transaction_record.type, self.client_repo.get(transaction_record.client_id),
-                transaction_record.when, transaction_record.amount, transaction_record.method,
-                transaction_record.responsible, transaction_record.description
-            )
+            transaction_record, transaction = record.transaction, None
+            if transaction_record is not None:
+                transaction = self.transaction_repo.from_record(
+                    transaction_record.id, transaction_record.type, self.client_repo.get(transaction_record.client_id),
+                    transaction_record.when, transaction_record.amount, transaction_record.method,
+                    transaction_record.responsible, transaction_record.description
+                )
             yield FixedBooking(record.court, self.client_repo.get(record.client_id), record.start, record.end,
-                               record.day_of_week, record.inactive_dates, transaction)
+                               record.day_of_week, deserialize_inactive_dates(record.inactive_dates), transaction)
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
