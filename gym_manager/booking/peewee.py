@@ -8,7 +8,7 @@ from peewee import (
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager import peewee
-from gym_manager.booking.core import TempBooking, BookingRepo, Court, Booking, FixedBooking
+from gym_manager.booking.core import TempBooking, BookingRepo, Court, Booking, FixedBooking, Cancellation
 from gym_manager.core.base import Transaction, String
 from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
 from gym_manager.peewee import TransactionTable
@@ -216,6 +216,16 @@ class SqliteBookingRepo(BookingRepo):
                 )
             yield FixedBooking(record.court, self.client_repo.get(record.client_id), record.start, record.end,
                                record.day_of_week, deserialize_inactive_dates(record.inactive_dates), transaction)
+
+    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+        cancelled_q = CancelledLog.select(
+            CancelledLog.cancel_datetime, CancelledLog.responsible, CancelledLog.client_id, CancelledLog.when,
+            CancelledLog.court, CancelledLog.start, CancelledLog.end, CancelledLog.is_fixed,
+            CancelledLog.definitely_cancelled
+        )
+        for record in cancelled_q.paginate(page, page_len):
+            yield Cancellation(record.cancel_datetime, record.responsible, record.client_id, record.when, record.court,
+                               record.start, record.end, record.is_fixed, record.definitely_cancelled)
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.

@@ -431,6 +431,10 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
         """
