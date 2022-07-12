@@ -120,6 +120,11 @@ class Booking(abc.ABC):
 
     @property
     @abc.abstractmethod
+    def is_fixed(self) -> bool:
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
     def when(self) -> date:
         raise NotImplementedError
 
@@ -149,13 +154,17 @@ class TempBooking(Booking):
     ):
         super().__init__(court, client, start, end, transaction)
         self._when = when
-        self.is_fixed = is_fixed
+        self._is_fixed = is_fixed
 
     def __eq__(self, other: TempBooking) -> bool:
         if isinstance(other, type(self)):
             return (self.court == other.court and self.when == other.when and self.start == other.start
                     and self.end == other.end)
         return NotImplemented
+
+    @property
+    def is_fixed(self) -> bool:
+        return self._is_fixed
 
     @property
     def when(self) -> date:
@@ -205,6 +214,10 @@ class FixedBooking(Booking):
         # If *when* is previous to the date when the fixed booking is "active" again, then there is no collision.
         # Note: when < date (when before date) is equivalent to when >= date.
         return False
+
+    @property
+    def is_fixed(self) -> bool:
+        return True
 
     @property
     def when(self) -> date:
