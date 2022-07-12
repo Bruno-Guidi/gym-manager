@@ -129,7 +129,7 @@ class Booking(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cancel(self, when: date, definitely_cancelled: bool):
+    def cancel(self, when: date):
         """Do something after the booking is cancelled. What will be done depends on each implementation.
         """
         raise NotImplementedError
@@ -167,7 +167,7 @@ class TempBooking(Booking):
         if when != self.when:
             raise OperationalError(f"It is not possible to change the attribute 'when' of a 'TempBooking'.")
 
-    def cancel(self, when: date, definitely_cancelled: bool):
+    def cancel(self, when: date):
         """Does nothing.
         """
         pass
@@ -217,12 +217,10 @@ class FixedBooking(Booking):
     def when(self, when: date):
         self._last_when = when
 
-    def cancel(self, when: date, definitely_cancelled: bool):
+    def cancel(self, when: date):
+        """Adds a new entry in the inactive dates list.
         """
-        """
-        # If the booking is cancelled definitely, do nothing because the booking will be removed.
-        if not definitely_cancelled:
-            pass
+        self.inactive_dates.append({"from": when, "to": when + ONE_WEEK_TD})
 
     def is_active(self, reference_date: date) -> bool:
         """Determines if the booking is active. The booking will be active if *reference_date* is not between any of the
