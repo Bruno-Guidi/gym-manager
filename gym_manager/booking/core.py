@@ -385,8 +385,14 @@ class BookingSystem:
         self.repo.add(booking)
         return booking
 
-    def cancel(self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True):
-        pass
+    def cancel(
+            self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
+            cancel_date: date | None = None
+    ):
+        if not definitely_cancelled:
+            booking.cancel(booking_date)
+        cancel_date = date.today() if cancel_date is None else cancel_date
+        self.repo.cancel(booking, responsible, cancel_date, definitely_cancelled)
 
     def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
         booking.transaction, booking.when = transaction, booking_date
