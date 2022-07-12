@@ -205,12 +205,18 @@ class FixedBooking(Booking):
                     and self.end == other.end)
         return NotImplemented
 
-    def collides(self, start: time, end: time, when: date | None = None) -> bool:
+    def collides(self, start: time, end: time, when: date, is_fixed: bool) -> bool:
+        base_collides = super()._base_collides(start, end)
+        if not base_collides:
+            # If there is no collision, nothing else matter. The new booking won't collide with this booking.
+            return False
         if self.is_active(when):
-            return super()._base_collides(start, end)
-        # If *when* is previous to the date when the fixed booking is "active" again, then there is no collision.
-        # Note: when < date (when before date) is equivalent to when >= date.
-        return False
+            # If there is a collision and this booking is active, then the new booking will collide with this one,
+            # regardless of whether the booking is fixed or not.
+            return True
+        # If there is a collision and this booking isn't active, then the new booking will collide with this one only if
+        # the new one will be fixed.
+        return is_fixed
 
     @property
     def is_fixed(self) -> bool:
