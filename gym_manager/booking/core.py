@@ -54,6 +54,10 @@ def current_block_start(blocks: Iterable[Block], when: date) -> time:
 Court = namedtuple("Court", ["name", "id"])
 
 
+Cancellation = namedtuple("Cancellation", ["cancel_datetime", "responsible", "client", "when", "court", "start", "end",
+                                           "is_fixed", "definitely_cancelled"])
+
+
 class Duration:
 
     def __init__(self, minutes: int, as_str: str) -> None:
