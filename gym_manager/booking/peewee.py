@@ -47,7 +47,7 @@ class CancelledLog(Model):
     cancel_datetime = DateTimeField()
     responsible = CharField()
     client = ForeignKeyField(peewee.ClientTable, backref="cancelled_bookings")
-    when = DateField()
+    when = DateField(null=True)
     court = CharField()
     start = TimeField()
     end = TimeField()

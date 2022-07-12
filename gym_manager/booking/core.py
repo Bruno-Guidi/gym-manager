@@ -208,9 +208,6 @@ class FixedBooking(Booking):
 
     @property
     def when(self) -> date:
-        if self._last_when is None:
-            raise OperationalError(f"The 'FixedBooking' with [day_of_week={self.day_of_week}, start={self.start},"
-                                   f"end={self.end}] has not happened at least one time.")
         return self._last_when
 
     @when.setter
