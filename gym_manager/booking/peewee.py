@@ -78,9 +78,7 @@ class SqliteBookingRepo(BookingRepo):
                                 court=booking.court,
                                 client_id=booking.client.dni.as_primitive(),
                                 end=booking.end,
-                                is_fixed=False,
-                                state=booking.state.name,
-                                updated_by=booking.state.updated_by)
+                                is_fixed=False)
 
         else:
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
