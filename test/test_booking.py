@@ -39,17 +39,23 @@ class MockBookingRepo(BookingRepo):
             TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
                         start=time(12, 0), end=time(13, 0)),
             TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
+                        start=time(16, 0), end=time(17, 0)),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
+                        start=time(16, 0), end=time(17, 0)),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
                         start=time(16, 0), end=time(17, 0))
         ]
 
         for booking in to_yield:
-            yield booking
+            if booking.when == when:
+                yield booking
 
     def all_fixed(self) -> list[FixedBooking]:
         # noinspection PyTypeChecker
         return [FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
                 FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
-                FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)]
+                FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0),
+                FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1)]
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         pass
