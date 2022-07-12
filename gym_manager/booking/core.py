@@ -238,6 +238,13 @@ class FixedBookingHandler:
                 return False
         return True
 
+    def all(self, when: date) -> Iterable[FixedBooking]:
+        court_bookings: CourtBookings = self._bookings[when.weekday()]
+        for day_bookings in court_bookings.values():
+            for fixed_booking in day_bookings.values():
+                if fixed_booking.is_active(when):
+                    yield fixed_booking
+
 
 class BookingSystem:
     """API to do booking related things.
