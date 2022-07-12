@@ -341,7 +341,7 @@ def test_integration_cancelTemporary_fixedBooking():
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
-    assert (not booking.collides(time(8, 0), time(9, 0), booking_date)  # The time range is available to be booked.
+    assert (booking_system.booking_available(booking_date, "1", time(8, 0), Duration(60, "1h"))  # Available time.
             and len(all_fixed) == 1  # The FixedBooking wasn't removed.
             and (all_fixed[0].inactive_dates == [{"from": date(2022, 7, 11), "to": date(2022, 7, 18)}])
             and len([c for c in booking_repo.cancelled()]) == 1)
