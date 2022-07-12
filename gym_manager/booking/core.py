@@ -135,22 +135,6 @@ class TempBooking(Booking):
         self.transaction = transaction
         self.is_fixed = is_fixed
 
-    # noinspection PyChainedComparisons
-    def collides(self, start: time, end: time) -> bool:
-        """Determines if a hypothetical booking with the given start and end time will collide with this booking.
-
-        There are four possible situations where a collision wont happen:
-        1. start < end < b.start < b.end.
-        2. start < end <= b.start < b.end.
-        3. b.start < b.end < start < end.
-        4. b.start < b.end <= start < end.
-        The remaining possibilities involve a partial or total collision.
-
-        Returns:
-            True if there is a collision, False otherwise.
-        """
-        return not (start < self.start and end <= self.start or start >= self.end and end > self.end)
-
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
         """
