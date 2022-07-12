@@ -103,7 +103,7 @@ class Booking(abc.ABC):
         self.transaction = transaction
 
     # noinspection PyChainedComparisons
-    def collides(self, start: time, end: time) -> bool:
+    def _base_collides(self, start: time, end: time) -> bool:
         """Determines if a hypothetical booking with the given start and end time will collide with this booking.
 
         There are four possible situations where a collision won't happen:
@@ -156,6 +156,9 @@ class TempBooking(Booking):
                     and self.end == other.end)
         return NotImplemented
 
+    def collides(self, start: time, end: time) -> bool:
+        return super()._base_collides(start, end)
+
     @property
     def is_fixed(self) -> bool:
         return self._is_fixed
@@ -197,7 +200,7 @@ class FixedBooking(Booking):
 
     def collides(self, start: time, end: time, when: date | None = None) -> bool:
         if self.is_active(when):
-            return super().collides(start, end)
+            return super()._base_collides(start, end)
         # If *when* is previous to the date when the fixed booking is "active" again, then there is no collision.
         # Note: when < date (when before date) is equivalent to when >= date.
         return False
