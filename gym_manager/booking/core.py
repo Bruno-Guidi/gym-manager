@@ -118,6 +118,16 @@ class Booking(abc.ABC):
         """
         return not (start < self.start and end <= self.start or start >= self.end and end > self.end)
 
+    @property
+    @abc.abstractmethod
+    def when(self) -> date:
+        raise NotImplementedError
+
+    @when.setter
+    @abc.abstractmethod
+    def when(self, when: date):
+        raise NotImplementedError
+
     @abc.abstractmethod
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
@@ -132,8 +142,18 @@ class TempBooking(Booking):
             transaction: Transaction | None = None, is_fixed: bool = False
             ):
         super().__init__(court, client, start, end, transaction)
-        self.when = when
+        self._when = when
         self.is_fixed = is_fixed
+
+    @property
+    def when(self) -> date:
+        return self._when
+
+    @when.setter
+    def when(self, when: date):
+        # Checks that the date of the booking remains the same. If it is the same, then pass and do nothing.
+        if when != self.when:
+            raise OperationalError(f"It is not possible to change the attribute 'when' of a 'TempBooking'.")
 
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
@@ -154,6 +174,7 @@ class FixedBooking(Booking):
         # In theory this attr should be set to None after the date passes, but because of how collides(args) is
         # implemented, there is no need to do it.
         self.activated_again = activated_again
+        self._last_when: date | None = None
 
     def collides(self, start: time, end: time, when: date | None = None) -> bool:
         # If there is no activated_again date, then the fixed booking was never inactive.
@@ -165,6 +186,17 @@ class FixedBooking(Booking):
         # If *when* is previous to the date when the fixed booking is "active" again, then there is no collision.
         # Note: when < date (when before date) is equivalent to when >= date.
         return False
+
+    @property
+    def when(self) -> date:
+        if self._last_when is None:
+            raise OperationalError(f"The 'FixedBooking' with [day_of_week={self.day_of_week}, start={self.start},"
+                                   f"end={self.end}] has not happened at least one time.")
+        return self._last_when
+
+    @when.setter
+    def when(self, when: date):
+        self._last_when = when
 
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
