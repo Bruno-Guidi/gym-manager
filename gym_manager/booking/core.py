@@ -146,7 +146,7 @@ class TempBooking(Booking):
     def __init__(
             self, court: str, client: Client, start: time, end: time, when: date,
             transaction: Transaction | None = None, is_fixed: bool = False
-            ):
+    ):
         super().__init__(court, client, start, end, transaction)
         self._when = when
         self.is_fixed = is_fixed
@@ -231,7 +231,7 @@ class FixedBooking(Booking):
             # and on '2022/07/19' it is active again.
             # noinspection PyChainedComparisons
             if reference_date >= date_range["from"] and reference_date < date_range["to"]:
-                return False  # ToDo inclusive check?
+                return False
         return True
 
     def update_state(self, new_state: str, updated_by: str) -> State:
