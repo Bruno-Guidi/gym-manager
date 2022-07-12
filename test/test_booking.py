@@ -15,7 +15,7 @@ class MockBookingRepo(BookingRepo):
     def add(self, booking: Booking):
         pass
 
-    def charge(self, booking: Booking, balance_date: date, transaction: Transaction):
+    def charge(self, booking: Booking, transaction: Transaction):
         pass
 
     def create(
@@ -38,11 +38,11 @@ class MockBookingRepo(BookingRepo):
     ) -> Generator[TempBooking, None, None]:
         # noinspection PyTypeChecker
         to_yield = [
-            TempBooking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
                         start=time(8, 0), end=time(9, 0)),
-            TempBooking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
                         start=time(12, 0), end=time(13, 0)),
-            TempBooking("1", client=None, is_fixed=False, state=State(BOOKING_TO_HAPPEN), when=date(2022, 7, 11),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
                         start=time(16, 0), end=time(17, 0))
         ]
 
