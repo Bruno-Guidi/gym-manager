@@ -201,7 +201,7 @@ class SqliteBookingRepo(BookingRepo):
                 transaction_record.responsible, transaction_record.description
             )
             yield FixedBooking(record.court, self.client_repo.get(record.client_id), record.start, record.end,
-                               record.day_of_week, transaction, record.activated_again)
+                               record.day_of_week, record.inactive_dates, transaction)
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
