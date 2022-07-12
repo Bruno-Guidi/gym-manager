@@ -61,6 +61,17 @@ class MockBookingRepo(BookingRepo):
         pass
 
 
+def test_FixedBooking_isActive():
+    # noinspection PyTypeChecker
+    booking = FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0)
+
+    assert booking.is_active(date(2022, 7, 12))
+
+    booking.activated_again = date(2022, 7, 19)
+    assert (not booking.is_active(date(2022, 7, 12)) and not booking.is_active(date(2022, 7, 18))
+            and booking.is_active(date(2022, 7, 19)))
+
+
 def test_FixedBookingHandler_bookingAvailable():
     # noinspection PyTypeChecker
     fixed_handler = FixedBookingHandler(

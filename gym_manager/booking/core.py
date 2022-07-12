@@ -189,11 +189,7 @@ class FixedBooking(Booking):
         return NotImplemented
 
     def collides(self, start: time, end: time, when: date | None = None) -> bool:
-        # If there is no activated_again date, then the fixed booking was never inactive.
-        # If there is activated_date, but it is previous to the date of the new booking, the fixed booking is active
-        # again.
-        # In both cases, delegates the evaluation to super().collides(args).
-        if self.activated_again is None or when >= self.activated_again:
+        if self.is_active(when):
             return super().collides(start, end)
         # If *when* is previous to the date when the fixed booking is "active" again, then there is no collision.
         # Note: when < date (when before date) is equivalent to when >= date.
@@ -209,6 +205,14 @@ class FixedBooking(Booking):
     @when.setter
     def when(self, when: date):
         self._last_when = when
+
+    def is_active(self, reference_date: date) -> bool:
+        """Determines if the booking is active.
+        """
+        # If there is no activated_again date, then the fixed booking was never inactive.
+        # If there is activated_date, but it is previous to the date of the new booking, the fixed booking is active
+        # again.
+        return self.activated_again is None or reference_date >= self.activated_again
 
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
