@@ -7,7 +7,7 @@ from gym_manager import peewee
 from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
     Booking, time_range, Block)
-from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates
+from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
 
@@ -76,14 +76,19 @@ def test_timeRange():
     assert [td for td in time_range(time(8, 0), time(9, 30), minute_step=30)] == expected
 
 
-def test_serializeInactiveDates():
+def test_serialization_inactiveDates():
     result = [{"from": "2022-10-10", "to": "2022-10-12"}, {"from": "2022-10-12", "to": "2022-10-14"},
               {"from": "2022-10-14", "to": "2022-10-16"}, {"from": "2022-10-16", "to": "2022-10-18"}]
     to_serialize = [{"from": date(2022, 10, 10), "to": date(2022, 10, 12)},
                     {"from": date(2022, 10, 12), "to": date(2022, 10, 14)},
                     {"from": date(2022, 10, 14), "to": date(2022, 10, 16)},
                     {"from": date(2022, 10, 16), "to": date(2022, 10, 18)}]
+
     assert result == serialize_inactive_dates(to_serialize)
+    assert to_serialize == deserialize_inactive_dates(result)
+
+    assert to_serialize == deserialize_inactive_dates((serialize_inactive_dates(to_serialize)))
+    assert result == serialize_inactive_dates(deserialize_inactive_dates(result))
 
 
 def test_TempBooking_collides():

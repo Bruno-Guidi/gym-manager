@@ -20,6 +20,11 @@ def serialize_inactive_dates(inactive_dates: list[dict[str, date]]):
     return [{key: str(date_) for key, date_ in date_range.items()} for date_range in inactive_dates]
 
 
+def deserialize_inactive_dates(raw_inactive_dates: list[dict[str, str]]):
+    return [{key: datetime.strptime(date_, "%Y-%m-%d").date() for key, date_ in date_range.items()}
+            for date_range in raw_inactive_dates]
+
+
 class BookingTable(Model):
     when = DateTimeField(primary_key=True)
     court = CharField()
