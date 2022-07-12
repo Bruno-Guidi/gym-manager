@@ -400,13 +400,14 @@ class BookingSystem:
 
     def cancel(
             self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
-            cancel_date: date | None = None
+            cancel_datetime: datetime | None = None
     ):
         if not definitely_cancelled:
             booking.cancel(booking_date)
-        cancel_date = date.today() if cancel_date is None else cancel_date
+        cancel_datetime = datetime.now() if cancel_datetime is None else cancel_datetime
         # ToDo here should go the call to ResponsibleLogger, so the id of the new log is generated, and can be used to as FK in the cancellations log.
-        self.repo.cancel(booking, responsible, cancel_date, definitely_cancelled)
+        self.repo.cancel(booking, definitely_cancelled)
+        self.repo.log_cancellation(cancel_datetime, responsible, booking, definitely_cancelled)
 
     def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
         booking.transaction, booking.when = transaction, booking_date
