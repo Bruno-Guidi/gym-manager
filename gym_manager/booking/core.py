@@ -128,11 +128,10 @@ class Booking(abc.ABC):
 class TempBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, state: State, when: date,
+            self, court: str, client: Client, start: time, end: time, when: date,
             transaction: Transaction | None = None, is_fixed: bool = False
             ):
         super().__init__(court, client, start, end, transaction)
-        self.state = state
         self.when = when
         self.is_fixed = is_fixed
 
@@ -322,7 +321,7 @@ class BookingSystem:
         if is_fixed:
             booking = FixedBooking(court, client, start, end, when.weekday())
         else:
-            booking = TempBooking(court, client, start, end, State(BOOKING_TO_HAPPEN), when)
+            booking = TempBooking(court, client, start, end, when)
 
         self.repo.add(booking)
         return booking
