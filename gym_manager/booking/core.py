@@ -95,11 +95,12 @@ class State:
 
 class Booking(abc.ABC):
 
-    def __init__(self, court: str, client: Client, start: time, end: time):
+    def __init__(self, court: str, client: Client, start: time, end: time, transaction: Transaction | None = None):
         self.court = court
         self.client = client
         self.start = start
         self.end = end
+        self.transaction = transaction
 
     # noinspection PyChainedComparisons
     def collides(self, start: time, end: time) -> bool:
@@ -128,11 +129,11 @@ class TempBooking(Booking):
 
     def __init__(
             self, court: str, client: Client, start: time, end: time, state: State, when: date,
-            transaction: Transaction | None = None, is_fixed: bool = False):
-        super().__init__(court, client, start, end)
+            transaction: Transaction | None = None, is_fixed: bool = False
+            ):
+        super().__init__(court, client, start, end, transaction)
         self.state = state
         self.when = when
-        self.transaction = transaction
         self.is_fixed = is_fixed
 
     def update_state(self, new_state: str, updated_by: str) -> State:
@@ -147,9 +148,9 @@ class FixedBooking(Booking):
 
     def __init__(
             self, court: str, client: Client, start: time, end: time, day_of_week: int,
-            activated_again: date | None = None
+            transaction: Transaction | None = None, activated_again: date | None = None
     ):
-        super().__init__(court, client, start, end)
+        super().__init__(court, client, start, end, transaction)
         self.day_of_week = day_of_week
         # In theory this attr should be set to None after the date passes, but because of how collides(args) is
         # implemented, there is no need to do it.
