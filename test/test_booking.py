@@ -146,4 +146,4 @@ def test_integration_registerCharge_fixedBooking():
 
     # The length of all temporal bookings is checked to ensure that the charge was registered.
     assert booking.transaction == transaction and len([b for b in booking_repo.all_temporal()]) == 1
-    assert booking == [b for b in booking_repo.all_fixed()][0]
+    assert booking.transaction == [b for b in booking_repo.all_fixed()][0].transaction
