@@ -402,9 +402,9 @@ class BookingSystem:
             self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
             cancel_datetime: datetime | None = None
     ):
-        if definitely_cancelled:
+        if definitely_cancelled and booking.is_fixed:
             self.fixed_booking_handler.cancel(booking)
-        else:
+        if not definitely_cancelled:
             booking.cancel(booking_date)
         cancel_datetime = datetime.now() if cancel_datetime is None else cancel_datetime
         # ToDo here should go the call to ResponsibleLogger, so the id of the new log is generated, and can be used to as FK in the cancellations log.
