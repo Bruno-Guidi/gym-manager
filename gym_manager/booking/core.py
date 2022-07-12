@@ -358,7 +358,6 @@ class BookingRepo(abc.ABC):
     @abc.abstractmethod
     def all_temporal(
             self,
-            states: tuple[str, ...] | None = None,
             when: date | None = None,
             court: str | None = None,
             filters: list[FilterValuePair] | None = None

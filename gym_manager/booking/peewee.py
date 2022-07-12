@@ -151,14 +151,11 @@ class SqliteBookingRepo(BookingRepo):
 
     def all_temporal(
             self,
-            states: tuple[str, ...] | None = None,
             when: date | None = None,
             court: str | None = None,
             filters: list[FilterValuePair] | None = None
     ) -> Generator[TempBooking, None, None]:
         bookings_q = BookingTable.select()
-        if states is not None:
-            bookings_q = bookings_q.where(BookingTable.state.in_(states))
         if when is not None:
             year, month, day = when.year, when.month, when.day
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
