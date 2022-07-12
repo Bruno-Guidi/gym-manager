@@ -1,4 +1,4 @@
-from datetime import date, time
+from datetime import date, time, datetime
 from typing import Generator
 
 from gym_manager import peewee
@@ -23,10 +23,12 @@ class MockBookingRepo(BookingRepo):
     ) -> TempBooking:
         pass
 
-    def update(self, booking: TempBooking, prev_state: State):
+    def cancel(self, booking: Booking, definitely_cancelled: bool = True):
         pass
 
-    def cancel(self, booking: Booking, definitely_cancelled: bool = True):
+    def log_cancellation(
+            self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
+    ):
         pass
 
     def all_temporal(
