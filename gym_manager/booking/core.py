@@ -184,13 +184,13 @@ class FixedBooking(Booking):
 
     def __init__(
             self, court: str, client: Client, start: time, end: time, day_of_week: int,
-            transaction: Transaction | None = None, activated_again: date | None = None
+            inactive_dates: list[dict[str, date]], transaction: Transaction | None = None
     ):
         super().__init__(court, client, start, end, transaction)
         self.day_of_week = day_of_week
         # In theory this attr should be set to None after the date passes, but because of how collides(args) is
         # implemented, there is no need to do it.
-        self.activated_again = activated_again
+        self.inactive_dates = inactive_dates
         self._last_when: date | None = None
 
     def __eq__(self, other: FixedBooking) -> bool:
@@ -225,12 +225,11 @@ class FixedBooking(Booking):
             pass
 
     def is_active(self, reference_date: date) -> bool:
-        """Determines if the booking is active.
+        """Determines if the booking is active. The booking will be active if *reference_date* is not between any of the
+        existing date ranges in *self.inactive_dates*.
         """
-        # If there is no activated_again date, then the fixed booking was never inactive.
-        # If there is activated_date, but it is previous to the date of the new booking, the fixed booking is active
-        # again.
-        return self.activated_again is None or reference_date >= self.activated_again
+        for date_range in self.inactive_dates:
+            return reference_date < date_range["from"] or reference_date > date_range["to"]
 
     def update_state(self, new_state: str, updated_by: str) -> State:
         """Updates the current state of the booking, and return the previous one.
@@ -376,7 +375,7 @@ class BookingSystem:
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start, duration).time()
         if is_fixed:
-            booking = FixedBooking(court, client, start, end, when.weekday())
+            booking = FixedBooking(court, client, start, end, when.weekday(), inactive_dates=[])
         else:
             booking = TempBooking(court, client, start, end, when)
 
