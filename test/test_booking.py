@@ -56,10 +56,12 @@ class MockBookingRepo(BookingRepo):
 
     def all_fixed(self) -> list[FixedBooking]:
         # noinspection PyTypeChecker
-        return [FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
-                FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
-                FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0),
-                FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1)]
+        return [
+            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+            FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1, last_when=date(2022, 7, 12))
+        ]
 
     def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
         pass
@@ -161,7 +163,7 @@ def test_BookingSystem_blockRange():
 
 def test_FixedBooking_isActive():
     # noinspection PyTypeChecker
-    booking = FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0)
+    booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11))
 
     assert booking.is_active(date(2022, 7, 12))
 
@@ -188,10 +190,10 @@ def test_FixedBookingHandler_bookingAvailable():
     # noinspection PyTypeChecker
     fixed_handler = FixedBookingHandler(
         courts=("1", "2"), fixed_bookings=[
-            FixedBooking("1", client=None, start=time(9, 0), end=time(10, 0), day_of_week=0),
-            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
-            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
-            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)
+            FixedBooking("1", None, start=time(9, 0), end=time(10, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))
         ]
     )
 
@@ -209,12 +211,12 @@ def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
     # noinspection PyTypeChecker
     fixed_handler = FixedBookingHandler(
         courts=("1", "2"), fixed_bookings=[
-            FixedBooking("1", client=None, start=time(9, 0), end=time(10, 0), day_of_week=0,
+            FixedBooking("1", None, start=time(9, 0), end=time(10, 0), day_of_week=0, last_when=date(2022, 7, 11),
                          inactive_dates=[{"from": date(2022, 7, 18), "to": date(2022, 7, 25)}]),
-            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0,
+            FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11),
                          inactive_dates=[{"from": date(2022, 7, 25), "to": date(2022, 8, 1)}]),
-            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
-            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)
+            FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))
         ]
     )
 
@@ -258,16 +260,16 @@ def test_BookingSystem_bookings():
                             start=time(12, 0), end=time(13, 0)),
                 TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
                             start=time(16, 0), end=time(17, 0)),
-                FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
-                FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
-                FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)]
+                FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+                FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+                FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))]
     result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 11))]
     assert result == expected
 
     # noinspection PyTypeChecker
-    expected = [FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0),
-                FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0),
-                FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0)]
+    expected = [FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+                FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
+                FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))]
     result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 18))]
     assert result == expected
 
@@ -276,7 +278,7 @@ def test_BookingSystem_bookings():
                             start=time(16, 0), end=time(17, 0)),
                 TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
                             start=time(16, 0), end=time(17, 0)),
-                FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1)]
+                FixedBooking("2", None, start=time(15, 0), end=time(16, 0), day_of_week=1, last_when=date(2022, 7, 12))]
     result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 12))]
     assert result == expected
 
