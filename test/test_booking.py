@@ -313,7 +313,7 @@ def test_integration_registerCharge_fixedBooking():
     assert booking.transaction == [b for b in booking_repo.all_fixed()][0].transaction
 
 
-def test_integration_cancel_fixedBooking():
+def test_integration_cancelTemporary_fixedBooking():
     # Set up.
     peewee.create_database(":memory:")
 
