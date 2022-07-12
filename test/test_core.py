@@ -154,15 +154,15 @@ def test_base_Client_age():
     client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 12, 15),
                     String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
 
-    assert client.age() == 23
+    assert client.age(reference_date=date(2022, 7, 11)) == 23
 
     client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 7, 12),
                     String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
 
-    assert client.age() == 23
+    assert client.age(reference_date=date(2022, 7, 11)) == 23
 
     client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 7, 11),
                     String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
 
-    assert client.age() == 24
+    assert client.age(reference_date=date(2022, 7, 11)) == 24
 
