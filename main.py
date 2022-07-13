@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication
 
 from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
+from gym_manager.booking.core import BookingSystem, Duration
 from gym_manager.core.base import Currency, String, Activity, Client, Number, Subscription
 from ui.main import MainUI
 
@@ -68,6 +69,11 @@ def main():
         booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), String("d", max_len=10),
                                     charge_once=True, locked=True)
         activity_repo.add(booking_activity)
+    booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo)
+    booking_system = BookingSystem(
+        booking_activity, booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),
+        courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=60
+    )
 
     # test_cli = Client(Number(666), String("TestCli", max_len=20), date(2022, 5, 8), String("TestTel", max_len=20),
     #                   String("TestDesc", max_len=20))
@@ -76,7 +82,7 @@ def main():
     # subscription_repo.add(Subscription(date(2022, 5, 8), test_cli, activity_repo.get("Gym")))
     # ToDo test adding transactions, when they are working again.
 
-    window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo)
+    window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system)
     window.show()
 
     app.exec()

@@ -20,16 +20,10 @@ from ui.widgets import FilterHeader, PageIndex
 class MainController:
 
     def __init__(
-            self, main_ui: BookingMainUI
+            self, main_ui: BookingMainUI, booking_system: BookingSystem
     ) -> None:
         self.main_ui = main_ui
-
-    def _cell_font(self, is_paid: bool) -> QFont:
-        default_font = self.main_ui.booking_table.font()
-        new_font = QFont(default_font)
-        if is_paid:
-            new_font.setUnderline(True)
-        return new_font
+        self.booking_system = booking_system
 
     def _load_booking(
             self, booking: TempBooking, start: int | None = None, end: int | None = None
@@ -109,11 +103,11 @@ class MainController:
 class BookingMainUI(QMainWindow):
 
     def __init__(
-            self
+            self, booking_system: BookingSystem
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self)
+        self.controller = MainController(self, booking_system)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")
