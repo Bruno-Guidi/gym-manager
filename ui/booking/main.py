@@ -147,7 +147,8 @@ class MainController:
             self._cancel_ui.exec_()
             if self._cancel_ui.controller.cancelled:
                 self.main_ui.booking_table.takeItem(row, col)
-                for i in range(row, col):  # Undo the spanning.
+                _, last_row = self.booking_system.block_range(to_cancel.start, to_cancel.end)
+                for i in range(row,last_row):  # Undo the spanning.
                     self.main_ui.booking_table.setSpan(i, col, 1, 1)
 
     def history_ui(self):
