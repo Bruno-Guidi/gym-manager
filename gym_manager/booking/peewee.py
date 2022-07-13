@@ -153,7 +153,7 @@ class SqliteBookingRepo(BookingRepo):
                                           inactive_dates=serialize_inactive_dates(booking.inactive_dates)
                                           ).execute()
         elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
-            BookingTable.delete_by_id(datetime.combine(booking.when, booking.start))
+            BookingTable.delete_by_id((datetime.combine(booking.when, booking.start), booking.court))
 
     def log_cancellation(
             self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
