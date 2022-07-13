@@ -154,7 +154,7 @@ class Booking(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def was_paid(self) -> bool:
+    def was_paid(self, reference_date: date) -> bool:
         raise NotImplementedError
 
 
@@ -196,7 +196,7 @@ class TempBooking(Booking):
         """
         pass
 
-    def was_paid(self) -> bool:
+    def was_paid(self, reference_date: date) -> bool:
         return self.transaction is not None
 
 
@@ -251,8 +251,8 @@ class FixedBooking(Booking):
 
         self._last_when = when
 
-    def was_paid(self) -> bool:
-        return self.transaction is not None and self.transaction.when >= self._last_when
+    def was_paid(self, reference_date: date) -> bool:
+        return self.transaction is not None and self.transaction.when >= reference_date
 
     def cancel(self, when: date):
         """Adds a new entry in the inactive dates list.
