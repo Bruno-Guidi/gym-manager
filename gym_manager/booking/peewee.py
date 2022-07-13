@@ -26,7 +26,7 @@ def deserialize_inactive_dates(raw_inactive_dates: list[dict[str, str]]):
 
 
 class BookingTable(Model):
-    when = DateTimeField(primary_key=True)
+    when = DateTimeField()
     court = CharField()
     client = ForeignKeyField(peewee.ClientTable, backref="bookings")
     end = TimeField()
@@ -35,6 +35,7 @@ class BookingTable(Model):
 
     class Meta:
         database = peewee.DATABASE_PROXY
+        primary_key = CompositeKey("when", "court")
 
 
 class FixedBookingTable(Model):
