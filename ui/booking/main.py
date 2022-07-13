@@ -96,6 +96,32 @@ class MainController:
         if self._create_ui.controller.booking is not None:
             self._load_booking(self._create_ui.controller.booking)
 
+    def charge_booking(self):
+        # noinspection PyAttributeOutsideInit
+        row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
+        when = self.main_ui.date_edit.date().toPyDate()
+        if when > date.today():
+            Dialog.info("Error", "No se puede cobrar turnos de días posteriores al actual.")
+        elif row not in self._bookings and col not in self._bookings[row]:
+            Dialog.info("Error", "No existe un turno en el horario seleccionado.")
+        else:
+            booking = self._bookings[row][col]
+            if booking.was_paid(when):
+                Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
+                                     f"'{booking.transaction.id}'")
+                return
+
+            # noinspection PyAttributeOutsideInit
+            self._charge_ui = ChargeUI(self.transaction_repo, booking.client, self.booking_system.activity.price,
+                                       String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30))
+            self._charge_ui.exec_()
+            transaction = self._charge_ui.controller.transaction
+            if transaction is not None:
+                self.booking_system.register_charge(booking, when, transaction)
+                text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                        f"{' (Pago)' if booking.was_paid(when) else ''}")
+                self.main_ui.booking_table.item(row, col).setText(text)
+
     def cancel_ui(self):
         # noinspection PyAttributeOutsideInit
         pass
@@ -107,26 +133,6 @@ class MainController:
         #     self.main_ui.booking_table.takeItem(start, removed.court.id)
         #     for i in range(start, end):  # Undo the spanning.
         #         self.main_ui.booking_table.setSpan(i, removed.court.id, 1, 1)
-
-    def charge_booking(self):
-        # noinspection PyAttributeOutsideInit
-        row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
-        when = self.main_ui.date_edit.date().toPyDate()
-        if when > date.today():
-            Dialog.info("Error", "No se puede cobrar turnos de días posteriores al actual.")
-        elif row not in self._bookings and col not in self._bookings[row]:
-            Dialog.info("Error", "No existe un turno en el horario seleccionado.")
-        else:
-            booking = self._bookings[row][col]
-            self._charge_ui = ChargeUI(self.transaction_repo, booking.client, self.booking_system.activity.price,
-                                       String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30))
-            self._charge_ui.exec_()
-            transaction = self._charge_ui.controller.transaction
-            if transaction is not None:
-                self.booking_system.register_charge(booking, when, transaction)
-                text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
-                        f"{' (Pago)' if booking.was_paid(when) else ''}")
-                self.main_ui.booking_table.item(row, col).setText(text)
 
     def history_ui(self):
         # noinspection PyAttributeOutsideInit
