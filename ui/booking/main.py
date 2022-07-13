@@ -110,7 +110,6 @@ class MainController:
         # noinspection PyAttributeOutsideInit
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
-        print(self._bookings)
         if when > date.today():
             Dialog.info("Error", "No se puede cobrar turnos de días posteriores al actual.")
         elif row not in self._bookings or col not in self._bookings[row]:
