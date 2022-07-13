@@ -10,6 +10,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
+from ui.booking.main import BookingMainUI
 from ui.client import ClientMainUI
 from ui.widget_config import config_lbl, config_btn
 
@@ -37,7 +38,7 @@ class Controller:
         # noinspection PyUnresolvedReferences
         self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
+        self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
 
@@ -61,11 +62,11 @@ class Controller:
         self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
         self.accounting_main_ui.show()
 
-    # # noinspection PyAttributeOutsideInit
-    # def show_booking_main_ui(self):
-    #     self.booking_main_ui = BookingMainUI(self.client_repo, self.booking_system, self.accounting_system)
-    #     self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
-    #     self.booking_main_ui.show()
+    # noinspection PyAttributeOutsideInit
+    def show_booking_main_ui(self):
+        self.booking_main_ui = BookingMainUI()
+        self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.booking_main_ui.show()
 
 
 class MainUI(QMainWindow):
