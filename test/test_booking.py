@@ -200,13 +200,18 @@ def test_FixedBooking_wasPaid():
     booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=last_when,
                            transaction=transaction)
 
-    assert not booking.was_paid()
+    reference_date = date(2022, 7, 11)  # I'm seeing the booking on the date 2022/07/11.
+
+    assert not booking.was_paid(reference_date)
 
     transaction.when = last_when
-    assert booking.was_paid()
+    assert booking.was_paid(reference_date)
 
     transaction.when = after
-    assert booking.was_paid()
+    assert booking.was_paid(reference_date)
+
+    transaction.when = before
+    assert not booking.was_paid(reference_date)
 
 
 def test_FixedBooking_isActive():
