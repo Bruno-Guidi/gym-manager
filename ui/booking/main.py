@@ -40,7 +40,7 @@ class MainController:
         self.main_ui.create_btn.clicked.connect(self.create_booking)
 
     def _load_booking(
-            self, booking: TempBooking, start: int | None = None, end: int | None = None
+            self, booking: Booking, start: int | None = None, end: int | None = None
     ):
         if start is None or end is None:
             start, end = self.booking_system.block_range(booking.start, booking.end)
@@ -78,8 +78,8 @@ class MainController:
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.client_repo, self.booking_system, self.main_ui.date_edit.date().toPyDate())
         self._create_ui.exec_()
-        # if self._create_ui.controller.booking is not None:
-        #     self._load_booking(self._create_ui.controller.booking)
+        if self._create_ui.controller.booking is not None:
+            self._load_booking(self._create_ui.controller.booking)
 
     def cancel_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -223,7 +223,6 @@ class CreateController:
     def create_booking(self):
         client = self.create_ui.client_combobox.currentData(Qt.UserRole)
         court = self.create_ui.court_combobox.currentData(Qt.UserRole)
-        when = self.create_ui.date_edit.date().toPyDate()
         start_block = self.create_ui.block_combobox.currentData(Qt.UserRole)
         duration = self.create_ui.duration_combobox.currentData(Qt.UserRole)
 
@@ -231,16 +230,16 @@ class CreateController:
             Dialog.info("Error", "Seleccione un cliente.")
         elif not self.create_ui.responsible_field.valid_value():
             Dialog.info("Error", "El campo 'Responsable' no es válido.")
-        elif self.booking_system.out_of_range(start_block, duration):
+        elif self.booking_system.out_of_range(start_block.start, duration):
             Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
                                  f"'{self.booking_system.end}'.")
-        elif not self.booking_system.booking_available(when, court, start_block, duration,
+        elif not self.booking_system.booking_available(self.when, court, start_block.start, duration,
                                                        self.create_ui.fixed_checkbox.isChecked()):
             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
         else:
-            is_fixed = self.create_ui.fixed_checkbox.isChecked()
             responsible = self.create_ui.responsible_field.value()
-            self.booking = self.booking_system.book(court, client, is_fixed, when, start_block, duration)
+            self.booking = self.booking_system.book(court, client, self.create_ui.fixed_checkbox.isChecked(), self.when,
+                                                    start_block.start, duration)
             Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
             self.create_ui.client_combobox.window().close()
 
