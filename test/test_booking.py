@@ -315,7 +315,7 @@ def test_integration_registerCharge_fixedBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))
@@ -345,7 +345,7 @@ def test_integration_cancelTemporary_fixedBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))
@@ -380,7 +380,7 @@ def test_integration_cancelDefinitely_fixedBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))
@@ -414,7 +414,7 @@ def test_integration_cancelDefinitely_tempBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))
