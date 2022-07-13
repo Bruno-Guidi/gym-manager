@@ -44,6 +44,7 @@ class FixedBookingTable(Model):
     client = ForeignKeyField(peewee.ClientTable, backref="fixed_bookings")
     end = TimeField()
     transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_fixed_booking", null=True)
+    first_when = DateField()
     last_when = DateField()
     inactive_dates = JSONField()
 
@@ -94,6 +95,7 @@ class SqliteBookingRepo(BookingRepo):
                                      start=booking.start,
                                      client_id=booking.client.dni.as_primitive(),
                                      end=booking.end,
+                                     first_when=booking.first_when,
                                      last_when=booking.when,
                                      inactive_dates=[])
         elif isinstance(booking, TempBooking):
@@ -116,6 +118,7 @@ class SqliteBookingRepo(BookingRepo):
                                       client_id=booking.client.dni.as_primitive(),
                                       end=booking.end,
                                       transaction_id=booking.transaction.id,
+                                      first_when=booking.first_when,
                                       last_when=booking.when,
                                       inactive_dates=booking.inactive_dates).execute()
             # Creates a TempBooking based on the FixedBooking, so the charging is registered.
@@ -144,6 +147,7 @@ class SqliteBookingRepo(BookingRepo):
                 FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
                                           client_id=booking.client.dni.as_primitive(), end=booking.end,
                                           transaction_id=transaction_id,
+                                          first_when=booking.first_when,
                                           last_when=booking.when,
                                           inactive_dates=serialize_inactive_dates(booking.inactive_dates)
                                           ).execute()
@@ -217,8 +221,8 @@ class SqliteBookingRepo(BookingRepo):
                     transaction_record.responsible, transaction_record.description
                 )
             yield FixedBooking(record.court, self.client_repo.get(record.client_id), record.start, record.end,
-                               record.day_of_week, record.last_when, deserialize_inactive_dates(record.inactive_dates),
-                               transaction)
+                               record.day_of_week, record.first_when, record.last_when,
+                               deserialize_inactive_dates(record.inactive_dates), transaction)
 
     def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
         cancelled_q = CancelledLog.select(

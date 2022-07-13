@@ -203,18 +203,18 @@ class TempBooking(Booking):
 class FixedBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, day_of_week: int, last_when: date,
-            inactive_dates: list[dict[str, date]] | None = None, transaction: Transaction | None = None
+            self, court: str, client: Client, start: time, end: time, day_of_week: int, first_when: date,
+            last_when: date | None = None, inactive_dates: list[dict[str, date]] | None = None,
+            transaction: Transaction | None = None
     ):
-        if day_of_week != last_when.weekday():
+        if day_of_week != first_when.weekday():
             raise OperationalError(f"The [day_of_week={day_of_week}] of the fixed booking is different than the "
-                                   f"[day_of_week={last_when.weekday()}] of [last_when={last_when}]")
+                                   f"[day_of_week={first_when.weekday()}] of [first_when={first_when}]")
         super().__init__(court, client, start, end, transaction)
         self.day_of_week = day_of_week
-        # In theory this attr should be set to None after the date passes, but because of how collides(args) is
-        # implemented, there is no need to do it.
         self.inactive_dates = [] if inactive_dates is None else inactive_dates
-        self._last_when = last_when
+        self.first_when = first_when
+        self._last_when = first_when if last_when is None else last_when
 
     def __eq__(self, other: FixedBooking) -> bool:
         if isinstance(other, type(self)):
