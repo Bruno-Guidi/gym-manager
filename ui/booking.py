@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import (
     BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD,
-    remaining_blocks, Booking)
+    remaining_blocks, Booking, Duration, subtract_times)
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
@@ -23,6 +23,9 @@ from ui.widget_config import (
 from ui.widgets import FilterHeader, PageIndex, Field, Dialog
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
+
+
+DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
 
 
 class MainController:
@@ -52,6 +55,8 @@ class MainController:
         self.main_ui.charge_btn.clicked.connect(self.charge_booking)
         # noinspection PyUnresolvedReferences
         self.main_ui.cancel_btn.clicked.connect(self.cancel_booking)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.history_btn.clicked.connect(self.cancelled_bookings)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -155,12 +160,11 @@ class MainController:
 
                 self._bookings[row].pop(col)
 
-    def history_ui(self):
+    def cancelled_bookings(self):
         # noinspection PyAttributeOutsideInit
-        pass
-        # self._history_ui = HistoryUI(self.booking_system)
-        # self._history_ui.setWindowModality(Qt.ApplicationModal)
-        # self._history_ui.show()
+        self._history_ui = HistoryUI(self.booking_system)
+        self._history_ui.setWindowModality(Qt.ApplicationModal)
+        self._history_ui.show()
 
 
 class BookingMainUI(QMainWindow):
@@ -528,78 +532,84 @@ class CancelUI(QDialog):
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
-# class HistoryController:
-#
-#     def __init__(self, history_ui: HistoryUI, booking_system: BookingSystem) -> None:
-#         self.booking_system = booking_system
-#         self.history_ui = history_ui
-#         self.current_page, self.page_len = 1, 20
-#
-#         # Configure the filtering widget.
-#         filters = (ClientLike("client_name", display_name="Nombre cliente",
-#                               translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
-#                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-#                                translate_fun=lambda trans, value: trans.client.dni == value))
-#         date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
-#                                           translate_fun=lambda trans, when: trans.when >= when)
-#         date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
-#                                         translate_fun=lambda trans, when: trans.when <= when)
-#         self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter,
-#         date_lesser_filter)
-#
-#         # Configures the page index.
-#         self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
-#                                           page_len=10, total_len=self.booking_system.repo.count())
-#
-#         # Fills the table.
-#         self.history_ui.filter_header.on_search_click()
-#
-#     def fill_booking_table(self, filters: list[FilterValuePair]):
-#         self.history_ui.booking_table.setRowCount(0)
-#
-#         self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
-#         for row, booking in enumerate(self.booking_system.repo.all(filters=filters)):
-#             self.history_ui.booking_table.setRowCount(row + 1)
-#             fill_cell(self.history_ui.booking_table, row, 0, booking.when.strftime(constants.DATE_FORMAT), int)
-#             fill_cell(self.history_ui.booking_table, row, 1, booking.court.name, str)
-#             fill_cell(self.history_ui.booking_table, row, 2, booking.start.strftime('%H:%M'), int)
-#             fill_cell(self.history_ui.booking_table, row, 3, booking.end.strftime('%H:%M'), int)
-#             fill_cell(self.history_ui.booking_table, row, 4, booking.client.name, str)
-#             fill_cell(self.history_ui.booking_table, row, 5, booking.state.updated_by, str)
-#             fill_cell(self.history_ui.booking_table, row, 6, booking.state.name, str)
-#
-#
-# class HistoryUI(QMainWindow):
-#
-#     def __init__(self, booking_system: BookingSystem) -> None:
-#         super().__init__()
-#         self._setup_ui()
-#         self.controller = HistoryController(self, booking_system)
-#
-#     def _setup_ui(self):
-#         self.setWindowTitle("Historial de turnos")
-#         self.widget = QWidget()
-#         self.setCentralWidget(self.widget)
-#         self.layout = QVBoxLayout(self.widget)
-#
-#         # Filtering.
-#         self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
-#         self.layout.addWidget(self.filter_header)
-#
-#         # Bookings.
-#         self.booking_table = QTableWidget(self.widget)
-#         self.layout.addWidget(self.booking_table)
-#         config_table(
-#             target=self.booking_table, allow_resizing=True, min_rows_to_show=10,
-#             columns={"Fecha": (10, str), "Cancha": (12, str), "Inicio": (6, int), "Fin": (6, int),
-#                      "Cliente": (constants.CLIENT_NAME_CHARS // 2, str),
-#                      "Responsable": (constants.CLIENT_NAME_CHARS // 2, str),
-#                      "Estado": (10, str)}
-#         )
-#
-#         # Index.
-#         self.page_index = PageIndex(self)
-#         self.layout.addWidget(self.page_index)
-#
-#         # Adjusts size.
-#         self.setMaximumWidth(self.widget.sizeHint().width())
+
+class HistoryController:
+
+    def __init__(self, history_ui: HistoryUI, booking_system: BookingSystem) -> None:
+        self.booking_system = booking_system
+        self.history_ui = history_ui
+        self._durations: dict[int, Duration] = {duration.as_timedelta.seconds: duration
+                                                for duration in booking_system.durations}
+
+        # Configure the filtering widget.
+        filters = (ClientLike("client_name", display_name="Nombre cliente",
+                              translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
+                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                               translate_fun=lambda trans, value: trans.client.dni == value))
+        date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
+                                          translate_fun=lambda trans, when: trans.when >= when)
+        date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
+                                        translate_fun=lambda trans, when: trans.when <= when)
+        self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter, date_lesser_filter)
+
+        # Configures the page index.
+        self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
+                                          page_len=20, total_len=self.booking_system.repo.count())
+
+        # Fills the table.
+        self.history_ui.filter_header.on_search_click()
+
+    def fill_booking_table(self, filters: list[FilterValuePair]):
+        self.history_ui.booking_table.setRowCount(0)
+
+        self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
+        for row, cancelled in enumerate(self.booking_system.repo.cancelled(self.history_ui.page_index.page,
+                                                                           self.history_ui.page_index.page_len, )):
+            columns = {"Día": (4, bool),
+                       "Fijo": (4, bool)}
+            fill_cell(self.history_ui.booking_table, row, 0,
+                      cancelled.cancel_datetime.strftime(constants.DATE_TIME_FORMAT), bool)
+            fill_cell(self.history_ui.booking_table, row, 1, cancelled.when.strftime(constants.DATE_FORMAT), bool)
+            fill_cell(self.history_ui.booking_table, row, 2, cancelled.court, bool)
+            fill_cell(self.history_ui.booking_table, row, 3, cancelled.start.strftime('%Hh:%Mm'), bool)
+            duration = self._durations[subtract_times(cancelled.start, cancelled.end).seconds]
+            fill_cell(self.history_ui.booking_table, row, 4, duration.as_str, bool)
+            fill_cell(self.history_ui.booking_table, row, 5, cancelled.client, str)
+            fill_cell(self.history_ui.booking_table, row, 6, cancelled.responsible, str)
+            fill_cell(self.history_ui.booking_table, row, 7, DAYS_NAMES[cancelled.when.weekday()], bool)
+            fill_cell(self.history_ui.booking_table, row, 8, "Si" if cancelled.is_fixed else "No", bool)
+
+
+class HistoryUI(QMainWindow):
+
+    def __init__(self, booking_system: BookingSystem) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = HistoryController(self, booking_system)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Turnos cancelados")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        # Filtering.
+        self.filter_header = FilterHeader(date_greater_filtering=True, date_lesser_filtering=True, parent=self.widget)
+        self.layout.addWidget(self.filter_header)
+
+        # Bookings.
+        self.booking_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.booking_table)
+        config_table(
+            target=self.booking_table, allow_resizing=True, min_rows_to_show=10,
+            columns={"Fecha borrado": (14, bool), "Fecha turno": (10, bool), "Cancha": (6, bool), "Hora": (6, bool),
+                     "Duración": (8, int), "Cliente": (18, str), "Responsable": (18, str), "Día": (4, bool),
+                     "Fijo": (4, bool)}
+        )
+
+        # Index.
+        self.page_index = PageIndex(self)
+        self.layout.addWidget(self.page_index)
+
+        # Adjusts size.
+        self.setMaximumWidth(self.widget.sizeHint().width())
