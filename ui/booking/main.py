@@ -437,10 +437,6 @@ class CancelUI(QDialog):
         self.setWindowTitle("Cancelar turno")
         self.layout = QVBoxLayout(self)
 
-        # Filtering.
-        self.filter_header = FilterHeader(show_clear_button=False, parent=self)
-        self.layout.addWidget(self.filter_header)
-
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)

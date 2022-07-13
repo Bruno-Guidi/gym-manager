@@ -491,7 +491,7 @@ class ChargeUI(QDialog):
 
         self.client_line = QLineEdit(self)
         self.form_layout.addWidget(self.client_line, 0, 1)
-        config_line(self.client_line, read_only=True)
+        config_line(self.client_line, read_only=True, adjust_to_hint=False)
 
         # Method.
         self.method_lbl = QLabel(self)
@@ -500,7 +500,7 @@ class ChargeUI(QDialog):
 
         self.method_combobox = QComboBox(self)
         self.form_layout.addWidget(self.method_combobox, 1, 1)
-        config_combobox(self.method_combobox, fixed_width=self.client_line.width())
+        config_combobox(self.method_combobox)
 
         # Amount.
         self.amount_lbl = QLabel(self)
@@ -509,7 +509,7 @@ class ChargeUI(QDialog):
 
         self.amount_line = QLineEdit(parent=self)
         self.form_layout.addWidget(self.amount_line, 2, 1)
-        config_line(self.amount_line, enabled=False)
+        config_line(self.amount_line, enabled=False, adjust_to_hint=False)
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
@@ -518,7 +518,7 @@ class ChargeUI(QDialog):
 
         self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 3, 1)
-        config_line(self.responsible_field)
+        config_line(self.responsible_field, adjust_to_hint=False)
 
         # Description.
         self.descr_lbl = QLabel(self)
