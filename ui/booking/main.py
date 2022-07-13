@@ -151,6 +151,8 @@ class MainController:
                 for i in range(row, last_row):  # Undo the spanning.
                     self.main_ui.booking_table.setSpan(i, col, 1, 1)
 
+                self._bookings[row].pop(col)
+
     def history_ui(self):
         # noinspection PyAttributeOutsideInit
         pass
