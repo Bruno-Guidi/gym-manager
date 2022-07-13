@@ -111,7 +111,10 @@ class MainController:
     def charge_booking(self):
         # noinspection PyAttributeOutsideInit
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
-        if row not in self._bookings and col not in self._bookings[row]:
+        when = self.main_ui.date_edit.date().toPyDate()
+        if when > date.today():
+            Dialog.info("Error", "No se puede cobrar turnos de días posteriores al actual.")
+        elif row not in self._bookings and col not in self._bookings[row]:
             Dialog.info("Error", "No existe un turno en el horario seleccionado.")
         else:
             booking = self._bookings[row][col]
@@ -120,7 +123,6 @@ class MainController:
             self._charge_ui.exec_()
             transaction = self._charge_ui.controller.transaction
             if transaction is not None:
-                when = self.main_ui.date_edit.date().toPyDate()
                 self.booking_system.register_charge(booking, when, transaction)
                 text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
                         f"{' (Pago)' if booking.was_paid(when) else ''}")
