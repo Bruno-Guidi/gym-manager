@@ -72,14 +72,12 @@ class SqliteBookingRepo(BookingRepo):
 
     def __init__(
             self,
-            existing_courts: tuple[Court, ...],
             client_repo: ClientRepo,
             transaction_repo: TransactionRepo,
             cache_len: int = 100
     ) -> None:
         BookingTable._meta.database.create_tables([BookingTable, FixedBookingTable, CancelledLog])
 
-        self.courts = {court.name: court for court in existing_courts}
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
 
