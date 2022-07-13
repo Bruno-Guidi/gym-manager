@@ -29,7 +29,7 @@ class MainController:
     ) -> None:
         self.main_ui = main_ui
         self.booking_system = booking_system
-        self._courts = {name: number + 1 for number, name in enumerate(booking_system.courts())}
+        self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
 
         self.load_bookings()
 
