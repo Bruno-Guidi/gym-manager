@@ -141,6 +141,8 @@ class MainController:
         to_cancel = self._bookings[row][col]
         if when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()):
             Dialog.info("Error", "No se puede cancelar un turno que ya sucedió.")
+        elif to_cancel.was_paid(when):
+            Dialog.info("Error", "No se puede cancelar un turno que ya cobrado.")
         else:
             # noinspection PyAttributeOutsideInit
             self._cancel_ui = CancelUI(self.booking_system, to_cancel, when)
