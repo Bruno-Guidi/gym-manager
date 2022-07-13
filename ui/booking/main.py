@@ -9,15 +9,17 @@ from PyQt5.QtWidgets import (
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu, QDialog, QGridLayout, QLabel,
     QComboBox, QCheckBox)
 
-from gym_manager.booking.core import BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD
+from gym_manager.booking.core import (
+    BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD,
+    current_block_start, Booking)
 from gym_manager.core import constants
-from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String
+from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
-    config_combobox, config_checkbox, config_line)
-from ui.widgets import FilterHeader, PageIndex, Field
+    config_combobox, config_checkbox, config_line, fill_combobox)
+from ui.widgets import FilterHeader, PageIndex, Field, Dialog
 
 
 class MainController:
@@ -73,7 +75,7 @@ class MainController:
 
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
-        self._create_ui = CreateUI()
+        self._create_ui = CreateUI(self.booking_system)
         self._create_ui.exec_()
         # if self._create_ui.controller.booking is not None:
         #     self._load_booking(self._create_ui.controller.booking)
@@ -179,73 +181,76 @@ class BookingMainUI(QMainWindow):
         self.setMaximumWidth(self.widget.sizeHint().width())
 
 
-# class CreateController:
-#
-#     def __init__(self, book_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
-#         self.client_repo = client_repo
-#         self.booking_system = booking_system
-#         self.booking: TempBooking | None = None
-#
-#         self.book_ui = book_ui
-#
-#         fill_combobox(self.book_ui.court_combobox, self.booking_system.courts(), lambda court: court.name)
-#         self._fill_block_combobox()
-#         fill_combobox(self.book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
-#
-#         # Configure the filtering widget.
-#         filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
-#                             translate_fun=lambda client, value: client.cli_name.contains(value)),
-#                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-#                                translate_fun=lambda client, value: client.dni == value))
-#         self.book_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
-#
-#         # noinspection PyUnresolvedReferences
-#         self.book_ui.confirm_btn.clicked.connect(self.book)
-#         # noinspection PyUnresolvedReferences
-#         self.book_ui.cancel_btn.clicked.connect(self.book_ui.reject)
-#         # noinspection PyUnresolvedReferences
-#         self.book_ui.date_edit.dateChanged.connect(self._fill_block_combobox)
-#
-#     def _fill_block_combobox(self):
-#         blocks = self.booking_system.blocks(current_block_start(self.booking_system.blocks(),
-#                                                                 self.book_ui.date_edit.date().toPyDate()))
-#         fill_combobox(self.book_ui.block_combobox, blocks, lambda block: str(block.start))
-#         config_combobox(self.book_ui.block_combobox)
-#         config_combobox(self.book_ui.court_combobox, fixed_width=self.book_ui.block_combobox.width())
-#         config_combobox(self.book_ui.duration_combobox, fixed_width=self.book_ui.block_combobox.width())
-#
-#     def fill_client_combobox(self, filters: list[FilterValuePair]):
-#         fill_combobox(self.book_ui.client_combobox,
-#                       self.client_repo.all(page=1, filters=filters),
-#                       lambda client: client.name.as_primitive())
-#
-#     def book(self):
-#         client = self.book_ui.client_combobox.currentData(Qt.UserRole)
-#         court = self.book_ui.court_combobox.currentData(Qt.UserRole)
-#         when = self.book_ui.date_edit.date().toPyDate()
-#         start_block = self.book_ui.block_combobox.currentData(Qt.UserRole)
-#         duration = self.book_ui.duration_combobox.currentData(Qt.UserRole)
-#
-#         if client is None:
-#             Dialog.info("Error", "Seleccione un cliente.")
-#         elif self.booking_system.out_of_range(start_block, duration):
-#             Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
-#                                  f"'{self.booking_system.end}'.")
-#         elif not self.booking_system.booking_available(when, court, start_block, duration):
-#             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
-#         else:
-#             is_fixed = self.book_ui.fixed_checkbox.isChecked()
-#             self.booking = self.booking_system.book(court, client, is_fixed, when, start_block, duration)[0]
-#             Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
-#             self.book_ui.client_combobox.window().close()
+class CreateController:
+
+    def __init__(self, create_ui: CreateUI, booking_system: BookingSystem) -> None:
+        self.create_ui = create_ui
+        self.booking_system = booking_system
+        self.booking: Booking | None = None
+
+        fill_combobox(self.create_ui.court_combobox, self.booking_system.court_names, lambda court: court)
+        self._fill_block_combobox()
+        fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
+
+        # Configure the filtering widget.
+        filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
+                            translate_fun=lambda client, value: client.cli_name.contains(value)),
+                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+                               translate_fun=lambda client, value: client.dni == value))
+        self.create_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
+
+        # noinspection PyUnresolvedReferences
+        self.create_ui.confirm_btn.clicked.connect(self.create_booking)
+        # noinspection PyUnresolvedReferences
+        self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+        # noinspection PyUnresolvedReferences
+        self.create_ui.date_edit.dateChanged.connect(self._fill_block_combobox)
+
+    def _fill_block_combobox(self):
+        blocks = self.booking_system.blocks(current_block_start(self.booking_system.blocks(),
+                                                                self.create_ui.date_edit.date().toPyDate()))
+        fill_combobox(self.create_ui.block_combobox, blocks, lambda block: str(block.start))
+        config_combobox(self.create_ui.block_combobox)
+        config_combobox(self.create_ui.court_combobox, fixed_width=self.create_ui.block_combobox.width())
+        config_combobox(self.create_ui.duration_combobox, fixed_width=self.create_ui.block_combobox.width())
+
+    def fill_client_combobox(self, filters: list[FilterValuePair]):
+        pass
+        # fill_combobox(self.book_ui.client_combobox,
+        #               self.client_repo.all(page=1, filters=filters),
+        #               lambda client: client.name.as_primitive())
+
+    def create_booking(self):
+        client = self.create_ui.client_combobox.currentData(Qt.UserRole)
+        court = self.create_ui.court_combobox.currentData(Qt.UserRole)
+        when = self.create_ui.date_edit.date().toPyDate()
+        start_block = self.create_ui.block_combobox.currentData(Qt.UserRole)
+        duration = self.create_ui.duration_combobox.currentData(Qt.UserRole)
+
+        if client is None:
+            Dialog.info("Error", "Seleccione un cliente.")
+        elif not self.create_ui.responsible_field.valid_value():
+            Dialog.info("Error", "El campo 'Responsable' no es válido.")
+        elif self.booking_system.out_of_range(start_block, duration):
+            Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
+                                 f"'{self.booking_system.end}'.")
+        elif not self.booking_system.booking_available(when, court, start_block, duration,
+                                                       self.create_ui.fixed_checkbox.isChecked()):
+            Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
+        else:
+            is_fixed = self.create_ui.fixed_checkbox.isChecked()
+            responsible = self.create_ui.responsible_field.value()
+            self.booking = self.booking_system.book(court, client, is_fixed, when, start_block, duration)
+            Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
+            self.create_ui.client_combobox.window().close()
 
 
 class CreateUI(QDialog):
 
-    def __init__(self) -> None:
+    def __init__(self, booking_system: BookingSystem) -> None:
         super().__init__()
         self._setup_ui()
-        # self.controller = CreateController(self, client_repo, booking_system)
+        self.controller = CreateController(self, booking_system)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
