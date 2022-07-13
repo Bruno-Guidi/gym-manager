@@ -557,7 +557,7 @@ class HistoryController:
 
         # Configures the page index.
         self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
-                                          page_len=20, total_len=self.booking_system.repo.count())
+                                          page_len=2, show_info=False)
 
         # Fills the table.
         self.history_ui.filter_header.on_search_click()
@@ -565,7 +565,6 @@ class HistoryController:
     def fill_booking_table(self, filters: list[FilterValuePair]):
         self.history_ui.booking_table.setRowCount(0)
 
-        # self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
         for row, cancelled in enumerate(self.booking_system.repo.cancelled(self.history_ui.page_index.page,
                                                                            self.history_ui.page_index.page_len,
                                                                            filters)):
