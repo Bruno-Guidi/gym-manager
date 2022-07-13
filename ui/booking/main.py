@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import TypeAlias
 
 from PyQt5.QtCore import Qt
@@ -21,7 +21,6 @@ from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
 from ui.widgets import FilterHeader, PageIndex, Field, Dialog
-
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
 
@@ -51,6 +50,8 @@ class MainController:
         self.main_ui.create_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_booking)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.cancel_btn.clicked.connect(self.cancel_booking)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -130,17 +131,24 @@ class MainController:
                         f"{' (Pago)' if booking.was_paid(when) else ''}")
                 self.main_ui.booking_table.item(row, col).setText(text)
 
-    def cancel_ui(self):
-        # noinspection PyAttributeOutsideInit
-        pass
-        # self._cancel_ui = CancelUI(self.booking_system)
-        # self._cancel_ui.exec_()
-        # removed = self._cancel_ui.controller.booking
-        # if removed is not None:
-        #     start, end = self.booking_system.block_range(removed.start, removed.end)
-        #     self.main_ui.booking_table.takeItem(start, removed.court.id)
-        #     for i in range(start, end):  # Undo the spanning.
-        #         self.main_ui.booking_table.setSpan(i, removed.court.id, 1, 1)
+    def cancel_booking(self):
+        row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
+        when = self.main_ui.date_edit.date().toPyDate()
+        if row not in self._bookings or col not in self._bookings[row]:
+            Dialog.info("Error", "No existe un turno en el horario seleccionado.")
+            return
+
+        to_cancel = self._bookings[row][col]
+        if when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()):
+            Dialog.info("Error", "No se puede cancelar un turno que ya sucedió.")
+        else:
+            # noinspection PyAttributeOutsideInit
+            self._cancel_ui = CancelUI(self.booking_system, to_cancel, when)
+            self._cancel_ui.exec_()
+            if self._cancel_ui.controller.cancelled:
+                self.main_ui.booking_table.takeItem(row, col)
+                for i in range(row, col):  # Undo the spanning.
+                    self.main_ui.booking_table.setSpan(i, col, 1, 1)
 
     def history_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -375,12 +383,54 @@ class CreateUI(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
+class CancelController:
+
+    def __init__(self, cancel_ui: CancelUI, booking_system: BookingSystem, to_cancel: Booking, when: date) -> None:
+        self.cancel_ui = cancel_ui
+        self.booking_system = booking_system
+        self.to_cancel = to_cancel
+        self.when = when
+        self.cancelled = False
+
+        # Loads booking info.
+        self.cancel_ui.client_line.setText(str(to_cancel.client.name))
+        self.cancel_ui.court_line.setText(to_cancel.court)
+        self.cancel_ui.date_edit.setDate(when)
+        self.cancel_ui.start_line.setText(str(to_cancel.start))
+        self.cancel_ui.end_line.setText(str(to_cancel.end))
+        self.cancel_ui.fixed_line.setText("Si" if to_cancel.is_fixed else "No")
+
+        # noinspection PyUnresolvedReferences
+        self.cancel_ui.confirm_btn.clicked.connect(self.cancel)
+        # noinspection PyUnresolvedReferences
+        self.cancel_ui.cancel_btn.clicked.connect(self.cancel_ui.reject)
+
+    def cancel(self):
+        if not self.cancel_ui.responsible_field.valid_value():
+            Dialog.info("Error", "El campo responsable no es válido.")
+        else:
+            definitely_cancelled = True
+            if self.to_cancel.is_fixed:
+                definitely_cancelled = Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?",
+                                                      ok_btn_text="Si", cancel_btn_text="No")
+            # noinspection PyTypeChecker
+            self.booking_system.cancel(self.to_cancel, self.cancel_ui.responsible_field.value(), self.when,
+                                       definitely_cancelled, datetime.now())
+            self.cancelled = True
+
+            if self.to_cancel.is_fixed and definitely_cancelled:
+                Dialog.info("Éxito", "El turno fijo ha sido cancelado correctamente.")
+            else:
+                Dialog.info("Éxito", "El turno ha sido cancelado correctamente.")
+            self.cancel_ui.client_line.window().close()
+
+
 class CancelUI(QDialog):
 
-    def __init__(self, booking_system: BookingSystem) -> None:
+    def __init__(self, booking_system: BookingSystem, to_cancel: Booking, when: date) -> None:
         super().__init__()
         self._setup_ui()
-        # self.controller = CancelController(self, booking_system)
+        self.controller = CancelController(self, booking_system, to_cancel, when)
 
     def _setup_ui(self):
         self.setWindowTitle("Cancelar turno")
@@ -404,20 +454,10 @@ class CancelUI(QDialog):
         self.form_layout.addWidget(self.client_line, 1, 1)
         config_line(self.client_line, read_only=True)
 
-        # The booking related widgets are declared after the client ones, so the booking combobox width is equal to the
-        # client line width.
-        self.booking_lbl = QLabel(self)
-        self.form_layout.addWidget(self.booking_lbl, 0, 0)
-        config_lbl(self.booking_lbl, "Reserva*")
-
-        self.booking_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.booking_combobox, 0, 1)
-        config_combobox(self.booking_combobox, fixed_width=self.client_line.width())
-
         # Booked date.
         self.date_lbl = QLabel(self)
         self.form_layout.addWidget(self.date_lbl, 2, 0)
-        config_lbl(self.date_lbl, "Fecha",)
+        config_lbl(self.date_lbl, "Fecha")
 
         self.date_edit = QDateEdit(self)
         self.form_layout.addWidget(self.date_edit, 2, 1)
@@ -487,7 +527,6 @@ class CancelUI(QDialog):
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
-
 # class HistoryController:
 #
 #     def __init__(self, history_ui: HistoryUI, booking_system: BookingSystem) -> None:
@@ -504,7 +543,8 @@ class CancelUI(QDialog):
 #                                           translate_fun=lambda trans, when: trans.when >= when)
 #         date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
 #                                         translate_fun=lambda trans, when: trans.when <= when)
-#         self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter, date_lesser_filter)
+#         self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter,
+#         date_lesser_filter)
 #
 #         # Configures the page index.
 #         self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
