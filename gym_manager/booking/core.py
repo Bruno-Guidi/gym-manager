@@ -312,7 +312,7 @@ class BookingSystem:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
 
-        self._courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
+        self.court_names = courts_names
         self.durations = durations
 
         self.start, self.end = start, end
@@ -324,9 +324,6 @@ class BookingSystem:
         self.activity = activity
         self.repo = repo
         self.fixed_booking_handler = FixedBookingHandler(courts_names, self.repo.all_fixed())
-
-    def courts(self) -> Iterable[Court]:
-        return self._courts.values()
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
