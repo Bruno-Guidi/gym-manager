@@ -392,9 +392,12 @@ class PageIndex(QWidget):
         self._total_len = total_len
         self._update()
 
-    def config(self, refresh_table: Callable[[], None], page_len: int, total_len: int):
-        self.page_len, self.total_len = page_len, total_len
+    def config(self, refresh_table: Callable[[], None], page_len: int, total_len: int = 0, show_info: bool = True):
+        self.page_len, self.total_len = page_len, total_len if total_len != 0 else float("inf")
         self._refresh_table = refresh_table
+
+        if not show_info:
+            self.info_lbl.hide()
 
         self._update()
 
