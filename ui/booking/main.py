@@ -45,6 +45,10 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.date_edit.dateChanged.connect(self.load_bookings)
         # noinspection PyUnresolvedReferences
+        self.main_ui.prev_btn.clicked.connect(self.prev_page)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.next_btn.clicked.connect(self.next_page)
+        # noinspection PyUnresolvedReferences
         self.main_ui.create_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_booking)
@@ -68,6 +72,7 @@ class MainController:
 
     def load_bookings(self):
         self.main_ui.booking_table.setRowCount(0)  # Clears the table.
+        self._bookings.clear()
 
         # Loads the hour column.
         blocks = [block for block in self.booking_system.blocks()]
@@ -105,9 +110,10 @@ class MainController:
         # noinspection PyAttributeOutsideInit
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
+        print(self._bookings)
         if when > date.today():
             Dialog.info("Error", "No se puede cobrar turnos de días posteriores al actual.")
-        elif row not in self._bookings and col not in self._bookings[row]:
+        elif row not in self._bookings or col not in self._bookings[row]:
             Dialog.info("Error", "No existe un turno en el horario seleccionado.")
         else:
             booking = self._bookings[row][col]
