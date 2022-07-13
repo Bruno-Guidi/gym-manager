@@ -91,10 +91,15 @@ class MainController:
 
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
-        self._create_ui = CreateUI(self.client_repo, self.booking_system, self.main_ui.date_edit.date().toPyDate())
-        self._create_ui.exec_()
-        if self._create_ui.controller.booking is not None:
-            self._load_booking(self._create_ui.controller.booking)
+        when = self.main_ui.date_edit.date().toPyDate()
+        if when < date.today():
+            Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
+        else:
+            # noinspection PyAttributeOutsideInit
+            self._create_ui = CreateUI(self.client_repo, self.booking_system, when)
+            self._create_ui.exec_()
+            if self._create_ui.controller.booking is not None:
+                self._load_booking(self._create_ui.controller.booking)
 
     def charge_booking(self):
         # noinspection PyAttributeOutsideInit
