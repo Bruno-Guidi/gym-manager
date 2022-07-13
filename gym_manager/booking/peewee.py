@@ -246,7 +246,7 @@ class SqliteBookingRepo(BookingRepo):
             yield Cancellation(record.cancel_datetime, record.responsible, record.client_id, record.when, record.court,
                                record.start, record.end, record.is_fixed, record.definitely_cancelled)
 
-    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+    def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
         """
         bookings_q = BookingTable.select("1")

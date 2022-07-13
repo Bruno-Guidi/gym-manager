@@ -67,10 +67,12 @@ class MockBookingRepo(BookingRepo):
                          first_when=date(2022, 7, 12))
         ]
 
-    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+    def cancelled(
+            self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Cancellation, None, None]:
         pass
 
-    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+    def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         pass
 
 
