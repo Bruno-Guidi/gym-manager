@@ -216,10 +216,9 @@ class CreateController:
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
 
     def fill_client_combobox(self, filters: list[FilterValuePair]):
-        pass
-        # fill_combobox(self.book_ui.client_combobox,
-        #               self.client_repo.all(page=1, filters=filters),
-        #               lambda client: client.name.as_primitive())
+        fill_combobox(self.create_ui.client_combobox,
+                      self.client_repo.all(page=1, filters=filters),
+                      lambda client: client.name.as_primitive())
 
     def create_booking(self):
         client = self.create_ui.client_combobox.currentData(Qt.UserRole)
