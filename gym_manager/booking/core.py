@@ -261,8 +261,11 @@ class FixedBooking(Booking):
 
     def is_active(self, reference_date: date) -> bool:
         """Determines if the booking is active. The booking will be active if *reference_date* is not between any of the
-        existing date ranges in *self.inactive_dates*.
+        existing date ranges in *self.inactive_dates*. If *self.first_date* is after *reference_date*, then the booking
+        is not active (because the booking didn't exist on that date).
         """
+        if self.first_when > reference_date:
+            return False
         for date_range in self.inactive_dates:
             # If the booking is cancelled for one week on '2022/07/12', then the booking on '2022/07/12' is not active,
             # and on '2022/07/19' it is active again.

@@ -213,6 +213,8 @@ def test_FixedBooking_isActive():
     # noinspection PyTypeChecker
     booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=date(2022, 7, 11))
 
+    assert not booking.is_active(date(2022, 7, 10))
+
     assert booking.is_active(date(2022, 7, 12))
 
     # There is only one period of inactivity.
