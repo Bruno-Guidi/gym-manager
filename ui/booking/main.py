@@ -8,7 +8,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu, QDialog, QGridLayout, QLabel,
-    QComboBox, QCheckBox)
+    QComboBox, QCheckBox, QLineEdit)
 
 from gym_manager.booking.core import (
     BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD,
@@ -17,7 +17,6 @@ from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
 from ui.accounting import ChargeUI
-from ui.booking.operations import BookUI, CancelUI, PreChargeUI
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
@@ -107,7 +106,6 @@ class MainController:
                 self._load_booking(self._create_ui.controller.booking)
 
     def charge_booking(self):
-        # noinspection PyAttributeOutsideInit
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
         if when > date.today():
@@ -356,6 +354,119 @@ class CreateUI(QDialog):
         self.fixed_checkbox = QCheckBox(self)
         self.form_layout.addWidget(self.fixed_checkbox, 6, 1)
         config_checkbox(self.fixed_checkbox)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class CancelUI(QDialog):
+
+    def __init__(self, booking_system: BookingSystem) -> None:
+        super().__init__()
+        self._setup_ui()
+        # self.controller = CancelController(self, booking_system)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Cancelar turno")
+        self.layout = QVBoxLayout(self)
+
+        # Filtering.
+        self.filter_header = FilterHeader(show_clear_button=False, parent=self)
+        self.layout.addWidget(self.filter_header)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Client.
+        self.client_lbl = QLabel(self)
+        self.form_layout.addWidget(self.client_lbl, 1, 0)
+        config_lbl(self.client_lbl, "Cliente")
+
+        self.client_line = QLineEdit(self)
+        self.form_layout.addWidget(self.client_line, 1, 1)
+        config_line(self.client_line, read_only=True)
+
+        # The booking related widgets are declared after the client ones, so the booking combobox width is equal to the
+        # client line width.
+        self.booking_lbl = QLabel(self)
+        self.form_layout.addWidget(self.booking_lbl, 0, 0)
+        config_lbl(self.booking_lbl, "Reserva*")
+
+        self.booking_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.booking_combobox, 0, 1)
+        config_combobox(self.booking_combobox, fixed_width=self.client_line.width())
+
+        # Booked date.
+        self.date_lbl = QLabel(self)
+        self.form_layout.addWidget(self.date_lbl, 2, 0)
+        config_lbl(self.date_lbl, "Fecha",)
+
+        self.date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.date_edit, 2, 1)
+        config_date_edit(self.date_edit, date.today(), calendar=False, enabled=False)
+
+        # Booked court.
+        self.court_lbl = QLabel(self)
+        self.form_layout.addWidget(self.court_lbl, 3, 0)
+        config_lbl(self.court_lbl, "Cancha")
+
+        self.court_line = QLineEdit(self)
+        self.form_layout.addWidget(self.court_line, 3, 1)
+        config_line(self.court_line, "n", enabled=False, fixed_width=self.date_edit.width())
+
+        # Booking start.
+        self.start_lbl = QLabel(self)
+        self.form_layout.addWidget(self.start_lbl, 4, 0)
+        config_lbl(self.start_lbl, "Inicio")
+
+        self.start_line = QLineEdit(self)
+        self.form_layout.addWidget(self.start_line, 4, 1)
+        config_line(self.start_line, "hh:mm", enabled=False, fixed_width=self.date_edit.width())
+
+        # Booking end.
+        self.end_lbl = QLabel(self)
+        self.form_layout.addWidget(self.end_lbl, 5, 0)
+        config_lbl(self.end_lbl, "Fin")
+
+        self.end_line = QLineEdit(self)
+        self.form_layout.addWidget(self.end_line, 5, 1)
+        config_line(self.end_line, "hh:mm", enabled=False, fixed_width=self.date_edit.width())
+
+        # Fixed booking or not.
+        self.fixed_lbl = QLabel(self)
+        self.form_layout.addWidget(self.fixed_lbl, 6, 0)
+        config_lbl(self.fixed_lbl, "Turno fijo")
+
+        self.fixed_line = QLineEdit(self)
+        self.form_layout.addWidget(self.fixed_line, 6, 1)
+        config_line(self.fixed_line, "No", enabled=False, fixed_width=self.date_edit.width())
+
+        # Cancellation responsible.
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 7, 0)
+        config_lbl(self.responsible_lbl, "Responsable*")
+
+        self.responsible_field = Field(String, self, max_len=constants.TRANSACTION_RESP_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 7, 1)
+        config_line(self.responsible_field, place_holder="Responsable")
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
