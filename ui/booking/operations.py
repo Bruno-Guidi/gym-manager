@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QGridLayout, QLabel, QComboBox,
     QCheckBox, QPushButton, QDialog, QDateEdit, QLineEdit, QHBoxLayout, QSpacerItem, QSizePolicy)
 
-from gym_manager.booking.core import BookingSystem, TempBooking, BOOKING_TO_HAPPEN, current_block_start
+from gym_manager.booking.core import BookingSystem, TempBooking, BOOKING_TO_HAPPEN, remaining_blocks
 from gym_manager.core import constants
 from gym_manager.core.base import TextLike, ClientLike, String, NumberEqual
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
