@@ -72,7 +72,7 @@ def main():
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo)
     booking_system = BookingSystem(
         booking_activity, booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),
-        courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=60
+        courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=30
     )
 
     # test_cli = Client(Number(666), String("TestCli", max_len=20), date(2022, 5, 8), String("TestTel", max_len=20),
