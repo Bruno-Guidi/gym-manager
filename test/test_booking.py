@@ -161,6 +161,24 @@ def test_BookingSystem_blockRange():
         booking_system.block_range(time(8, 0), time(12, 30))
 
 
+def test_FixedBooking_wasPaid():
+    before, last_when, after = date(2022, 7, 10), date(2022, 7, 11), date(2022, 7, 12)
+
+    transaction = Transaction(0, "dummy_type", before, Currency(100), "dummy_method", String("TestResp", max_len=20),
+                              "test_desc")
+    # noinspection PyTypeChecker
+    booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=last_when,
+                           transaction=transaction)
+
+    assert not booking.was_paid()
+
+    transaction.when = last_when
+    assert booking.was_paid()
+
+    transaction.when = after
+    assert booking.was_paid()
+
+
 def test_FixedBooking_isActive():
     # noinspection PyTypeChecker
     booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11))
