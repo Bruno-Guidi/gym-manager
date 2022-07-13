@@ -23,7 +23,6 @@ from ui.widgets import FilterHeader, PageIndex, Field, Dialog
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
 
-
 DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
 
 
@@ -541,14 +540,19 @@ class HistoryController:
                                                 for duration in booking_system.durations}
 
         # Configure the filtering widget.
+        # ToDo The two following filters won't work until Cancellation objects stores Client objects.
         filters = (ClientLike("client_name", display_name="Nombre cliente",
                               translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
                                translate_fun=lambda trans, value: trans.client.dni == value))
-        date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
-                                          translate_fun=lambda trans, when: trans.when >= when)
-        date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
-                                        translate_fun=lambda trans, when: trans.when <= when)
+        date_greater_filter = DateGreater(
+            "from", display_name="Desde", attr="when",
+            translate_fun=lambda cancelled, datetime_: cancelled.cancel_datetime >= datetime_
+        )
+        date_lesser_filter = DateLesser(
+            "to", display_name="Hasta", attr="when",
+            translate_fun=lambda cancelled, datetime_: cancelled.cancel_datetime <= datetime_
+        )
         self.history_ui.filter_header.config(filters, self.fill_booking_table, date_greater_filter, date_lesser_filter)
 
         # Configures the page index.
@@ -561,9 +565,10 @@ class HistoryController:
     def fill_booking_table(self, filters: list[FilterValuePair]):
         self.history_ui.booking_table.setRowCount(0)
 
-        self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
+        # self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
         for row, cancelled in enumerate(self.booking_system.repo.cancelled(self.history_ui.page_index.page,
-                                                                           self.history_ui.page_index.page_len, )):
+                                                                           self.history_ui.page_index.page_len,
+                                                                           filters)):
             fill_cell(self.history_ui.booking_table, row, 0,
                       cancelled.cancel_datetime.strftime(constants.DATE_TIME_FORMAT), bool)
             fill_cell(self.history_ui.booking_table, row, 1, cancelled.when.strftime(constants.DATE_FORMAT), bool)
