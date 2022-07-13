@@ -1,4 +1,4 @@
-from datetime import date, time, datetime
+from datetime import date, time, datetime, timedelta
 from typing import Generator
 
 import pytest
@@ -127,8 +127,8 @@ def test_serialization_inactiveDates():
 
 
 def test_subtractTimes():
-    assert subtract_times(time(8, 0), time(10, 0)) == time(2, 0)
-    assert subtract_times(time(8, 30), time(10, 0)) == time(1, 30)
+    assert subtract_times(time(8, 0), time(10, 0)) == timedelta(hours=2)
+    assert subtract_times(time(8, 30), time(10, 0)) == timedelta(hours=1, minutes=30)
 
 
 def test_TempBooking_collides():
