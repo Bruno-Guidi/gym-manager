@@ -6,7 +6,7 @@ import pytest
 from gym_manager import peewee
 from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
-    Booking, time_range, Block, Cancellation, remaining_blocks)
+    Booking, time_range, Block, Cancellation, remaining_blocks, subtract_times)
 from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
@@ -124,6 +124,11 @@ def test_serialization_inactiveDates():
 
     assert to_serialize == deserialize_inactive_dates((serialize_inactive_dates(to_serialize)))
     assert result == serialize_inactive_dates(deserialize_inactive_dates(result))
+
+
+def test_subtractTimes():
+    assert subtract_times(time(8, 0), time(10, 0)) == time(2, 0)
+    assert subtract_times(time(8, 30), time(10, 0)) == time(1, 30)
 
 
 def test_TempBooking_collides():
