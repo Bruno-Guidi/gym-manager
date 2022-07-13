@@ -109,17 +109,17 @@ class MainController:
     def charge_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
-        if when > date.today():
-            Dialog.info("Error", "No se puede cobrar turnos de días posteriores al actual.")
-        elif row not in self._bookings or col not in self._bookings[row]:
+        if row not in self._bookings or col not in self._bookings[row]:
             Dialog.info("Error", "No existe un turno en el horario seleccionado.")
-        else:
-            booking = self._bookings[row][col]
-            if booking.was_paid(when):
-                Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
-                                     f"'{booking.transaction.id}'")
-                return
+            return
 
+        booking = self._bookings[row][col]
+        if when > date.today() or (when == datetime.now().date() and booking.end > datetime.now().time()):
+            Dialog.info("Error", "No se puede cobrar un turno que todavía no sucedió.")
+        elif booking.was_paid(when):
+            Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
+                                 f"'{booking.transaction.id}'")
+        else:
             # noinspection PyAttributeOutsideInit
             self._charge_ui = ChargeUI(self.transaction_repo, booking.client, self.booking_system.activity.price,
                                        String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30))
