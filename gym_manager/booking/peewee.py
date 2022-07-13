@@ -76,7 +76,7 @@ class SqliteBookingRepo(BookingRepo):
             self,
             client_repo: ClientRepo,
             transaction_repo: TransactionRepo,
-            cache_len: int = 100
+            cache_len: int = 0
     ) -> None:
         BookingTable._meta.database.create_tables([BookingTable, FixedBookingTable, CancelledLog])
 
