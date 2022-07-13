@@ -1,4 +1,4 @@
-from datetime import date, time, datetime
+from datetime import date, time, datetime, timedelta
 from typing import Generator
 
 import pytest
@@ -6,7 +6,7 @@ import pytest
 from gym_manager import peewee
 from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
-    Booking, time_range, Block, Cancellation)
+    Booking, time_range, Block, Cancellation, remaining_blocks, subtract_times)
 from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
@@ -57,16 +57,22 @@ class MockBookingRepo(BookingRepo):
     def all_fixed(self) -> list[FixedBooking]:
         # noinspection PyTypeChecker
         return [
-            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1, last_when=date(2022, 7, 12))
+            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0,
+                         first_when=date(2022, 7, 11)),
+            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0,
+                         first_when=date(2022, 7, 11)),
+            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0,
+                         first_when=date(2022, 7, 11)),
+            FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1,
+                         first_when=date(2022, 7, 12))
         ]
 
-    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+    def cancelled(
+            self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Cancellation, None, None]:
         pass
 
-    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+    def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         pass
 
 
@@ -79,6 +85,32 @@ def test_timeRange():
     expected = [time(hour=8, minute=0), time(hour=8, minute=30),
                 time(hour=9, minute=0), time(hour=9, minute=30)]
     assert [td for td in time_range(time(8, 0), time(9, 30), minute_step=30)] == expected
+
+
+def test_remainingBlocks():
+    b1, b2 = Block(1, time(8, 0), end=time(9, 0)), Block(2, time(9, 0), end=time(10, 0))
+    b3, b4 = Block(3, time(10, 0), end=time(11, 0)), Block(4, time(11, 0), end=time(12, 0))
+    all_blocks = [b1, b2, b3, b4]
+
+    # It is not possible to book blocks of days that already passed.
+    with pytest.raises(OperationalError):
+        reference_datetime = datetime(2022, 8, 9, 0, 0)
+        dummy = [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)]
+
+    # The block b3 with start=time(9, 59) is about to start, so it still can be booked. The remaining blocks are b3, b4.
+    reference_datetime = datetime(2022, 8, 8, 9, 59)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b3, b4]
+
+    # The block b3 with start=time(10, 0) already started, so it can't be booked. The only one remaining is b4.
+    reference_datetime = datetime(2022, 8, 8, 10, 0)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b4]
+
+    # The reference datetime is after the date to book, so all blocks are remaining.
+    reference_datetime = datetime(2022, 8, 7, 10, 0)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b1, b2, b3, b4]
+
+    reference_datetime = datetime(2022, 8, 8, 0, 0)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b1, b2, b3, b4]
 
 
 def test_serialization_inactiveDates():
@@ -94,6 +126,11 @@ def test_serialization_inactiveDates():
 
     assert to_serialize == deserialize_inactive_dates((serialize_inactive_dates(to_serialize)))
     assert result == serialize_inactive_dates(deserialize_inactive_dates(result))
+
+
+def test_subtractTimes():
+    assert subtract_times(time(8, 0), time(10, 0)) == timedelta(hours=2)
+    assert subtract_times(time(8, 30), time(10, 0)) == timedelta(hours=1, minutes=30)
 
 
 def test_TempBooking_collides():
@@ -161,9 +198,34 @@ def test_BookingSystem_blockRange():
         booking_system.block_range(time(8, 0), time(12, 30))
 
 
+def test_FixedBooking_wasPaid():
+    before, last_when, after = date(2022, 7, 10), date(2022, 7, 11), date(2022, 7, 12)
+
+    transaction = Transaction(0, "dummy_type", before, Currency(100), "dummy_method", String("TestResp", max_len=20),
+                              "test_desc")
+    # noinspection PyTypeChecker
+    booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=last_when,
+                           transaction=transaction)
+
+    reference_date = date(2022, 7, 11)  # I'm seeing the booking on the date 2022/07/11.
+
+    assert not booking.was_paid(reference_date)
+
+    transaction.when = last_when
+    assert booking.was_paid(reference_date)
+
+    transaction.when = after
+    assert booking.was_paid(reference_date)
+
+    transaction.when = before
+    assert not booking.was_paid(reference_date)
+
+
 def test_FixedBooking_isActive():
     # noinspection PyTypeChecker
-    booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11))
+    booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=date(2022, 7, 11))
+
+    assert not booking.is_active(date(2022, 7, 10))
 
     assert booking.is_active(date(2022, 7, 12))
 
@@ -190,10 +252,10 @@ def test_FixedBookingHandler_bookingAvailable():
     # noinspection PyTypeChecker
     fixed_handler = FixedBookingHandler(
         courts=("1", "2"), fixed_bookings=[
-            FixedBooking("1", None, start=time(9, 0), end=time(10, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))
+            FixedBooking("1", None, start=time(9, 0), end=time(10, 0), day_of_week=0, first_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, first_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, first_when=date(2022, 7, 11))
         ]
     )
 
@@ -222,12 +284,12 @@ def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
     # noinspection PyTypeChecker
     fixed_handler = FixedBookingHandler(
         courts=("1", "2"), fixed_bookings=[
-            FixedBooking("1", None, start=time(9, 0), end=time(10, 0), day_of_week=0, last_when=date(2022, 7, 11),
+            FixedBooking("1", None, start=time(9, 0), end=time(10, 0), day_of_week=0, first_when=date(2022, 7, 11),
                          inactive_dates=[{"from": date(2022, 7, 18), "to": date(2022, 7, 25)}]),
-            FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11),
+            FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=date(2022, 7, 11),
                          inactive_dates=[{"from": date(2022, 7, 25), "to": date(2022, 8, 1)}]),
-            FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))
+            FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, first_when=date(2022, 7, 11)),
+            FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, first_when=date(2022, 7, 11))
         ]
     )
 
@@ -282,25 +344,32 @@ def test_BookingSystem_bookings():
                             start=time(12, 0), end=time(13, 0)),
                 TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
                             start=time(16, 0), end=time(17, 0)),
-                FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-                FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-                FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))]
+                FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0,
+                             first_when=date(2022, 7, 11)),
+                FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0,
+                             first_when=date(2022, 7, 11)),
+                FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0,
+                             first_when=date(2022, 7, 11))]
     result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 11))]
     assert result == expected
 
     # noinspection PyTypeChecker
-    expected = [FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-                FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-                FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11))]
+    expected = [
+        FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=date(2022, 7, 11)),
+        FixedBooking("1", None, start=time(13, 0), end=time(14, 0), day_of_week=0, first_when=date(2022, 7, 11)),
+        FixedBooking("1", None, start=time(15, 0), end=time(16, 0), day_of_week=0, first_when=date(2022, 7, 11))
+    ]
     result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 18))]
     assert result == expected
 
     # noinspection PyTypeChecker
-    expected = [TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
-                            start=time(16, 0), end=time(17, 0)),
-                TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
-                            start=time(16, 0), end=time(17, 0)),
-                FixedBooking("2", None, start=time(15, 0), end=time(16, 0), day_of_week=1, last_when=date(2022, 7, 12))]
+    expected = [
+        TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
+                    start=time(16, 0), end=time(17, 0)),
+        TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
+                    start=time(16, 0), end=time(17, 0)),
+        FixedBooking("2", None, start=time(15, 0), end=time(16, 0), day_of_week=1, first_when=date(2022, 7, 12))
+    ]
     result = [b for b, _, _ in booking_system.bookings(date(2022, 7, 12))]
     assert result == expected
 
@@ -315,7 +384,7 @@ def test_integration_registerCharge_fixedBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))
@@ -345,7 +414,7 @@ def test_integration_cancelTemporary_fixedBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))
@@ -380,7 +449,7 @@ def test_integration_cancelDefinitely_fixedBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))
@@ -414,7 +483,7 @@ def test_integration_cancelDefinitely_tempBooking():
     balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    booking_repo = SqliteBookingRepo(tuple(), client_repo, transaction_repo)
+    booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
     dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
                           String("TestTel", max_len=20), String("TestDir", max_len=20))

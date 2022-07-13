@@ -40,15 +40,30 @@ def combine(base_date: date, start: time | None = None, duration: Duration | Non
     return dt
 
 
-def current_block_start(blocks: Iterable[Block], when: date) -> time:
-    """Returns the start time of the first block whose start time hasn't passed yet.
+def remaining_blocks(
+        blocks: Iterable[Block], when: date, reference_datetime: datetime | None = None
+) -> Iterable[Block]:
+    """Discards blocks that already passed.
     """
-    blocks_it = blocks
-    if when == date.today():
-        blocks_it = itertools.dropwhile(lambda b: b.start < datetime.now().time(), blocks)
+    reference_datetime = datetime.now() if reference_datetime is None else reference_datetime
+    reference_date, reference_time = reference_datetime.date(), reference_datetime.time()
 
-    for block in blocks_it:
-        return block.start
+    if when < reference_date:
+        raise OperationalError(f"There are no remaining blocks for the [date={when}] and the [reference_date="
+                               f"{reference_date}")
+
+    if when == reference_date:
+        # The remaining blocks are the ones whose start time is after the reference time (they hasn't passed yet).
+        _remaining_blocks = itertools.dropwhile(lambda b: b.start <= reference_time, blocks)
+    else:
+        _remaining_blocks = blocks
+
+    yield from _remaining_blocks
+
+
+def subtract_times(start: time, end: time) -> timedelta:
+    return datetime.combine(date.min, end) - datetime.combine(date.min, start)
+    # return time(td.seconds // 3600, (td.seconds // 60) % 60)
 
 
 Court = namedtuple("Court", ["name", "id"])
@@ -143,6 +158,10 @@ class Booking(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def was_paid(self, reference_date: date) -> bool:
+        raise NotImplementedError
+
 
 class TempBooking(Booking):
 
@@ -182,22 +201,25 @@ class TempBooking(Booking):
         """
         pass
 
+    def was_paid(self, reference_date: date) -> bool:
+        return self.transaction is not None
+
 
 class FixedBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, day_of_week: int, last_when: date,
-            inactive_dates: list[dict[str, date]] | None = None, transaction: Transaction | None = None
+            self, court: str, client: Client, start: time, end: time, day_of_week: int, first_when: date,
+            last_when: date | None = None, inactive_dates: list[dict[str, date]] | None = None,
+            transaction: Transaction | None = None
     ):
-        if day_of_week != last_when.weekday():
+        if day_of_week != first_when.weekday():
             raise OperationalError(f"The [day_of_week={day_of_week}] of the fixed booking is different than the "
-                                   f"[day_of_week={last_when.weekday()}] of [last_when={last_when}]")
+                                   f"[day_of_week={first_when.weekday()}] of [first_when={first_when}]")
         super().__init__(court, client, start, end, transaction)
         self.day_of_week = day_of_week
-        # In theory this attr should be set to None after the date passes, but because of how collides(args) is
-        # implemented, there is no need to do it.
         self.inactive_dates = [] if inactive_dates is None else inactive_dates
-        self._last_when = last_when
+        self.first_when = first_when
+        self._last_when = first_when if last_when is None else last_when
 
     def __eq__(self, other: FixedBooking) -> bool:
         if isinstance(other, type(self)):
@@ -234,6 +256,9 @@ class FixedBooking(Booking):
 
         self._last_when = when
 
+    def was_paid(self, reference_date: date) -> bool:
+        return self.transaction is not None and self.transaction.when >= reference_date
+
     def cancel(self, when: date):
         """Adds a new entry in the inactive dates list.
         """
@@ -241,8 +266,11 @@ class FixedBooking(Booking):
 
     def is_active(self, reference_date: date) -> bool:
         """Determines if the booking is active. The booking will be active if *reference_date* is not between any of the
-        existing date ranges in *self.inactive_dates*.
+        existing date ranges in *self.inactive_dates*. If *self.first_date* is after *reference_date*, then the booking
+        is not active (because the booking didn't exist on that date).
         """
+        if self.first_when > reference_date:
+            return False
         for date_range in self.inactive_dates:
             # If the booking is cancelled for one week on '2022/07/12', then the booking on '2022/07/12' is not active,
             # and on '2022/07/19' it is active again.
@@ -302,7 +330,7 @@ class BookingSystem:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
 
-        self._courts = {name: Court(name, i + 1) for i, name in enumerate(courts_names)}
+        self.court_names = courts_names
         self.durations = durations
 
         self.start, self.end = start, end
@@ -314,9 +342,6 @@ class BookingSystem:
         self.activity = activity
         self.repo = repo
         self.fixed_booking_handler = FixedBookingHandler(courts_names, self.repo.all_fixed())
-
-    def courts(self) -> Iterable[Court]:
-        return self._courts.values()
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
@@ -453,11 +478,13 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+    def cancelled(
+            self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Cancellation, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+    def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
         """
         raise NotImplementedError

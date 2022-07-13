@@ -26,7 +26,7 @@ def deserialize_inactive_dates(raw_inactive_dates: list[dict[str, str]]):
 
 
 class BookingTable(Model):
-    when = DateTimeField(primary_key=True)
+    when = DateTimeField()
     court = CharField()
     client = ForeignKeyField(peewee.ClientTable, backref="bookings")
     end = TimeField()
@@ -35,6 +35,7 @@ class BookingTable(Model):
 
     class Meta:
         database = peewee.DATABASE_PROXY
+        primary_key = CompositeKey("when", "court")
 
 
 class FixedBookingTable(Model):
@@ -44,6 +45,7 @@ class FixedBookingTable(Model):
     client = ForeignKeyField(peewee.ClientTable, backref="fixed_bookings")
     end = TimeField()
     transaction = ForeignKeyField(peewee.TransactionTable, backref="charged_fixed_booking", null=True)
+    first_when = DateField()
     last_when = DateField()
     inactive_dates = JSONField()
 
@@ -72,14 +74,12 @@ class SqliteBookingRepo(BookingRepo):
 
     def __init__(
             self,
-            existing_courts: tuple[Court, ...],
             client_repo: ClientRepo,
             transaction_repo: TransactionRepo,
-            cache_len: int = 100
+            cache_len: int = 0
     ) -> None:
         BookingTable._meta.database.create_tables([BookingTable, FixedBookingTable, CancelledLog])
 
-        self.courts = {court.name: court for court in existing_courts}
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
 
@@ -96,6 +96,7 @@ class SqliteBookingRepo(BookingRepo):
                                      start=booking.start,
                                      client_id=booking.client.dni.as_primitive(),
                                      end=booking.end,
+                                     first_when=booking.first_when,
                                      last_when=booking.when,
                                      inactive_dates=[])
         elif isinstance(booking, TempBooking):
@@ -118,6 +119,7 @@ class SqliteBookingRepo(BookingRepo):
                                       client_id=booking.client.dni.as_primitive(),
                                       end=booking.end,
                                       transaction_id=booking.transaction.id,
+                                      first_when=booking.first_when,
                                       last_when=booking.when,
                                       inactive_dates=booking.inactive_dates).execute()
             # Creates a TempBooking based on the FixedBooking, so the charging is registered.
@@ -146,11 +148,12 @@ class SqliteBookingRepo(BookingRepo):
                 FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
                                           client_id=booking.client.dni.as_primitive(), end=booking.end,
                                           transaction_id=transaction_id,
+                                          first_when=booking.first_when,
                                           last_when=booking.when,
                                           inactive_dates=serialize_inactive_dates(booking.inactive_dates)
                                           ).execute()
         elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
-            BookingTable.delete_by_id(datetime.combine(booking.when, booking.start))
+            BookingTable.delete_by_id((datetime.combine(booking.when, booking.start), booking.court))
 
     def log_cancellation(
             self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
@@ -219,20 +222,31 @@ class SqliteBookingRepo(BookingRepo):
                     transaction_record.responsible, transaction_record.description
                 )
             yield FixedBooking(record.court, self.client_repo.get(record.client_id), record.start, record.end,
-                               record.day_of_week, record.last_when, deserialize_inactive_dates(record.inactive_dates),
-                               transaction)
+                               record.day_of_week, record.first_when, record.last_when,
+                               deserialize_inactive_dates(record.inactive_dates), transaction)
 
-    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+    def cancelled(
+            self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Cancellation, None, None]:
         cancelled_q = CancelledLog.select(
             CancelledLog.cancel_datetime, CancelledLog.responsible, CancelledLog.client_id, CancelledLog.when,
             CancelledLog.court, CancelledLog.start, CancelledLog.end, CancelledLog.is_fixed,
             CancelledLog.definitely_cancelled
         )
+
+        if filters is not None:
+            # The left outer join is required because bookings might be filtered by the client name, which isn't
+            # an attribute of CancellationLog.
+            cancelled_q = cancelled_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
+            for filter_, value in filters:
+                cancelled_q = cancelled_q.where(filter_.passes_in_repo(CancelledLog, value))
+
         for record in cancelled_q.paginate(page, page_len):
+            # ToDo retrieve client name or client proxy instead of client dni.
             yield Cancellation(record.cancel_datetime, record.responsible, record.client_id, record.when, record.court,
                                record.start, record.end, record.is_fixed, record.definitely_cancelled)
 
-    def count(self, filters: list[FilterValuePair] | None = None) -> int:
+    def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
         """
         bookings_q = BookingTable.select("1")

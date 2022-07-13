@@ -7,9 +7,11 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy)
 
+from gym_manager.booking.core import BookingSystem
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
+from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
 from ui.widget_config import config_lbl, config_btn
 
@@ -22,7 +24,8 @@ class Controller:
             activity_repo: ActivityRepo,
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
-            balance_repo: BalanceRepo
+            balance_repo: BalanceRepo,
+            booking_system: BookingSystem
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
@@ -30,6 +33,7 @@ class Controller:
         self.subscription_repo = subscription_repo
         self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
+        self.booking_system = booking_system
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
@@ -37,7 +41,7 @@ class Controller:
         # noinspection PyUnresolvedReferences
         self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
+        self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
 
@@ -61,11 +65,11 @@ class Controller:
         self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
         self.accounting_main_ui.show()
 
-    # # noinspection PyAttributeOutsideInit
-    # def show_booking_main_ui(self):
-    #     self.booking_main_ui = BookingMainUI(self.client_repo, self.booking_system, self.accounting_system)
-    #     self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
-    #     self.booking_main_ui.show()
+    # noinspection PyAttributeOutsideInit
+    def show_booking_main_ui(self):
+        self.booking_main_ui = BookingMainUI(self.client_repo, self.transaction_repo, self.booking_system)
+        self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.booking_main_ui.show()
 
 
 class MainUI(QMainWindow):
@@ -75,12 +79,13 @@ class MainUI(QMainWindow):
             activity_repo: ActivityRepo,
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
-            balance_repo: BalanceRepo
+            balance_repo: BalanceRepo,
+            booking_system: BookingSystem
     ):
         super().__init__()
         self._setup_ui()
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
-                                     balance_repo)
+                                     balance_repo, booking_system)
 
     def _setup_ui(self):
         self.setWindowTitle("Gestor La Cascada")
