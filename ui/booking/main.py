@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import TypeAlias
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
@@ -14,12 +15,16 @@ from gym_manager.booking.core import (
     remaining_blocks, Booking)
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
-from gym_manager.core.persistence import ClientRepo, FilterValuePair
+from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
+from ui.accounting import ChargeUI
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
 from ui.widgets import FilterHeader, PageIndex, Field, Dialog
+
+
+ScheduleColumn: TypeAlias = dict[int, Booking]
 
 
 class MainController:
@@ -33,6 +38,7 @@ class MainController:
         self.transaction_repo = transaction_repo
         self.booking_system = booking_system
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
+        self._bookings: dict[int, ScheduleColumn] = {}
 
         self.load_bookings()
 
@@ -40,6 +46,8 @@ class MainController:
         self.main_ui.date_edit.dateChanged.connect(self.load_bookings)
         # noinspection PyUnresolvedReferences
         self.main_ui.create_btn.clicked.connect(self.create_booking)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_btn.clicked.connect(self.charge_booking)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -48,10 +56,15 @@ class MainController:
             start, end = self.booking_system.block_range(booking.start, booking.end)
 
         item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
-                                f"{' (Pago)' if booking.was_paid() else ''}")
+                                f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}")
         item.setTextAlignment(Qt.AlignCenter)
         self.main_ui.booking_table.setItem(start, self._courts[booking.court], item)
         self.main_ui.booking_table.setSpan(start, self._courts[booking.court], end - start, 1)
+
+        # Saves the booking to be used later if needed.
+        if start not in self._bookings:
+            self._bookings[start] = {}
+        self._bookings[start][self._courts[booking.court]] = booking
 
     def load_bookings(self):
         self.main_ui.booking_table.setRowCount(0)  # Clears the table.
@@ -95,16 +108,23 @@ class MainController:
         #     for i in range(start, end):  # Undo the spanning.
         #         self.main_ui.booking_table.setSpan(i, removed.court.id, 1, 1)
 
-    def charge_ui(self):
+    def charge_booking(self):
         # noinspection PyAttributeOutsideInit
-        pass
-        # self._precharge_ui = PreChargeUI(self.booking_system, self.accounting_system)
-        # self._precharge_ui.exec_()
-        # charged = self._precharge_ui.controller.booking
-        # if charged is not None:
-        #     start, end = self.booking_system.block_range(charged.start, charged.end)
-        #     self.main_ui.booking_table.item(start, charged.court.id
-        #                                     ).setFont(self._cell_font(is_paid=charged.transaction is not None))
+        row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
+        if row not in self._bookings and col not in self._bookings[row]:
+            Dialog.info("Error", "No existe un turno en el horario seleccionado.")
+        else:
+            booking = self._bookings[row][col]
+            self._charge_ui = ChargeUI(self.transaction_repo, booking.client, self.booking_system.activity.price,
+                                       String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30))
+            self._charge_ui.exec_()
+            transaction = self._charge_ui.controller.transaction
+            if transaction is not None:
+                when = self.main_ui.date_edit.date().toPyDate()
+                self.booking_system.register_charge(booking, when, transaction)
+                text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                        f"{' (Pago)' if booking.was_paid(when) else ''}")
+                self.main_ui.booking_table.item(row, col).setText(text)
 
     def history_ui(self):
         # noinspection PyAttributeOutsideInit
