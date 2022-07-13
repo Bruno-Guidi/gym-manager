@@ -115,7 +115,7 @@ class MainController:
 
         booking = self._bookings[row][col]
         if when > date.today() or (when == datetime.now().date() and booking.end > datetime.now().time()):
-            Dialog.info("Error", "No se puede cobrar un turno que todavía no sucedió.")
+            Dialog.info("Error", "No se puede cobrar un turno que todavía no terminó.")
         elif booking.was_paid(when):
             Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
                                  f"'{booking.transaction.id}'")
@@ -140,7 +140,7 @@ class MainController:
 
         to_cancel = self._bookings[row][col]
         if when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()):
-            Dialog.info("Error", "No se puede cancelar un turno que ya sucedió.")
+            Dialog.info("Error", "No se puede cancelar un turno que ya comenzo.")
         elif to_cancel.was_paid(when):
             Dialog.info("Error", "No se puede cancelar un turno que ya cobrado.")
         else:
