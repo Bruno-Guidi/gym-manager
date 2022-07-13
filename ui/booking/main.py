@@ -6,15 +6,18 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
-    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu)
+    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu, QDialog, QGridLayout, QLabel,
+    QComboBox, QCheckBox)
 
 from gym_manager.booking.core import BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD
 from gym_manager.core import constants
-from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual
+from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
 from ui.booking.operations import BookUI, CancelUI, PreChargeUI
-from ui.widget_config import config_layout, config_btn, config_table, config_date_edit, fill_cell
-from ui.widgets import FilterHeader, PageIndex
+from ui.widget_config import (
+    config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
+    config_combobox, config_checkbox, config_line)
+from ui.widgets import FilterHeader, PageIndex, Field
 
 
 class MainController:
@@ -30,6 +33,8 @@ class MainController:
 
         # noinspection PyUnresolvedReferences
         self.main_ui.date_edit.dateChanged.connect(self.load_bookings)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.create_btn.clicked.connect(self.create_booking)
 
     def _load_booking(
             self, booking: TempBooking, start: int | None = None, end: int | None = None
@@ -66,13 +71,12 @@ class MainController:
         # The load_bookings(args) method is executed as a callback when the date_edit date changes.
         self.main_ui.date_edit.setDate(self.main_ui.date_edit.date().toPyDate() - ONE_DAY_TD)
 
-    def book_ui(self):
+    def create_booking(self):
         # noinspection PyAttributeOutsideInit
-        pass
-        # self._book_ui = BookUI(self.client_repo, self.booking_system)
-        # self._book_ui.exec_()
-        # if self._book_ui.controller.booking is not None:
-        #     self._load_booking(self._book_ui.controller.booking)
+        self._create_ui = CreateUI()
+        self._create_ui.exec_()
+        # if self._create_ui.controller.booking is not None:
+        #     self._load_booking(self._create_ui.controller.booking)
 
     def cancel_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -128,9 +132,9 @@ class BookingMainUI(QMainWindow):
         self.buttons_layout.addWidget(self.charge_btn)
         config_btn(self.charge_btn, "Cobrar turno", font_size=16)
 
-        self.book_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.book_btn)
-        config_btn(self.book_btn, "Reservar turno", font_size=16)
+        self.create_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.create_btn)
+        config_btn(self.create_btn, "Reservar turno", font_size=16)
 
         self.cancel_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.cancel_btn)
@@ -173,6 +177,161 @@ class BookingMainUI(QMainWindow):
 
         # Adjusts size.
         self.setMaximumWidth(self.widget.sizeHint().width())
+
+
+# class CreateController:
+#
+#     def __init__(self, book_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem) -> None:
+#         self.client_repo = client_repo
+#         self.booking_system = booking_system
+#         self.booking: TempBooking | None = None
+#
+#         self.book_ui = book_ui
+#
+#         fill_combobox(self.book_ui.court_combobox, self.booking_system.courts(), lambda court: court.name)
+#         self._fill_block_combobox()
+#         fill_combobox(self.book_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
+#
+#         # Configure the filtering widget.
+#         filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
+#                             translate_fun=lambda client, value: client.cli_name.contains(value)),
+#                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
+#                                translate_fun=lambda client, value: client.dni == value))
+#         self.book_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
+#
+#         # noinspection PyUnresolvedReferences
+#         self.book_ui.confirm_btn.clicked.connect(self.book)
+#         # noinspection PyUnresolvedReferences
+#         self.book_ui.cancel_btn.clicked.connect(self.book_ui.reject)
+#         # noinspection PyUnresolvedReferences
+#         self.book_ui.date_edit.dateChanged.connect(self._fill_block_combobox)
+#
+#     def _fill_block_combobox(self):
+#         blocks = self.booking_system.blocks(current_block_start(self.booking_system.blocks(),
+#                                                                 self.book_ui.date_edit.date().toPyDate()))
+#         fill_combobox(self.book_ui.block_combobox, blocks, lambda block: str(block.start))
+#         config_combobox(self.book_ui.block_combobox)
+#         config_combobox(self.book_ui.court_combobox, fixed_width=self.book_ui.block_combobox.width())
+#         config_combobox(self.book_ui.duration_combobox, fixed_width=self.book_ui.block_combobox.width())
+#
+#     def fill_client_combobox(self, filters: list[FilterValuePair]):
+#         fill_combobox(self.book_ui.client_combobox,
+#                       self.client_repo.all(page=1, filters=filters),
+#                       lambda client: client.name.as_primitive())
+#
+#     def book(self):
+#         client = self.book_ui.client_combobox.currentData(Qt.UserRole)
+#         court = self.book_ui.court_combobox.currentData(Qt.UserRole)
+#         when = self.book_ui.date_edit.date().toPyDate()
+#         start_block = self.book_ui.block_combobox.currentData(Qt.UserRole)
+#         duration = self.book_ui.duration_combobox.currentData(Qt.UserRole)
+#
+#         if client is None:
+#             Dialog.info("Error", "Seleccione un cliente.")
+#         elif self.booking_system.out_of_range(start_block, duration):
+#             Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
+#                                  f"'{self.booking_system.end}'.")
+#         elif not self.booking_system.booking_available(when, court, start_block, duration):
+#             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
+#         else:
+#             is_fixed = self.book_ui.fixed_checkbox.isChecked()
+#             self.booking = self.booking_system.book(court, client, is_fixed, when, start_block, duration)[0]
+#             Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
+#             self.book_ui.client_combobox.window().close()
+
+
+class CreateUI(QDialog):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._setup_ui()
+        # self.controller = CreateController(self, client_repo, booking_system)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Reservar turno")
+        self.layout = QVBoxLayout(self)
+
+        # Filtering.
+        self.filter_header = FilterHeader(show_clear_button=False)
+        self.layout.addWidget(self.filter_header)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        self.client_lbl = QLabel(self)
+        self.form_layout.addWidget(self.client_lbl, 0, 0)
+        config_lbl(self.client_lbl, "Cliente*")
+
+        self.client_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.client_combobox, 0, 1)
+        config_combobox(self.client_combobox, fixed_width=200)
+
+        self.date_lbl = QLabel(self)
+        self.form_layout.addWidget(self.date_lbl, 1, 0)
+        config_lbl(self.date_lbl, "Fecha")
+
+        self.date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.date_edit, 1, 1)
+        config_date_edit(self.date_edit, date.today(), calendar=True)
+
+        self.court_lbl = QLabel(self)
+        self.form_layout.addWidget(self.court_lbl, 2, 0)
+        config_lbl(self.court_lbl, "Cancha")
+
+        self.court_combobox = QComboBox(self)  # The configuration is done in _fill_block_combobox.
+        self.form_layout.addWidget(self.court_combobox, 2, 1)
+
+        self.hour_lbl = QLabel(self)
+        self.form_layout.addWidget(self.hour_lbl, 3, 0)
+        config_lbl(self.hour_lbl, "Hora")
+
+        self.block_combobox = QComboBox(self)  # The configuration is done in _fill_block_combobox.
+        self.form_layout.addWidget(self.block_combobox, 3, 1)
+
+        self.duration_lbl = QLabel(self)
+        self.form_layout.addWidget(self.duration_lbl, 4, 0)
+        config_lbl(self.duration_lbl, "Duración")
+
+        self.duration_combobox = QComboBox(self)  # The configuration is done in _fill_block_combobox.
+        self.form_layout.addWidget(self.duration_combobox, 4, 1)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 5, 0)
+        config_lbl(self.responsible_lbl, "Responsable*")
+
+        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.form_layout.addWidget(self.responsible_field, 5, 1)
+        config_line(self.responsible_field)
+
+        self.fixed_lbl = QLabel(self)
+        self.form_layout.addWidget(self.fixed_lbl, 6, 0)
+        config_lbl(self.fixed_lbl, "Turno fijo")
+
+        self.fixed_checkbox = QCheckBox(self)
+        self.form_layout.addWidget(self.fixed_checkbox, 6, 1)
+        config_checkbox(self.fixed_checkbox)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
 # class HistoryController:
