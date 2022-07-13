@@ -75,7 +75,7 @@ class MainController:
 
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
-        self._create_ui = CreateUI(self.booking_system)
+        self._create_ui = CreateUI(self.booking_system, self.main_ui.date_edit.date().toPyDate())
         self._create_ui.exec_()
         # if self._create_ui.controller.booking is not None:
         #     self._load_booking(self._create_ui.controller.booking)
@@ -183,11 +183,12 @@ class BookingMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, booking_system: BookingSystem) -> None:
+    def __init__(self, create_ui: CreateUI, booking_system: BookingSystem, when: date) -> None:
         self.create_ui = create_ui
         self.booking_system = booking_system
         self.booking: Booking | None = None
 
+        config_date_edit(self.create_ui.date_edit, when, calendar=False, enabled=False)
         fill_combobox(self.create_ui.court_combobox, self.booking_system.court_names, lambda court: court)
         self._fill_block_combobox()
         fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
@@ -247,10 +248,10 @@ class CreateController:
 
 class CreateUI(QDialog):
 
-    def __init__(self, booking_system: BookingSystem) -> None:
+    def __init__(self, booking_system: BookingSystem, when: date) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, booking_system)
+        self.controller = CreateController(self, booking_system, when)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
@@ -277,9 +278,8 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.date_lbl, 1, 0)
         config_lbl(self.date_lbl, "Fecha")
 
-        self.date_edit = QDateEdit(self)
+        self.date_edit = QDateEdit(self)  # Configured in CreateController.
         self.form_layout.addWidget(self.date_edit, 1, 1)
-        config_date_edit(self.date_edit, date.today(), calendar=True)
 
         self.court_lbl = QLabel(self)
         self.form_layout.addWidget(self.court_lbl, 2, 0)
