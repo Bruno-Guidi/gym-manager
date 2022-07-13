@@ -478,7 +478,9 @@ class BookingRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+    def cancelled(
+            self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Cancellation, None, None]:
         raise NotImplementedError
 
     @abc.abstractmethod

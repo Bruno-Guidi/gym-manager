@@ -225,12 +225,22 @@ class SqliteBookingRepo(BookingRepo):
                                record.day_of_week, record.first_when, record.last_when,
                                deserialize_inactive_dates(record.inactive_dates), transaction)
 
-    def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
+    def cancelled(
+            self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Cancellation, None, None]:
         cancelled_q = CancelledLog.select(
             CancelledLog.cancel_datetime, CancelledLog.responsible, CancelledLog.client_id, CancelledLog.when,
             CancelledLog.court, CancelledLog.start, CancelledLog.end, CancelledLog.is_fixed,
             CancelledLog.definitely_cancelled
         )
+
+        if filters is not None:
+            # The left outer join is required because bookings might be filtered by the client name, which isn't
+            # an attribute of CancellationLog.
+            cancelled_q = cancelled_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
+            for filter_, value in filters:
+                cancelled_q = cancelled_q.where(filter_.passes_in_repo(CancelledLog, value))
+
         for record in cancelled_q.paginate(page, page_len):
             # ToDo retrieve client name or client proxy instead of client dni.
             yield Cancellation(record.cancel_datetime, record.responsible, record.client_id, record.when, record.court,
