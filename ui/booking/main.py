@@ -24,34 +24,39 @@ class MainController:
     ) -> None:
         self.main_ui = main_ui
         self.booking_system = booking_system
+        self._courts = {name: number + 1 for number, name in enumerate(booking_system.courts())}
+
+        self.load_bookings()
+
+        # noinspection PyUnresolvedReferences
+        self.main_ui.date_edit.dateChanged.connect(self.load_bookings)
 
     def _load_booking(
             self, booking: TempBooking, start: int | None = None, end: int | None = None
     ):
-        # if start is None or end is None:
-        #     start, end = self.booking_system.block_range(booking.start, booking.end)
+        if start is None or end is None:
+            start, end = self.booking_system.block_range(booking.start, booking.end)
 
-        item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}")
-        # item.setTextAlignment(Qt.AlignCenter)
-        # item.setFont(self._cell_font(is_paid=booking.transaction is not None))
-        # self.main_ui.booking_table.setItem(start, booking.court.id, item)
-        # self.main_ui.booking_table.setSpan(start, booking.court.id, end - start, 1)
+        item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                                f"{' (Pago)' if booking.was_paid() else ''}")
+        item.setTextAlignment(Qt.AlignCenter)
+        self.main_ui.booking_table.setItem(start, self._courts[booking.court], item)
+        self.main_ui.booking_table.setSpan(start, self._courts[booking.court], end - start, 1)
 
     def load_bookings(self):
         self.main_ui.booking_table.setRowCount(0)  # Clears the table.
 
         # Loads the hour column.
-        # blocks = [block for block in self.booking_system.blocks()]
-        # self.main_ui.booking_table.setRowCount(len(blocks))
-        # for row, block in enumerate(blocks):
-        #     item = QTableWidgetItem(block.str_range)
-        #     item.setTextAlignment(Qt.AlignCenter)
-        #     self.main_ui.booking_table.setItem(row, 0, item)
+        blocks = [block for block in self.booking_system.blocks()]
+        self.main_ui.booking_table.setRowCount(len(blocks))
+        for row, block in enumerate(blocks):
+            item = QTableWidgetItem(block.str_range)
+            item.setTextAlignment(Qt.AlignCenter)
+            self.main_ui.booking_table.setItem(row, 0, item)
 
         # Loads the bookings for the day.
-        # for booking, start, end in self.booking_system.bookings((BOOKING_TO_HAPPEN, BOOKING_PAID),
-        #                                                         self.main_ui.date_edit.date().toPyDate()):
-        #     self._load_booking(booking, start, end)
+        for booking, start, end in self.booking_system.bookings(self.main_ui.date_edit.date().toPyDate()):
+            self._load_booking(booking, start, end)
 
     def next_page(self):
         # The load_bookings(args) method is executed as a callback when the date_edit date changes.
