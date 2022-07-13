@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import (
     BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD,
-    current_block_start, Booking)
+    remaining_blocks, Booking)
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair
@@ -188,10 +188,17 @@ class CreateController:
         self.booking_system = booking_system
         self.booking: Booking | None = None
 
+        # Fills some widgets that depend on user/system data.
         config_date_edit(self.create_ui.date_edit, when, calendar=False, enabled=False)
         fill_combobox(self.create_ui.court_combobox, self.booking_system.court_names, lambda court: court)
-        self._fill_block_combobox()
+        fill_combobox(self.create_ui.block_combobox, remaining_blocks(self.booking_system.blocks(), when),
+                      lambda block: str(block.start))
         fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
+
+        # Configs the widgets so they have the same width.
+        config_combobox(self.create_ui.block_combobox)
+        config_combobox(self.create_ui.court_combobox, fixed_width=self.create_ui.block_combobox.width())
+        config_combobox(self.create_ui.duration_combobox, fixed_width=self.create_ui.block_combobox.width())
 
         # Configure the filtering widget.
         filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
@@ -204,16 +211,6 @@ class CreateController:
         self.create_ui.confirm_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
-        # noinspection PyUnresolvedReferences
-        self.create_ui.date_edit.dateChanged.connect(self._fill_block_combobox)
-
-    def _fill_block_combobox(self):
-        blocks = self.booking_system.blocks(current_block_start(self.booking_system.blocks(),
-                                                                self.create_ui.date_edit.date().toPyDate()))
-        fill_combobox(self.create_ui.block_combobox, blocks, lambda block: str(block.start))
-        config_combobox(self.create_ui.block_combobox)
-        config_combobox(self.create_ui.court_combobox, fixed_width=self.create_ui.block_combobox.width())
-        config_combobox(self.create_ui.duration_combobox, fixed_width=self.create_ui.block_combobox.width())
 
     def fill_client_combobox(self, filters: list[FilterValuePair]):
         pass
