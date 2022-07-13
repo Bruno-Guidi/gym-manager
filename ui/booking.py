@@ -4,14 +4,13 @@ from datetime import date, datetime
 from typing import TypeAlias
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
-    QSizePolicy, QTableWidget, QMenuBar, QAction, QTableWidgetItem, QDateEdit, QMenu, QDialog, QGridLayout, QLabel,
+    QSizePolicy, QTableWidget, QTableWidgetItem, QDateEdit, QDialog, QGridLayout, QLabel,
     QComboBox, QCheckBox, QLineEdit)
 
 from gym_manager.booking.core import (
-    BookingSystem, TempBooking, BOOKING_TO_HAPPEN, BOOKING_PAID, ONE_DAY_TD,
+    BookingSystem, ONE_DAY_TD,
     remaining_blocks, Booking, Duration, subtract_times)
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
@@ -565,8 +564,6 @@ class HistoryController:
         self.history_ui.page_index.total_len = self.booking_system.repo.count(filters)
         for row, cancelled in enumerate(self.booking_system.repo.cancelled(self.history_ui.page_index.page,
                                                                            self.history_ui.page_index.page_len, )):
-            columns = {"Día": (4, bool),
-                       "Fijo": (4, bool)}
             fill_cell(self.history_ui.booking_table, row, 0,
                       cancelled.cancel_datetime.strftime(constants.DATE_TIME_FORMAT), bool)
             fill_cell(self.history_ui.booking_table, row, 1, cancelled.when.strftime(constants.DATE_FORMAT), bool)
