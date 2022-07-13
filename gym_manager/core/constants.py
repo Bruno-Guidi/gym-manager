@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-DATE_FORMAT = "%d/%m/%Y"
+DATE_FORMAT, DATE_TIME_FORMAT = "%d/%m/%Y", "%d/%m/%Y - %H:%M"
 
 CLIENT_MIN_DNI, CLIENT_MAX_DNI = 0, 100_000_000
 CLIENT_NAME_CHARS = 30
