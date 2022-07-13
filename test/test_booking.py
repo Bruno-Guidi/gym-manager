@@ -6,7 +6,7 @@ import pytest
 from gym_manager import peewee
 from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
-    Booking, time_range, Block, Cancellation)
+    Booking, time_range, Block, Cancellation, remaining_blocks)
 from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
@@ -57,10 +57,14 @@ class MockBookingRepo(BookingRepo):
     def all_fixed(self) -> list[FixedBooking]:
         # noinspection PyTypeChecker
         return [
-            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0, last_when=date(2022, 7, 11)),
-            FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1, last_when=date(2022, 7, 12))
+            FixedBooking("1", client=None, start=time(10, 0), end=time(12, 0), day_of_week=0,
+                         last_when=date(2022, 7, 11)),
+            FixedBooking("1", client=None, start=time(13, 0), end=time(14, 0), day_of_week=0,
+                         last_when=date(2022, 7, 11)),
+            FixedBooking("1", client=None, start=time(15, 0), end=time(16, 0), day_of_week=0,
+                         last_when=date(2022, 7, 11)),
+            FixedBooking("2", client=None, start=time(15, 0), end=time(16, 0), day_of_week=1,
+                         last_when=date(2022, 7, 12))
         ]
 
     def cancelled(self, page: int = 1, page_len: int = 10) -> Generator[Cancellation, None, None]:
@@ -79,6 +83,32 @@ def test_timeRange():
     expected = [time(hour=8, minute=0), time(hour=8, minute=30),
                 time(hour=9, minute=0), time(hour=9, minute=30)]
     assert [td for td in time_range(time(8, 0), time(9, 30), minute_step=30)] == expected
+
+
+def test_remainingBlocks():
+    b1, b2 = Block(1, time(8, 0), end=time(9, 0)), Block(2, time(9, 0), end=time(10, 0))
+    b3, b4 = Block(3, time(10, 0), end=time(11, 0)), Block(4, time(11, 0), end=time(12, 0))
+    all_blocks = [b1, b2, b3, b4]
+
+    # It is not possible to book blocks of days that already passed.
+    with pytest.raises(OperationalError):
+        reference_datetime = datetime(2022, 8, 9, 0, 0)
+        dummy = [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)]
+
+    # The block b3 with start=time(9, 59) is about to start, so it still can be booked. The remaining blocks are b3, b4.
+    reference_datetime = datetime(2022, 8, 8, 9, 59)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b3, b4]
+
+    # The block b3 with start=time(10, 0) already started, so it can't be booked. The only one remaining is b4.
+    reference_datetime = datetime(2022, 8, 8, 10, 0)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b4]
+
+    # The reference datetime is after the date to book, so all blocks are remaining.
+    reference_datetime = datetime(2022, 8, 7, 10, 0)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b1, b2, b3, b4]
+
+    reference_datetime = datetime(2022, 8, 8, 0, 0)
+    assert [b for b in remaining_blocks(all_blocks, date(2022, 8, 8), reference_datetime)] == [b1, b2, b3, b4]
 
 
 def test_serialization_inactiveDates():

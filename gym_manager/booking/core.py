@@ -40,15 +40,25 @@ def combine(base_date: date, start: time | None = None, duration: Duration | Non
     return dt
 
 
-def current_block_start(blocks: Iterable[Block], when: date) -> time:
-    """Returns the start time of the first block whose start time hasn't passed yet.
+def remaining_blocks(
+        blocks: Iterable[Block], when: date, reference_datetime: datetime | None = None
+) -> Iterable[Block]:
+    """Discards blocks that already passed.
     """
-    blocks_it = blocks
-    if when == date.today():
-        blocks_it = itertools.dropwhile(lambda b: b.start < datetime.now().time(), blocks)
+    reference_datetime = datetime.now() if reference_datetime is None else reference_datetime
+    reference_date, reference_time = reference_datetime.date(), reference_datetime.time()
 
-    for block in blocks_it:
-        return block.start
+    if when < reference_date:
+        raise OperationalError(f"There are no remaining blocks for the [date={when}] and the [reference_date="
+                               f"{reference_date}")
+
+    if when == reference_date:
+        # The remaining blocks are the ones whose start time is after the reference time (they hasn't passed yet).
+        _remaining_blocks = itertools.dropwhile(lambda b: b.start <= reference_time, blocks)
+    else:
+        _remaining_blocks = blocks
+
+    yield from _remaining_blocks
 
 
 Court = namedtuple("Court", ["name", "id"])
