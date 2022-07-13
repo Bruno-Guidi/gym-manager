@@ -25,10 +25,12 @@ from ui.widgets import FilterHeader, PageIndex, Field, Dialog
 class MainController:
 
     def __init__(
-            self, main_ui: BookingMainUI, client_repo: ClientRepo, booking_system: BookingSystem
+            self, main_ui: BookingMainUI, client_repo: ClientRepo, transaction_repo: TransactionRepo,
+            booking_system: BookingSystem
     ) -> None:
         self.main_ui = main_ui
         self.client_repo = client_repo
+        self.transaction_repo = transaction_repo
         self.booking_system = booking_system
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
 
@@ -115,11 +117,11 @@ class MainController:
 class BookingMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, booking_system: BookingSystem
+            self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, booking_system)
+        self.controller = MainController(self, client_repo, transaction_repo, booking_system)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")

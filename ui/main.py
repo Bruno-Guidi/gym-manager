@@ -67,7 +67,7 @@ class Controller:
 
     # noinspection PyAttributeOutsideInit
     def show_booking_main_ui(self):
-        self.booking_main_ui = BookingMainUI(self.client_repo, self.booking_system)
+        self.booking_main_ui = BookingMainUI(self.client_repo, self.transaction_repo, self.booking_system)
         self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
         self.booking_main_ui.show()
 
