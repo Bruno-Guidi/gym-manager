@@ -25,9 +25,10 @@ from ui.widgets import FilterHeader, PageIndex, Field, Dialog
 class MainController:
 
     def __init__(
-            self, main_ui: BookingMainUI, booking_system: BookingSystem
+            self, main_ui: BookingMainUI, client_repo: ClientRepo, booking_system: BookingSystem
     ) -> None:
         self.main_ui = main_ui
+        self.client_repo = client_repo
         self.booking_system = booking_system
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
 
@@ -75,7 +76,7 @@ class MainController:
 
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
-        self._create_ui = CreateUI(self.booking_system, self.main_ui.date_edit.date().toPyDate())
+        self._create_ui = CreateUI(self.client_repo, self.booking_system, self.main_ui.date_edit.date().toPyDate())
         self._create_ui.exec_()
         # if self._create_ui.controller.booking is not None:
         #     self._load_booking(self._create_ui.controller.booking)
@@ -114,11 +115,11 @@ class MainController:
 class BookingMainUI(QMainWindow):
 
     def __init__(
-            self, booking_system: BookingSystem
+            self, client_repo: ClientRepo, booking_system: BookingSystem
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, booking_system)
+        self.controller = MainController(self, client_repo, booking_system)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")
@@ -183,9 +184,11 @@ class BookingMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, booking_system: BookingSystem, when: date) -> None:
+    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem, when: date) -> None:
         self.create_ui = create_ui
+        self.client_repo = client_repo
         self.booking_system = booking_system
+        self.when = when
         self.booking: Booking | None = None
 
         # Fills some widgets that depend on user/system data.
@@ -245,10 +248,10 @@ class CreateController:
 
 class CreateUI(QDialog):
 
-    def __init__(self, booking_system: BookingSystem, when: date) -> None:
+    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, when: date) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, booking_system, when)
+        self.controller = CreateController(self, client_repo, booking_system, when)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
