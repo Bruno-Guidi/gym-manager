@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, time
 from typing import Type, Any, Callable
 
 from PyQt5.QtCore import Qt
@@ -197,10 +197,10 @@ class FilterHeader(QWidget):
         # simply won't pass the filtering and won't be displayed.
         from_date = self.from_date_edit.date().toPyDate() if self._date_greater_filter is not None else from_date
         if from_date is not None:
-            filters.append((self._date_greater_filter, from_date))
+            filters.append((self._date_greater_filter, datetime.combine(from_date, time.min)))
         to_date = self.to_date_edit.date().toPyDate() if self._date_lesser_filter is not None else to_date
         if to_date is not None:
-            filters.append((self._date_lesser_filter, to_date))
+            filters.append((self._date_lesser_filter, datetime.combine(to_date, time.max)))
 
         return filters
 
