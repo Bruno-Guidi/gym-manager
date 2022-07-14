@@ -58,7 +58,7 @@ class Controller:
 
     # noinspection PyAttributeOutsideInit
     def show_activity_main_ui(self):
-        self.activity_main_ui = ActivityMainUI(self.activity_repo)
+        self.activity_main_ui = ActivityMainUI(self.activity_repo, self.security_handler)
         self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
         self.activity_main_ui.show()
 

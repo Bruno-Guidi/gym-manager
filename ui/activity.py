@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import functools
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
@@ -8,18 +10,20 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as constants
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
+from gym_manager.core.security import SecurityHandler
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table,
     fill_cell)
-from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator
+from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 
 class MainController:
     def __init__(
-            self, main_ui: ActivityMainUI, activity_repo: ActivityRepo
+            self, main_ui: ActivityMainUI, activity_repo: ActivityRepo, security_handler: SecurityHandler
     ):
         self.main_ui = main_ui
         self.activity_repo = activity_repo
+        self.security_handler = security_handler
         self._activities: dict[str, Activity] = {}  # Dict that maps raw activity name to the associated activity.
 
         # Configure the filtering widget.
@@ -98,20 +102,24 @@ class MainController:
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            # Updates the activity.
             activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
             activity = self._activities[activity_name]
-            activity.price, activity.description = self.main_ui.price_field.value(), descr
-            self.activity_repo.update(activity)
+            update_fn = functools.partial(self.activity_repo.update, activity)
+            # update = DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn)
 
-            # Updates the ui.
-            row = self.main_ui.activity_table.currentRow()
-            fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int, increase_row_count=False)
-            fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int,
-                      increase_row_count=False)
+            if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
+                # Updates the activity.
+                activity.price, activity.description = self.main_ui.price_field.value(), descr
+                self.activity_repo.update(activity)
 
-            Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
+                # Updates the ui.
+                row = self.main_ui.activity_table.currentRow()
+                fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int, increase_row_count=False)
+                fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int,
+                          increase_row_count=False)
+
+                Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
 
     def remove(self):
         if self.main_ui.activity_table.currentRow() == -1:
@@ -148,10 +156,10 @@ class MainController:
 
 class ActivityMainUI(QMainWindow):
 
-    def __init__(self, activity_repo: ActivityRepo) -> None:
+    def __init__(self, activity_repo: ActivityRepo, security_handler: SecurityHandler) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, activity_repo)
+        self.controller = MainController(self, activity_repo, security_handler)
 
     def _setup_ui(self):
         self.setWindowTitle("Actividades")

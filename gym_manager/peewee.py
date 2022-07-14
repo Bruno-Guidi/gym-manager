@@ -282,6 +282,7 @@ class SqliteActivityRepo(ActivityRepo):
             self.cache.pop(activity.name)
         ActivityTable.delete_by_id(activity.name)
 
+    @log_responsible(action_tag="update_activity", action_name="Actualizar actividad")
     def update(self, activity: Activity):
         ActivityTable.replace(act_name=activity.name.as_primitive(),
                               price=str(activity.price),
