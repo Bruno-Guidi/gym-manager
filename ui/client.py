@@ -250,14 +250,17 @@ class MainController:
             return
 
         activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
+        client_name = self._subscriptions[activity_name].client.name
 
-        # noinspection PyAttributeOutsideInit
-        self._cancel_sub_ui = CancelSubUI(self.subscription_repo, self._subscriptions[activity_name])
-        self._cancel_sub_ui.exec_()
+        cancel_fn = functools.partial(api.cancel, self.subscription_repo, self._subscriptions[activity_name])
+        remove = DialogWithResp.confirm(f"¿Desea cancelar la inscripción del cliente '{client_name}' a la actividad "
+                                        f"'{activity_name}?", self.security_handler, cancel_fn)
 
-        if self._cancel_sub_ui.controller.cancelled:
-            self._subscriptions.pop(activity_name)
+        if remove:
+            subscription = self._subscriptions.pop(activity_name)
             self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
+            Dialog.info("Éxito", f"La inscripción del cliente '{subscription.client.name}' a la actividad "
+                                 f"'{subscription.activity.name}' fue cancelada.")
 
 
 class ClientMainUI(QMainWindow):
@@ -595,87 +598,6 @@ class AddSubUI(QDialog):
         self.activity_combobox = QComboBox(self)
         self.form_layout.addWidget(self.activity_combobox, 0, 1)
         config_combobox(self.activity_combobox, fixed_width=self.responsible_field.width())
-
-        # Vertical spacer.
-        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
-
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
-
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
-
-        # Adjusts size.
-        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
-
-
-class CancelSubController:
-    def __init__(
-            self, cancel_sub_ui: CancelSubUI, subscription_repo: SubscriptionRepo, subscription: Subscription
-    ):
-        self.cancel_sub_ui = cancel_sub_ui
-        self.subscription_repo = subscription_repo
-        self.subscription = subscription
-
-        self.cancelled = False
-
-        self.cancel_sub_ui.activity_line.setText(str(subscription.activity.name))
-
-        # Sets callbacks.
-        # noinspection PyUnresolvedReferences
-        self.cancel_sub_ui.confirm_btn.clicked.connect(self.cancel_sub)
-        # noinspection PyUnresolvedReferences
-        self.cancel_sub_ui.cancel_btn.clicked.connect(self.cancel_sub_ui.reject)
-
-    def cancel_sub(self):
-        if not self.cancel_sub_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
-        else:
-            api.cancel(self.subscription_repo, self.subscription)
-            self.cancelled = True
-            Dialog.info("Éxito", f"La inscripción del cliente '{self.subscription.client.name}' a la actividad "
-                                 f"'{self.subscription.activity.name}' fue cancelada.")
-            self.cancel_sub_ui.activity_line.window().close()
-
-
-class CancelSubUI(QDialog):
-    def __init__(self, subscription_repo: SubscriptionRepo, subscription: Subscription) -> None:
-        super().__init__()
-        self._setup_ui()
-        self.controller = CancelSubController(self, subscription_repo, subscription)
-
-    def _setup_ui(self):
-        self.setWindowTitle("Cancelar inscripción")
-
-        self.layout = QVBoxLayout(self)
-
-        self.form_layout = QGridLayout()
-        self.layout.addLayout(self.form_layout)
-
-        # Activity.
-        self.name_lbl = QLabel(self)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Actividad")
-
-        self.activity_line = QLineEdit(self)
-        self.form_layout.addWidget(self.activity_line, 0, 1)
-        config_line(self.activity_line, enabled=False)
-
-        # Responsible
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 1, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-        self.form_layout.addWidget(self.responsible_field, 1, 1)
-        config_line(self.responsible_field, place_holder="Responsable")
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
