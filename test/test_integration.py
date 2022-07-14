@@ -129,6 +129,8 @@ def test_cancel():
 
 
 def test_charge_notChargeOnceActivity():
+    log_responsible.config(SimpleSecurityHandler(action_tags={"register_subscription_charge"},
+                                                 needs_responsible={"register_subscription_charge"}))
     # Repositories setup.
     peewee.create_database(":memory:")
     activity_repo = peewee.SqliteActivityRepo()
@@ -157,6 +159,7 @@ def test_charge_notChargeOnceActivity():
                                           String("dummy_resp", max_len=20), "dummy_descr", client)
 
     # Feature being tested.
+    log_responsible.handler.current_responsible = String("TestResp", max_len=30)
     api.register_subscription_charge(subscription_repo, subscription, transaction)
     # Check that the activity is up-to-date, because a charge was registered.
     assert subscription.up_to_date(date(2022, 4, 1))

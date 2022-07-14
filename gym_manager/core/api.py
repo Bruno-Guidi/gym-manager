@@ -73,6 +73,7 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     )
 
 
+@log_responsible(action_tag="register_subscription_charge", action_name="Cobro actividad")
 def register_subscription_charge(
         subscription_repo: SubscriptionRepo, subscription: Subscription, transaction: Transaction
 ):
