@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.widget_config import (
     fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
     config_date_edit)
@@ -327,6 +328,86 @@ class Dialog(QDialog):
 
         self.confirmed = True
         super().accept()
+
+    def reject(self) -> None:
+        self.confirmed = False
+        super().reject()
+
+
+class DialogWithResp(QDialog):
+    @classmethod
+    def confirm(cls, question: str, security_handler: SecurityHandler, fn: Callable) -> bool:
+        dialog = DialogWithResp("Confirmar", question, security_handler, fn)
+        dialog.exec_()
+        return dialog.confirmed
+
+    def __init__(self, title: str, text: str, security_handler: SecurityHandler, fn: Callable):
+        super().__init__()
+        self._setup_ui(title, text)
+
+        self.confirmed = False
+        self.security_handler = security_handler
+        self.fn = fn
+
+        # noinspection PyUnresolvedReferences
+        self.confirm_btn.clicked.connect(self.accept)
+        # noinspection PyUnresolvedReferences
+        self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self, title: str, text: str):
+        self.setWindowTitle(title)
+
+        self.layout = QVBoxLayout(self)
+
+        self.text_lbl = QLabel(self)
+        self.layout.addWidget(self.text_lbl, alignment=Qt.AlignCenter)
+        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignJustify)
+        # Adjusts the label size according to the text length
+        self.text_lbl.setWordWrap(True)
+        self.text_lbl.adjustSize()
+        self.text_lbl.setMinimumSize(self.text_lbl.sizeHint())
+
+        # Responsible.
+        self.responsible_layout = QHBoxLayout()
+        self.layout.addLayout(self.responsible_layout)
+
+        self.responsible_lbl = QLabel(self)
+        self.responsible_layout.addWidget(self.responsible_lbl)
+        config_lbl(self.responsible_lbl, "Responsable*")
+
+        self.responsible_field = Field(String, self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_layout.addWidget(self.responsible_field)
+        config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar")
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+    def accept(self) -> None:
+        if self.responsible_field.valid_value():
+            self.security_handler.current_responsible = self.responsible_field.value()
+            try:
+                self.fn()
+
+                self.confirmed = True
+                super().accept()
+            except SecurityError as sec_err:
+                Dialog.info("Error", str(sec_err))
 
     def reject(self) -> None:
         self.confirmed = False
