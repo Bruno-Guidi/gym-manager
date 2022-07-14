@@ -24,9 +24,6 @@ class MainController:
     def __init__(self, acc_main_ui: AccountingMainUI, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
         self.acc_main_ui = acc_main_ui
         self.transaction_repo = transaction_repo
-        self._types_dict: dict[str, int] = {type_: i + 2 for i, type_ in enumerate(("Cobro", "Extracción"))}
-        self._methods_dict: dict[str, int] = {method: i + 1 for i, method
-                                              in enumerate((*transaction_repo.methods, "Total"))}
         self.balance_repo = balance_repo
 
         self._date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
