@@ -12,7 +12,6 @@ from gym_manager.core.security import log_responsible
 
 logger = logging.getLogger(__name__)
 
-
 CreateTransactionFn: TypeAlias = Callable[[], Transaction]
 
 
@@ -52,7 +51,7 @@ def subscribe(
     client.add(subscription)
 
     # noinspection PyUnresolvedReferences
-    logger.info(
+    logger.getChild(__name__).info(
         f"Client [dni={client.dni}] subscribed to activity [activity_name={activity.name}], with [payment="
         f"{'None' if transaction is None else transaction.id}]."
     )
@@ -71,7 +70,7 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     subscription.client.unsubscribe(subscription.activity)
     subscription_repo.remove(subscription)
 
-    logger.info(
+    logger.getChild(__name__).info(
         f"Client [dni={subscription.client.dni}] unsubscribed of activity [activity_name={subscription.activity.name}]."
     )
 
@@ -98,9 +97,11 @@ def register_subscription_charge(
     subscription.transaction = transaction  # Links the transaction with the subscription.
     subscription_repo.update(subscription)
 
-    logger.info(f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
-                f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
-                f"{subscription.activity.price}].")
+    logger.getChild(__name__).info(
+        f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
+        f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
+        f"{subscription.activity.price}]."
+    )
 
     return transaction
 
@@ -124,7 +125,7 @@ def extract(
     """
     transaction = transaction_repo.create("Extracción", when, amount, method, responsible, description.as_primitive())
 
-    logger.info(f"Responsible [responsible={responsible}] extracted an amount [amount={amount}].")
+    logger.getChild(__name__).info(f"Responsible [responsible={responsible}] extracted an amount [amount={amount}].")
 
     return transaction
 
@@ -193,5 +194,5 @@ def close_balance(  # ToDo Integrate test with generate_balance().
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
 
-    logger.info(f"Responsible [responsible={responsible}] closed the balance [balance={balance}] of [balance_date="
-                f"{balance_date}].")
+    logger.getChild(__name__).info(f"Responsible [responsible={responsible}] closed the balance [balance={balance}] of "
+                                   f"[balance_date={balance_date}].")
