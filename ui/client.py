@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
-from gym_manager.core.security import SecurityHandler
+from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
@@ -227,8 +227,8 @@ class MainController:
 
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         # noinspection PyAttributeOutsideInit
-        self._add_sub_ui = AddSubUI(self.subscription_repo, (activity for activity in self.activities_fn()),
-                                    self._clients[client_dni])
+        self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
+                                    (activity for activity in self.activities_fn()), self._clients[client_dni])
         self._add_sub_ui.exec_()
 
         subscription = self._add_sub_ui.controller.subscription
@@ -526,12 +526,13 @@ class CreateUI(QDialog):
 
 class AddSubController:
     def __init__(
-            self, add_sub_ui: AddSubUI, subscription_repo: SubscriptionRepo, activities: Iterable[Activity],
-            client: Client
+            self, add_sub_ui: AddSubUI, subscription_repo: SubscriptionRepo, security_handler: SecurityHandler,
+            activities: Iterable[Activity], client: Client
     ):
         self.add_sub_ui = add_sub_ui
         self.subscription_repo = subscription_repo
         self.client = client
+        self.security_handler = security_handler
         self.subscription: Subscription | None = None
 
         activities = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity) or activity.charge_once,
@@ -547,21 +548,27 @@ class AddSubController:
     def add_sub(self):
         if self.add_sub_ui.activity_combobox.count() == 0:
             Dialog.info("Error", "No hay actividades disponibles.")
-        elif not self.add_sub_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
         else:
             activity: Activity = self.add_sub_ui.activity_combobox.currentData(Qt.UserRole)
-            self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
-            Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
-                                 f"'{activity.name}'.")
-            self.add_sub_ui.activity_combobox.window().close()
+            self.security_handler.current_responsible = self.add_sub_ui.responsible_field.value()
+            try:
+                self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
+
+                Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
+                                     f"'{activity.name}'.")
+                self.add_sub_ui.activity_combobox.window().close()
+            except SecurityError as sec_err:
+                Dialog.info("Error", str(sec_err))
 
 
 class AddSubUI(QDialog):
-    def __init__(self, subscription_repo: SubscriptionRepo, activities: Iterable[Activity], client: Client) -> None:
+    def __init__(
+            self, subscription_repo: SubscriptionRepo, security_handler: SecurityHandler,
+            activities: Iterable[Activity], client: Client
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = AddSubController(self, subscription_repo, activities, client)
+        self.controller = AddSubController(self, subscription_repo, security_handler, activities, client)
 
     def _setup_ui(self):
         self.setWindowTitle("Inscribir cliente")
@@ -576,7 +583,7 @@ class AddSubUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 1, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = Field(String, self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 1, 1)
         config_line(self.responsible_field, place_holder="Responsable")
 
