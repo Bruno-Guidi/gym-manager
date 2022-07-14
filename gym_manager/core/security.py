@@ -13,9 +13,10 @@ class SecurityError(Exception):
     """Exception raised when there is a security related problem.
     """
     def __init__(
-            self, responsible: String, executed_fn: Callable, action_tag: str, action_name: str, *args: object
+            self, cause: str, responsible: String, executed_fn: Callable, action_tag: str, action_name: str,
+            *args: object
     ) -> None:
-        super().__init__(*args)
+        super().__init__(cause, *args)
         self.responsible = responsible
         self.executed_fn = executed_fn
         self.action_tag = action_tag
@@ -51,8 +52,12 @@ class log_responsible:
         def wrapped(*args):
             if self.handler is None:
                 raise ValueError("There is no SecurityHandler defined.")
+            if self.handler.unregister_action(self.action_tag):
+                raise SecurityError("Tried to execute an unregistered action.",
+                                    self.handler.current_responsible, fn, self.action_tag, self.action_name)
             if self.handler.cant_perform_action(self.action_tag):
-                raise SecurityError(self.handler.current_responsible, fn, self.action_tag, self.action_name)
+                raise SecurityError("Tried to execute action without a defined responsible.",
+                                    self.handler.current_responsible, fn, self.action_tag, self.action_name)
             fn(*args)
             self.handler.handle_action(self.action_tag, self.action_name)
         return wrapped
