@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 from typing import Callable, ClassVar
 
 from gym_manager.core.base import String
+
+logger = logging.getLogger(__name__)
 
 
 class SecurityError(Exception):
@@ -99,4 +102,6 @@ class SecurityHandler:
     def handle(self, action_level, action_name):
         """Does whatever is needed after executing a given action.
         """
-        print(f"Responsible '{self.responsible}' did the action '{action_name}' that has a level '{action_level}'.")
+        logger.info(
+            f"Responsible '{self.responsible}' did the action '{action_name}' that has a level '{action_level}'."
+        )
