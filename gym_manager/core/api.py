@@ -160,7 +160,8 @@ def close_balance(  # ToDo Integrate test with generate_balance().
         balance_repo: BalanceRepo,
         balance: Balance,
         balance_date: date,
-        responsible: String
+        responsible: String,
+        create_extraction_fn: CreateTransactionFn | None = None
 ):
     """Closes the *balance*, save it in the repository and bind the transactions to the balance.
 
@@ -170,14 +171,24 @@ def close_balance(  # ToDo Integrate test with generate_balance().
         balance: balance to close.
         balance_date: date when the balance was done.
         responsible: responsible for closing the balance.
+        create_extraction_fn: function used to create the extraction.
+
     """
-    balance_repo.add(balance_date, responsible, balance)
+    if create_extraction_fn is not None:
+        # Creates the extraction done at the end of the day.
+        extraction = create_extraction_fn()
+
+        # Adds the extraction to the balance. ToDo refactor this into Balance class.
+        if extraction.method not in balance["Extracción"]:
+            balance["Extracción"][extraction.method] = Currency(0)
+        balance["Extracción"][extraction.method].increase(extraction.amount)
+        balance["Extracción"]["Total"].increase(extraction.amount)
+        balance_repo.add(balance_date, responsible, balance)
 
     if balance_repo.balance_done(balance_date):
-        transaction_gen = transaction_repo.all(page=1, balance_date=balance_date)
-    else:
-        transaction_gen = transaction_repo.all(page=1, include_closed=False)
+        raise OperationalError(f"Daily balance for the [balance_date={balance_date}] was already done.")
 
+    transaction_gen = transaction_repo.all(page=1, include_closed=False)
     for transaction in transaction_gen:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)

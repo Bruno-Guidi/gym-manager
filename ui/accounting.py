@@ -127,6 +127,7 @@ class DailyBalanceController:
         self.daily_balance_ui = daily_balance_ui
         self.balance_repo = balance_repo
         self.transaction_repo = transaction_repo
+        self.security_handler = security_handler
         self.balance = balance
 
         # Fills line edits.
@@ -144,32 +145,35 @@ class DailyBalanceController:
         self.daily_balance_ui.cancel_btn.clicked.connect(self.daily_balance_ui.reject)
 
     def close_balance(self):
-        if not (self.daily_balance_ui.responsible_field.valid_value()
-                and self.daily_balance_ui.extract_field.valid_value()):
+        if not self.daily_balance_ui.extract_field.valid_value():
             Dialog.info("Error", "Hay campos que no son válidos.")
-        else:
-            overwrite, today = True, date.today()
-            if self.balance_repo.balance_done(today):
-                overwrite = Dialog.confirm(  # ToDo block balance if it was already done for the day.
-                    f"Ya hay una caja diaria calculada para la fecha {today}.\n¿Desea sobreescribirla?", "Si", "No"
-                )
-            if overwrite:
-                # noinspection PyTypeChecker
-                t = self.transaction_repo.create("Extracción", today, self.daily_balance_ui.extract_field.value(),
-                                                 self.daily_balance_ui.method_combobox.currentText(),
-                                                 self.daily_balance_ui.responsible_field.value(),
-                                                 description=f"Extracción al cierre de caja diaria del día {today}.")
-                # ToDo refactor this into Balance class.
-                if self.daily_balance_ui.method_combobox.currentText() not in self.balance["Extracción"]:
-                    self.balance["Extracción"][self.daily_balance_ui.method_combobox.currentText()] = Currency(0)
-                self.balance["Extracción"][self.daily_balance_ui.method_combobox.currentText()].increase(t.amount)
-                self.balance["Extracción"]["Total"].increase(t.amount)
+            return
 
+        today = date.today()
+        if self.balance_repo.balance_done(today):
+            Dialog.info("Error", f"La caja diaria de {today.strftime(constants.DATE_FORMAT)} ya fue cerrada.")
+            return
+
+        try:
+            self.security_handler.current_responsible = self.daily_balance_ui.responsible_field.value()
+
+            ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(constants.DATE_FORMAT)}."
+                                f"\nEsta accion no se puede deshacer, todas las transacciones no incluidas en esta caja"
+                                f" diaria se incluiran en la caja del día de mañana."
+                                f"\n¿Desea continuar?")
+            if ok:
+                # noinspection PyTypeChecker
+                create_extraction_fn = functools.partial(
+                    self.transaction_repo.create, "Extracción", today, self.daily_balance_ui.extract_field.value(),
+                    self.daily_balance_ui.method_combobox.currentText(), self.daily_balance_ui.responsible_field.value(),
+                    description=f"Extracción al cierre de caja diaria del día {today}."
+                )
                 # noinspection PyTypeChecker
                 api.close_balance(self.transaction_repo, self.balance_repo, self.balance, today,
-                                  self.daily_balance_ui.responsible_field.value())
-                Dialog.info("Éxito", "Caja diaria calculada correctamente.")
+                                  self.daily_balance_ui.responsible_field.value(), create_extraction_fn)
                 self.daily_balance_ui.confirm_btn.window().close()
+        except SecurityError as sec_err:
+            Dialog.info("Error", str(sec_err))
 
 
 class DailyBalanceUI(QDialog):
@@ -194,7 +198,7 @@ class DailyBalanceUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 0, 0)
         config_lbl(self.responsible_lbl, "Responsable*")
 
-        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = Field(String, parent=self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 0, 1)
         config_line(self.responsible_field)
 
@@ -290,7 +294,7 @@ class BalanceHistoryController:
         # noinspection PyUnresolvedReferences
         self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
         # noinspection PyUnresolvedReferences
-        self.history_ui.balance_table.connect(self.refresh_balance_info)
+        self.history_ui.balance_table.itemSelectionChanged.connect(self.refresh_balance_info)
 
     def update_last_n_checkbox(self):
         """Callback called when the state of date_checkbox changes.
