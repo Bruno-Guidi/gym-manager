@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QLineEdit, QDateEdit)
+    QDateEdit)
 
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
@@ -203,15 +203,19 @@ class MainController:
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
 
+        register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo,
+                                                self._subscriptions[activity_name])
         # noinspection PyAttributeOutsideInit
         self._charge_ui = ChargeUI(
-            self.transaction_repo, self._clients[client_dni], self._subscriptions[activity_name].activity.price,
-            description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS)
+            self.transaction_repo, self.security_handler, self._clients[client_dni],
+            amount=self._subscriptions[activity_name].activity.price,
+            description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS),
+            post_charge_fn=register_sub_charge
         )
         self._charge_ui.exec_()
         if self._charge_ui.controller.transaction is not None:
-            api.register_subscription_charge(self.subscription_repo, self._subscriptions[activity_name],
-                                             self._charge_ui.controller.transaction)
+            # api.register_subscription_charge(self.subscription_repo, self._subscriptions[activity_name],
+            #                                  self._charge_ui.controller.transaction)
             # Updates the last charged date of the subscription.
             fill_cell(self.main_ui.subscription_table, self.main_ui.subscription_table.currentRow(), 1,
                       self._charge_ui.controller.transaction.when, data_type=bool)

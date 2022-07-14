@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import functools
 from datetime import date, timedelta
+from typing import Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -8,11 +10,13 @@ from PyQt5.QtWidgets import (
     QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QCheckBox, QDateEdit)
 
 from gym_manager.core import api, constants
+from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Balance
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
+from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
-    fill_combobox, config_layout, config_checkbox, config_date_edit)
+    fill_combobox, config_checkbox, config_date_edit)
 from ui.widgets import Separator, Field, Dialog
 
 
@@ -429,14 +433,22 @@ class ChargeController:
             self,
             charge_ui: ChargeUI,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             client: Client,
             amount: Currency,
-            description: String
+            description: String,
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
     ) -> None:
         self.charge_ui = charge_ui
         self.transaction_repo = transaction_repo
+        self.security_handler = security_handler
         self.client, self.amount = client, amount
         self.transaction: Transaction | None = None
+
+        # This is a partial function, where the only argument left is a callable that creates a transaction with the
+        # data extracted from the form. In this way, the transaction is created in the same place as the subsequent
+        # processing that is done with it.
+        self.post_charge_fn = post_charge_fn
 
         # Sets ui fields.
         self.charge_ui.client_line.setText(str(client.name))
@@ -452,29 +464,34 @@ class ChargeController:
         self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
 
     def charge(self):
-        if not self.charge_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
-        else:
-            # noinspection PyTypeChecker
-            self.transaction = self.transaction_repo.create(
-                "Cobro", date.today(), self.amount, self.charge_ui.method_combobox.currentText(),
-                self.charge_ui.responsible_field.value(), self.charge_ui.descr_text.toPlainText(), self.client
-            )
+        create_transaction_fn = functools.partial(
+            self.transaction_repo.create, "Cobro", date.today(), self.amount,
+            self.charge_ui.method_combobox.currentText(), self.charge_ui.responsible_field.value(),
+            self.charge_ui.descr_text.toPlainText(), self.client
+        )
+        self.security_handler.current_responsible = self.charge_ui.responsible_field.value()
+        try:
+            self.transaction = self.post_charge_fn(create_transaction_fn)
             Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
             self.charge_ui.descr_text.window().close()
+        except SecurityError as sec_err:
+            Dialog.info("Error", str(sec_err))
 
 
 class ChargeUI(QDialog):
     def __init__(
             self,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             client: Client,
             amount: Currency,
-            description: String
+            description: String,
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = ChargeController(self, transaction_repo, client, amount, description)
+        self.controller = ChargeController(self, transaction_repo, security_handler, client, amount, description,
+                                           post_charge_fn)
 
     def _setup_ui(self):
         self.setWindowTitle("Registrar cobro")
@@ -516,7 +533,7 @@ class ChargeUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 3, 0)
         config_lbl(self.responsible_lbl, "Responsable*")
 
-        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = Field(String, parent=self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 3, 1)
         config_line(self.responsible_field, adjust_to_hint=False)
 
