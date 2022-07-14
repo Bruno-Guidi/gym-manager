@@ -13,7 +13,7 @@ from gym_manager.core.security import log_responsible
 logger = logging.getLogger(__name__)
 
 
-@log_responsible(action_tag="subscribe", action_name="Inscripción")
+@log_responsible(action_tag="subscribe", action_name="Inscribir")
 def subscribe(
         subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity,
         transaction: Transaction | None = None
@@ -57,6 +57,7 @@ def subscribe(
     return subscription
 
 
+@log_responsible(action_tag="cancel", action_name="Desinscribir")
 def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> None:
     """Cancels the *subscription*.
 

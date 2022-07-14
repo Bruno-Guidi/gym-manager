@@ -96,11 +96,12 @@ def test_subscribe_raisesSecurityError_withUnregisteredAction():
     # Feature being tested.
     with pytest.raises(SecurityError) as sec_err:
         api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
-    assert (str(sec_err.value) == "Tried to execute an unregistered action."
-            and sec_err.value.action_tag == "subscription")
+    assert str(sec_err.value) == "Tried to execute an unregistered action." and sec_err.value.action_tag == "subscribe"
 
 
 def test_cancel():
+    log_responsible.config(SimpleSecurityHandler(action_tags={"cancel"}, needs_responsible={"cancel"}))
+
     # Repositories setup.
     peewee.create_database(":memory:")
     activity_repo = peewee.SqliteActivityRepo()
@@ -122,6 +123,7 @@ def test_cancel():
     subscription_repo.add(subscription)
 
     # Feature being tested.
+    log_responsible.handler.current_responsible = String("TestResp", max_len=30)
     api.cancel(subscription_repo, subscription)
     assert activity_repo.n_subscribers(activity) == 0
 
