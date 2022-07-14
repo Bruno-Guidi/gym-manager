@@ -105,7 +105,6 @@ class MainController:
             activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
             activity = self._activities[activity_name]
             update_fn = functools.partial(self.activity_repo.update, activity)
-            # update = DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn)
 
             if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
                 # Updates the activity.

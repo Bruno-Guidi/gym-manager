@@ -132,9 +132,8 @@ class MainController:
         else:
             client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
             update_fn = functools.partial(self.client_repo.update, self._clients[client_dni])
-            update = DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn)
 
-            if update:
+            if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
                 # Updates the client.
                 self._clients[client_dni].name = self.main_ui.name_field.value()
                 self._clients[client_dni].telephone = self.main_ui.tel_field.value()
