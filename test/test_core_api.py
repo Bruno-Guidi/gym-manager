@@ -1,3 +1,4 @@
+import functools
 from datetime import date
 
 import pytest
@@ -213,11 +214,13 @@ def test_charge_notChargeOnceActivity():
 
     # This ensures that the activity is overdue.
     assert not subscription.up_to_date(date(2022, 4, 1))
-    transaction = transaction_repo.create("Cobro", date(2022, 4, 1), Currency(0.0), "dummy_method",
-                                          String("dummy_resp", max_len=20), "dummy_descr", client)
+    create_transaction_fn = functools.partial(
+        transaction_repo.create, "Cobro", date(2022, 4, 1), Currency(0.0), "dummy_method",
+        String("dummy_resp", max_len=20), "dummy_descr", client
+    )
 
     # Feature being tested.
     log_responsible.handler.current_responsible = String("TestResp", max_len=30)
-    api.register_subscription_charge(subscription_repo, subscription, transaction)
+    api.register_subscription_charge(subscription_repo, subscription, create_transaction_fn)
     # Check that the activity is up-to-date, because a charge was registered.
     assert subscription.up_to_date(date(2022, 4, 1))

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Iterable
+from typing import Iterable, TypeAlias, Callable
 
 from gym_manager.core.base import (
     String, Transaction, Client, Activity, Subscription, Currency, OperationalError, Balance, InvalidDate
@@ -11,6 +11,9 @@ from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, Bala
 from gym_manager.core.security import log_responsible
 
 logger = logging.getLogger(__name__)
+
+
+CreateTransactionFn: TypeAlias = Callable[[], Transaction]
 
 
 @log_responsible(action_tag="subscribe", action_name="Inscribir")
@@ -75,15 +78,17 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
 
 @log_responsible(action_tag="register_subscription_charge", action_name="Cobro actividad")
 def register_subscription_charge(
-        subscription_repo: SubscriptionRepo, subscription: Subscription, transaction: Transaction
-):
+        subscription_repo: SubscriptionRepo, subscription: Subscription, create_transaction_fn: CreateTransactionFn
+) -> Transaction:
     """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
         subscription_repo: repository implementation that registers subscriptions.
         subscription: subscription being charged.
-        transaction: transaction generated when the client was charged.
+        create_transaction_fn: function used to create the associated transaction.
     """
+    transaction = create_transaction_fn()
+
     if subscription.activity.charge_once:
         raise OperationalError(f"The [activity={subscription.activity.name}] is not subscribeable")
     if subscription.client != transaction.client:
@@ -96,6 +101,8 @@ def register_subscription_charge(
     logger.info(f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
                 f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
                 f"{subscription.activity.price}].")
+
+    return transaction
 
 
 def extract(
