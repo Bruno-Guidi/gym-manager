@@ -58,8 +58,9 @@ class log_responsible:
             if self.handler.cant_perform_action(self.action_tag):
                 raise SecurityError("Tried to execute action without a defined responsible.",
                                     self.handler.current_responsible, fn, self.action_tag, self.action_name)
-            fn(*args)
+            result = fn(*args)
             self.handler.handle_action(self.action_tag, self.action_name)
+            return result
         return wrapped
 
 
