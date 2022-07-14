@@ -147,7 +147,8 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
     return balance
 
 
-def close_balance(
+@log_responsible(action_tag="close_balance", action_name="Cierre caja diaria")
+def close_balance(  # ToDo Integrate test with generate_balance().
         transaction_repo: TransactionRepo,
         balance_repo: BalanceRepo,
         balance: Balance,
