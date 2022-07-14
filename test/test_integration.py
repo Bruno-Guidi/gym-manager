@@ -25,7 +25,7 @@ class MockSecurityHandler(SecurityHandler):
 
 
 def test_subscribe():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"subscription"}, needs_responsible={"subscription"}))
+    log_responsible.config(SimpleSecurityHandler(action_tags={"subscribe"}, needs_responsible={"subscribe"}))
 
     # Repositories setup.
     peewee.create_database(":memory:")
@@ -50,7 +50,7 @@ def test_subscribe():
 
 
 def test_subscribe_raisesSecurityError_withNoResponsible():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"subscription"}, needs_responsible={"subscription"}))
+    log_responsible.config(SimpleSecurityHandler(action_tags={"subscribe"}, needs_responsible={"subscribe"}))
 
     # Repositories setup.
     peewee.create_database(":memory:")

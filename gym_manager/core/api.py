@@ -13,7 +13,7 @@ from gym_manager.core.security import log_responsible
 logger = logging.getLogger(__name__)
 
 
-@log_responsible(action_tag="subscription", action_name="Inscripción")
+@log_responsible(action_tag="subscribe", action_name="Inscripción")
 def subscribe(
         subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity,
         transaction: Transaction | None = None
