@@ -144,9 +144,6 @@ class String(Validatable):
     def __hash__(self) -> int:
         return hash(self._value)
 
-    def __len__(self) -> int:
-        return len(self._value)
-
     def validate(self, value: str, **kwargs) -> str:
         """Validates the given *value*. If the validation succeeds, return the given *value*.
 
