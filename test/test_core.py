@@ -9,9 +9,13 @@ from gym_manager.core.base import (
     Activity, String, Currency, Client, Number, Transaction,
     Subscription, discard_subscription)
 from gym_manager.core.persistence import PersistenceError
+from gym_manager.core.security import log_responsible
+from test.test_core_api import MockSecurityHandler
 
 
 def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
+    log_responsible.config(MockSecurityHandler())
+
     peewee.create_database(":memory:")
 
     repo = peewee.SqliteActivityRepo()
