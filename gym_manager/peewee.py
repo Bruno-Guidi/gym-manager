@@ -269,6 +269,7 @@ class SqliteActivityRepo(ActivityRepo):
 
         raise KeyError(f"There is no activity with the id '{name}'")
 
+    @log_responsible(action_tag="remove_activity", action_name="Eliminar actividad")
     def remove(self, activity: Activity):
         """Removes the given *activity*.
 

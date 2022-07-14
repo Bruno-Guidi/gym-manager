@@ -131,18 +131,9 @@ class MainController:
             Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
             return
 
-        subscribers, remove = self.activity_repo.n_subscribers(activity), False
-        if subscribers > 0:
-            remove = Dialog.confirm_with_resp(f"La actividad '{activity.name}' tiene {subscribers} cliente/s "
-                                              f"inscripto/s. \n¿Desea eliminarla igual?")
-
-        # If the previous confirmation failed, or if it didn't show up, then ask one last time.
-        if subscribers == 0 and not remove:
-            remove = Dialog.confirm_with_resp(f"¿Desea eliminar la actividad '{activity.name}'?")
-
-        if remove:
+        remove_fn = functools.partial(self.activity_repo.remove, activity)
+        if DialogWithResp.confirm(f"¿Desea eliminar la actividad '{activity.name}'?", self.security_handler, remove_fn):
             self._activities.pop(activity.name.as_primitive())
-            self.activity_repo.remove(activity)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             # Clears the form.
