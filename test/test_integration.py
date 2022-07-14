@@ -12,6 +12,9 @@ class MockSecurityHandler(SecurityHandler):
     def current_responsible(self) -> String:
         return String("DefaultResp", max_len=30)
 
+    def unregister_action(self, action_tag: str) -> bool:
+        return False
+
     def cant_perform_action(self, action_tag: str) -> bool:
         return False
 

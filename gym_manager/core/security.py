@@ -75,6 +75,12 @@ class SecurityHandler(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def unregister_action(self, action_tag: str) -> bool:
+        """Returns true if the action with *action_tag* isn't registered in the security handler-
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def cant_perform_action(self, action_tag: str) -> bool:
         """Returns True if the action with *action_tag* can't be performed.
         """
@@ -114,6 +120,11 @@ class SimpleSecurityHandler(SecurityHandler):
     @current_responsible.setter
     def current_responsible(self, other: String):
         self._responsible = other
+
+    def unregister_action(self, action_tag: str) -> bool:
+        """Returns true if the action with *action_tag* isn't registered in the security handler-
+        """
+        return action_tag not in self.action_tags
 
     def cant_perform_action(self, action_tag: str) -> bool:
         """Returns True if *action_tag* needs a responsible to be executed and there is no responsible specified.
