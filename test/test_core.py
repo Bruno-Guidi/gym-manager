@@ -10,23 +10,6 @@ from gym_manager.core.base import (
     Subscription, discard_subscription)
 from gym_manager.core.persistence import PersistenceError
 from gym_manager.core.api import InvalidDate
-from gym_manager.core.security import SecurityHandler, log_responsible
-
-
-class MockSecurityHandler(SecurityHandler):
-
-    @property
-    def current_responsible(self) -> String:
-        return String("DefaultResp", max_len=30)
-
-    def unregister_action(self, action_tag: str) -> bool:
-        return False
-
-    def cant_perform_action(self, action_tag: str) -> bool:
-        return False
-
-    def handle_action(self, action_level: str, action_name: str):
-        print(f"Ignoring {action_name}")
 
 
 def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
