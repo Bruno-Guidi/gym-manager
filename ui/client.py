@@ -426,8 +426,7 @@ class CreateController:
     # noinspection PyTypeChecker
     def create_client(self):
         if not all([self.create_ui.name_field.valid_value(), self.create_ui.dni_field.valid_value(),
-                    self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value(),
-                    self.create_ui.responsible_field.valid_value()]):
+                    self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
@@ -499,15 +498,6 @@ class CreateUI(QDialog):
         self.dir_field = Field(String, self, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 4, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
-
-        # Responsible.
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 5, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
-
-        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-        self.form_layout.addWidget(self.responsible_field, 5, 1)
-        config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
