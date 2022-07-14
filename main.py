@@ -90,8 +90,10 @@ if __name__ == "__main__":
     peewee_logger.setLevel(logging.WARNING)
 
     sec_handler = SimpleSecurityHandler(
-        action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client"},
-        needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client"}
+        action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
+                     "update_client"},
+        needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
+                           "update_client"}
     )
     log_responsible.config(sec_handler)
 

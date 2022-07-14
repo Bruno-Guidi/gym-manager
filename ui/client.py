@@ -130,21 +130,24 @@ class MainController:
                     self.main_ui.dir_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            # Updates the client.
             client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-            self._clients[client_dni].name = self.main_ui.name_field.value()
-            self._clients[client_dni].telephone = self.main_ui.tel_field.value()
-            self._clients[client_dni].direction = self.main_ui.dir_field.value()
-            self.client_repo.update(self._clients[client_dni])
+            update_fn = functools.partial(self.client_repo.update, self._clients[client_dni])
+            update = DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn)
 
-            # Updates the ui.
-            row = self.main_ui.client_table.currentRow()
-            client = self._clients[client_dni]
-            fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
+            if update:
+                # Updates the client.
+                self._clients[client_dni].name = self.main_ui.name_field.value()
+                self._clients[client_dni].telephone = self.main_ui.tel_field.value()
+                self._clients[client_dni].direction = self.main_ui.dir_field.value()
 
-            Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
+                # Updates the ui.
+                row = self.main_ui.client_table.currentRow()
+                client = self._clients[client_dni]
+                fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
+
+                Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
     def remove(self):
         if self.main_ui.client_table.currentRow() == -1:
