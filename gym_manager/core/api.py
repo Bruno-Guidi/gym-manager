@@ -8,10 +8,12 @@ from gym_manager.core.base import (
     String, Transaction, Client, Activity, Subscription, Currency, OperationalError, Balance, InvalidDate
 )
 from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, BalanceRepo
+from gym_manager.core.security import log_responsible
 
 logger = logging.getLogger(__name__)
 
 
+@log_responsible(action_tag="subscription", action_name="Inscripción")
 def subscribe(
         subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity,
         transaction: Transaction | None = None
