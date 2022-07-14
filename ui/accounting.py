@@ -21,10 +21,14 @@ from ui.widgets import Separator, Field, Dialog
 
 
 class MainController:
-    def __init__(self, acc_main_ui: AccountingMainUI, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
+    def __init__(
+            self, acc_main_ui: AccountingMainUI, transaction_repo: TransactionRepo, balance_repo: BalanceRepo,
+            security_handler: SecurityHandler
+    ):
         self.acc_main_ui = acc_main_ui
         self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
+        self.security_handler = security_handler
 
         self._date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
                                                 translate_fun=lambda trans, when: trans.when >= when)
@@ -55,21 +59,24 @@ class MainController:
         self.acc_main_ui.history_btn.clicked.connect(self.balance_history)
 
     def close_balance(self):
-        self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.balance)
+        # noinspection PyAttributeOutsideInit
+        self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.security_handler,
+                                                self.balance)
         self._daily_balance_ui.exec_()
 
     def balance_history(self):
+        # noinspection PyAttributeOutsideInit
         self._history_ui = BalanceHistoryUI(self.balance_repo)
         self._history_ui.setWindowModality(Qt.ApplicationModal)
         self._history_ui.show()
 
 
 class AccountingMainUI(QMainWindow):
-    def __init__(self, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
+    def __init__(self, transaction_repo: TransactionRepo, balance_repo: BalanceRepo, security_handler: SecurityHandler):
         super().__init__()
         self._setup_ui()
 
-        self.controller = MainController(self, transaction_repo, balance_repo)
+        self.controller = MainController(self, transaction_repo, balance_repo, security_handler)
 
     def _setup_ui(self):
         self.setWindowTitle("Contabilidad")
@@ -115,7 +122,7 @@ class AccountingMainUI(QMainWindow):
 class DailyBalanceController:
     def __init__(
             self, daily_balance_ui: DailyBalanceUI, balance_repo: BalanceRepo, transaction_repo: TransactionRepo,
-            balance: Balance
+            security_handler: SecurityHandler, balance: Balance
     ):
         self.daily_balance_ui = daily_balance_ui
         self.balance_repo = balance_repo
@@ -166,10 +173,13 @@ class DailyBalanceController:
 
 
 class DailyBalanceUI(QDialog):
-    def __init__(self, balance_repo: BalanceRepo, transaction_repo: TransactionRepo, balance: Balance) -> None:
+    def __init__(
+            self, balance_repo: BalanceRepo, transaction_repo: TransactionRepo, security_handler: SecurityHandler,
+            balance: Balance
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, balance)
+        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, security_handler, balance)
 
     def _setup_ui(self):
         self.setWindowTitle("Cerrar caja diaria")

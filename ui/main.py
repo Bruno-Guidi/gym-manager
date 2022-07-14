@@ -64,7 +64,7 @@ class Controller:
 
     # noinspection PyAttributeOutsideInit
     def show_accounting_main_ui(self):
-        self.accounting_main_ui = AccountingMainUI(self.transaction_repo, self.balance_repo)
+        self.accounting_main_ui = AccountingMainUI(self.transaction_repo, self.balance_repo, self.security_handler)
         self.accounting_main_ui.setWindowModality(Qt.ApplicationModal)
         self.accounting_main_ui.show()
 
