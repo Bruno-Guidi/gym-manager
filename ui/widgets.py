@@ -234,21 +234,6 @@ class FilterHeader(QWidget):
 
 class Dialog(QDialog):
     @classmethod
-    def confirm_with_resp(
-            cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None
-    ) -> tuple[bool, String]:
-        dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True, with_responsible=True)
-        if ok_btn_text is not None:
-            dialog.confirm_btn.setText(ok_btn_text)
-        if cancel_btn_text is not None:
-            dialog.cancel_btn.setText(cancel_btn_text)
-        dialog.exec_()
-
-        if dialog.confirmed:
-            # noinspection PyTypeChecker
-            return dialog.confirmed, dialog.responsible_field.value()
-
-    @classmethod
     def confirm(cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None) -> bool:
         dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True)
         if ok_btn_text is not None:
@@ -264,9 +249,9 @@ class Dialog(QDialog):
         dialog.exec_()
         return True
 
-    def __init__(self, title: str, text: str, show_cancel_btn: bool, with_responsible: bool = False) -> None:
+    def __init__(self, title: str, text: str, show_cancel_btn: bool) -> None:
         super().__init__()
-        self._setup_ui(title, text, show_cancel_btn, with_responsible)
+        self._setup_ui(title, text, show_cancel_btn)
         self.confirmed = False
         # noinspection PyUnresolvedReferences
         self.confirm_btn.clicked.connect(self.accept)
@@ -274,7 +259,7 @@ class Dialog(QDialog):
             # noinspection PyUnresolvedReferences
             self.cancel_btn.clicked.connect(self.reject)
 
-    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool, with_responsible: bool = False):
+    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
         self.setWindowTitle(title)
 
         self.layout = QVBoxLayout(self)
@@ -286,20 +271,6 @@ class Dialog(QDialog):
         self.text_lbl.setWordWrap(True)
         self.text_lbl.adjustSize()
         self.text_lbl.setMinimumSize(self.text_lbl.sizeHint())
-
-        # Responsible.
-        self.responsible_field: Field | None = None
-        if with_responsible:
-            self.responsible_layout = QHBoxLayout()
-            self.layout.addLayout(self.responsible_layout)
-
-            self.responsible_lbl = QLabel(self)
-            self.responsible_layout.addWidget(self.responsible_lbl)
-            config_lbl(self.responsible_lbl, "Responsable*")
-
-            self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-            self.responsible_layout.addWidget(self.responsible_field)
-            config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -323,9 +294,6 @@ class Dialog(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
     def accept(self) -> None:
-        if self.responsible_field is not None and not self.responsible_field.valid_value():
-            return
-
         self.confirmed = True
         super().accept()
 
