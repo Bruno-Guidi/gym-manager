@@ -155,11 +155,10 @@ class MainController:
 
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         client = self._clients[client_dni]
-        remove_fn = functools.partial(self.client_repo.remove, client)
 
-        remove = DialogWithResp.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?",
-                                        self.security_handler, remove_fn)
-        if remove:
+        remove_fn = functools.partial(self.client_repo.remove, client)
+        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?",
+                                  self.security_handler, remove_fn):
             self._clients.pop(client.dni.as_primitive())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
