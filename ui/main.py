@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import BookingSystem
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
+from gym_manager.core.security import SecurityHandler
 from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
@@ -25,7 +26,8 @@ class Controller:
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
             balance_repo: BalanceRepo,
-            booking_system: BookingSystem
+            booking_system: BookingSystem,
+            security_handler: SecurityHandler
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
@@ -34,6 +36,7 @@ class Controller:
         self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
         self.booking_system = booking_system
+        self.security_handler = security_handler
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
@@ -49,7 +52,7 @@ class Controller:
     def show_client_main_ui(self):
         activities_fn = functools.partial(self.activity_repo.all, 1)
         self.client_main_ui = ClientMainUI(self.client_repo, self.subscription_repo, self.transaction_repo,
-                                           activities_fn)
+                                           self.security_handler, activities_fn)
         self.client_main_ui.setWindowModality(Qt.ApplicationModal)
         self.client_main_ui.show()
 
@@ -80,12 +83,13 @@ class MainUI(QMainWindow):
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
             balance_repo: BalanceRepo,
-            booking_system: BookingSystem
+            booking_system: BookingSystem,
+            security_handler: SecurityHandler
     ):
         super().__init__()
         self._setup_ui()
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
-                                     balance_repo, booking_system)
+                                     balance_repo, booking_system, security_handler)
 
     def _setup_ui(self):
         self.setWindowTitle("Gestor La Cascada")

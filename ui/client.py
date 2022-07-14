@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import itertools
 from datetime import date
 from typing import Iterable, Callable
@@ -13,11 +14,12 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
+from gym_manager.core.security import SecurityHandler
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 
 class MainController:
@@ -27,12 +29,14 @@ class MainController:
             client_repo: ClientRepo,
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             activities_fn: Callable[[], Iterable[Activity]]
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
         self.subscription_repo = subscription_repo
         self.transaction_repo = transaction_repo
+        self.security_handler = security_handler
         self.activities_fn = activities_fn
         self._clients: dict[int, Client] = {}  # Dict that maps raw client dni to the associated client.
         self._subscriptions: dict[str, Subscription] = {}  # Maps raw activity name to subs of the selected client.
@@ -148,13 +152,13 @@ class MainController:
             return
 
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+        client = self._clients[client_dni]
+        remove_fn = functools.partial(self.client_repo.remove, client)
 
-        remove = Dialog.confirm_with_resp(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?")
-
+        remove = DialogWithResp.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?",
+                                        self.security_handler, remove_fn)
         if remove:
-            client = self._clients[client_dni]
             self._clients.pop(client.dni.as_primitive())
-            self.client_repo.remove(client)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             # Clears the form.
@@ -260,11 +264,13 @@ class ClientMainUI(QMainWindow):
             client_repo: ClientRepo,
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             activities_fn: Callable[[], Iterable[Activity]]
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, activities_fn)
+        self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, security_handler,
+                                         activities_fn)
 
     def _setup_ui(self):
         self.setWindowTitle("Clientes")

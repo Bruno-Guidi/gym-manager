@@ -10,6 +10,7 @@ from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
 from gym_manager.booking.core import BookingSystem, Duration
 from gym_manager.core.base import Currency, String, Activity, Client, Number, Subscription
+from gym_manager.core.security import log_responsible, SimpleSecurityHandler, SecurityHandler
 from ui.main import MainUI
 
 log_config = {
@@ -49,7 +50,7 @@ QCheckBox::indicator::checked {
 """
 
 
-def main():
+def main(security_handler: SecurityHandler):
     app = QApplication(sys.argv)
     app.setStyleSheet(stylesheet)
 
@@ -75,14 +76,8 @@ def main():
         courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=30
     )
 
-    # test_cli = Client(Number(666), String("TestCli", max_len=20), date(2022, 5, 8), String("TestTel", max_len=20),
-    #                   String("TestDesc", max_len=20))
-    # client_repo.add(test_cli)
-
-    # subscription_repo.add(Subscription(date(2022, 5, 8), test_cli, activity_repo.get("Gym")))
-    # ToDo test adding transactions, when they are working again.
-
-    window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system)
+    window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
+                    security_handler)
     window.show()
 
     app.exec()
@@ -94,8 +89,14 @@ if __name__ == "__main__":
     peewee_logger = logging.getLogger("peewee")
     peewee_logger.setLevel(logging.WARNING)
 
+    sec_handler = SimpleSecurityHandler(
+        action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client"},
+        needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client"}
+    )
+    log_responsible.config(sec_handler)
+
     # noinspection PyBroadException
     try:
-        main()
+        main(sec_handler)
     except Exception as e:
         logging.exception(e)
