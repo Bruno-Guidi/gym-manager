@@ -30,7 +30,13 @@ class log_responsible:
     After executing a function, calls ResponsibleHandler.handle(args), so it can do whatever action is required. This
     action could be logging in a file, in a database, etc.
     """
-    def __init__(self, handler: SecurityHandler, action_tag: str, action_name: str):
+    handler: ClassVar[SecurityHandler] = None
+
+    @classmethod
+    def config(cls, handler: SecurityHandler):
+        cls.handler = handler
+
+    def __init__(self, action_tag: str, action_name: str):
         """Init method.
 
         Args:
@@ -42,12 +48,14 @@ class log_responsible:
         self.action_tag = action_tag
         self.action_name = action_name
 
-    def __call__(self, fn, *args, **kwargs):
-        def wrapped():
-            if self.handler.invalid_state(self.action_tag):
-                raise SecurityError(self.handler.responsible, fn, self.action_tag, self.action_name)
-            fn(*args, **kwargs)
-            self.handler.handle(self.action_tag, self.action_name)
+    def __call__(self, fn):
+        def wrapped(*args):
+            if self.handler is None:
+                raise ValueError("There is no SecurityHandler defined.")
+            if self.handler.cant_perform_action(self.action_tag):
+                raise SecurityError(self.handler.current_responsible, fn, self.action_tag, self.action_name)
+            fn(*args)
+            self.handler.handle_action(self.action_tag, self.action_name)
         return wrapped
 
 
