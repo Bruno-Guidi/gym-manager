@@ -44,7 +44,7 @@ class log_responsible:
 
     def __call__(self, fn, *args, **kwargs):
         def wrapped():
-            if self.handler.responsible_not_set(self.action_tag):
+            if self.handler.invalid_state(self.action_tag):
                 raise SecurityError(self.handler.responsible, fn, self.action_tag, self.action_name)
             fn(*args, **kwargs)
             self.handler.handle(self.action_tag, self.action_name)
@@ -94,7 +94,7 @@ class SecurityHandler:
         self.action_tags = action_tags
         self._needs_responsible = needs_responsible
 
-    def responsible_not_set(self, action_tag: str) -> bool:
+    def invalid_state(self, action_tag: str) -> bool:
         """Returns True if *action_tag* needs a responsible to be executed and there is no responsible specified.
         """
         return action_tag in self._needs_responsible and len(self.responsible) == 0
