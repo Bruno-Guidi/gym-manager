@@ -242,8 +242,10 @@ class Dialog(QDialog):
         if cancel_btn_text is not None:
             dialog.cancel_btn.setText(cancel_btn_text)
         dialog.exec_()
-        # noinspection PyTypeChecker
-        return dialog.confirmed, dialog.responsible_field.value()
+
+        if dialog.confirmed:
+            # noinspection PyTypeChecker
+            return dialog.confirmed, dialog.responsible_field.value()
 
     @classmethod
     def confirm(cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None) -> bool:
