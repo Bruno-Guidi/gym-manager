@@ -255,8 +255,7 @@ class CreateController:
     def create_activity(self):
         valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
                                               max_len=constants.ACTIVITY_DESCR_CHARS)
-        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
-                            valid_descr, self.create_ui.responsible_field.valid_value()])
+        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value()])
         if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
         elif self.activity_repo.exists(self.create_ui.name_field.value()):
@@ -309,15 +308,6 @@ class CreateUI(QDialog):
         self.description_text = QTextEdit(self)
         self.form_layout.addWidget(self.description_text, 2, 1)
         config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
-
-        # Responsible.
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 3, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
-
-        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-        self.form_layout.addWidget(self.responsible_field, 3, 1)
-        config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
