@@ -8,14 +8,16 @@ from gym_manager.core import api
 from gym_manager.core.base import (
     Client, Number, String, Activity, Currency, Subscription, OperationalError,
     Transaction, InvalidDate)
-from gym_manager.core.security import SecurityHandler, log_responsible, SimpleSecurityHandler, SecurityError
+from gym_manager.core.security import (
+    SecurityHandler, log_responsible, SimpleSecurityHandler, SecurityError,
+    Responsible)
 
 
 class MockSecurityHandler(SecurityHandler):
 
     @property
-    def current_responsible(self) -> String:
-        return String("DefaultResp", max_len=30)
+    def current_responsible(self) -> Responsible:
+        return Responsible(String("DefaultResp", max_len=30), String("DefaultCode", max_len=30))
 
     def unregistered_action(self, action_tag: str) -> bool:
         return False
