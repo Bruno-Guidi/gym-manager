@@ -433,7 +433,8 @@ class PageIndex(QWidget):
         config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=32)
 
         # Horizontal spacer. Adjusts the layout, causing the page_lbl to be in its center.
-        self.layout.addSpacerItem(QSpacerItem(self.info_lbl.width(), 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
+        self.spacer = QSpacerItem(self.info_lbl.width(), 1, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.layout.addSpacerItem(self.spacer)
 
     @property
     def total_len(self):
@@ -450,6 +451,7 @@ class PageIndex(QWidget):
 
         if not show_info:
             self.info_lbl.hide()
+            self.layout.removeItem(self.spacer)
 
         self._update()
 
