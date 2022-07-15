@@ -211,6 +211,18 @@ def test_BookingSystem_blockRange():
         booking_system.block_range(time(8, 0), time(12, 30))
 
 
+def test_BookingSystem_outOfRange():
+    # noinspection PyTypeChecker
+    booking_system = BookingSystem(courts_names=("1", "2"), durations=(), start=time(8, 0), end=time(23, 0),
+                                   minute_step=60, activity=None, repo=MockBookingRepo())
+
+    assert not booking_system.out_of_range(time(11, 30), Duration(30, ""))
+    assert booking_system.out_of_range(time(22, 0), Duration(90, ""))
+    assert not booking_system.out_of_range(time(21, 30), Duration(90, ""))
+    assert booking_system.out_of_range(time(22, 30), Duration(90, ""))
+    assert booking_system.out_of_range(time(22, 30), Duration(180, ""))
+
+
 def test_FixedBooking_wasPaid():
     before, last_when, after = date(2022, 7, 10), date(2022, 7, 11), date(2022, 7, 12)
 

@@ -383,7 +383,8 @@ class BookingSystem:
         range that is valid, False otherwise.
         """
         end = combine(date.min, start, duration).time()
-        return start < self.start or end > self.end
+        #  The last check covers situations where the end time falls on the next day.
+        return start < self.start or end > self.end or end < self.start
 
     def booking_available(self, when: date, court: str, start: time, duration: Duration, is_fixed: bool) -> bool:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
