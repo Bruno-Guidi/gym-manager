@@ -15,7 +15,7 @@ from gym_manager.booking.core import (
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
-from gym_manager.core.security import SecurityHandler
+from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
@@ -150,7 +150,7 @@ class MainController:
             Dialog.info("Error", "No se puede cancelar un turno que ya cobrado.")
         else:
             # noinspection PyAttributeOutsideInit
-            self._cancel_ui = CancelUI(self.booking_system, to_cancel, when)
+            self._cancel_ui = CancelUI(self.booking_system, self.security_handler, to_cancel, when)
             self._cancel_ui.exec_()
             if self._cancel_ui.controller.cancelled:
                 self.main_ui.booking_table.takeItem(row, col)
@@ -420,9 +420,8 @@ class CancelController:
         self.cancel_ui.cancel_btn.clicked.connect(self.cancel_ui.reject)
 
     def cancel(self):
-        if not self.cancel_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo responsable no es válido.")
-        else:
+        self.security_handler.current_responsible = self.cancel_ui.responsible_field.value()
+        try:
             definitely_cancelled = True
             if self.to_cancel.is_fixed:
                 definitely_cancelled = Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?",
@@ -437,6 +436,8 @@ class CancelController:
             else:
                 Dialog.info("Éxito", "El turno ha sido cancelado correctamente.")
             self.cancel_ui.client_line.window().close()
+        except SecurityError as sec_err:
+            Dialog.info("Error", str(sec_err))
 
 
 class CancelUI(QDialog):
