@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import functools
+from typing import Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
-    QSpacerItem, QSizePolicy)
+    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem)
 
 from gym_manager.booking.core import BookingSystem
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
@@ -40,6 +41,8 @@ class Controller:
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
+        self.main_ui.config_btn.clicked.connect(self.show_config_ui)
+        # noinspection PyUnresolvedReferences
         self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
@@ -47,6 +50,14 @@ class Controller:
         self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
+
+    def show_config_ui(self):
+        add_resp_fn = functools.partial(add_responsible, self.security_handler)
+
+        # noinspection PyAttributeOutsideInit
+        self._config_ui = ConfigUI(("Add responsible", add_resp_fn),)
+        self._config_ui.setWindowModality(Qt.ApplicationModal)
+        self._config_ui.show()
 
     # noinspection PyAttributeOutsideInit
     def show_client_main_ui(self):
@@ -99,9 +110,19 @@ class MainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
 
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
         self.name_lbl = QLabel(self.widget)
-        self.layout.addWidget(self.name_lbl)
+        self.header_layout.addWidget(self.name_lbl)
         config_lbl(self.name_lbl, "La cascada", font_size=28)
+
+        # Horizontal spacer.
+        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+
+        self.config_btn = QPushButton(self.widget)
+        self.header_layout.addWidget(self.config_btn)
+        config_btn(self.config_btn, icon_path="", icon_size=32)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -150,3 +171,50 @@ class MainUI(QMainWindow):
         # Adjusts size.
         self.setFixedSize(self.sizeHint())
 
+
+class ConfigButtonItem(QWidget):
+    def __init__(self, text: str, fn: Callable, item: QListWidgetItem):
+        super().__init__()
+
+        self.layout = QHBoxLayout(self)
+
+        self.btn = QPushButton(self)
+        self.layout.addWidget(self.btn)
+        config_btn(self.btn, text)
+
+        item.setSizeHint(self.sizeHint())
+
+        # noinspection PyUnresolvedReferences
+        self.btn.clicked.connect(fn)
+
+
+class ConfigController:
+    def __init__(self, config_ui: ConfigUI, *functions):
+        self.config_ui = config_ui
+
+        # Adds functions to config.
+        for pair in functions:
+            self._create_item(self.config_ui.list, pair[0], pair[1])
+
+    def _create_item(self, dst: QListWidget, text: str, fn: Callable):
+        item = QListWidgetItem(self.config_ui.list)
+        dst.addItem(item)
+        dst.setItemWidget(item, ConfigButtonItem(text, fn, item))
+
+
+class ConfigUI(QMainWindow):
+    def __init__(self, *functions):
+        super().__init__()
+        self._setup_ui()
+
+        self.controller = ConfigController(self, *functions)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Configuración")
+
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        self.list = QListWidget(self.widget)
+        self.layout.addWidget(self.list)
