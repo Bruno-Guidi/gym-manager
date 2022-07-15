@@ -15,7 +15,7 @@ from gym_manager.core.base import Client, Number, String, Currency, Activity, Tr
 from gym_manager.core.persistence import (
     ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
     BalanceRepo, FilterValuePair, PersistenceError)
-from gym_manager.core.security import log_responsible, SecurityRepo, Responsible
+from gym_manager.core.security import log_responsible, SecurityRepo, Responsible, Action
 
 logger = logging.getLogger(__name__)
 
@@ -591,4 +591,15 @@ class SqliteSecurityRepo(SecurityRepo):
     def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
         ActionTable.create(when=when, responsible_id=responsible.code.as_primitive(), action_tag=action_tag,
                            action_name=action_name)
+
+    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
+        actions_q = ActionTable.select()
+        actions_q = actions_q.paginate(page, page_len)
+
+        print(ActionTable.select().count())
+
+        for record in prefetch(actions_q, ResponsibleTable.select()):
+            # ToDo those Strings don't need validation.
+            resp = Responsible(String(record.responsible.name, max_len=30), String(record.responsible.code, max_len=30))
+            yield record.when, resp, record.action_tag, record.action_name
 

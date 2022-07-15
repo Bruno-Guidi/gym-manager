@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import logging
 from datetime import datetime
-from typing import Callable, ClassVar, Generator
+from typing import Callable, ClassVar, Generator, TypeAlias, Iterable
 
 from gym_manager.core.base import String
 
@@ -86,6 +86,9 @@ class log_responsible:
         return wrapped
 
 
+Action: TypeAlias = tuple[datetime, Responsible, str, str]
+
+
 class SecurityRepo(abc.ABC):
     @abc.abstractmethod
     def responsible(self) -> Generator[Responsible, None, None]:
@@ -97,6 +100,10 @@ class SecurityRepo(abc.ABC):
 
     @abc.abstractmethod
     def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
         raise NotImplementedError
 
 
@@ -131,6 +138,10 @@ class SecurityHandler(abc.ABC):
     def handle_action(self, action_level: str, action_name: str):
         """Does whatever is needed after executing a given action.
         """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
         raise NotImplementedError
 
 
@@ -199,8 +210,12 @@ class SimpleSecurityHandler(SecurityHandler):
         return action_tag in self._needs_responsible and self._responsible == NO_RESPONSIBLE
 
     def handle_action(self, action_level: str, action_name: str):
-        """Creates a logger entry. ToDo create a record in db.
+        """Creates a logger entry.
         """
         logger.info(
             f"Responsible '{self._responsible}' did the action '{action_name}' that has a level '{action_level}'."
         )
+        self.security_repo.log_action(datetime.now(), self.current_responsible, action_level, action_name)
+
+    def actions(self, page: int = 1, page_len: int = 20) -> Iterable[Action]:
+        yield from self.security_repo.actions(page, page_len)
