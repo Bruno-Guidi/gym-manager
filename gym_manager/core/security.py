@@ -70,8 +70,8 @@ class log_responsible:
         def wrapped(*args):
             if self.handler is None:
                 raise ValueError("There is no SecurityHandler defined.")
-            if self.handler.unregister_action(self.action_tag):
-                raise SecurityError("Tried to execute an unregistered action.",
+            if self.handler.unregistered_action(self.action_tag):
+                raise SecurityError("Tried to execute an unregistered action.", SecurityError.UNREGISTERED_ACTION,
                                     self.handler.current_responsible, fn, self.action_tag, self.action_name)
             if self.handler.cant_perform_action(self.action_tag):
                 raise SecurityError("Tried to execute action without a defined responsible.",
@@ -100,7 +100,7 @@ class SecurityHandler(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def unregister_action(self, action_tag: str) -> bool:
+    def unregistered_action(self, action_tag: str) -> bool:
         """Returns true if the action with *action_tag* isn't registered in the security handler-
         """
         raise NotImplementedError
@@ -158,7 +158,7 @@ class SimpleSecurityHandler(SecurityHandler):
                                 code=SecurityError.INVALID_RESP)
         self._responsible = responsible_id
 
-    def unregister_action(self, action_tag: str) -> bool:
+    def unregistered_action(self, action_tag: str) -> bool:
         """Returns true if the action with *action_tag* isn't registered in the security handler-
         """
         return action_tag not in self.action_tags
