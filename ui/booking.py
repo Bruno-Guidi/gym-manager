@@ -15,6 +15,7 @@ from gym_manager.booking.core import (
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
+from gym_manager.core.security import SecurityHandler
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
@@ -30,12 +31,13 @@ class MainController:
 
     def __init__(
             self, main_ui: BookingMainUI, client_repo: ClientRepo, transaction_repo: TransactionRepo,
-            booking_system: BookingSystem
+            booking_system: BookingSystem, security_handler: SecurityHandler
     ) -> None:
         self.main_ui = main_ui
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
         self.booking_system = booking_system
+        self.security_handler = security_handler
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
         self._bookings: dict[int, ScheduleColumn] = {}
 
@@ -168,11 +170,12 @@ class MainController:
 class BookingMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem
+            self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem,
+            security_handler: SecurityHandler
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, transaction_repo, booking_system)
+        self.controller = MainController(self, client_repo, transaction_repo, booking_system, security_handler)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")
@@ -392,9 +395,13 @@ class CreateUI(QDialog):
 
 class CancelController:
 
-    def __init__(self, cancel_ui: CancelUI, booking_system: BookingSystem, to_cancel: Booking, when: date) -> None:
+    def __init__(
+            self, cancel_ui: CancelUI, booking_system: BookingSystem, security_handler: SecurityHandler,
+            to_cancel: Booking, when: date
+    ) -> None:
         self.cancel_ui = cancel_ui
         self.booking_system = booking_system
+        self.security_handler = security_handler
         self.to_cancel = to_cancel
         self.when = when
         self.cancelled = False
@@ -434,10 +441,12 @@ class CancelController:
 
 class CancelUI(QDialog):
 
-    def __init__(self, booking_system: BookingSystem, to_cancel: Booking, when: date) -> None:
+    def __init__(
+            self, booking_system: BookingSystem, security_handler: SecurityHandler,  to_cancel: Booking, when: date
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CancelController(self, booking_system, to_cancel, when)
+        self.controller = CancelController(self, booking_system, security_handler, to_cancel, when)
 
     def _setup_ui(self):
         self.setWindowTitle("Cancelar turno")
@@ -505,9 +514,9 @@ class CancelUI(QDialog):
         # Cancellation responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 7, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, self, max_len=constants.TRANSACTION_RESP_CHARS)
+        self.responsible_field = Field(String, self, optional=True, max_len=constants.TRANSACTION_RESP_CHARS)
         self.form_layout.addWidget(self.responsible_field, 7, 1)
         config_line(self.responsible_field, place_holder="Responsable")
 
