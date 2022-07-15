@@ -172,7 +172,7 @@ class SimpleSecurityHandler(SecurityHandler):
     def cant_perform_action(self, action_tag: str) -> bool:
         """Returns True if *action_tag* needs a responsible to be executed and there is no responsible specified.
         """
-        return action_tag in self._needs_responsible and len(self._responsible) == 0
+        return action_tag in self._needs_responsible and self._responsible == NO_RESPONSIBLE
 
     def handle_action(self, action_level: str, action_name: str):
         """Creates a logger entry. ToDo create a record in db.
