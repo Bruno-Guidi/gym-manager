@@ -45,10 +45,15 @@ def Separator(vertical: bool, parent: QWidget | None = None):
 
 
 class Field(QLineEdit):
-    def __init__(self, validatable: Type[Validatable], parent: QWidget | None = None, **validate_args) -> None:
+    def __init__(
+            self, validatable: Type[Validatable], parent: QWidget | None = None, is_password: bool = False,
+            **validate_args
+    ) -> None:
         self.validatable = validatable
         self.validate_args = validate_args
         super().__init__(parent)
+        if is_password:
+            self.setEchoMode(QLineEdit.Password)
         self.base_style_sheet = self.styleSheet()
 
     def valid_value(self) -> bool:
