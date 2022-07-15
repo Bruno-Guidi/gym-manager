@@ -3,7 +3,7 @@ from typing import Generator
 import pytest
 
 from gym_manager.core.base import String
-from gym_manager.core.security import SimpleSecurityHandler, SecurityRepo, Responsible, SecurityError
+from gym_manager.core.security import SimpleSecurityHandler, SecurityRepo, Responsible, SecurityError, log_responsible
 
 
 class MockSecurityRepo(SecurityRepo):
@@ -29,4 +29,30 @@ def test_SimpleSecurityHandler_currentResponsibleSetter():
         # execution.
         security_handler.current_responsible = String("RespC", optional=True, max_len=10)
     assert sec_err.value.code == SecurityError.INVALID_RESP
+
+
+def test_SimpleSecurityHandler_unregisteredAction():
+    security_handler = SimpleSecurityHandler(MockSecurityRepo(), action_tags={"other"}, needs_responsible=set())
+    assert security_handler.unregistered_action("tag")
+    assert not security_handler.unregistered_action("other")
+
+
+def test_SimpleSecurityHandler_CantPerformAction():
+    security_handler = SimpleSecurityHandler(MockSecurityRepo(), action_tags={"a", "b"}, needs_responsible={"a"})
+
+    # There is no responsible defined, and the action needs one.
+    assert security_handler.cant_perform_action("a")
+    # The action doesn't need a responsible, so there is no problem.
+    assert not security_handler.cant_perform_action("b")
+
+    # There is a responsible, so both actions can be executed.
+    security_handler.current_responsible = String("RespA", max_len=15)
+    assert not security_handler.cant_perform_action("a")
+    assert not security_handler.cant_perform_action("b")
+
+    # There is a responsible, so both actions can be executed.
+    security_handler.current_responsible = String("2", max_len=15)
+    assert not security_handler.cant_perform_action("a")
+    assert not security_handler.cant_perform_action("b")
+
 
