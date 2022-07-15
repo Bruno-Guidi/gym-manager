@@ -2,18 +2,32 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import Callable, ClassVar
+from typing import Callable, ClassVar, Generator
 
 from gym_manager.core.base import String
 
 logger = logging.getLogger(__name__)
 
 
+class Responsible:
+    def __init__(self, name: String, code: String):
+        self.name = name
+        self.code = code
+
+
 class SecurityError(Exception):
     """Exception raised when there is a security related problem.
     """
+    INVALID_RESP: ClassVar[int] = 0
+
     def __init__(
-            self, cause: str, responsible: String, executed_fn: Callable, action_tag: str, action_name: str,
+            self,
+            cause: str,
+            code: int,
+            responsible: Responsible | None = None,
+            executed_fn: Callable = None,
+            action_tag: str | None = None,
+            action_name: str | None = None,
             *args: object
     ) -> None:
         super().__init__(cause, *args)
@@ -21,6 +35,7 @@ class SecurityError(Exception):
         self.executed_fn = executed_fn
         self.action_tag = action_tag
         self.action_name = action_name
+        self.code = code
 
 
 class log_responsible:
@@ -62,6 +77,12 @@ class log_responsible:
             self.handler.handle_action(self.action_tag, self.action_name)
             return result
         return wrapped
+
+
+class SecurityRepo(abc.ABC):
+    @abc.abstractmethod
+    def responsible(self) -> Generator[Responsible, None, None]:
+        raise NotImplementedError
 
 
 class SecurityHandler(abc.ABC):
