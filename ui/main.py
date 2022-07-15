@@ -130,7 +130,7 @@ class MainUI(QMainWindow):
 
         self.config_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.config_btn)
-        config_btn(self.config_btn, icon_path="", icon_size=32)
+        config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -178,7 +178,7 @@ class MainUI(QMainWindow):
 
         self.actions_btn = QPushButton(self.widget)
         self.bottom_grid_layout.addWidget(self.actions_btn, 0, 2, alignment=Qt.AlignCenter)
-        config_btn(self.actions_btn, icon_path="ui/resources/accounting.png", icon_size=96)
+        config_btn(self.actions_btn, icon_path="ui/resources/actions.png", icon_size=96)
 
         self.actions_lbl = QLabel(self.widget)
         self.bottom_grid_layout.addWidget(self.actions_lbl, 1, 2, alignment=Qt.AlignCenter)
