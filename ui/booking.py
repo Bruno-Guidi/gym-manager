@@ -22,7 +22,7 @@ from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
-from ui.widgets import FilterHeader, PageIndex, Field, Dialog
+from ui.widgets import FilterHeader, PageIndex, Field, Dialog, responsible_field
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
 
@@ -374,7 +374,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 5, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, parent=self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 5, 1)
         config_line(self.responsible_field)
 
@@ -530,7 +530,7 @@ class CancelUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 7, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, self, optional=True, max_len=constants.TRANSACTION_RESP_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 7, 1)
         config_line(self.responsible_field, place_holder="Responsable")
 
