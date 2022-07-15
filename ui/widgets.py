@@ -353,7 +353,7 @@ class DialogWithResp(QDialog):
         self.responsible_layout.addWidget(self.responsible_lbl)
         config_lbl(self.responsible_lbl, "Responsable*")
 
-        self.responsible_field = Field(String, self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.responsible_layout.addWidget(self.responsible_field)
         config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
