@@ -91,9 +91,9 @@ if __name__ == "__main__":
 
     sec_handler = SimpleSecurityHandler(
         action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
-                     "update_client", "remove_activity", "update_activity", "cancel_booking"},
+                     "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking"},
         needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
-                           "update_client", "remove_activity", "update_activity", "cancel_booking"}
+                           "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking"}
     )
     log_responsible.config(sec_handler)
 
