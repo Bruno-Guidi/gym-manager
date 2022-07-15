@@ -482,13 +482,13 @@ class ChargeController:
             self.charge_ui.method_combobox.currentText(), self.charge_ui.responsible_field.value(),
             self.charge_ui.descr_text.toPlainText(), self.client
         )
-        self.security_handler.current_responsible = self.charge_ui.responsible_field.value()
         try:
+            self.security_handler.current_responsible = self.charge_ui.responsible_field.value()
             self.transaction = self.post_charge_fn(create_transaction_fn)
             Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
             self.charge_ui.descr_text.window().close()
         except SecurityError as sec_err:
-            Dialog.info("Error", str(sec_err))
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class ChargeUI(QDialog):
