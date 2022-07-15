@@ -6,16 +6,18 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
-    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem)
+    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget)
 
 from gym_manager.booking.core import BookingSystem
+from gym_manager.core import constants
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler
 from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
-from ui.widget_config import config_lbl, config_btn
+from ui.widget_config import config_lbl, config_btn, config_table, fill_cell
+from ui.widgets import PageIndex
 
 
 class Controller:
@@ -50,6 +52,8 @@ class Controller:
         self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.actions_btn.clicked.connect(self.show_action_ui)
 
     def show_config_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -83,6 +87,12 @@ class Controller:
                                              self.security_handler)
         self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
         self.booking_main_ui.show()
+
+    def show_action_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self.action_ui = ActionUI(self.security_handler)
+        self.action_ui.setWindowModality(Qt.ApplicationModal)
+        self.action_ui.show()
 
 
 class MainUI(QMainWindow):
@@ -166,6 +176,14 @@ class MainUI(QMainWindow):
         self.bottom_grid_layout.addWidget(self.accounting_lbl, 1, 1, alignment=Qt.AlignCenter)
         config_lbl(self.accounting_lbl, "Contabilidad", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
+        self.actions_btn = QPushButton(self.widget)
+        self.bottom_grid_layout.addWidget(self.actions_btn, 0, 2, alignment=Qt.AlignCenter)
+        config_btn(self.actions_btn, icon_path="ui/resources/accounting.png", icon_size=96)
+
+        self.actions_lbl = QLabel(self.widget)
+        self.bottom_grid_layout.addWidget(self.actions_lbl, 1, 2, alignment=Qt.AlignCenter)
+        config_lbl(self.actions_lbl, "Registro", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
         # Adjusts size.
         self.setFixedSize(self.sizeHint())
 
@@ -216,3 +234,53 @@ class ConfigUI(QMainWindow):
 
         self.list = QListWidget(self.widget)
         self.layout.addWidget(self.list)
+
+
+class ActionController:
+
+    def __init__(self, action_ui: ActionUI, security_handler: SecurityHandler) -> None:
+        self.security_handler = security_handler
+        self.action_ui = action_ui
+
+        # Configures the page index.
+        self.action_ui.page_index.config(refresh_table=self.fill_action_table, page_len=20, show_info=False)
+
+        # Fills the table.
+        self.fill_action_table()
+
+    def fill_action_table(self):
+        self.action_ui.action_table.setRowCount(0)
+
+        actions_it = self.security_handler.actions(self.action_ui.page_index.page, self.action_ui.page_index.page_len)
+        for row, when, resp, _, action_name in enumerate(actions_it):
+            fill_cell(self.action_ui.action_table, row, 0, when.strftime(constants.DATE_TIME_FORMAT), bool)
+            fill_cell(self.action_ui.action_table, row, 1, resp.name, str)
+            fill_cell(self.action_ui.action_table, row, 2, action_name, str)
+
+
+class ActionUI(QMainWindow):
+    def __init__(self, security_handler: SecurityHandler):
+        super().__init__()
+        self._setup_ui()
+        self.controller = ActionController(self, security_handler)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Turnos cancelados")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        # Actions.
+        self.action_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.action_table)
+        config_table(
+            target=self.action_table, allow_resizing=True, min_rows_to_show=10,
+            columns={"Fecha": (14, bool), "Responsable": (18, bool), "Acción": (18, bool)}
+        )
+
+        # Index.
+        self.page_index = PageIndex(self)
+        self.layout.addWidget(self.page_index)
+
+        # Adjusts size.
+        self.setMaximumWidth(self.widget.sizeHint().width())
