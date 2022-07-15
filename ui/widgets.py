@@ -28,6 +28,10 @@ def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> t
     return valid, value
 
 
+def responsible_field(parent: QWidget | None = None) -> Field:
+    return Field(String, parent, is_password=True, optional=True, max_len=constants.TRANSACTION_RESP_CHARS)
+
+
 def Separator(vertical: bool, parent: QWidget | None = None):
     sep = QFrame(parent)
     sep.setFrameShape(QFrame.VLine if vertical else QFrame.HLine)
