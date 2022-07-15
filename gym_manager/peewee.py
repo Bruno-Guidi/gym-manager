@@ -4,8 +4,9 @@ import logging
 from datetime import date
 from typing import Generator, Iterable
 
-from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-                    CompositeKey, prefetch, Proxy, chunked, JOIN)
+from peewee import (
+    SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
+    CompositeKey, prefetch, Proxy, chunked, JOIN, IntegrityError)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core import constants
@@ -568,3 +569,12 @@ class SqliteSecurityRepo(SecurityRepo):
         for record in ResponsibleTable.select():
             # ToDo This String don't need validation.
             yield Responsible(String(record.resp_name, max_len=30), String(record.resp_code, max_len=30))
+
+    def add_responsible(self, *responsible):
+        try:
+            for resp in responsible:
+                ResponsibleTable.create(resp_code=resp.code, resp_name=resp.name)
+        except IntegrityError:
+            pass
+
+
