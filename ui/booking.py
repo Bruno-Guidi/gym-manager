@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from datetime import date, datetime
 from typing import TypeAlias
 
@@ -121,20 +122,24 @@ class MainController:
         booking = self._bookings[row][col]
         if when > date.today() or (when == datetime.now().date() and booking.end > datetime.now().time()):
             Dialog.info("Error", "No se puede cobrar un turno que todavía no terminó.")
-        elif booking.was_paid(when):
+            return
+        if booking.was_paid(when):
             Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
                                  f"'{booking.transaction.id}'")
-        else:
-            # noinspection PyAttributeOutsideInit
-            self._charge_ui = ChargeUI(self.transaction_repo, booking.client, self.booking_system.activity.price,
-                                       String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30))
-            self._charge_ui.exec_()
-            transaction = self._charge_ui.controller.transaction
-            if transaction is not None:
-                self.booking_system.register_charge(booking, when, transaction)
-                text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
-                        f"{' (Pago)' if booking.was_paid(when) else ''}")
-                self.main_ui.booking_table.item(row, col).setText(text)
+            return
+
+        register_booking_charge = functools.partial(self.booking_system.register_charge, booking, when)
+        # noinspection PyAttributeOutsideInit
+        self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler, booking.client,
+                                   self.booking_system.activity.price,
+                                   String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30),
+                                   register_booking_charge)
+        self._charge_ui.exec_()
+        transaction = self._charge_ui.controller.transaction
+        if transaction is not None:
+            text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                    f"{' (Pago)' if booking.was_paid(when) else ''}")
+            self.main_ui.booking_table.item(row, col).setText(text)
 
     def cancel_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
