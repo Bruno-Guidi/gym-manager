@@ -10,7 +10,7 @@ from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
 from gym_manager.booking.core import BookingSystem, Duration
 from gym_manager.core.base import Currency, String, Activity, Client, Number, Subscription
-from gym_manager.core.security import log_responsible, SimpleSecurityHandler, SecurityHandler
+from gym_manager.core.security import log_responsible, SimpleSecurityHandler, SecurityHandler, Responsible
 from ui.main import MainUI
 
 log_config = {
@@ -98,6 +98,7 @@ if __name__ == "__main__":
                            "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
                            "create_booking"}
     )
+    sec_handler.add_responsible(Responsible(String("Admin", max_len=10), String("python", max_len=10)))
     log_responsible.config(sec_handler)
 
     # noinspection PyBroadException

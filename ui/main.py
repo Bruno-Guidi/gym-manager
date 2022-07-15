@@ -52,10 +52,8 @@ class Controller:
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
 
     def show_config_ui(self):
-        add_resp_fn = functools.partial(add_responsible, self.security_handler)
-
         # noinspection PyAttributeOutsideInit
-        self._config_ui = ConfigUI(("Add responsible", add_resp_fn),)
+        self._config_ui = ConfigUI()
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
