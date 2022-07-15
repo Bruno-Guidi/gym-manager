@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import Generator, Iterable
 
 from peewee import (
     SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-    CompositeKey, prefetch, Proxy, chunked, JOIN, IntegrityError)
+    CompositeKey, prefetch, Proxy, chunked, JOIN, IntegrityError, DateTimeField)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core import constants
@@ -560,10 +560,21 @@ class ResponsibleTable(Model):
         database = DATABASE_PROXY
 
 
+class ActionTable(Model):
+    id = IntegerField(primary_key=True)
+    when = DateTimeField()
+    resp_code = ForeignKeyField(ResponsibleTable, backref="actions")
+    action_tag = CharField()
+    action_name = CharField()
+
+    class Meta:
+        database = DATABASE_PROXY
+
+
 class SqliteSecurityRepo(SecurityRepo):
 
     def __init__(self) -> None:
-        DATABASE_PROXY.create_tables([ResponsibleTable])
+        DATABASE_PROXY.create_tables([ResponsibleTable, ActionTable])
 
     def responsible(self) -> Generator[Responsible, None, None]:
         for record in ResponsibleTable.select():
@@ -577,4 +588,6 @@ class SqliteSecurityRepo(SecurityRepo):
         except IntegrityError:
             pass
 
+    def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
+        ActionTable.create(when=when, responsible_id=responsible.code, action_tag=action_tag, action_name=action_name)
 

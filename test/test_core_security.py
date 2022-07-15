@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Generator
 
 import pytest
@@ -15,6 +16,9 @@ class MockSecurityRepo(SecurityRepo):
             yield resp
 
     def add_responsible(self, *responsible):
+        pass
+
+    def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
         pass
 
 

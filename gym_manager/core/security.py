@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import logging
+from datetime import datetime
 from typing import Callable, ClassVar, Generator
 
 from gym_manager.core.base import String
@@ -92,6 +93,10 @@ class SecurityRepo(abc.ABC):
 
     @abc.abstractmethod
     def add_responsible(self, *responsible):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
         raise NotImplementedError
 
 
