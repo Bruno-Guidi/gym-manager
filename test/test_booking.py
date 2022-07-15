@@ -12,6 +12,7 @@ from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dat
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import log_responsible, SimpleSecurityHandler
+from test.test_core_api import MockSecurityHandler
 
 
 class MockBookingRepo(BookingRepo):
@@ -84,7 +85,7 @@ def empty_resp():
 
 
 @pytest.fixture
-def resp():
+def resp_name():
     return String("TestResp", optional=True, max_len=30)
 
 
@@ -389,8 +390,7 @@ def test_BookingSystem_bookings():
 
 
 def test_integration_registerCharge_fixedBooking():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "charge_booking"},
-                                                 needs_responsible={"create_booking", "charge_booking"}))
+    log_responsible.config(MockSecurityHandler())
 
     # Set up.
     peewee.create_database(":memory:")
@@ -409,7 +409,6 @@ def test_integration_registerCharge_fixedBooking():
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
-    log_responsible.handler.current_responsible = String("dummy_resp", max_len=20)
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
 
@@ -424,9 +423,8 @@ def test_integration_registerCharge_fixedBooking():
     assert booking.transaction == [b for b in booking_repo.all_fixed()][0].transaction
 
 
-def test_integration_cancelTemporary_fixedBooking(resp):
-    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "cancel_booking"},
-                                                 needs_responsible={"create_booking", "cancel_booking"}))
+def test_integration_cancelTemporary_fixedBooking(resp_name):
+    log_responsible.config(MockSecurityHandler())
 
     # Set up.
     peewee.create_database(":memory:")
@@ -446,11 +444,10 @@ def test_integration_cancelTemporary_fixedBooking(resp):
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
-    log_responsible.handler.current_responsible = resp
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
 
     # Feature being test.
-    booking_system.cancel(booking, resp, booking_date, False)
+    booking_system.cancel(booking, resp_name, booking_date, False)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
@@ -461,9 +458,9 @@ def test_integration_cancelTemporary_fixedBooking(resp):
             and len([c for c in booking_repo.cancelled()]) == 1)
 
 
-def test_integration_cancelDefinitely_fixedBooking(resp):
-    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "cancel_booking"},
-                                                 needs_responsible={"create_booking", "cancel_booking"}))
+def test_integration_cancelDefinitely_fixedBooking(resp_name):
+    log_responsible.config(MockSecurityHandler())
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -482,11 +479,10 @@ def test_integration_cancelDefinitely_fixedBooking(resp):
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
-    log_responsible.handler.current_responsible = resp
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
 
     # Feature being test.
-    booking_system.cancel(booking, resp, booking_date, True)
+    booking_system.cancel(booking, resp_name, booking_date, True)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
@@ -496,9 +492,9 @@ def test_integration_cancelDefinitely_fixedBooking(resp):
             and len([c for c in booking_repo.cancelled()]) == 1)
 
 
-def test_integration_cancelDefinitely_tempBooking(resp):
-    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "cancel_booking"},
-                                                 needs_responsible={"create_booking", "cancel_booking"}))
+def test_integration_cancelDefinitely_tempBooking(resp_name):
+    log_responsible.config(MockSecurityHandler())
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -517,11 +513,10 @@ def test_integration_cancelDefinitely_tempBooking(resp):
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
-    log_responsible.handler.current_responsible = resp
     booking = booking_system.book("1", dummy_client, False, booking_date, time(8, 0), Duration(60, "1h"))
 
     # Feature being test.
-    booking_system.cancel(booking, resp, booking_date, True)
+    booking_system.cancel(booking, resp_name, booking_date, True)
 
     all_temp = [b for b in booking_repo.all_temporal()]
     # noinspection PyUnresolvedReferences
