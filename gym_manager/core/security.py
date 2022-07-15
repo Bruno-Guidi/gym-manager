@@ -22,6 +22,8 @@ class SecurityError(Exception):
     """Exception raised when there is a security related problem.
     """
     INVALID_RESP: ClassVar[int] = 0
+    UNREGISTERED_ACTION: ClassVar[int] = 1
+    NEEDS_RESP: ClassVar[int] = 2
 
     def __init__(
             self,
@@ -74,11 +76,12 @@ class log_responsible:
                 raise SecurityError("Tried to execute an unregistered action.", SecurityError.UNREGISTERED_ACTION,
                                     self.handler.current_responsible, fn, self.action_tag, self.action_name)
             if self.handler.cant_perform_action(self.action_tag):
-                raise SecurityError("Tried to execute action without a defined responsible.",
+                raise SecurityError("Tried to execute action without a defined responsible.", SecurityError.NEEDS_RESP,
                                     self.handler.current_responsible, fn, self.action_tag, self.action_name)
             result = fn(*args)
             self.handler.handle_action(self.action_tag, self.action_name)
             return result
+
         return wrapped
 
 
