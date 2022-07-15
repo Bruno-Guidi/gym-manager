@@ -18,6 +18,7 @@ from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqu
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
@@ -300,14 +301,14 @@ class CreateController:
                                                        self.create_ui.fixed_checkbox.isChecked()):
             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
         else:
-            self.security_handler.current_responsible = self.create_ui.responsible_field.value()
             try:
+                self.security_handler.current_responsible = self.create_ui.responsible_field.value()
                 self.booking = self.booking_system.book(court, client, self.create_ui.fixed_checkbox.isChecked(),
                                                         self.when, start_block.start, duration)
                 Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
                 self.create_ui.client_combobox.window().close()
             except SecurityError as sec_err:
-                Dialog.info("Error", str(sec_err))
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class CreateUI(QDialog):
@@ -432,8 +433,8 @@ class CancelController:
         self.cancel_ui.cancel_btn.clicked.connect(self.cancel_ui.reject)
 
     def cancel(self):
-        self.security_handler.current_responsible = self.cancel_ui.responsible_field.value()
         try:
+            self.security_handler.current_responsible = self.cancel_ui.responsible_field.value()
             definitely_cancelled = True
             if self.to_cancel.is_fixed:
                 definitely_cancelled = Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?",
@@ -449,7 +450,7 @@ class CancelController:
                 Dialog.info("Éxito", "El turno ha sido cancelado correctamente.")
             self.cancel_ui.client_line.window().close()
         except SecurityError as sec_err:
-            Dialog.info("Error", str(sec_err))
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class CancelUI(QDialog):
