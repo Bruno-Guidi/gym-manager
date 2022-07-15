@@ -175,6 +175,9 @@ def close_balance(  # ToDo Integrate test with generate_balance().
         create_extraction_fn: function used to create the extraction.
 
     """
+    if balance_repo.balance_done(balance_date):
+        raise OperationalError(f"Daily balance for the [balance_date={balance_date}] was already done.")
+
     if create_extraction_fn is not None:
         # Creates the extraction done at the end of the day.
         extraction = create_extraction_fn()
@@ -184,10 +187,8 @@ def close_balance(  # ToDo Integrate test with generate_balance().
             balance["Extracción"][extraction.method] = Currency(0)
         balance["Extracción"][extraction.method].increase(extraction.amount)
         balance["Extracción"]["Total"].increase(extraction.amount)
-        balance_repo.add(balance_date, responsible, balance)
 
-    if balance_repo.balance_done(balance_date):
-        raise OperationalError(f"Daily balance for the [balance_date={balance_date}] was already done.")
+    balance_repo.add(balance_date, responsible, balance)
 
     transaction_gen = transaction_repo.all(page=1, include_closed=False)
     for transaction in transaction_gen:
