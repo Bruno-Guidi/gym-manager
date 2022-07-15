@@ -444,6 +444,7 @@ class BookingSystem:
         self.repo.cancel(booking, definitely_cancelled)
         self.repo.log_cancellation(cancel_datetime, responsible, booking, definitely_cancelled)
 
+    @log_responsible(action_tag="charge_booking", action_name="Cobrar turno")
     def register_charge(
             self, booking: Booking, booking_date: date, create_transaction_fn: CreateTransactionFn
     ) -> Transaction:

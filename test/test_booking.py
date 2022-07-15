@@ -389,6 +389,8 @@ def test_BookingSystem_bookings():
 
 
 def test_integration_registerCharge_fixedBooking():
+    log_responsible.config(SimpleSecurityHandler(action_tags={"charge_booking"}, needs_responsible={"charge_booking"}))
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -409,6 +411,7 @@ def test_integration_registerCharge_fixedBooking():
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
 
+    log_responsible.handler.current_responsible = String("dummy_resp", max_len=20)
     create_transaction_fn = functools.partial(
         transaction_repo.create, "Cobro", booking_date, dummy_activity.price, "dummy_method",
         String("dummy_resp", max_len=20), "dummy_descr", dummy_client
