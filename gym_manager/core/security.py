@@ -14,6 +14,9 @@ class Responsible:
         self.name = name
         self.code = code
 
+    def __eq__(self, other: Responsible) -> bool:
+        return self.name == other.name and self.code == other.code
+
 
 class SecurityError(Exception):
     """Exception raised when there is a security related problem.
