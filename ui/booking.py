@@ -293,8 +293,6 @@ class CreateController:
 
         if client is None:
             Dialog.info("Error", "Seleccione un cliente.")
-        elif not self.create_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
         elif self.booking_system.out_of_range(start_block.start, duration):
             Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
                                  f"'{self.booking_system.end}'.")
@@ -302,11 +300,14 @@ class CreateController:
                                                        self.create_ui.fixed_checkbox.isChecked()):
             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
         else:
-            responsible = self.create_ui.responsible_field.value()
-            self.booking = self.booking_system.book(court, client, self.create_ui.fixed_checkbox.isChecked(), self.when,
-                                                    start_block.start, duration)
-            Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
-            self.create_ui.client_combobox.window().close()
+            self.security_handler.current_responsible = self.create_ui.responsible_field.value()
+            try:
+                self.booking = self.booking_system.book(court, client, self.create_ui.fixed_checkbox.isChecked(),
+                                                        self.when, start_block.start, duration)
+                Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
+                self.create_ui.client_combobox.window().close()
+            except SecurityError as sec_err:
+                Dialog.info("Error", str(sec_err))
 
 
 class CreateUI(QDialog):
@@ -370,9 +371,9 @@ class CreateUI(QDialog):
         # Responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 5, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = Field(String, parent=self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 5, 1)
         config_line(self.responsible_field)
 
