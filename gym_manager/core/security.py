@@ -212,7 +212,7 @@ class SimpleSecurityHandler(SecurityHandler):
     def handle_action(self, action_level: str, action_name: str):
         """Creates a logger entry.
         """
-        logger.info(
+        logger.getChild(type(self).__name__).info(
             f"Responsible '{self._responsible}' did the action '{action_name}' that has a level '{action_level}'."
         )
         self.security_repo.log_action(datetime.now(), self.current_responsible, action_level, action_name)
