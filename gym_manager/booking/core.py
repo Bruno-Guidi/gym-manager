@@ -405,6 +405,7 @@ class BookingSystem:
                 return False
         return True
 
+    @log_responsible(action_tag="create_booking", action_name="Reservar turno")
     def book(
             self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
     ) -> Booking:

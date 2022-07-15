@@ -389,7 +389,8 @@ def test_BookingSystem_bookings():
 
 
 def test_integration_registerCharge_fixedBooking():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"charge_booking"}, needs_responsible={"charge_booking"}))
+    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "charge_booking"},
+                                                 needs_responsible={"create_booking", "charge_booking"}))
 
     # Set up.
     peewee.create_database(":memory:")
@@ -408,10 +409,10 @@ def test_integration_registerCharge_fixedBooking():
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
+    log_responsible.handler.current_responsible = String("dummy_resp", max_len=20)
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
 
-    log_responsible.handler.current_responsible = String("dummy_resp", max_len=20)
     create_transaction_fn = functools.partial(
         transaction_repo.create, "Cobro", booking_date, dummy_activity.price, "dummy_method",
         String("dummy_resp", max_len=20), "dummy_descr", dummy_client
@@ -445,10 +446,10 @@ def test_integration_cancelTemporary_fixedBooking(resp):
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
+    log_responsible.handler.current_responsible = resp
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
 
     # Feature being test.
-    log_responsible.handler.current_responsible = resp
     booking_system.cancel(booking, resp, booking_date, False)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
@@ -481,12 +482,10 @@ def test_integration_cancelDefinitely_fixedBooking(resp):
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
+    log_responsible.handler.current_responsible = resp
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
-    transaction = transaction_repo.create("dummy_type", booking_date, dummy_activity.price, "dummy_method",
-                                          String("TestResp", max_len=20), "test_desc", dummy_client)
 
     # Feature being test.
-    log_responsible.handler.current_responsible = resp
     booking_system.cancel(booking, resp, booking_date, True)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
@@ -518,10 +517,10 @@ def test_integration_cancelDefinitely_tempBooking(resp):
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
+    log_responsible.handler.current_responsible = resp
     booking = booking_system.book("1", dummy_client, False, booking_date, time(8, 0), Duration(60, "1h"))
 
     # Feature being test.
-    log_responsible.handler.current_responsible = resp
     booking_system.cancel(booking, resp, booking_date, True)
 
     all_temp = [b for b in booking_repo.all_temporal()]
