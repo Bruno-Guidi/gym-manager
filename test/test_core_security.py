@@ -4,7 +4,9 @@ from typing import Generator
 import pytest
 
 from gym_manager.core.base import String
-from gym_manager.core.security import SimpleSecurityHandler, SecurityRepo, Responsible, SecurityError, log_responsible
+from gym_manager.core.security import (
+    SimpleSecurityHandler, SecurityRepo, Responsible, SecurityError, log_responsible,
+    Action)
 
 
 class MockSecurityRepo(SecurityRepo):
@@ -19,6 +21,9 @@ class MockSecurityRepo(SecurityRepo):
         pass
 
     def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
+        pass
+
+    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
         pass
 
 

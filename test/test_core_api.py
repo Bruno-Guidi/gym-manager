@@ -1,5 +1,6 @@
 import functools
 from datetime import date
+from typing import Generator
 
 import pytest
 
@@ -9,7 +10,7 @@ from gym_manager.core.base import (
     Client, Number, String, Activity, Currency, Subscription, OperationalError,
     Transaction, InvalidDate)
 from gym_manager.core.security import (
-    SecurityHandler, log_responsible, Responsible)
+    SecurityHandler, log_responsible, Responsible, Action)
 
 
 class MockSecurityHandler(SecurityHandler):
@@ -29,6 +30,9 @@ class MockSecurityHandler(SecurityHandler):
 
     def handle_action(self, action_level: str, action_name: str):
         print(f"Ignoring {action_name}")
+
+    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
+        pass
 
 
 def test_subscribe():
