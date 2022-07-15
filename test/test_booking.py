@@ -1,3 +1,4 @@
+import functools
 from datetime import date, time, datetime, timedelta
 from typing import Generator
 
@@ -407,10 +408,12 @@ def test_integration_registerCharge_fixedBooking():
 
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
-    transaction = transaction_repo.create("dummy_type", booking_date, dummy_activity.price, "dummy_method",
-                                          String("TestResp", max_len=20), "test_desc", dummy_client)
 
-    booking_system.register_charge(booking, booking_date, transaction)
+    create_transaction_fn = functools.partial(
+        transaction_repo.create, "Cobro", booking_date, dummy_activity.price, "dummy_method",
+        String("dummy_resp", max_len=20), "dummy_descr", dummy_client
+    )
+    transaction = booking_system.register_charge(booking, booking_date, create_transaction_fn)
 
     # The length of all temporal bookings is checked to ensure that the charge was registered.
     assert booking.transaction == transaction and len([b for b in booking_repo.all_temporal()]) == 1

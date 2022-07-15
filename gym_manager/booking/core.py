@@ -6,6 +6,7 @@ from collections import namedtuple
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator, TypeAlias
 
+from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import log_responsible
@@ -443,9 +444,16 @@ class BookingSystem:
         self.repo.cancel(booking, definitely_cancelled)
         self.repo.log_cancellation(cancel_datetime, responsible, booking, definitely_cancelled)
 
-    def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
-        booking.transaction, booking.when = transaction, booking_date
+    def register_charge(
+            self, booking: Booking, booking_date: date, create_transaction_fn: CreateTransactionFn
+    ) -> Transaction:
+        transaction = create_transaction_fn()
+
+        booking.transaction = transaction
+        booking.when = booking_date
         self.repo.charge(booking, transaction)
+
+        return transaction
 
 
 class BookingRepo(abc.ABC):
