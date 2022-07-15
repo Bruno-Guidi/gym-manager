@@ -12,6 +12,7 @@ from gym_manager.core import constants
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import SecurityHandler, SecurityError
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
     config_date_edit)
@@ -266,7 +267,7 @@ class Dialog(QDialog):
 
         self.text_lbl = QLabel(self)
         self.layout.addWidget(self.text_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignJustify)
+        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignLeft)
         # Adjusts the label size according to the text length
         self.text_lbl.setWordWrap(True)
         self.text_lbl.adjustSize()
@@ -329,7 +330,7 @@ class DialogWithResp(QDialog):
 
         self.text_lbl = QLabel(self)
         self.layout.addWidget(self.text_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignJustify)
+        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignLeft)
         # Adjusts the label size according to the text length
         self.text_lbl.setWordWrap(True)
         self.text_lbl.adjustSize()
@@ -368,14 +369,14 @@ class DialogWithResp(QDialog):
 
     def accept(self) -> None:
         if self.responsible_field.valid_value():
-            self.security_handler.current_responsible = self.responsible_field.value()
             try:
+                self.security_handler.current_responsible = self.responsible_field.value()
                 self.fn()
 
                 self.confirmed = True
                 super().accept()
             except SecurityError as sec_err:
-                Dialog.info("Error", str(sec_err))
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def reject(self) -> None:
         self.confirmed = False
