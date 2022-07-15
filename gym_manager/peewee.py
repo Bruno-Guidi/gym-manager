@@ -563,7 +563,7 @@ class ResponsibleTable(Model):
 class ActionTable(Model):
     id = IntegerField(primary_key=True)
     when = DateTimeField()
-    resp_code = ForeignKeyField(ResponsibleTable, backref="actions")
+    responsible = ForeignKeyField(ResponsibleTable, backref="actions")
     action_tag = CharField()
     action_name = CharField()
 
@@ -600,6 +600,7 @@ class SqliteSecurityRepo(SecurityRepo):
 
         for record in prefetch(actions_q, ResponsibleTable.select()):
             # ToDo those Strings don't need validation.
-            resp = Responsible(String(record.responsible.name, max_len=30), String(record.responsible.code, max_len=30))
+            resp = Responsible(String(record.responsible.resp_name, max_len=30),
+                               String(record.responsible.resp_code, max_len=30))
             yield record.when, resp, record.action_tag, record.action_name
 
