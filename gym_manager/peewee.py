@@ -589,5 +589,6 @@ class SqliteSecurityRepo(SecurityRepo):
             pass
 
     def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
-        ActionTable.create(when=when, responsible_id=responsible.code, action_tag=action_tag, action_name=action_name)
+        ActionTable.create(when=when, responsible_id=responsible.code.as_primitive(), action_tag=action_tag,
+                           action_name=action_name)
 
