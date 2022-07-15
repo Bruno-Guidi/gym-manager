@@ -198,7 +198,7 @@ class DailyBalanceUI(QDialog):
         # Responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 0, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
+        config_lbl(self.responsible_lbl, "Responsable")
 
         self.responsible_field = Field(String, parent=self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.responsible_field, 0, 1)
