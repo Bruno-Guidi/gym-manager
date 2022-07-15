@@ -93,7 +93,7 @@ class SecurityHandler(abc.ABC):
 
     @current_responsible.setter
     @abc.abstractmethod
-    def current_responsible(self, other: String):
+    def current_responsible(self, responsible_id: String):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -116,10 +116,11 @@ class SecurityHandler(abc.ABC):
 
 
 class SimpleSecurityHandler(SecurityHandler):
-    def __init__(self, action_tags: set[str], needs_responsible: set[str]):
+    def __init__(self, security_repo: SecurityRepo, action_tags: set[str], needs_responsible: set[str]):
         """Init method.
 
         Args:
+            security_repo: repository that stores security related things.
             action_tags: tags of existing actions in the system.
             needs_responsible: tags of existing actions that need a responsible to be executed. It must be a subset of
                 *action_tags*.
@@ -131,7 +132,14 @@ class SimpleSecurityHandler(SecurityHandler):
             raise ValueError(f"Argument [needs_responsible={needs_responsible}] must be a subset of argument ["
                              f"action_tags={action_tags}].")
 
+        self.security_repo = security_repo
+        self._responsible_names, self._responsible_codes = set(), set()
+        for responsible in security_repo.responsible():
+            self._responsible_names.add(responsible.name)
+            self._responsible_codes.add(responsible.code)
+
         self._responsible = String("", optional=True, max_len=30)
+
         self.action_tags = action_tags
         self._needs_responsible = needs_responsible
 
@@ -140,8 +148,12 @@ class SimpleSecurityHandler(SecurityHandler):
         return self._responsible
 
     @current_responsible.setter
-    def current_responsible(self, other: String):
-        self._responsible = other
+    def current_responsible(self, responsible_id: String):
+        # The *responsible_id* must match with an existing name or id.
+        if not (responsible_id in self._responsible_names or responsible_id in self._responsible_codes):
+            raise SecurityError(f"Responsible [responsible_id={responsible_id}] not recognized.",
+                                code=SecurityError.INVALID_RESP)
+        self._responsible = responsible_id
 
     def unregister_action(self, action_tag: str) -> bool:
         """Returns true if the action with *action_tag* isn't registered in the security handler-
