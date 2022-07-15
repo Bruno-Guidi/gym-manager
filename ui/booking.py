@@ -440,7 +440,7 @@ class CancelController:
                 definitely_cancelled = Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?",
                                                       ok_btn_text="Si", cancel_btn_text="No")
             # noinspection PyTypeChecker
-            self.booking_system.cancel(self.to_cancel, self.cancel_ui.responsible_field.value(), self.when,
+            self.booking_system.cancel(self.to_cancel, self.security_handler.current_responsible.name, self.when,
                                        definitely_cancelled, datetime.now())
             self.cancelled = True
 
