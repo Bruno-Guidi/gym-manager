@@ -14,6 +14,7 @@ from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Balance
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
     fill_combobox, config_checkbox, config_date_edit)
@@ -155,13 +156,14 @@ class DailyBalanceController:
             return
 
         try:
-            self.security_handler.current_responsible = self.daily_balance_ui.responsible_field.value()
-
             ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(constants.DATE_FORMAT)}."
                                 f"\nEsta accion no se puede deshacer, todas las transacciones no incluidas en esta caja"
                                 f" diaria se incluiran en la caja del día de mañana."
                                 f"\n¿Desea continuar?")
+
             if ok:
+                self.security_handler.current_responsible = self.daily_balance_ui.responsible_field.value()
+
                 # noinspection PyTypeChecker
                 create_extraction_fn = functools.partial(
                     self.transaction_repo.create, "Extracción", today, self.daily_balance_ui.extract_field.value(),
@@ -173,7 +175,7 @@ class DailyBalanceController:
                                   self.daily_balance_ui.responsible_field.value(), create_extraction_fn)
                 self.daily_balance_ui.confirm_btn.window().close()
         except SecurityError as sec_err:
-            Dialog.info("Error", str(sec_err))
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class DailyBalanceUI(QDialog):
