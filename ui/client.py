@@ -16,6 +16,7 @@ from gym_manager.core.base import String, TextLike, Client, Number, Activity, Su
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit)
@@ -543,15 +544,15 @@ class AddSubController:
             Dialog.info("Error", "No hay actividades disponibles.")
         else:
             activity: Activity = self.add_sub_ui.activity_combobox.currentData(Qt.UserRole)
-            self.security_handler.current_responsible = self.add_sub_ui.responsible_field.value()
             try:
+                self.security_handler.current_responsible = self.add_sub_ui.responsible_field.value()
                 self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
 
                 Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
                                      f"'{activity.name}'.")
                 self.add_sub_ui.activity_combobox.window().close()
             except SecurityError as sec_err:
-                Dialog.info("Error", str(sec_err))
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class AddSubUI(QDialog):
