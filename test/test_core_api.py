@@ -30,7 +30,7 @@ class MockSecurityHandler(SecurityHandler):
 
 
 def test_subscribe():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"subscribe"}, needs_responsible={"subscribe"}))
+    log_responsible.config(MockSecurityHandler())
 
     # Repositories setup.
     peewee.create_database(":memory:")
@@ -49,7 +49,6 @@ def test_subscribe():
     activity_repo.add(activity)
 
     # Feature being tested.
-    log_responsible.handler.current_responsible = String("TestResp", max_len=30)
     api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
     assert activity_repo.n_subscribers(activity) == 1
 
@@ -110,58 +109,8 @@ def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
         api.subscribe(None, lesser, client, activity)
 
 
-def test_subscribe_raisesSecurityError_withNoResponsible():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"subscribe"}, needs_responsible={"subscribe"}))
-
-    # Repositories setup.
-    peewee.create_database(":memory:")
-    activity_repo = peewee.SqliteActivityRepo()
-    transaction_repo = peewee.SqliteTransactionRepo()
-    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    subscription_repo = peewee.SqliteSubscriptionRepo()
-
-    # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
-    client_repo.add(client)
-
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
-                        charge_once=False)
-    activity_repo.add(activity)
-
-    # Feature being tested.
-    with pytest.raises(SecurityError) as sec_err:
-        api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
-    assert str(sec_err.value) == "Tried to execute action without a defined responsible."
-
-
-def test_subscribe_raisesSecurityError_withUnregisteredAction():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"other_action"}, needs_responsible={"other_action"}))
-
-    # Repositories setup.
-    peewee.create_database(":memory:")
-    activity_repo = peewee.SqliteActivityRepo()
-    transaction_repo = peewee.SqliteTransactionRepo()
-    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    subscription_repo = peewee.SqliteSubscriptionRepo()
-
-    # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
-    client_repo.add(client)
-
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
-                        charge_once=False)
-    activity_repo.add(activity)
-
-    # Feature being tested.
-    with pytest.raises(SecurityError) as sec_err:
-        api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
-    assert str(sec_err.value) == "Tried to execute an unregistered action." and sec_err.value.action_tag == "subscribe"
-
-
 def test_cancel():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"cancel"}, needs_responsible={"cancel"}))
+    log_responsible.config(MockSecurityHandler())
 
     # Repositories setup.
     peewee.create_database(":memory:")
@@ -184,14 +133,13 @@ def test_cancel():
     subscription_repo.add(subscription)
 
     # Feature being tested.
-    log_responsible.handler.current_responsible = String("TestResp", max_len=30)
     api.cancel(subscription_repo, subscription)
     assert activity_repo.n_subscribers(activity) == 0
 
 
 def test_charge_notChargeOnceActivity():
-    log_responsible.config(SimpleSecurityHandler(action_tags={"register_subscription_charge"},
-                                                 needs_responsible={"register_subscription_charge"}))
+    log_responsible.config(MockSecurityHandler())
+
     # Repositories setup.
     peewee.create_database(":memory:")
     activity_repo = peewee.SqliteActivityRepo()
@@ -222,7 +170,6 @@ def test_charge_notChargeOnceActivity():
     )
 
     # Feature being tested.
-    log_responsible.handler.current_responsible = String("TestResp", max_len=30)
     api.register_subscription_charge(subscription_repo, subscription, create_transaction_fn)
     # Check that the activity is up-to-date, because a charge was registered.
     assert subscription.up_to_date(date(2022, 4, 1))
