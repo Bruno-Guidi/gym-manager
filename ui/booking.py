@@ -107,7 +107,7 @@ class MainController:
             Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
         else:
             # noinspection PyAttributeOutsideInit
-            self._create_ui = CreateUI(self.client_repo, self.booking_system, when)
+            self._create_ui = CreateUI(self.client_repo, self.booking_system, self.security_handler, when)
             self._create_ui.exec_()
             if self._create_ui.controller.booking is not None:
                 self._load_booking(self._create_ui.controller.booking)
@@ -245,10 +245,14 @@ class BookingMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem, when: date) -> None:
+    def __init__(
+            self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem,
+            security_handler: SecurityHandler, when: date
+    ) -> None:
         self.create_ui = create_ui
         self.client_repo = client_repo
         self.booking_system = booking_system
+        self.security_handler = security_handler
         self.when = when
         self.booking: Booking | None = None
 
@@ -307,10 +311,12 @@ class CreateController:
 
 class CreateUI(QDialog):
 
-    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, when: date) -> None:
+    def __init__(
+            self, client_repo: ClientRepo, booking_system: BookingSystem, security_handler: SecurityHandler, when: date
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, client_repo, booking_system, when)
+        self.controller = CreateController(self, client_repo, booking_system, security_handler, when)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
@@ -448,7 +454,7 @@ class CancelController:
 class CancelUI(QDialog):
 
     def __init__(
-            self, booking_system: BookingSystem, security_handler: SecurityHandler,  to_cancel: Booking, when: date
+            self, booking_system: BookingSystem, security_handler: SecurityHandler, to_cancel: Booking, when: date
     ) -> None:
         super().__init__()
         self._setup_ui()
