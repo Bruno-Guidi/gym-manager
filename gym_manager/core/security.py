@@ -91,7 +91,7 @@ class SecurityRepo(abc.ABC):
 class SecurityHandler(abc.ABC):
     @property
     @abc.abstractmethod
-    def current_responsible(self) -> String:
+    def current_responsible(self) -> Responsible:
         raise NotImplementedError
 
     @current_responsible.setter
@@ -118,6 +118,9 @@ class SecurityHandler(abc.ABC):
         raise NotImplementedError
 
 
+NO_RESPONSIBLE = Responsible(String("", optional=True, max_len=30), String("", optional=True, max_len=3))
+
+
 class SimpleSecurityHandler(SecurityHandler):
     def __init__(self, security_repo: SecurityRepo, action_tags: set[str], needs_responsible: set[str]):
         """Init method.
@@ -141,13 +144,13 @@ class SimpleSecurityHandler(SecurityHandler):
             self._responsible_dict[responsible.code] = responsible
             self._responsible_dict[responsible.name] = responsible
 
-        self._responsible = String("", optional=True, max_len=30)
+        self._responsible = NO_RESPONSIBLE
 
         self.action_tags = action_tags
         self._needs_responsible = needs_responsible
 
     @property
-    def current_responsible(self) -> String:
+    def current_responsible(self) -> Responsible:
         return self._responsible
 
     @current_responsible.setter
@@ -156,7 +159,7 @@ class SimpleSecurityHandler(SecurityHandler):
         if not (responsible_id in self._responsible_dict or responsible_id in self._responsible_dict):
             raise SecurityError(f"Responsible [responsible_id={responsible_id}] not recognized.",
                                 code=SecurityError.INVALID_RESP)
-        self._responsible = responsible_id
+        self._responsible = self._responsible_dict[responsible_id]
 
     def unregistered_action(self, action_tag: str) -> bool:
         """Returns true if the action with *action_tag* isn't registered in the security handler-
