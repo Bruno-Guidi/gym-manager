@@ -252,7 +252,7 @@ class ActionController:
         self.action_ui.action_table.setRowCount(0)
 
         actions_it = self.security_handler.actions(self.action_ui.page_index.page, self.action_ui.page_index.page_len)
-        for row, when, resp, _, action_name in enumerate(actions_it):
+        for row, (when, resp, _, action_name) in enumerate(actions_it):
             fill_cell(self.action_ui.action_table, row, 0, when.strftime(constants.DATE_TIME_FORMAT), bool)
             fill_cell(self.action_ui.action_table, row, 1, resp.name, str)
             fill_cell(self.action_ui.action_table, row, 2, action_name, str)
