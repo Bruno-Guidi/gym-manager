@@ -18,7 +18,7 @@ from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
     fill_combobox, config_checkbox, config_date_edit)
-from ui.widgets import Separator, Field, Dialog
+from ui.widgets import Separator, Field, Dialog, responsible_field
 
 
 class MainController:
@@ -200,7 +200,7 @@ class DailyBalanceUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 0, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, parent=self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 0, 1)
         config_line(self.responsible_field)
 
@@ -546,7 +546,7 @@ class ChargeUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 3, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, parent=self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 3, 1)
         config_line(self.responsible_field, adjust_to_hint=False)
 
