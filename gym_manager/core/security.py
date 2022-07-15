@@ -174,6 +174,7 @@ class SimpleSecurityHandler(SecurityHandler):
     def current_responsible(self, responsible_id: String):
         # The responsible field was empty. Do nothing, this situation is covered log_responsible decorator.
         if len(responsible_id) == 0:
+            self._responsible = NO_RESPONSIBLE
             return
 
         # The *responsible_id* must match with an existing name or id.
