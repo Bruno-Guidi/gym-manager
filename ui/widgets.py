@@ -11,6 +11,8 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.security import SecurityHandler, SecurityError
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
     config_date_edit)
@@ -26,6 +28,10 @@ def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> t
     return valid, value
 
 
+def responsible_field(parent: QWidget | None = None) -> Field:
+    return Field(String, parent, is_password=True, optional=True, max_len=constants.TRANSACTION_RESP_CHARS)
+
+
 def Separator(vertical: bool, parent: QWidget | None = None):
     sep = QFrame(parent)
     sep.setFrameShape(QFrame.VLine if vertical else QFrame.HLine)
@@ -39,10 +45,15 @@ def Separator(vertical: bool, parent: QWidget | None = None):
 
 
 class Field(QLineEdit):
-    def __init__(self, validatable: Type[Validatable], parent: QWidget | None = None, **validate_args) -> None:
+    def __init__(
+            self, validatable: Type[Validatable], parent: QWidget | None = None, is_password: bool = False,
+            **validate_args
+    ) -> None:
         self.validatable = validatable
         self.validate_args = validate_args
         super().__init__(parent)
+        if is_password:
+            self.setEchoMode(QLineEdit.Password)
         self.base_style_sheet = self.styleSheet()
 
     def valid_value(self) -> bool:
@@ -233,19 +244,6 @@ class FilterHeader(QWidget):
 
 class Dialog(QDialog):
     @classmethod
-    def confirm_with_resp(
-            cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None
-    ) -> tuple[bool, String]:
-        dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True, with_responsible=True)
-        if ok_btn_text is not None:
-            dialog.confirm_btn.setText(ok_btn_text)
-        if cancel_btn_text is not None:
-            dialog.cancel_btn.setText(cancel_btn_text)
-        dialog.exec_()
-        # noinspection PyTypeChecker
-        return dialog.confirmed, dialog.responsible_field.value()
-
-    @classmethod
     def confirm(cls, question: str, ok_btn_text: str | None = None, cancel_btn_text: str | None = None) -> bool:
         dialog = Dialog(title="Confirmar", text=question, show_cancel_btn=True)
         if ok_btn_text is not None:
@@ -261,9 +259,9 @@ class Dialog(QDialog):
         dialog.exec_()
         return True
 
-    def __init__(self, title: str, text: str, show_cancel_btn: bool, with_responsible: bool = False) -> None:
+    def __init__(self, title: str, text: str, show_cancel_btn: bool) -> None:
         super().__init__()
-        self._setup_ui(title, text, show_cancel_btn, with_responsible)
+        self._setup_ui(title, text, show_cancel_btn)
         self.confirmed = False
         # noinspection PyUnresolvedReferences
         self.confirm_btn.clicked.connect(self.accept)
@@ -271,32 +269,18 @@ class Dialog(QDialog):
             # noinspection PyUnresolvedReferences
             self.cancel_btn.clicked.connect(self.reject)
 
-    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool, with_responsible: bool = False):
+    def _setup_ui(self, title: str, text: str, show_cancel_btn: bool):
         self.setWindowTitle(title)
 
         self.layout = QVBoxLayout(self)
 
         self.text_lbl = QLabel(self)
         self.layout.addWidget(self.text_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignJustify)
+        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignLeft)
         # Adjusts the label size according to the text length
         self.text_lbl.setWordWrap(True)
         self.text_lbl.adjustSize()
         self.text_lbl.setMinimumSize(self.text_lbl.sizeHint())
-
-        # Responsible.
-        self.responsible_field: Field | None = None
-        if with_responsible:
-            self.responsible_layout = QHBoxLayout()
-            self.layout.addLayout(self.responsible_layout)
-
-            self.responsible_lbl = QLabel(self)
-            self.responsible_layout.addWidget(self.responsible_lbl)
-            config_lbl(self.responsible_lbl, "Responsable*")
-
-            self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-            self.responsible_layout.addWidget(self.responsible_field)
-            config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -320,11 +304,88 @@ class Dialog(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
     def accept(self) -> None:
-        if self.responsible_field is not None and not self.responsible_field.valid_value():
-            return
-
         self.confirmed = True
         super().accept()
+
+    def reject(self) -> None:
+        self.confirmed = False
+        super().reject()
+
+
+class DialogWithResp(QDialog):
+    @classmethod
+    def confirm(cls, question: str, security_handler: SecurityHandler, fn: Callable) -> bool:
+        dialog = DialogWithResp("Confirmar", question, security_handler, fn)
+        dialog.exec_()
+        return dialog.confirmed
+
+    def __init__(self, title: str, text: str, security_handler: SecurityHandler, fn: Callable):
+        super().__init__()
+        self._setup_ui(title, text)
+
+        self.confirmed = False
+        self.security_handler = security_handler
+        self.fn = fn
+
+        # noinspection PyUnresolvedReferences
+        self.confirm_btn.clicked.connect(self.accept)
+        # noinspection PyUnresolvedReferences
+        self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self, title: str, text: str):
+        self.setWindowTitle(title)
+
+        self.layout = QVBoxLayout(self)
+
+        self.text_lbl = QLabel(self)
+        self.layout.addWidget(self.text_lbl, alignment=Qt.AlignCenter)
+        config_lbl(self.text_lbl, text, fixed_width=300, alignment=Qt.AlignLeft)
+        # Adjusts the label size according to the text length
+        self.text_lbl.setWordWrap(True)
+        self.text_lbl.adjustSize()
+        self.text_lbl.setMinimumSize(self.text_lbl.sizeHint())
+
+        # Responsible.
+        self.responsible_layout = QHBoxLayout()
+        self.layout.addLayout(self.responsible_layout)
+
+        self.responsible_lbl = QLabel(self)
+        self.responsible_layout.addWidget(self.responsible_lbl)
+        config_lbl(self.responsible_lbl, "Responsable*")
+
+        self.responsible_field = responsible_field(self)
+        self.responsible_layout.addWidget(self.responsible_field)
+        config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar")
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+    def accept(self) -> None:
+        if self.responsible_field.valid_value():
+            try:
+                self.security_handler.current_responsible = self.responsible_field.value()
+                self.fn()
+
+                self.confirmed = True
+                super().accept()
+            except SecurityError as sec_err:
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def reject(self) -> None:
         self.confirmed = False
@@ -381,7 +442,8 @@ class PageIndex(QWidget):
         config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=32)
 
         # Horizontal spacer. Adjusts the layout, causing the page_lbl to be in its center.
-        self.layout.addSpacerItem(QSpacerItem(self.info_lbl.width(), 1, QSizePolicy.Fixed, QSizePolicy.Minimum))
+        self.spacer = QSpacerItem(self.info_lbl.width(), 1, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        self.layout.addSpacerItem(self.spacer)
 
     @property
     def total_len(self):
@@ -398,6 +460,7 @@ class PageIndex(QWidget):
 
         if not show_info:
             self.info_lbl.hide()
+            self.layout.removeItem(self.spacer)
 
         self._update()
 

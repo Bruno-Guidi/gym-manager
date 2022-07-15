@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import functools
 from datetime import date, timedelta
+from typing import Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -8,22 +10,26 @@ from PyQt5.QtWidgets import (
     QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QCheckBox, QDateEdit)
 
 from gym_manager.core import api, constants
+from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Balance
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
+from gym_manager.core.security import SecurityHandler, SecurityError
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
-    fill_combobox, config_layout, config_checkbox, config_date_edit)
-from ui.widgets import Separator, Field, Dialog
+    fill_combobox, config_checkbox, config_date_edit)
+from ui.widgets import Separator, Field, Dialog, responsible_field
 
 
 class MainController:
-    def __init__(self, acc_main_ui: AccountingMainUI, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
+    def __init__(
+            self, acc_main_ui: AccountingMainUI, transaction_repo: TransactionRepo, balance_repo: BalanceRepo,
+            security_handler: SecurityHandler
+    ):
         self.acc_main_ui = acc_main_ui
         self.transaction_repo = transaction_repo
-        self._types_dict: dict[str, int] = {type_: i + 2 for i, type_ in enumerate(("Cobro", "Extracción"))}
-        self._methods_dict: dict[str, int] = {method: i + 1 for i, method
-                                              in enumerate((*transaction_repo.methods, "Total"))}
         self.balance_repo = balance_repo
+        self.security_handler = security_handler
 
         self._date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
                                                 translate_fun=lambda trans, when: trans.when >= when)
@@ -54,21 +60,24 @@ class MainController:
         self.acc_main_ui.history_btn.clicked.connect(self.balance_history)
 
     def close_balance(self):
-        self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.balance)
+        # noinspection PyAttributeOutsideInit
+        self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.security_handler,
+                                                self.balance)
         self._daily_balance_ui.exec_()
 
     def balance_history(self):
+        # noinspection PyAttributeOutsideInit
         self._history_ui = BalanceHistoryUI(self.balance_repo)
         self._history_ui.setWindowModality(Qt.ApplicationModal)
         self._history_ui.show()
 
 
 class AccountingMainUI(QMainWindow):
-    def __init__(self, transaction_repo: TransactionRepo, balance_repo: BalanceRepo):
+    def __init__(self, transaction_repo: TransactionRepo, balance_repo: BalanceRepo, security_handler: SecurityHandler):
         super().__init__()
         self._setup_ui()
 
-        self.controller = MainController(self, transaction_repo, balance_repo)
+        self.controller = MainController(self, transaction_repo, balance_repo, security_handler)
 
     def _setup_ui(self):
         self.setWindowTitle("Contabilidad")
@@ -114,11 +123,12 @@ class AccountingMainUI(QMainWindow):
 class DailyBalanceController:
     def __init__(
             self, daily_balance_ui: DailyBalanceUI, balance_repo: BalanceRepo, transaction_repo: TransactionRepo,
-            balance: Balance
+            security_handler: SecurityHandler, balance: Balance
     ):
         self.daily_balance_ui = daily_balance_ui
         self.balance_repo = balance_repo
         self.transaction_repo = transaction_repo
+        self.security_handler = security_handler
         self.balance = balance
 
         # Fills line edits.
@@ -136,39 +146,46 @@ class DailyBalanceController:
         self.daily_balance_ui.cancel_btn.clicked.connect(self.daily_balance_ui.reject)
 
     def close_balance(self):
-        if not (self.daily_balance_ui.responsible_field.valid_value()
-                and self.daily_balance_ui.extract_field.valid_value()):
+        if not self.daily_balance_ui.extract_field.valid_value():
             Dialog.info("Error", "Hay campos que no son válidos.")
-        else:
-            overwrite, today = True, date.today()
-            if self.balance_repo.balance_done(today):
-                overwrite = Dialog.confirm(  # ToDo block balance if it was already done for the day.
-                    f"Ya hay una caja diaria calculada para la fecha {today}.\n¿Desea sobreescribirla?", "Si", "No"
-                )
-            if overwrite:
-                # noinspection PyTypeChecker
-                t = self.transaction_repo.create("Extracción", today, self.daily_balance_ui.extract_field.value(),
-                                                 self.daily_balance_ui.method_combobox.currentText(),
-                                                 self.daily_balance_ui.responsible_field.value(),
-                                                 description=f"Extracción al cierre de caja diaria del día {today}.")
-                # ToDo refactor this into Balance class.
-                if self.daily_balance_ui.method_combobox.currentText() not in self.balance["Extracción"]:
-                    self.balance["Extracción"][self.daily_balance_ui.method_combobox.currentText()] = Currency(0)
-                self.balance["Extracción"][self.daily_balance_ui.method_combobox.currentText()].increase(t.amount)
-                self.balance["Extracción"]["Total"].increase(t.amount)
+            return
+
+        today = date.today()
+        if self.balance_repo.balance_done(today):
+            Dialog.info("Error", f"La caja diaria de {today.strftime(constants.DATE_FORMAT)} ya fue cerrada.")
+            return
+
+        try:
+            ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(constants.DATE_FORMAT)}."
+                                f"\nEsta accion no se puede deshacer, todas las transacciones no incluidas en esta caja"
+                                f" diaria se incluiran en la caja del día de mañana."
+                                f"\n¿Desea continuar?")
+
+            if ok:
+                self.security_handler.current_responsible = self.daily_balance_ui.responsible_field.value()
 
                 # noinspection PyTypeChecker
+                create_extraction_fn = functools.partial(
+                    self.transaction_repo.create, "Extracción", today, self.daily_balance_ui.extract_field.value(),
+                    self.daily_balance_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                    description=f"Extracción al cierre de caja diaria del día {today}."
+                )
+                # noinspection PyTypeChecker
                 api.close_balance(self.transaction_repo, self.balance_repo, self.balance, today,
-                                  self.daily_balance_ui.responsible_field.value())
-                Dialog.info("Éxito", "Caja diaria calculada correctamente.")
+                                  self.daily_balance_ui.responsible_field.value(), create_extraction_fn)
                 self.daily_balance_ui.confirm_btn.window().close()
+        except SecurityError as sec_err:
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class DailyBalanceUI(QDialog):
-    def __init__(self, balance_repo: BalanceRepo, transaction_repo: TransactionRepo, balance: Balance) -> None:
+    def __init__(
+            self, balance_repo: BalanceRepo, transaction_repo: TransactionRepo, security_handler: SecurityHandler,
+            balance: Balance
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, balance)
+        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, security_handler, balance)
 
     def _setup_ui(self):
         self.setWindowTitle("Cerrar caja diaria")
@@ -181,9 +198,9 @@ class DailyBalanceUI(QDialog):
         # Responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 0, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 0, 1)
         config_line(self.responsible_field)
 
@@ -279,7 +296,7 @@ class BalanceHistoryController:
         # noinspection PyUnresolvedReferences
         self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
         # noinspection PyUnresolvedReferences
-        self.history_ui.balance_table.connect(self.refresh_balance_info)
+        self.history_ui.balance_table.itemSelectionChanged.connect(self.refresh_balance_info)
 
     def update_last_n_checkbox(self):
         """Callback called when the state of date_checkbox changes.
@@ -429,14 +446,22 @@ class ChargeController:
             self,
             charge_ui: ChargeUI,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             client: Client,
             amount: Currency,
-            description: String
+            description: String,
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
     ) -> None:
         self.charge_ui = charge_ui
         self.transaction_repo = transaction_repo
+        self.security_handler = security_handler
         self.client, self.amount = client, amount
         self.transaction: Transaction | None = None
+
+        # This is a partial function, where the only argument left is a callable that creates a transaction with the
+        # data extracted from the form. In this way, the transaction is created in the same place as the subsequent
+        # processing that is done with it.
+        self.post_charge_fn = post_charge_fn
 
         # Sets ui fields.
         self.charge_ui.client_line.setText(str(client.name))
@@ -452,29 +477,35 @@ class ChargeController:
         self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
 
     def charge(self):
-        if not self.charge_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
-        else:
-            # noinspection PyTypeChecker
-            self.transaction = self.transaction_repo.create(
-                "Cobro", date.today(), self.amount, self.charge_ui.method_combobox.currentText(),
-                self.charge_ui.responsible_field.value(), self.charge_ui.descr_text.toPlainText(), self.client
+        try:
+            self.security_handler.current_responsible = self.charge_ui.responsible_field.value()
+
+            create_transaction_fn = functools.partial(
+                self.transaction_repo.create, "Cobro", date.today(), self.amount,
+                self.charge_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                self.charge_ui.descr_text.toPlainText(), self.client
             )
+            self.transaction = self.post_charge_fn(create_transaction_fn)
             Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
             self.charge_ui.descr_text.window().close()
+        except SecurityError as sec_err:
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class ChargeUI(QDialog):
     def __init__(
             self,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             client: Client,
             amount: Currency,
-            description: String
+            description: String,
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = ChargeController(self, transaction_repo, client, amount, description)
+        self.controller = ChargeController(self, transaction_repo, security_handler, client, amount, description,
+                                           post_charge_fn)
 
     def _setup_ui(self):
         self.setWindowTitle("Registrar cobro")
@@ -514,9 +545,9 @@ class ChargeUI(QDialog):
         # Responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 3, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 3, 1)
         config_line(self.responsible_field, adjust_to_hint=False)
 

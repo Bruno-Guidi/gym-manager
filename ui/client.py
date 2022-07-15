@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import itertools
 from datetime import date
 from typing import Iterable, Callable
@@ -8,16 +9,18 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QLineEdit, QDateEdit)
+    QDateEdit)
 
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
+from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
 
 
 class MainController:
@@ -27,12 +30,14 @@ class MainController:
             client_repo: ClientRepo,
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             activities_fn: Callable[[], Iterable[Activity]]
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
         self.subscription_repo = subscription_repo
         self.transaction_repo = transaction_repo
+        self.security_handler = security_handler
         self.activities_fn = activities_fn
         self._clients: dict[int, Client] = {}  # Dict that maps raw client dni to the associated client.
         self._subscriptions: dict[str, Subscription] = {}  # Maps raw activity name to subs of the selected client.
@@ -126,21 +131,23 @@ class MainController:
                     self.main_ui.dir_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            # Updates the client.
             client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-            self._clients[client_dni].name = self.main_ui.name_field.value()
-            self._clients[client_dni].telephone = self.main_ui.tel_field.value()
-            self._clients[client_dni].direction = self.main_ui.dir_field.value()
-            self.client_repo.update(self._clients[client_dni])
+            update_fn = functools.partial(self.client_repo.update, self._clients[client_dni])
 
-            # Updates the ui.
-            row = self.main_ui.client_table.currentRow()
-            client = self._clients[client_dni]
-            fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
+            if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
+                # Updates the client.
+                self._clients[client_dni].name = self.main_ui.name_field.value()
+                self._clients[client_dni].telephone = self.main_ui.tel_field.value()
+                self._clients[client_dni].direction = self.main_ui.dir_field.value()
 
-            Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
+                # Updates the ui.
+                row = self.main_ui.client_table.currentRow()
+                client = self._clients[client_dni]
+                fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
+
+                Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
     def remove(self):
         if self.main_ui.client_table.currentRow() == -1:
@@ -148,13 +155,12 @@ class MainController:
             return
 
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+        client = self._clients[client_dni]
 
-        remove = Dialog.confirm_with_resp(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?")
-
-        if remove:
-            client = self._clients[client_dni]
+        remove_fn = functools.partial(self.client_repo.remove, client)
+        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?",
+                                  self.security_handler, remove_fn):
             self._clients.pop(client.dni.as_primitive())
-            self.client_repo.remove(client)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             # Clears the form.
@@ -196,15 +202,17 @@ class MainController:
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
 
+        register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo,
+                                                self._subscriptions[activity_name])
         # noinspection PyAttributeOutsideInit
         self._charge_ui = ChargeUI(
-            self.transaction_repo, self._clients[client_dni], self._subscriptions[activity_name].activity.price,
-            description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS)
+            self.transaction_repo, self.security_handler, self._clients[client_dni],
+            amount=self._subscriptions[activity_name].activity.price,
+            description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS),
+            post_charge_fn=register_sub_charge
         )
         self._charge_ui.exec_()
         if self._charge_ui.controller.transaction is not None:
-            api.register_subscription_charge(self.subscription_repo, self._subscriptions[activity_name],
-                                             self._charge_ui.controller.transaction)
             # Updates the last charged date of the subscription.
             fill_cell(self.main_ui.subscription_table, self.main_ui.subscription_table.currentRow(), 1,
                       self._charge_ui.controller.transaction.when, data_type=bool)
@@ -220,8 +228,8 @@ class MainController:
 
         client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         # noinspection PyAttributeOutsideInit
-        self._add_sub_ui = AddSubUI(self.subscription_repo, (activity for activity in self.activities_fn()),
-                                    self._clients[client_dni])
+        self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
+                                    (activity for activity in self.activities_fn()), self._clients[client_dni])
         self._add_sub_ui.exec_()
 
         subscription = self._add_sub_ui.controller.subscription
@@ -243,14 +251,17 @@ class MainController:
             return
 
         activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
+        client_name = self._subscriptions[activity_name].client.name
 
-        # noinspection PyAttributeOutsideInit
-        self._cancel_sub_ui = CancelSubUI(self.subscription_repo, self._subscriptions[activity_name])
-        self._cancel_sub_ui.exec_()
+        cancel_fn = functools.partial(api.cancel, self.subscription_repo, self._subscriptions[activity_name])
+        remove = DialogWithResp.confirm(f"¿Desea cancelar la inscripción del cliente '{client_name}' a la actividad "
+                                        f"'{activity_name}?", self.security_handler, cancel_fn)
 
-        if self._cancel_sub_ui.controller.cancelled:
-            self._subscriptions.pop(activity_name)
+        if remove:
+            subscription = self._subscriptions.pop(activity_name)
             self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
+            Dialog.info("Éxito", f"La inscripción del cliente '{subscription.client.name}' a la actividad "
+                                 f"'{subscription.activity.name}' fue cancelada.")
 
 
 class ClientMainUI(QMainWindow):
@@ -260,11 +271,13 @@ class ClientMainUI(QMainWindow):
             client_repo: ClientRepo,
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler,
             activities_fn: Callable[[], Iterable[Activity]]
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, activities_fn)
+        self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, security_handler,
+                                         activities_fn)
 
     def _setup_ui(self):
         self.setWindowTitle("Clientes")
@@ -412,8 +425,7 @@ class CreateController:
     # noinspection PyTypeChecker
     def create_client(self):
         if not all([self.create_ui.name_field.valid_value(), self.create_ui.dni_field.valid_value(),
-                    self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value(),
-                    self.create_ui.responsible_field.valid_value()]):
+                    self.create_ui.tel_field.valid_value(), self.create_ui.dir_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
@@ -486,15 +498,6 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.dir_field, 4, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
-        # Responsible.
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 5, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
-
-        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-        self.form_layout.addWidget(self.responsible_field, 5, 1)
-        config_line(self.responsible_field, place_holder="Responsable", adjust_to_hint=False)
-
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
@@ -517,12 +520,13 @@ class CreateUI(QDialog):
 
 class AddSubController:
     def __init__(
-            self, add_sub_ui: AddSubUI, subscription_repo: SubscriptionRepo, activities: Iterable[Activity],
-            client: Client
+            self, add_sub_ui: AddSubUI, subscription_repo: SubscriptionRepo, security_handler: SecurityHandler,
+            activities: Iterable[Activity], client: Client
     ):
         self.add_sub_ui = add_sub_ui
         self.subscription_repo = subscription_repo
         self.client = client
+        self.security_handler = security_handler
         self.subscription: Subscription | None = None
 
         activities = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity) or activity.charge_once,
@@ -538,21 +542,27 @@ class AddSubController:
     def add_sub(self):
         if self.add_sub_ui.activity_combobox.count() == 0:
             Dialog.info("Error", "No hay actividades disponibles.")
-        elif not self.add_sub_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
         else:
             activity: Activity = self.add_sub_ui.activity_combobox.currentData(Qt.UserRole)
-            self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
-            Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
-                                 f"'{activity.name}'.")
-            self.add_sub_ui.activity_combobox.window().close()
+            try:
+                self.security_handler.current_responsible = self.add_sub_ui.responsible_field.value()
+                self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
+
+                Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
+                                     f"'{activity.name}'.")
+                self.add_sub_ui.activity_combobox.window().close()
+            except SecurityError as sec_err:
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class AddSubUI(QDialog):
-    def __init__(self, subscription_repo: SubscriptionRepo, activities: Iterable[Activity], client: Client) -> None:
+    def __init__(
+            self, subscription_repo: SubscriptionRepo, security_handler: SecurityHandler,
+            activities: Iterable[Activity], client: Client
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = AddSubController(self, subscription_repo, activities, client)
+        self.controller = AddSubController(self, subscription_repo, security_handler, activities, client)
 
     def _setup_ui(self):
         self.setWindowTitle("Inscribir cliente")
@@ -567,7 +577,7 @@ class AddSubUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 1, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 1, 1)
         config_line(self.responsible_field, place_holder="Responsable")
 
@@ -579,87 +589,6 @@ class AddSubUI(QDialog):
         self.activity_combobox = QComboBox(self)
         self.form_layout.addWidget(self.activity_combobox, 0, 1)
         config_combobox(self.activity_combobox, fixed_width=self.responsible_field.width())
-
-        # Vertical spacer.
-        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
-
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
-
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
-
-        # Adjusts size.
-        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
-
-
-class CancelSubController:
-    def __init__(
-            self, cancel_sub_ui: CancelSubUI, subscription_repo: SubscriptionRepo, subscription: Subscription
-    ):
-        self.cancel_sub_ui = cancel_sub_ui
-        self.subscription_repo = subscription_repo
-        self.subscription = subscription
-
-        self.cancelled = False
-
-        self.cancel_sub_ui.activity_line.setText(str(subscription.activity.name))
-
-        # Sets callbacks.
-        # noinspection PyUnresolvedReferences
-        self.cancel_sub_ui.confirm_btn.clicked.connect(self.cancel_sub)
-        # noinspection PyUnresolvedReferences
-        self.cancel_sub_ui.cancel_btn.clicked.connect(self.cancel_sub_ui.reject)
-
-    def cancel_sub(self):
-        if not self.cancel_sub_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
-        else:
-            api.cancel(self.subscription_repo, self.subscription)
-            self.cancelled = True
-            Dialog.info("Éxito", f"La inscripción del cliente '{self.subscription.client.name}' a la actividad "
-                                 f"'{self.subscription.activity.name}' fue cancelada.")
-            self.cancel_sub_ui.activity_line.window().close()
-
-
-class CancelSubUI(QDialog):
-    def __init__(self, subscription_repo: SubscriptionRepo, subscription: Subscription) -> None:
-        super().__init__()
-        self._setup_ui()
-        self.controller = CancelSubController(self, subscription_repo, subscription)
-
-    def _setup_ui(self):
-        self.setWindowTitle("Cancelar inscripción")
-
-        self.layout = QVBoxLayout(self)
-
-        self.form_layout = QGridLayout()
-        self.layout.addLayout(self.form_layout)
-
-        # Activity.
-        self.name_lbl = QLabel(self)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Actividad")
-
-        self.activity_line = QLineEdit(self)
-        self.form_layout.addWidget(self.activity_line, 0, 1)
-        config_line(self.activity_line, enabled=False)
-
-        # Responsible
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 1, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = Field(String, self, max_len=constants.CLIENT_NAME_CHARS)
-        self.form_layout.addWidget(self.responsible_field, 1, 1)
-        config_line(self.responsible_field, place_holder="Responsable")
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))

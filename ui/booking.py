@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from datetime import date, datetime
 from typing import TypeAlias
 
@@ -15,11 +16,13 @@ from gym_manager.booking.core import (
 from gym_manager.core import constants
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
+from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
+from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
-from ui.widgets import FilterHeader, PageIndex, Field, Dialog
+from ui.widgets import FilterHeader, PageIndex, Field, Dialog, responsible_field
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
 
@@ -30,12 +33,13 @@ class MainController:
 
     def __init__(
             self, main_ui: BookingMainUI, client_repo: ClientRepo, transaction_repo: TransactionRepo,
-            booking_system: BookingSystem
+            booking_system: BookingSystem, security_handler: SecurityHandler
     ) -> None:
         self.main_ui = main_ui
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
         self.booking_system = booking_system
+        self.security_handler = security_handler
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
         self._bookings: dict[int, ScheduleColumn] = {}
 
@@ -104,7 +108,7 @@ class MainController:
             Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
         else:
             # noinspection PyAttributeOutsideInit
-            self._create_ui = CreateUI(self.client_repo, self.booking_system, when)
+            self._create_ui = CreateUI(self.client_repo, self.booking_system, self.security_handler, when)
             self._create_ui.exec_()
             if self._create_ui.controller.booking is not None:
                 self._load_booking(self._create_ui.controller.booking)
@@ -119,20 +123,24 @@ class MainController:
         booking = self._bookings[row][col]
         if when > date.today() or (when == datetime.now().date() and booking.end > datetime.now().time()):
             Dialog.info("Error", "No se puede cobrar un turno que todavía no terminó.")
-        elif booking.was_paid(when):
+            return
+        if booking.was_paid(when):
             Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
                                  f"'{booking.transaction.id}'")
-        else:
-            # noinspection PyAttributeOutsideInit
-            self._charge_ui = ChargeUI(self.transaction_repo, booking.client, self.booking_system.activity.price,
-                                       String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30))
-            self._charge_ui.exec_()
-            transaction = self._charge_ui.controller.transaction
-            if transaction is not None:
-                self.booking_system.register_charge(booking, when, transaction)
-                text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
-                        f"{' (Pago)' if booking.was_paid(when) else ''}")
-                self.main_ui.booking_table.item(row, col).setText(text)
+            return
+
+        register_booking_charge = functools.partial(self.booking_system.register_charge, booking, when)
+        # noinspection PyAttributeOutsideInit
+        self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler, booking.client,
+                                   self.booking_system.activity.price,
+                                   String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30),
+                                   register_booking_charge)
+        self._charge_ui.exec_()
+        transaction = self._charge_ui.controller.transaction
+        if transaction is not None:
+            text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                    f"{' (Pago)' if booking.was_paid(when) else ''}")
+            self.main_ui.booking_table.item(row, col).setText(text)
 
     def cancel_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
@@ -148,7 +156,7 @@ class MainController:
             Dialog.info("Error", "No se puede cancelar un turno que ya cobrado.")
         else:
             # noinspection PyAttributeOutsideInit
-            self._cancel_ui = CancelUI(self.booking_system, to_cancel, when)
+            self._cancel_ui = CancelUI(self.booking_system, self.security_handler, to_cancel, when)
             self._cancel_ui.exec_()
             if self._cancel_ui.controller.cancelled:
                 self.main_ui.booking_table.takeItem(row, col)
@@ -168,11 +176,12 @@ class MainController:
 class BookingMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem
+            self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem,
+            security_handler: SecurityHandler
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, transaction_repo, booking_system)
+        self.controller = MainController(self, client_repo, transaction_repo, booking_system, security_handler)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")
@@ -237,10 +246,14 @@ class BookingMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem, when: date) -> None:
+    def __init__(
+            self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem,
+            security_handler: SecurityHandler, when: date
+    ) -> None:
         self.create_ui = create_ui
         self.client_repo = client_repo
         self.booking_system = booking_system
+        self.security_handler = security_handler
         self.when = when
         self.booking: Booking | None = None
 
@@ -281,8 +294,6 @@ class CreateController:
 
         if client is None:
             Dialog.info("Error", "Seleccione un cliente.")
-        elif not self.create_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo 'Responsable' no es válido.")
         elif self.booking_system.out_of_range(start_block.start, duration):
             Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
                                  f"'{self.booking_system.end}'.")
@@ -290,19 +301,24 @@ class CreateController:
                                                        self.create_ui.fixed_checkbox.isChecked()):
             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
         else:
-            responsible = self.create_ui.responsible_field.value()
-            self.booking = self.booking_system.book(court, client, self.create_ui.fixed_checkbox.isChecked(), self.when,
-                                                    start_block.start, duration)
-            Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
-            self.create_ui.client_combobox.window().close()
+            try:
+                self.security_handler.current_responsible = self.create_ui.responsible_field.value()
+                self.booking = self.booking_system.book(court, client, self.create_ui.fixed_checkbox.isChecked(),
+                                                        self.when, start_block.start, duration)
+                Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
+                self.create_ui.client_combobox.window().close()
+            except SecurityError as sec_err:
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class CreateUI(QDialog):
 
-    def __init__(self, client_repo: ClientRepo, booking_system: BookingSystem, when: date) -> None:
+    def __init__(
+            self, client_repo: ClientRepo, booking_system: BookingSystem, security_handler: SecurityHandler, when: date
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, client_repo, booking_system, when)
+        self.controller = CreateController(self, client_repo, booking_system, security_handler, when)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
@@ -356,9 +372,9 @@ class CreateUI(QDialog):
         # Responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 5, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 5, 1)
         config_line(self.responsible_field)
 
@@ -392,9 +408,13 @@ class CreateUI(QDialog):
 
 class CancelController:
 
-    def __init__(self, cancel_ui: CancelUI, booking_system: BookingSystem, to_cancel: Booking, when: date) -> None:
+    def __init__(
+            self, cancel_ui: CancelUI, booking_system: BookingSystem, security_handler: SecurityHandler,
+            to_cancel: Booking, when: date
+    ) -> None:
         self.cancel_ui = cancel_ui
         self.booking_system = booking_system
+        self.security_handler = security_handler
         self.to_cancel = to_cancel
         self.when = when
         self.cancelled = False
@@ -413,15 +433,14 @@ class CancelController:
         self.cancel_ui.cancel_btn.clicked.connect(self.cancel_ui.reject)
 
     def cancel(self):
-        if not self.cancel_ui.responsible_field.valid_value():
-            Dialog.info("Error", "El campo responsable no es válido.")
-        else:
+        try:
+            self.security_handler.current_responsible = self.cancel_ui.responsible_field.value()
             definitely_cancelled = True
             if self.to_cancel.is_fixed:
                 definitely_cancelled = Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?",
                                                       ok_btn_text="Si", cancel_btn_text="No")
             # noinspection PyTypeChecker
-            self.booking_system.cancel(self.to_cancel, self.cancel_ui.responsible_field.value(), self.when,
+            self.booking_system.cancel(self.to_cancel, self.security_handler.current_responsible.name, self.when,
                                        definitely_cancelled, datetime.now())
             self.cancelled = True
 
@@ -430,14 +449,18 @@ class CancelController:
             else:
                 Dialog.info("Éxito", "El turno ha sido cancelado correctamente.")
             self.cancel_ui.client_line.window().close()
+        except SecurityError as sec_err:
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class CancelUI(QDialog):
 
-    def __init__(self, booking_system: BookingSystem, to_cancel: Booking, when: date) -> None:
+    def __init__(
+            self, booking_system: BookingSystem, security_handler: SecurityHandler, to_cancel: Booking, when: date
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CancelController(self, booking_system, to_cancel, when)
+        self.controller = CancelController(self, booking_system, security_handler, to_cancel, when)
 
     def _setup_ui(self):
         self.setWindowTitle("Cancelar turno")
@@ -505,9 +528,9 @@ class CancelUI(QDialog):
         # Cancellation responsible.
         self.responsible_lbl = QLabel(self)
         self.form_layout.addWidget(self.responsible_lbl, 7, 0)
-        config_lbl(self.responsible_lbl, "Responsable*")
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, self, max_len=constants.TRANSACTION_RESP_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 7, 1)
         config_line(self.responsible_field, place_holder="Responsable")
 
@@ -557,7 +580,7 @@ class HistoryController:
 
         # Configures the page index.
         self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
-                                          page_len=2, show_info=False)
+                                          page_len=20, show_info=False)
 
         # Fills the table.
         self.history_ui.filter_header.on_search_click()

@@ -2,16 +2,20 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from typing import Iterable
+from typing import Iterable, TypeAlias, Callable
 
 from gym_manager.core.base import (
     String, Transaction, Client, Activity, Subscription, Currency, OperationalError, Balance, InvalidDate
 )
 from gym_manager.core.persistence import TransactionRepo, SubscriptionRepo, BalanceRepo
+from gym_manager.core.security import log_responsible
 
 logger = logging.getLogger(__name__)
 
+CreateTransactionFn: TypeAlias = Callable[[], Transaction]
 
+
+@log_responsible(action_tag="subscribe", action_name="Inscribir")
 def subscribe(
         subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity,
         transaction: Transaction | None = None
@@ -47,7 +51,7 @@ def subscribe(
     client.add(subscription)
 
     # noinspection PyUnresolvedReferences
-    logger.info(
+    logger.getChild(__name__).info(
         f"Client [dni={client.dni}] subscribed to activity [activity_name={activity.name}], with [payment="
         f"{'None' if transaction is None else transaction.id}]."
     )
@@ -55,6 +59,7 @@ def subscribe(
     return subscription
 
 
+@log_responsible(action_tag="cancel", action_name="Desinscribir")
 def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> None:
     """Cancels the *subscription*.
 
@@ -65,21 +70,24 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     subscription.client.unsubscribe(subscription.activity)
     subscription_repo.remove(subscription)
 
-    logger.info(
+    logger.getChild(__name__).info(
         f"Client [dni={subscription.client.dni}] unsubscribed of activity [activity_name={subscription.activity.name}]."
     )
 
 
+@log_responsible(action_tag="register_subscription_charge", action_name="Cobro actividad")
 def register_subscription_charge(
-        subscription_repo: SubscriptionRepo, subscription: Subscription, transaction: Transaction
-):
+        subscription_repo: SubscriptionRepo, subscription: Subscription, create_transaction_fn: CreateTransactionFn
+) -> Transaction:
     """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
         subscription_repo: repository implementation that registers subscriptions.
         subscription: subscription being charged.
-        transaction: transaction generated when the client was charged.
+        create_transaction_fn: function used to create the associated transaction.
     """
+    transaction = create_transaction_fn()
+
     if subscription.activity.charge_once:
         raise OperationalError(f"The [activity={subscription.activity.name}] is not subscribeable")
     if subscription.client != transaction.client:
@@ -89,9 +97,13 @@ def register_subscription_charge(
     subscription.transaction = transaction  # Links the transaction with the subscription.
     subscription_repo.update(subscription)
 
-    logger.info(f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
-                f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
-                f"{subscription.activity.price}].")
+    logger.getChild(__name__).info(
+        f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
+        f" for the activity [activity_name={subscription.activity.name}] with an amount [amount="
+        f"{subscription.activity.price}]."
+    )
+
+    return transaction
 
 
 def extract(
@@ -113,7 +125,7 @@ def extract(
     """
     transaction = transaction_repo.create("Extracción", when, amount, method, responsible, description.as_primitive())
 
-    logger.info(f"Responsible [responsible={responsible}] extracted an amount [amount={amount}].")
+    logger.getChild(__name__).info(f"Responsible [responsible={responsible}] extracted an amount [amount={amount}].")
 
     return transaction
 
@@ -143,12 +155,14 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
     return balance
 
 
-def close_balance(
+@log_responsible(action_tag="close_balance", action_name="Cierre caja diaria")
+def close_balance(  # ToDo Integrate test with generate_balance().
         transaction_repo: TransactionRepo,
         balance_repo: BalanceRepo,
         balance: Balance,
         balance_date: date,
-        responsible: String
+        responsible: String,
+        create_extraction_fn: CreateTransactionFn | None = None
 ):
     """Closes the *balance*, save it in the repository and bind the transactions to the balance.
 
@@ -158,17 +172,28 @@ def close_balance(
         balance: balance to close.
         balance_date: date when the balance was done.
         responsible: responsible for closing the balance.
+        create_extraction_fn: function used to create the extraction.
+
     """
+    if balance_repo.balance_done(balance_date):
+        raise OperationalError(f"Daily balance for the [balance_date={balance_date}] was already done.")
+
+    if create_extraction_fn is not None:
+        # Creates the extraction done at the end of the day.
+        extraction = create_extraction_fn()
+
+        # Adds the extraction to the balance. ToDo refactor this into Balance class.
+        if extraction.method not in balance["Extracción"]:
+            balance["Extracción"][extraction.method] = Currency(0)
+        balance["Extracción"][extraction.method].increase(extraction.amount)
+        balance["Extracción"]["Total"].increase(extraction.amount)
+
     balance_repo.add(balance_date, responsible, balance)
 
-    if balance_repo.balance_done(balance_date):
-        transaction_gen = transaction_repo.all(page=1, balance_date=balance_date)
-    else:
-        transaction_gen = transaction_repo.all(page=1, include_closed=False)
-
+    transaction_gen = transaction_repo.all(page=1, include_closed=False)
     for transaction in transaction_gen:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
 
-    logger.info(f"Responsible [responsible={responsible}] closed the balance [balance={balance}] of [balance_date="
-                f"{balance_date}].")
+    logger.getChild(__name__).info(f"Responsible [responsible={responsible}] closed the balance [balance={balance}] of "
+                                   f"[balance_date={balance_date}].")

@@ -1,3 +1,4 @@
+import functools
 from datetime import date, time, datetime, timedelta
 from typing import Generator
 
@@ -10,6 +11,8 @@ from gym_manager.booking.core import (
 from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.security import log_responsible
+from test.test_core_api import MockSecurityHandler
 
 
 class MockBookingRepo(BookingRepo):
@@ -74,6 +77,16 @@ class MockBookingRepo(BookingRepo):
 
     def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         pass
+
+
+@pytest.fixture
+def empty_resp():
+    return String("", optional=True, max_len=30)
+
+
+@pytest.fixture
+def resp_name():
+    return String("TestResp", optional=True, max_len=30)
 
 
 def test_timeRange():
@@ -196,6 +209,18 @@ def test_BookingSystem_blockRange():
         booking_system.block_range(time(7, 0), time(12, 0))
         # end out of range.
         booking_system.block_range(time(8, 0), time(12, 30))
+
+
+def test_BookingSystem_outOfRange():
+    # noinspection PyTypeChecker
+    booking_system = BookingSystem(courts_names=("1", "2"), durations=(), start=time(8, 0), end=time(23, 0),
+                                   minute_step=60, activity=None, repo=MockBookingRepo())
+
+    assert not booking_system.out_of_range(time(11, 30), Duration(30, ""))
+    assert booking_system.out_of_range(time(22, 0), Duration(90, ""))
+    assert not booking_system.out_of_range(time(21, 30), Duration(90, ""))
+    assert booking_system.out_of_range(time(22, 30), Duration(90, ""))
+    assert booking_system.out_of_range(time(22, 30), Duration(180, ""))
 
 
 def test_FixedBooking_wasPaid():
@@ -377,6 +402,8 @@ def test_BookingSystem_bookings():
 
 
 def test_integration_registerCharge_fixedBooking():
+    log_responsible.config(MockSecurityHandler())
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -396,17 +423,21 @@ def test_integration_registerCharge_fixedBooking():
 
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
-    transaction = transaction_repo.create("dummy_type", booking_date, dummy_activity.price, "dummy_method",
-                                          String("TestResp", max_len=20), "test_desc", dummy_client)
 
-    booking_system.register_charge(booking, booking_date, transaction)
+    create_transaction_fn = functools.partial(
+        transaction_repo.create, "Cobro", booking_date, dummy_activity.price, "dummy_method",
+        String("dummy_resp", max_len=20), "dummy_descr", dummy_client
+    )
+    transaction = booking_system.register_charge(booking, booking_date, create_transaction_fn)
 
     # The length of all temporal bookings is checked to ensure that the charge was registered.
     assert booking.transaction == transaction and len([b for b in booking_repo.all_temporal()]) == 1
     assert booking.transaction == [b for b in booking_repo.all_fixed()][0].transaction
 
 
-def test_integration_cancelTemporary_fixedBooking():
+def test_integration_cancelTemporary_fixedBooking(resp_name):
+    log_responsible.config(MockSecurityHandler())
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -426,11 +457,9 @@ def test_integration_cancelTemporary_fixedBooking():
 
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
-    transaction = transaction_repo.create("dummy_type", booking_date, dummy_activity.price, "dummy_method",
-                                          String("TestResp", max_len=20), "test_desc", dummy_client)
 
     # Feature being test.
-    booking_system.cancel(booking, String("TestResp", max_len=20), booking_date, False)
+    booking_system.cancel(booking, resp_name, booking_date, False)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
@@ -441,7 +470,9 @@ def test_integration_cancelTemporary_fixedBooking():
             and len([c for c in booking_repo.cancelled()]) == 1)
 
 
-def test_integration_cancelDefinitely_fixedBooking():
+def test_integration_cancelDefinitely_fixedBooking(resp_name):
+    log_responsible.config(MockSecurityHandler())
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -461,11 +492,9 @@ def test_integration_cancelDefinitely_fixedBooking():
 
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
-    transaction = transaction_repo.create("dummy_type", booking_date, dummy_activity.price, "dummy_method",
-                                          String("TestResp", max_len=20), "test_desc", dummy_client)
 
     # Feature being test.
-    booking_system.cancel(booking, String("TestResp", max_len=20), booking_date, True)
+    booking_system.cancel(booking, resp_name, booking_date, True)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
@@ -475,7 +504,9 @@ def test_integration_cancelDefinitely_fixedBooking():
             and len([c for c in booking_repo.cancelled()]) == 1)
 
 
-def test_integration_cancelDefinitely_tempBooking():
+def test_integration_cancelDefinitely_tempBooking(resp_name):
+    log_responsible.config(MockSecurityHandler())
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -497,7 +528,7 @@ def test_integration_cancelDefinitely_tempBooking():
     booking = booking_system.book("1", dummy_client, False, booking_date, time(8, 0), Duration(60, "1h"))
 
     # Feature being test.
-    booking_system.cancel(booking, String("TestResp", max_len=20), booking_date, True)
+    booking_system.cancel(booking, resp_name, booking_date, True)
 
     all_temp = [b for b in booking_repo.all_temporal()]
     # noinspection PyUnresolvedReferences

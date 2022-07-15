@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import Generator, Iterable
 
-from peewee import (SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-                    CompositeKey, prefetch, Proxy, chunked, JOIN)
+from peewee import (
+    SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
+    CompositeKey, prefetch, Proxy, chunked, JOIN, IntegrityError, DateTimeField)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core import constants
@@ -14,6 +15,7 @@ from gym_manager.core.base import Client, Number, String, Currency, Activity, Tr
 from gym_manager.core.persistence import (
     ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
     BalanceRepo, FilterValuePair, PersistenceError)
+from gym_manager.core.security import log_responsible, SecurityRepo, Responsible, Action
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +136,7 @@ class SqliteClientRepo(ClientRepo):
         if self._do_caching:
             self.cache[client.dni] = client
 
+    @log_responsible(action_tag="remove_client", action_name="Eliminar cliente")
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
@@ -148,6 +151,7 @@ class SqliteClientRepo(ClientRepo):
             self.cache.pop(client.dni)
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
+    @log_responsible(action_tag="update_client", action_name="Actualizar cliente")
     def update(self, client: Client):
         ClientTable.replace(dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(),
@@ -266,6 +270,7 @@ class SqliteActivityRepo(ActivityRepo):
 
         raise KeyError(f"There is no activity with the id '{name}'")
 
+    @log_responsible(action_tag="remove_activity", action_name="Eliminar actividad")
     def remove(self, activity: Activity):
         """Removes the given *activity*.
 
@@ -279,6 +284,7 @@ class SqliteActivityRepo(ActivityRepo):
             self.cache.pop(activity.name)
         ActivityTable.delete_by_id(activity.name)
 
+    @log_responsible(action_tag="update_activity", action_name="Actualizar actividad")
     def update(self, activity: Activity):
         ActivityTable.replace(act_name=activity.name.as_primitive(),
                               price=str(activity.price),
@@ -544,3 +550,55 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         if subscription.transaction is not None:
             sub_record.transaction_id = subscription.transaction.id
         sub_record.save()
+
+
+class ResponsibleTable(Model):
+    resp_code = CharField(primary_key=True)
+    resp_name = CharField()
+
+    class Meta:
+        database = DATABASE_PROXY
+
+
+class ActionTable(Model):
+    id = IntegerField(primary_key=True)
+    when = DateTimeField()
+    responsible = ForeignKeyField(ResponsibleTable, backref="actions")
+    action_tag = CharField()
+    action_name = CharField()
+
+    class Meta:
+        database = DATABASE_PROXY
+
+
+class SqliteSecurityRepo(SecurityRepo):
+
+    def __init__(self) -> None:
+        DATABASE_PROXY.create_tables([ResponsibleTable, ActionTable])
+
+    def responsible(self) -> Generator[Responsible, None, None]:
+        for record in ResponsibleTable.select():
+            # ToDo This String don't need validation.
+            yield Responsible(String(record.resp_name, max_len=30), String(record.resp_code, max_len=30))
+
+    def add_responsible(self, *responsible):
+        try:
+            for resp in responsible:
+                ResponsibleTable.create(resp_code=resp.code, resp_name=resp.name)
+        except IntegrityError:
+            pass
+
+    def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
+        ActionTable.create(when=when, responsible_id=responsible.code.as_primitive(), action_tag=action_tag,
+                           action_name=action_name)
+
+    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
+        actions_q = ActionTable.select()
+        actions_q = actions_q.paginate(page, page_len)
+
+        for record in prefetch(actions_q, ResponsibleTable.select()):
+            # ToDo those Strings don't need validation.
+            resp = Responsible(String(record.responsible.resp_name, max_len=30),
+                               String(record.responsible.resp_code, max_len=30))
+            yield record.when, resp, record.action_tag, record.action_name
+

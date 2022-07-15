@@ -6,8 +6,10 @@ from collections import namedtuple
 from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator, TypeAlias
 
+from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String
 from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.security import log_responsible
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
 
@@ -381,7 +383,8 @@ class BookingSystem:
         range that is valid, False otherwise.
         """
         end = combine(date.min, start, duration).time()
-        return start < self.start or end > self.end
+        #  The last check covers situations where the end time falls on the next day.
+        return start < self.start or end > self.end or end < self.start
 
     def booking_available(self, when: date, court: str, start: time, duration: Duration, is_fixed: bool) -> bool:
         """Returns True if there is enough free time for a booking in *court*, that starts at *start_block* and has the
@@ -403,6 +406,7 @@ class BookingSystem:
                 return False
         return True
 
+    @log_responsible(action_tag="create_booking", action_name="Reservar turno")
     def book(
             self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
     ) -> Booking:
@@ -429,6 +433,7 @@ class BookingSystem:
         self.repo.add(booking)
         return booking
 
+    @log_responsible(action_tag="cancel_booking", action_name="Cancelar turno")
     def cancel(
             self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
             cancel_datetime: datetime | None = None
@@ -438,13 +443,20 @@ class BookingSystem:
         if not definitely_cancelled:
             booking.cancel(booking_date)
         cancel_datetime = datetime.now() if cancel_datetime is None else cancel_datetime
-        # ToDo here should go the call to ResponsibleLogger, so the id of the new log is generated, and can be used to as FK in the cancellations log.
         self.repo.cancel(booking, definitely_cancelled)
         self.repo.log_cancellation(cancel_datetime, responsible, booking, definitely_cancelled)
 
-    def register_charge(self, booking: Booking, booking_date: date, transaction: Transaction):
-        booking.transaction, booking.when = transaction, booking_date
+    @log_responsible(action_tag="charge_booking", action_name="Cobrar turno")
+    def register_charge(
+            self, booking: Booking, booking_date: date, create_transaction_fn: CreateTransactionFn
+    ) -> Transaction:
+        transaction = create_transaction_fn()
+
+        booking.transaction = transaction
+        booking.when = booking_date
         self.repo.charge(booking, transaction)
+
+        return transaction
 
 
 class BookingRepo(abc.ABC):
