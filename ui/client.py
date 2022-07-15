@@ -20,7 +20,7 @@ from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
 
 
 class MainController:
@@ -577,7 +577,7 @@ class AddSubUI(QDialog):
         self.form_layout.addWidget(self.responsible_lbl, 1, 0)
         config_lbl(self.responsible_lbl, "Responsable")
 
-        self.responsible_field = Field(String, self, optional=True, max_len=constants.CLIENT_NAME_CHARS)
+        self.responsible_field = responsible_field(self)
         self.form_layout.addWidget(self.responsible_field, 1, 1)
         config_line(self.responsible_field, place_holder="Responsable")
 
