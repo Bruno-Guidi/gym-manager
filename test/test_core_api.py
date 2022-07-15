@@ -9,11 +9,13 @@ from gym_manager.core.base import (
     Client, Number, String, Activity, Currency, Subscription, OperationalError,
     Transaction, InvalidDate)
 from gym_manager.core.security import (
-    SecurityHandler, log_responsible, SimpleSecurityHandler, SecurityError,
-    Responsible)
+    SecurityHandler, log_responsible, Responsible)
 
 
 class MockSecurityHandler(SecurityHandler):
+
+    def add_responsible(self, *responsible):
+        pass
 
     @property
     def current_responsible(self) -> Responsible:

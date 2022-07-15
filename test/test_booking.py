@@ -11,7 +11,7 @@ from gym_manager.booking.core import (
 from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
-from gym_manager.core.security import log_responsible, SimpleSecurityHandler
+from gym_manager.core.security import log_responsible
 from test.test_core_api import MockSecurityHandler
 
 

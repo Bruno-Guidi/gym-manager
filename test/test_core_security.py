@@ -14,6 +14,9 @@ class MockSecurityRepo(SecurityRepo):
         for resp in to_yield:
             yield resp
 
+    def add_responsible(self, *responsible):
+        pass
+
 
 def test_SimpleSecurityHandler_currentResponsibleSetter():
     security_handler = SimpleSecurityHandler(MockSecurityRepo(), action_tags=set(), needs_responsible=set())
