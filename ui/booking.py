@@ -557,7 +557,7 @@ class HistoryController:
 
         # Configures the page index.
         self.history_ui.page_index.config(refresh_table=self.history_ui.filter_header.on_search_click,
-                                          page_len=2, show_info=False)
+                                          page_len=20, show_info=False)
 
         # Fills the table.
         self.history_ui.filter_header.on_search_click()
