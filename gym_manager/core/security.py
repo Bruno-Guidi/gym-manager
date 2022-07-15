@@ -158,6 +158,10 @@ class SimpleSecurityHandler(SecurityHandler):
 
     @current_responsible.setter
     def current_responsible(self, responsible_id: String):
+        # The responsible field was empty. Do nothing, this situation is covered log_responsible decorator.
+        if len(responsible_id) == 0:
+            return
+
         # The *responsible_id* must match with an existing name or id.
         if not (responsible_id in self._responsible_dict or responsible_id in self._responsible_dict):
             raise SecurityError(f"Responsible [responsible_id={responsible_id}] not recognized.",
