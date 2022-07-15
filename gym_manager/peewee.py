@@ -14,7 +14,7 @@ from gym_manager.core.base import Client, Number, String, Currency, Activity, Tr
 from gym_manager.core.persistence import (
     ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
     BalanceRepo, FilterValuePair, PersistenceError)
-from gym_manager.core.security import log_responsible
+from gym_manager.core.security import log_responsible, SecurityRepo, Responsible
 
 logger = logging.getLogger(__name__)
 
@@ -549,3 +549,22 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         if subscription.transaction is not None:
             sub_record.transaction_id = subscription.transaction.id
         sub_record.save()
+
+
+class ResponsibleTable(Model):
+    resp_code = CharField(primary_key=True)
+    resp_name = CharField()
+
+    class Meta:
+        database = DATABASE_PROXY
+
+
+class SqliteSecurityRepo(SecurityRepo):
+
+    def __init__(self) -> None:
+        DATABASE_PROXY.create_tables([ResponsibleTable])
+
+    def responsible(self) -> Generator[Responsible, None, None]:
+        for record in ResponsibleTable.select():
+            # ToDo This String don't need validation.
+            yield Responsible(String(record.resp_name, max_len=30), String(record.resp_code, max_len=30))
