@@ -167,7 +167,7 @@ class DailyBalanceController:
                 # noinspection PyTypeChecker
                 create_extraction_fn = functools.partial(
                     self.transaction_repo.create, "Extracción", today, self.daily_balance_ui.extract_field.value(),
-                    self.daily_balance_ui.method_combobox.currentText(), self.daily_balance_ui.responsible_field.value(),
+                    self.daily_balance_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
                     description=f"Extracción al cierre de caja diaria del día {today}."
                 )
                 # noinspection PyTypeChecker
@@ -477,13 +477,14 @@ class ChargeController:
         self.charge_ui.cancel_btn.clicked.connect(self.charge_ui.reject)
 
     def charge(self):
-        create_transaction_fn = functools.partial(
-            self.transaction_repo.create, "Cobro", date.today(), self.amount,
-            self.charge_ui.method_combobox.currentText(), self.charge_ui.responsible_field.value(),
-            self.charge_ui.descr_text.toPlainText(), self.client
-        )
         try:
             self.security_handler.current_responsible = self.charge_ui.responsible_field.value()
+
+            create_transaction_fn = functools.partial(
+                self.transaction_repo.create, "Cobro", date.today(), self.amount,
+                self.charge_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                self.charge_ui.descr_text.toPlainText(), self.client
+            )
             self.transaction = self.post_charge_fn(create_transaction_fn)
             Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
             self.charge_ui.descr_text.window().close()
