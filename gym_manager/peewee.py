@@ -596,8 +596,6 @@ class SqliteSecurityRepo(SecurityRepo):
         actions_q = ActionTable.select()
         actions_q = actions_q.paginate(page, page_len)
 
-        print(ActionTable.select().count())
-
         for record in prefetch(actions_q, ResponsibleTable.select()):
             # ToDo those Strings don't need validation.
             resp = Responsible(String(record.responsible.resp_name, max_len=30),
