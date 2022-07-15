@@ -54,8 +54,6 @@ def main(security_handler: SecurityHandler):
     app = QApplication(sys.argv)
     app.setStyleSheet(stylesheet)
 
-    peewee.create_database("test.db")
-
     activity_repo = peewee.SqliteActivityRepo()
     transaction_repo = peewee.SqliteTransactionRepo(methods=("Efectivo", "Débito", "Crédito"))
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
@@ -86,10 +84,13 @@ def main(security_handler: SecurityHandler):
 if __name__ == "__main__":
     os.makedirs(os.path.dirname("logs/gym_manager.log"), exist_ok=True)
     config.dictConfig(log_config)
+
+    peewee.create_database("test.db")
     peewee_logger = logging.getLogger("peewee")
     peewee_logger.setLevel(logging.WARNING)
 
     sec_handler = SimpleSecurityHandler(
+        peewee.SqliteSecurityRepo(),
         action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
                      "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
                      "create_booking"},
