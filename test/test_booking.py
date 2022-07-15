@@ -10,6 +10,7 @@ from gym_manager.booking.core import (
 from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
 from gym_manager.core.base import Client, Activity, String, Currency, Transaction, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.security import log_responsible, SimpleSecurityHandler
 
 
 class MockBookingRepo(BookingRepo):
@@ -74,6 +75,16 @@ class MockBookingRepo(BookingRepo):
 
     def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         pass
+
+
+@pytest.fixture
+def empty_resp():
+    return String("", optional=True, max_len=30)
+
+
+@pytest.fixture
+def resp():
+    return String("TestResp", optional=True, max_len=30)
 
 
 def test_timeRange():
@@ -406,7 +417,10 @@ def test_integration_registerCharge_fixedBooking():
     assert booking.transaction == [b for b in booking_repo.all_fixed()][0].transaction
 
 
-def test_integration_cancelTemporary_fixedBooking():
+def test_integration_cancelTemporary_fixedBooking(resp):
+    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "cancel_booking"},
+                                                 needs_responsible={"create_booking", "cancel_booking"}))
+
     # Set up.
     peewee.create_database(":memory:")
 
@@ -426,11 +440,10 @@ def test_integration_cancelTemporary_fixedBooking():
 
     booking_date = date(2022, 7, 11)
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
-    transaction = transaction_repo.create("dummy_type", booking_date, dummy_activity.price, "dummy_method",
-                                          String("TestResp", max_len=20), "test_desc", dummy_client)
 
     # Feature being test.
-    booking_system.cancel(booking, String("TestResp", max_len=20), booking_date, False)
+    log_responsible.handler.current_responsible = resp
+    booking_system.cancel(booking, resp, booking_date, False)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
@@ -441,7 +454,9 @@ def test_integration_cancelTemporary_fixedBooking():
             and len([c for c in booking_repo.cancelled()]) == 1)
 
 
-def test_integration_cancelDefinitely_fixedBooking():
+def test_integration_cancelDefinitely_fixedBooking(resp):
+    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "cancel_booking"},
+                                                 needs_responsible={"create_booking", "cancel_booking"}))
     # Set up.
     peewee.create_database(":memory:")
 
@@ -465,7 +480,8 @@ def test_integration_cancelDefinitely_fixedBooking():
                                           String("TestResp", max_len=20), "test_desc", dummy_client)
 
     # Feature being test.
-    booking_system.cancel(booking, String("TestResp", max_len=20), booking_date, True)
+    log_responsible.handler.current_responsible = resp
+    booking_system.cancel(booking, resp, booking_date, True)
 
     all_fixed = [b for b in booking_repo.all_fixed()]
     # noinspection PyUnresolvedReferences
@@ -475,7 +491,9 @@ def test_integration_cancelDefinitely_fixedBooking():
             and len([c for c in booking_repo.cancelled()]) == 1)
 
 
-def test_integration_cancelDefinitely_tempBooking():
+def test_integration_cancelDefinitely_tempBooking(resp):
+    log_responsible.config(SimpleSecurityHandler(action_tags={"create_booking", "cancel_booking"},
+                                                 needs_responsible={"create_booking", "cancel_booking"}))
     # Set up.
     peewee.create_database(":memory:")
 
@@ -497,7 +515,8 @@ def test_integration_cancelDefinitely_tempBooking():
     booking = booking_system.book("1", dummy_client, False, booking_date, time(8, 0), Duration(60, "1h"))
 
     # Feature being test.
-    booking_system.cancel(booking, String("TestResp", max_len=20), booking_date, True)
+    log_responsible.handler.current_responsible = resp
+    booking_system.cancel(booking, resp, booking_date, True)
 
     all_temp = [b for b in booking_repo.all_temporal()]
     # noinspection PyUnresolvedReferences

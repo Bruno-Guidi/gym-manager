@@ -8,6 +8,7 @@ from typing import Iterable, Generator, TypeAlias
 
 from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String
 from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.security import log_responsible
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
 
@@ -429,6 +430,7 @@ class BookingSystem:
         self.repo.add(booking)
         return booking
 
+    @log_responsible(action_tag="cancel_booking", action_name="Cancelar turno")
     def cancel(
             self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
             cancel_datetime: datetime | None = None
@@ -438,7 +440,6 @@ class BookingSystem:
         if not definitely_cancelled:
             booking.cancel(booking_date)
         cancel_datetime = datetime.now() if cancel_datetime is None else cancel_datetime
-        # ToDo here should go the call to ResponsibleLogger, so the id of the new log is generated, and can be used to as FK in the cancellations log.
         self.repo.cancel(booking, definitely_cancelled)
         self.repo.log_cancellation(cancel_datetime, responsible, booking, definitely_cancelled)
 
