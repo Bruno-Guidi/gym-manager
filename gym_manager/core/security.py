@@ -133,10 +133,10 @@ class SimpleSecurityHandler(SecurityHandler):
                              f"action_tags={action_tags}].")
 
         self.security_repo = security_repo
-        self._responsible_names, self._responsible_codes = set(), set()
+        self._responsible_dict: dict[String, Responsible] = {}  # Keys can be responsible codes or names.
         for responsible in security_repo.responsible():
-            self._responsible_names.add(responsible.name)
-            self._responsible_codes.add(responsible.code)
+            self._responsible_dict[responsible.code] = responsible
+            self._responsible_dict[responsible.name] = responsible
 
         self._responsible = String("", optional=True, max_len=30)
 
@@ -150,7 +150,7 @@ class SimpleSecurityHandler(SecurityHandler):
     @current_responsible.setter
     def current_responsible(self, responsible_id: String):
         # The *responsible_id* must match with an existing name or id.
-        if not (responsible_id in self._responsible_names or responsible_id in self._responsible_codes):
+        if not (responsible_id in self._responsible_dict or responsible_id in self._responsible_dict):
             raise SecurityError(f"Responsible [responsible_id={responsible_id}] not recognized.",
                                 code=SecurityError.INVALID_RESP)
         self._responsible = responsible_id
