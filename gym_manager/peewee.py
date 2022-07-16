@@ -139,7 +139,6 @@ class SqliteClientRepo(ClientRepo):
         self.cache.pop(client.dni)
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
-    @log_responsible(action_tag="update_client", action_name="Actualizar cliente")
     def update(self, client: Client):
         ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
                             admission=client.admission, birth_day=client.birth_day,
