@@ -462,16 +462,16 @@ class SqliteTransactionRepo(TransactionRepo):
             raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
 
         transactions_q = TransactionTable.select()
-        # ToDo I THINK this flag isn't necessary, but i need to do check it.
-        if not include_closed:  # Filter used when generating a balance for a day that wasn't closed.
+
+        if without_balance:  # Retrieve transactions that weren't linked to a balance.
             transactions_q = transactions_q.where(TransactionTable.balance.is_null())
-        if include_closed and balance_date is not None:  # Filter used when generating a balance for a closed day.
-            transactions_q = transactions_q.where((TransactionTable.balance == balance_date) |  # Trans in that balance.
-                                                  (TransactionTable.balance.is_null()))  # Trans after the closed balance.
+        if balance_date is not None:  # Retrieve transactions linked to the given balance.
+            transactions_q = transactions_q.where(TransactionTable.balance == balance_date)
+
+        # The left outer join is needed to include some of ClientTable attributes required by a transaction.
+        transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
+
         if filters is not None:  # Generic filters.
-            # The left outer join is required because transactions might be filtered by the client name, which isn't
-            # an attribute of TransactionTable.
-            transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
             for filter_, value in filters:
                 transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
 
