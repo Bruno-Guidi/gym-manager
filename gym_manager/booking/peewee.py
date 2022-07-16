@@ -105,15 +105,10 @@ class SqliteBookingRepo(BookingRepo):
 
     def charge(self, booking: Booking, transaction: Transaction):
         if isinstance(booking, FixedBooking):
-            FixedBookingTable.replace(day_of_week=booking.day_of_week,
-                                      court=booking.court,
-                                      start=booking.start,
-                                      client_id=booking.client.dni.as_primitive(),
-                                      end=booking.end,
-                                      transaction_id=booking.transaction.id,
-                                      first_when=booking.first_when,
-                                      last_when=booking.when,
-                                      inactive_dates=booking.inactive_dates).execute()
+            FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
+                                      client_id=booking.client.dni.as_primitive(), end=booking.end,
+                                      transaction_id=booking.transaction.id, first_when=booking.first_when,
+                                      last_when=booking.when, inactive_dates=booking.inactive_dates).execute()
             # Creates a TempBooking based on the FixedBooking, so the charging is registered.
             booking = TempBooking(booking.court, booking.client, booking.start, booking.end, booking.when, transaction,
                                   is_fixed=True)
@@ -121,11 +116,8 @@ class SqliteBookingRepo(BookingRepo):
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                    f"SqliteBookingRepo.")
 
-        BookingTable.replace(when=datetime.combine(booking.when, booking.start),
-                             court=booking.court,
-                             client_id=booking.client.dni.as_primitive(),
-                             end=booking.end,
-                             is_fixed=booking.is_fixed,
+        BookingTable.replace(when=datetime.combine(booking.when, booking.start), court=booking.court,
+                             client_id=booking.client.dni.as_primitive(), end=booking.end, is_fixed=booking.is_fixed,
                              transaction_id=transaction.id).execute()
 
     def cancel(self, booking: Booking, definitely_cancelled: bool = True):
