@@ -110,7 +110,7 @@ class SqliteClientRepo(ClientRepo):
 
     def add(self, client: Client):
         if self.is_active(client.dni):
-            raise KeyError(f"There is an existing client with the 'dni'={client.dni.as_primitive()}")
+            raise PersistenceError(f"There is an existing client with [client.dni={client.dni}].")
 
         if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()) is None:
             # The client doesn't exist in the table.
