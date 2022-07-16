@@ -8,10 +8,10 @@ from peewee import (
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager import peewee
-from gym_manager.booking.core import TempBooking, BookingRepo, Court, Booking, FixedBooking, Cancellation
-from gym_manager.core.base import Transaction, String
+from gym_manager.booking.core import TempBooking, BookingRepo, Booking, FixedBooking, Cancellation
+from gym_manager.core.base import Transaction, String, Number
 from gym_manager.core.persistence import (
-    ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError,
+    ClientRepo, TransactionRepo, FilterValuePair, PersistenceError,
     SimpleClient)
 from gym_manager.peewee import TransactionTable
 
@@ -160,7 +160,7 @@ class SqliteBookingRepo(BookingRepo):
                 bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
         for record in prefetch(bookings_q, TransactionTable.select()):
-            client = SimpleClient(record.client.dni, record.client.cli_name,
+            client = SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
                                   created_by="SqliteBookingRepo.all_temporal")
 
             trans_record, transaction = record.transaction, None
@@ -177,7 +177,8 @@ class SqliteBookingRepo(BookingRepo):
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
             transaction_record, transaction = record.transaction, None
-            client = SimpleClient(record.client.dni, record.client.cli_name, created_by="SqliteBookingRepo.all_fixed")
+            client = SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                                  created_by="SqliteBookingRepo.all_fixed")
             if transaction_record is not None:
                 transaction = self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when, transaction_record.amount,
@@ -206,7 +207,8 @@ class SqliteBookingRepo(BookingRepo):
             # ToDo retrieve client name or client proxy instead of client dni.
             yield Cancellation(
                 record.cancel_datetime, record.responsible,
-                SimpleClient(record.client.dni, record.client.cli_name, created_by="SqliteBookingRepo.cancelled"),
+                SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                             created_by="SqliteBookingRepo.cancelled"),
                 record.when, record.court, record.start, record.end, record.is_fixed, record.definitely_cancelled
             )
 
