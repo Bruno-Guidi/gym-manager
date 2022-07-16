@@ -24,7 +24,7 @@ def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
     repo.add(activity)
     with pytest.raises(PersistenceError) as p_err:
         repo.remove(activity)
-    assert str(p_err.value) == "The [activity=dummy_name] cannot be removed because its locked."
+    assert str(p_err.value) == "The [activity.name=dummy_name] cannot be removed because its locked."
 
 
 # noinspection PyTypeChecker
