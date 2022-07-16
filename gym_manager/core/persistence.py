@@ -53,6 +53,9 @@ class LRUCache:
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
         self._cache.pop(key)
 
+    def __contains__(self, key: Any) -> bool:
+        return key in self._cache
+
     def __iter__(self):
         yield from iter(self._cache.keys())
 
