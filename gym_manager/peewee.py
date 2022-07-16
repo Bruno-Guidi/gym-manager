@@ -224,9 +224,8 @@ class SqliteActivityRepo(ActivityRepo):
     """Activities repository implementation based on Sqlite and peewee ORM.
     """
 
-    # noinspection PyProtectedMember
     def __init__(self, cache_len: int = 50) -> None:
-        ActivityTable._meta.database.create_tables([ActivityTable])
+        DATABASE_PROXY.create_tables([ActivityTable])
 
         self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(str, String), value_type=Activity, max_len=cache_len)
