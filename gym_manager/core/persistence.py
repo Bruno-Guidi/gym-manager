@@ -220,6 +220,17 @@ class TransactionRepo(abc.ABC):
     def __init__(self, methods: Iterable[str] | None = None) -> None:
         self.methods = methods
 
+    @abc.abstractmethod
+    def from_data(
+            self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
+            method: str | None = None, raw_responsible: str | None = None, description: str | None = None,
+            client: Client | None = None, balance_date: date | None = None
+    ) -> Transaction:
+        """If there is an existing Transaction with the given *id_*, return it. If not, and all others arguments aren't
+        None, create a new Transaction and return it.
+        """
+        raise NotImplementedError
+
     # noinspection PyShadowingBuiltins
     @abc.abstractmethod
     def from_record(self, id, type, client: Client, when, amount, method, responsible, description):

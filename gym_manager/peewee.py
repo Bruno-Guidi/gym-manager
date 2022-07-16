@@ -410,6 +410,27 @@ class SqliteTransactionRepo(TransactionRepo):
 
         self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
 
+    def from_data(
+            self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
+            method: str | None = None, raw_responsible: str | None = None, description: str | None = None,
+            client: Client | None = None, balance_date: date | None = None
+    ) -> Transaction:
+        """If there is an existing Transaction with the given *id_*, return it. If not, and all others arguments aren't
+        None, create a new Transaction and return it.
+        """
+        if id_ in self.cache:
+            return self.cache[id_]
+
+        if not all((type_, when, raw_amount, method, raw_responsible, description)):  # Client and balance_date are opt.
+            none_args = {(arg.__name__, arg) for arg in (type_, when, raw_amount, method, raw_responsible, description)
+                         if arg is None}
+            raise PersistenceError(f"Failed to create a 'Transaction' from data because one of the arguments is None."
+                                   f"[none_args={none_args}]")
+
+        self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method,
+                                      String(raw_responsible, max_len=30), description, client, balance_date)
+        return self.cache[id_]
+
     # noinspection PyShadowingBuiltins
     def from_record(self, id, type, client: Client, when, amount, method, responsible, description, balance_date=None):
         """Creates a Transaction with the given data.
