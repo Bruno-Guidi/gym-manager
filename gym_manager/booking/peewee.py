@@ -137,17 +137,10 @@ class SqliteBookingRepo(BookingRepo):
     def log_cancellation(
             self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
     ):
-        CancelledLog.create(
-            cancel_datetime=cancel_datetime,
-            responsible=responsible.as_primitive(),
-            client_id=booking.client.dni.as_primitive(),
-            when=booking.when,
-            court=booking.court,
-            start=booking.start,
-            end=booking.end,
-            is_fixed=booking.is_fixed,
-            definitely_cancelled=definitely_cancelled
-        )
+        CancelledLog.create(cancel_datetime=cancel_datetime, responsible=responsible.as_primitive(),
+                            client_id=booking.client.dni.as_primitive(), when=booking.when, court=booking.court,
+                            start=booking.start, end=booking.end, is_fixed=booking.is_fixed,
+                            definitely_cancelled=definitely_cancelled)
 
     def all_temporal(
             self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None
