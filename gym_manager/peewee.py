@@ -50,14 +50,11 @@ class SqliteClientRepo(ClientRepo):
     """
 
     def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
-        """If cache_len == 0, then there won't be any caching.
-        """
         DATABASE_PROXY.create_tables([ClientTable])
 
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
 
-        self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
 
     def _from_record(self, raw) -> Client:
@@ -88,7 +85,7 @@ class SqliteClientRepo(ClientRepo):
             dni = Number(dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI)
             logger.getChild(type(self).__name__).warning(f"Converting raw dni [dni={dni}] from int to Number.")
 
-        if self._do_caching and dni in self.cache:
+        if dni in self.cache:
             return self.cache[dni]
 
         # If there is no caching or if the client isn't in the cache, query the db.
@@ -98,8 +95,7 @@ class SqliteClientRepo(ClientRepo):
         # one record.
         for record in prefetch(clients_q, subs_q, trans_q):
             client = self._from_record(record)
-            if self._do_caching:
-                self.cache[dni] = client
+            self.cache[dni] = client
             return client
 
         # This is only reached if the previous query doesn't return anything.
@@ -133,8 +129,7 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=client.is_active).execute()
-        if self._do_caching:
-            self.cache[client.dni] = client
+        self.cache[client.dni] = client
 
     @log_responsible(action_tag="remove_client", action_name="Eliminar cliente")
     def remove(self, client: Client):
@@ -147,8 +142,7 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(),
                             direction=client.direction.as_primitive(),
                             is_active=False).execute()
-        if self._do_caching:
-            self.cache.pop(client.dni)
+        self.cache.pop(client.dni)
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     @log_responsible(action_tag="update_client", action_name="Actualizar cliente")
@@ -161,8 +155,7 @@ class SqliteClientRepo(ClientRepo):
                             direction=client.direction.as_primitive(),
                             is_active=True).execute()
 
-        if self._do_caching:
-            self.cache.move_to_front(client.dni)
+        self.cache.move_to_front(client.dni)
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
@@ -187,16 +180,15 @@ class SqliteClientRepo(ClientRepo):
 
         for record in prefetch(clients_q, subs_q, trans_q):
             client: Client
-            if self._do_caching and record.dni in self.cache:
+            if record.dni in self.cache:
                 client = self.cache[record.dni]
             else:
                 # If there is no caching or if the client isn't in the cache, creates the client from the db record.
                 client = self._from_record(record)
-                if self._do_caching:
-                    self.cache[client.dni] = client
-                    logger.getChild(type(self).__name__).info(
-                        f"Client with [dni={record.dni}] not in cache. The client will be created from raw data."
-                    )
+                self.cache[client.dni] = client
+                logger.getChild(type(self).__name__).info(
+                    f"Client with [dni={record.dni}] not in cache. The client will be created from raw data."
+                )
             yield client
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
