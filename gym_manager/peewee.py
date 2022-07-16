@@ -408,13 +408,10 @@ class SqliteTransactionRepo(TransactionRepo):
         super().__init__(methods)
         DATABASE_PROXY.create_tables([TransactionTable])
 
-        self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
 
     # noinspection PyShadowingBuiltins
-    def from_record(
-            self, id, type, client: Client, when, amount, method, responsible, description, balance_date=None
-    ):
+    def from_record(self, id, type, client: Client, when, amount, method, responsible, description, balance_date=None):
         """Creates a Transaction with the given data.
         """
         if id in self.cache:
@@ -430,19 +427,10 @@ class SqliteTransactionRepo(TransactionRepo):
             client: Client | None = None
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
-
-        Raises:
-            AttributeError if the client_repo attribute wasn't set before the execution of the method.
         """
-        record = TransactionTable.create(
-            type=type,
-            client=client.dni.as_primitive() if client is not None else None,
-            when=when,
-            amount=amount.as_primitive(),
-            method=method,
-            responsible=responsible.as_primitive(),
-            description=description
-        )
+        record = TransactionTable.create(type=type, client=client.dni.as_primitive() if client is not None else None,
+                                         when=when, amount=amount.as_primitive(), method=method,
+                                         responsible=responsible.as_primitive(), description=description)
 
         self.cache[record.id] = Transaction(record.id, type, when, amount, method, responsible, description, client)
         return self.cache[record.id]
