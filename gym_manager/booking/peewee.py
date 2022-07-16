@@ -204,7 +204,6 @@ class SqliteBookingRepo(BookingRepo):
                 cancelled_q = cancelled_q.where(filter_.passes_in_repo(CancelledLog, value))
 
         for record in cancelled_q.paginate(page, page_len):
-            # ToDo retrieve client name or client proxy instead of client dni.
             yield Cancellation(
                 record.cancel_datetime, record.responsible,
                 SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
