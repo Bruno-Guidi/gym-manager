@@ -449,6 +449,7 @@ class SqliteTransactionRepo(TransactionRepo):
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
         """
+        # There is no need to check the cache because the Transaction is being created, it didn't exist before.
         record = TransactionTable.create(type=type, client=client.dni.as_primitive() if client is not None else None,
                                          when=when, amount=amount.as_primitive(), method=method,
                                          responsible=responsible.as_primitive(), description=description)
@@ -482,8 +483,8 @@ class SqliteTransactionRepo(TransactionRepo):
             if record.client is not None:
                 client = SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
                                       created_by="SqliteClientRepo.all")
-            yield self.from_record(record.id, record.type, client, record.when, record.amount, record.method,
-                                   record.responsible, record.description, record.balance)
+            yield self.from_data(record.id, record.type, client, record.when, record.amount, record.method,
+                                 record.responsible, record.description, record.balance)
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of transactions in the repository.
