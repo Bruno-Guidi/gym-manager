@@ -6,12 +6,13 @@ from typing import Generator, Iterable
 
 from peewee import (
     SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-    CompositeKey, prefetch, Proxy, chunked, JOIN, IntegrityError, DateTimeField)
+    CompositeKey, prefetch, Proxy, JOIN, IntegrityError, DateTimeField)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core import constants
-from gym_manager.core.base import Client, Number, String, Currency, Activity, Transaction, Subscription, \
-    OperationalError, Balance
+from gym_manager.core.base import (
+    Client, Number, String, Currency, Activity, Transaction, Subscription,
+    Balance)
 from gym_manager.core.persistence import (
     ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
     BalanceRepo, FilterValuePair, PersistenceError)
