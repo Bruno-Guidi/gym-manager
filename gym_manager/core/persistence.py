@@ -29,7 +29,7 @@ class LRUCache:
     def __getitem__(self, key: Any) -> Any:
         if not isinstance(key, self.key_types):
             raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
-        if key not in self._cache.keys():
+        if key not in self._cache:
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
 
         self._cache.move_to_end(key, last=False)
@@ -49,7 +49,7 @@ class LRUCache:
     def pop(self, key: Any):
         if not isinstance(key, self.key_types):
             raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
-        if key not in self._cache.keys():
+        if key not in self._cache:
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
         self._cache.pop(key)
 
@@ -57,12 +57,12 @@ class LRUCache:
         return key in self._cache
 
     def __iter__(self):
-        yield from iter(self._cache.keys())
+        yield from iter(self._cache)
 
     def move_to_front(self, key: Any):
         if not isinstance(key, self.key_types):
             raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
-        if key not in self._cache.keys():
+        if key not in self._cache:
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
         self._cache.move_to_end(key, last=False)
 
