@@ -408,8 +408,6 @@ class SqliteTransactionRepo(TransactionRepo):
         super().__init__(methods)
         TransactionTable._meta.database.create_tables([TransactionTable])
 
-        self.client_repo: ClientRepo | None = None
-
         self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
 
@@ -458,9 +456,6 @@ class SqliteTransactionRepo(TransactionRepo):
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
             without_balance: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
-        if self.client_repo is None:
-            raise AttributeError("The 'client_repo' attribute in 'SqliteTransactionRepo' was not set.")
-
         transactions_q = TransactionTable.select()
 
         if without_balance:  # Retrieve transactions that weren't linked to a balance.

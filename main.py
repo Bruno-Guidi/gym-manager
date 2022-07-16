@@ -57,7 +57,6 @@ def main(security_handler: SecurityHandler):
     activity_repo = peewee.SqliteActivityRepo()
     transaction_repo = peewee.SqliteTransactionRepo(methods=("Efectivo", "Débito", "Crédito"))
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    transaction_repo.client_repo = client_repo
     subscription_repo = peewee.SqliteSubscriptionRepo()
     balance_repo = peewee.SqliteBalanceRepo()
 

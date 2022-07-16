@@ -152,7 +152,6 @@ def test_charge_notChargeOnceActivity():
     transaction_repo = peewee.SqliteTransactionRepo()
     balance_repo = peewee.SqliteBalanceRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    transaction_repo.client_repo = client_repo  # ToDo after implementing proxies, remove this line.
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
