@@ -150,7 +150,7 @@ def test_charge_notChargeOnceActivity():
     peewee.create_database(":memory:")
     activity_repo = peewee.SqliteActivityRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
-    balance_repo = peewee.SqliteBalanceRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     subscription_repo = peewee.SqliteSubscriptionRepo()
 

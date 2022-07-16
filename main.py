@@ -58,7 +58,7 @@ def main(security_handler: SecurityHandler):
     transaction_repo = peewee.SqliteTransactionRepo(methods=("Efectivo", "Débito", "Crédito"))
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     subscription_repo = peewee.SqliteSubscriptionRepo()
-    balance_repo = peewee.SqliteBalanceRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
 
     booking_activity: Activity
     if activity_repo.exists("Padel"):

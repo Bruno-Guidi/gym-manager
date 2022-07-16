@@ -408,8 +408,8 @@ def test_integration_registerCharge_fixedBooking():
     peewee.create_database(":memory:")
 
     activity_repo = peewee.SqliteActivityRepo()
-    balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
@@ -442,8 +442,8 @@ def test_integration_cancelTemporary_fixedBooking(resp_name):
     peewee.create_database(":memory:")
 
     activity_repo = peewee.SqliteActivityRepo()
-    balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
@@ -477,8 +477,8 @@ def test_integration_cancelDefinitely_fixedBooking(resp_name):
     peewee.create_database(":memory:")
 
     activity_repo = peewee.SqliteActivityRepo()
-    balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
@@ -511,8 +511,8 @@ def test_integration_cancelDefinitely_tempBooking(resp_name):
     peewee.create_database(":memory:")
 
     activity_repo = peewee.SqliteActivityRepo()
-    balance_repo = peewee.SqliteBalanceRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo)
 
