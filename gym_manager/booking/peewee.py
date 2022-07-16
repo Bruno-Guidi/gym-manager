@@ -196,9 +196,9 @@ class SqliteBookingRepo(BookingRepo):
 
                 trans_record, transaction = record.transaction, None
                 if trans_record is not None:
-                    transaction = self.transaction_repo.from_record(
-                        trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
-                        trans_record.method, trans_record.responsible, trans_record.description
+                    transaction = self.transaction_repo.from_data(
+                        trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
+                        trans_record.responsible, trans_record.description, client, trans_record.balance_id
                     )
 
                 when = record.when.date()
@@ -216,10 +216,10 @@ class SqliteBookingRepo(BookingRepo):
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
             transaction_record, transaction = record.transaction, None
             if transaction_record is not None:
-                transaction = self.transaction_repo.from_record(
-                    transaction_record.id, transaction_record.type, self.client_repo.get(transaction_record.client_id),
-                    transaction_record.when, transaction_record.amount, transaction_record.method,
-                    transaction_record.responsible, transaction_record.description
+                transaction = self.transaction_repo.from_data(
+                    transaction_record.id, transaction_record.type, transaction_record.when, transaction_record.amount,
+                    transaction_record.method, transaction_record.responsible, transaction_record.description,
+                    self.client_repo.get(transaction_record.client_id), transaction_record.balance_id
                 )
             yield FixedBooking(record.court, self.client_repo.get(record.client_id), record.start, record.end,
                                record.day_of_week, record.first_when, record.last_when,
