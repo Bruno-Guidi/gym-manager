@@ -309,15 +309,16 @@ class SqliteActivityRepo(ActivityRepo):
         for record in activities_q:
             activity: Activity
             if record.act_name in self.cache:
+                logger.getChild(type(self).__name__).info(f"Caching [activity.name={record.act_name}].")
                 activity = self.cache[record.act_name]
             else:
+                logger.getChild(type(self).__name__).info(f"Querying [activity.name={record.act_name}].")
                 activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                     Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
                                     record.charge_once,
                                     record.locked)
                 self.cache[activity.name] = activity
-                logger.getChild(type(self).__name__).info(f"Caching [activity.name={record.act_name}].")
             yield activity
 
     def n_subscribers(self, activity: Activity) -> int:
