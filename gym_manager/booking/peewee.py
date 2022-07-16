@@ -10,7 +10,9 @@ from playhouse.sqlite_ext import JSONField
 from gym_manager import peewee
 from gym_manager.booking.core import TempBooking, BookingRepo, Court, Booking, FixedBooking, Cancellation
 from gym_manager.core.base import Transaction, String
-from gym_manager.core.persistence import ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError
+from gym_manager.core.persistence import (
+    ClientRepo, TransactionRepo, LRUCache, FilterValuePair, PersistenceError,
+    SimpleClient)
 from gym_manager.peewee import TransactionTable
 
 logger = logging.getLogger(__name__)
@@ -82,9 +84,6 @@ class SqliteBookingRepo(BookingRepo):
 
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
-
-        self._do_caching = cache_len > 0
-        self.cache = LRUCache((date,), TempBooking, max_len=cache_len)
 
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
@@ -160,42 +159,33 @@ class SqliteBookingRepo(BookingRepo):
                 bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
         for record in prefetch(bookings_q, TransactionTable.select()):
-            booking: TempBooking
-            if self._do_caching and record.when in self.cache:
-                booking = self.cache[record.when]
-            else:
-                client = self.client_repo.get(record.client_id)
+            client = SimpleClient(record.client.dni, record.client.cli_name,
+                                  created_by="SqliteBookingRepo.all_temporal")
 
-                trans_record, transaction = record.transaction, None
-                if trans_record is not None:
-                    transaction = self.transaction_repo.from_data(
-                        trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
-                        trans_record.responsible, trans_record.description, client, trans_record.balance_id
-                    )
+            trans_record, transaction = record.transaction, None
+            if trans_record is not None:
+                transaction = self.transaction_repo.from_data(
+                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
+                    trans_record.responsible, trans_record.description, client, trans_record.balance_id
+                )
 
-                when = record.when.date()
-                start = record.when.time()
-                booking = TempBooking(record.court, client, start, record.end, when, transaction,
-                                      record.is_fixed)
-                if self._do_caching:
-                    self.cache[record.when] = booking
-                    logger.getChild(type(self).__name__).info(
-                        f"Booking with [id={record.when}] not in cache. The booking will be created from raw data."
-                    )
-            yield booking
+            when = record.when.date()
+            start = record.when.time()
+            yield TempBooking(record.court, client, start, record.end, when, transaction, record.is_fixed)
 
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
             transaction_record, transaction = record.transaction, None
+            client = SimpleClient(transaction_record.client.dni, transaction_record.client.cli_name,
+                                  created_by="SqliteBookingRepo.all_fixed")
             if transaction_record is not None:
                 transaction = self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when, transaction_record.amount,
-                    transaction_record.method, transaction_record.responsible, transaction_record.description,
-                    self.client_repo.get(transaction_record.client_id), transaction_record.balance_id
+                    transaction_record.method, transaction_record.responsible, transaction_record.description, client,
+                    transaction_record.balance_id
                 )
-            yield FixedBooking(record.court, self.client_repo.get(record.client_id), record.start, record.end,
-                               record.day_of_week, record.first_when, record.last_when,
-                               deserialize_inactive_dates(record.inactive_dates), transaction)
+            yield FixedBooking(record.court, client, record.start, record.end, record.day_of_week, record.first_when,
+                               record.last_when, deserialize_inactive_dates(record.inactive_dates), transaction)
 
     def cancelled(
             self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
@@ -205,18 +195,20 @@ class SqliteBookingRepo(BookingRepo):
             CancelledLog.court, CancelledLog.start, CancelledLog.end, CancelledLog.is_fixed,
             CancelledLog.definitely_cancelled
         )
+        # The left outer join is required because the client name is required.
+        cancelled_q = cancelled_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
 
         if filters is not None:
-            # The left outer join is required because bookings might be filtered by the client name, which isn't
-            # an attribute of CancellationLog.
-            cancelled_q = cancelled_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
             for filter_, value in filters:
                 cancelled_q = cancelled_q.where(filter_.passes_in_repo(CancelledLog, value))
 
         for record in cancelled_q.paginate(page, page_len):
             # ToDo retrieve client name or client proxy instead of client dni.
-            yield Cancellation(record.cancel_datetime, record.responsible, record.client_id, record.when, record.court,
-                               record.start, record.end, record.is_fixed, record.definitely_cancelled)
+            yield Cancellation(
+                record.cancel_datetime, record.responsible,
+                SimpleClient(record.client.dni, record.client.cli_name, created_by="SqliteBookingRepo.cancelled"),
+                record.when, record.court, record.start, record.end, record.is_fixed, record.definitely_cancelled
+            )
 
     def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
