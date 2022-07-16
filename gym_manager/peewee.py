@@ -217,10 +217,8 @@ class SqliteActivityRepo(ActivityRepo):
         if self.exists(activity.name):
             raise PersistenceError(f"An activity with [activity.name={activity.name}] already exists.")
 
-        ActivityTable.create(act_name=activity.name.as_primitive(),
-                             price=str(activity.price),
-                             charge_once=activity.charge_once,
-                             description=activity.description.as_primitive(),
+        ActivityTable.create(act_name=activity.name.as_primitive(), price=str(activity.price),
+                             charge_once=activity.charge_once, description=activity.description.as_primitive(),
                              locked=activity.locked)
         self.cache[activity.name] = activity
 
@@ -239,16 +237,17 @@ class SqliteActivityRepo(ActivityRepo):
         if name in self.cache:
             return self.cache[name]
 
-        for record in ActivityTable.select().where(ActivityTable.act_name == name):
-            # ToDo following String don't need validation because they were already validated.
-            self.cache[name] = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
-                                        Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                        String(record.description, optional=True,
-                                               max_len=constants.ACTIVITY_DESCR_CHARS),
-                                        record.charge_once, record.locked)
-            return self.cache[name]
+        record = ActivityTable.get_or_none(act_name=name)
+        if record is None:
+            raise KeyError(f"There is no activity with the id '{name}'")
 
-        raise KeyError(f"There is no activity with the id '{name}'")
+        # ToDo following String don't need validation because they were already validated.
+        self.cache[name] = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+                                    Currency(record.price, max_currency=constants.MAX_CURRENCY),
+                                    String(record.description, optional=True,
+                                           max_len=constants.ACTIVITY_DESCR_CHARS),
+                                    record.charge_once, record.locked)
+        return self.cache[name]
 
     @log_responsible(action_tag="remove_activity", action_name="Eliminar actividad")
     def remove(self, activity: Activity):
@@ -258,7 +257,7 @@ class SqliteActivityRepo(ActivityRepo):
             PersistenceError: if *activity* is locked.
         """
         if activity.locked:
-            raise PersistenceError(f"The [activity={activity.name}] cannot be removed because its locked.")
+            raise PersistenceError(f"The [activity.name={activity.name}] cannot be removed because its locked.")
 
         self.cache.pop(activity.name)
         ActivityTable.delete_by_id(activity.name)
@@ -287,15 +286,14 @@ class SqliteActivityRepo(ActivityRepo):
         for record in activities_q:
             activity: Activity
             if record.act_name in self.cache:
-                logger.getChild(type(self).__name__).info(f"Caching [activity.name={record.act_name}].")
+                logger.getChild(type(self).__name__).info(f"Using cached [activity.name={record.act_name}].")
                 activity = self.cache[record.act_name]
             else:
                 logger.getChild(type(self).__name__).info(f"Querying [activity.name={record.act_name}].")
                 activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
                                     Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
-                                    record.charge_once,
-                                    record.locked)
+                                    record.charge_once, record.locked)
                 self.cache[activity.name] = activity
             yield activity
 
