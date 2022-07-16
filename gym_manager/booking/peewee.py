@@ -147,6 +147,7 @@ class SqliteBookingRepo(BookingRepo):
         bookings_q = BookingTable.select()
         if when is not None:
             year, month, day = when.year, when.month, when.day
+            # noinspection PyPropertyAccess
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
                                           day == BookingTable.when.day)
         if court is not None:
@@ -176,8 +177,7 @@ class SqliteBookingRepo(BookingRepo):
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
             transaction_record, transaction = record.transaction, None
-            client = SimpleClient(transaction_record.client.dni, transaction_record.client.cli_name,
-                                  created_by="SqliteBookingRepo.all_fixed")
+            client = SimpleClient(record.client.dni, record.client.cli_name, created_by="SqliteBookingRepo.all_fixed")
             if transaction_record is not None:
                 transaction = self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when, transaction_record.amount,
