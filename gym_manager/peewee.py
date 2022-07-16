@@ -324,8 +324,10 @@ class BalanceTable(Model):
 
 
 class SqliteBalanceRepo(BalanceRepo):
-    def __init__(self):
-        BalanceTable._meta.database.create_tables([BalanceTable])
+    def __init__(self, transaction_repo: TransactionRepo):
+        DATABASE_PROXY.create_tables([BalanceTable])
+
+        self.transaction_repo = transaction_repo
 
     def balance_done(self, when: date) -> bool:
         return BalanceTable.get_or_none(BalanceTable.when == when) is not None
@@ -349,7 +351,6 @@ class SqliteBalanceRepo(BalanceRepo):
         return _balance
 
     def add(self, when: date, responsible: String, balance: Balance):
-        BalanceTable.delete().where(BalanceTable.when == when).execute()  # Deletes existing balance, if it exists.
         BalanceTable.create(when=when, responsible=responsible.as_primitive(),
                             balance_dict=self.balance_to_json(balance))
 
@@ -357,16 +358,15 @@ class SqliteBalanceRepo(BalanceRepo):
             self, from_date: date, to_date: date
     ) -> Generator[tuple[date, String, Balance, list[Transaction]], None, None]:
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
-        transaction_q = TransactionTable.select()
-        for record in prefetch(balance_q, transaction_q):
+
+        for record in prefetch(balance_q, TransactionTable.select()):
             transactions = []
             for transaction_record in record.transactions:
-                transactions.append(
-                    Transaction(transaction_record.id, transaction_record.type, transaction_record.when,
-                                Currency(transaction_record.amount), transaction_record.method,
-                                String(transaction_record.responsible, max_len=constants.CLIENT_NAME_CHARS),
-                                transaction_record.description,
-                                balance_date=transaction_record.balance_id))
+                transactions.append(self.transaction_repo.from_data(
+                    transaction_record.id, transaction_record.type, transaction_record.when,
+                    transaction_record.amount, transaction_record.method, transaction_record.responsible,
+                    transaction_record.description, transaction_record.balance_id
+                ))
             yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
                    self.json_to_balance(record.balance_dict), transactions)
 
