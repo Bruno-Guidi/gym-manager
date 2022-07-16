@@ -406,7 +406,7 @@ class SqliteTransactionRepo(TransactionRepo):
     # noinspection PyProtectedMember
     def __init__(self, methods: Iterable[str] | None = None, cache_len: int = 50) -> None:
         super().__init__(methods)
-        TransactionTable._meta.database.create_tables([TransactionTable])
+        DATABASE_PROXY.create_tables([TransactionTable])
 
         self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
