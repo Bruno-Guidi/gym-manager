@@ -62,8 +62,10 @@ class SqliteClientRepo(ClientRepo):
                         String(raw.cli_name, max_len=constants.CLIENT_NAME_CHARS),
                         raw.admission,
                         raw.birth_day,
-                        String(raw.telephone, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS),
-                        String(raw.direction, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS),
+                        String(raw.telephone, optional=constants.CLIENT_TEL_OPTIONAL,
+                               max_len=constants.CLIENT_TEL_CHARS),
+                        String(raw.direction, optional=constants.CLIENT_DIR_OPTIONAL,
+                               max_len=constants.CLIENT_DIR_CHARS),
                         raw.is_active)
 
         for sub_record in raw.subscriptions:
@@ -353,7 +355,7 @@ class SqliteBalanceRepo(BalanceRepo):
 
     def all(
             self, from_date: date, to_date: date
-            ) -> Generator[tuple[date, String, Balance, list[Transaction]], None, None]:
+    ) -> Generator[tuple[date, String, Balance, list[Transaction]], None, None]:
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
         transaction_q = TransactionTable.select()
         for record in prefetch(balance_q, transaction_q):
@@ -495,12 +497,11 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
 
     # noinspection PyProtectedMember
     def __init__(self) -> None:
-        SubscriptionTable._meta.database.create_tables([SubscriptionTable])
+        DATABASE_PROXY.create_tables([SubscriptionTable])
 
     def add(self, subscription: Subscription):
         SubscriptionTable.create(
-            when=subscription.when,
-            client_id=subscription.client.dni.as_primitive(),
+            when=subscription.when, client_id=subscription.client.dni.as_primitive(),
             activity_id=subscription.activity.name.as_primitive(),
             transaction_id=None if subscription.transaction is None else subscription.transaction.id
         )
@@ -568,4 +569,3 @@ class SqliteSecurityRepo(SecurityRepo):
             resp = Responsible(String(record.responsible.resp_name, max_len=30),
                                String(record.responsible.resp_code, max_len=30))
             yield record.when, resp, record.action_tag, record.action_name
-
