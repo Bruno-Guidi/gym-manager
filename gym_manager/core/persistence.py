@@ -218,7 +218,7 @@ class TransactionRepo(abc.ABC):
     """
 
     def __init__(self, methods: Iterable[str] | None = None) -> None:
-        self.methods = methods
+        self.methods = methods if methods is not None else []
 
     @abc.abstractmethod
     def from_data(
