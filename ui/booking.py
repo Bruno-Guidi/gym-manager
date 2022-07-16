@@ -598,7 +598,7 @@ class HistoryController:
             fill_cell(self.history_ui.booking_table, row, 3, cancelled.start.strftime('%Hh:%Mm'), bool)
             duration = self._durations[subtract_times(cancelled.start, cancelled.end).seconds]
             fill_cell(self.history_ui.booking_table, row, 4, duration.as_str, bool)
-            fill_cell(self.history_ui.booking_table, row, 5, cancelled.client, str)
+            fill_cell(self.history_ui.booking_table, row, 5, cancelled.client.name, str)
             fill_cell(self.history_ui.booking_table, row, 6, cancelled.responsible, str)
             fill_cell(self.history_ui.booking_table, row, 7, DAYS_NAMES[cancelled.when.weekday()], bool)
             fill_cell(self.history_ui.booking_table, row, 8, "Si" if cancelled.is_fixed else "No", bool)
