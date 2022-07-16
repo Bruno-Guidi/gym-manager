@@ -226,7 +226,7 @@ class TransactionRepo(abc.ABC):
     @abc.abstractmethod
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
-            include_closed: bool = True, balance_date: date | None = None
+            without_balance: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
         raise NotImplementedError
 

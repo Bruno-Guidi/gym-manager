@@ -39,7 +39,7 @@ class MainController:
         _filters = [(self._date_greater_filter, today), (self._date_lesser_filter, today)]
 
         self._today_transactions: list[Transaction] = [t for t in transaction_repo.all(filters=_filters,
-                                                                                       include_closed=True)]
+                                                                                       without_balance=True)]
 
         # Calculates charges of the day.
         self.balance = api.generate_balance(self._today_transactions)

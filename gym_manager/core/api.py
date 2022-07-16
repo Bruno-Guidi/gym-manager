@@ -190,7 +190,7 @@ def close_balance(  # ToDo Integrate test with generate_balance().
 
     balance_repo.add(balance_date, responsible, balance)
 
-    transaction_gen = transaction_repo.all(page=1, include_closed=False)
+    transaction_gen = transaction_repo.all(page=1, without_balance=False)
     for transaction in transaction_gen:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
