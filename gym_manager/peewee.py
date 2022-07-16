@@ -561,7 +561,7 @@ class SqliteSecurityRepo(SecurityRepo):
                            action_name=action_name)
 
     def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
-        actions_q = ActionTable.select()
+        actions_q = ActionTable.select().order_by(ActionTable.when.desc())
         actions_q = actions_q.paginate(page, page_len)
 
         for record in prefetch(actions_q, ResponsibleTable.select()):
