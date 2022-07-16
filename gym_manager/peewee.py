@@ -227,7 +227,6 @@ class SqliteActivityRepo(ActivityRepo):
     def __init__(self, cache_len: int = 50) -> None:
         DATABASE_PROXY.create_tables([ActivityTable])
 
-        self._do_caching = cache_len > 0
         self.cache = LRUCache(key_types=(str, String), value_type=Activity, max_len=cache_len)
 
     def add(self, activity: Activity):
@@ -238,11 +237,10 @@ class SqliteActivityRepo(ActivityRepo):
                              charge_once=activity.charge_once,
                              description=activity.description.as_primitive(),
                              locked=activity.locked)
-        if self._do_caching:
-            self.cache[activity.name] = activity
+        self.cache[activity.name] = activity
 
     def exists(self, name: str | String) -> bool:
-        if self._do_caching and name in self.cache:
+        if name in self.cache:  # First search in the cache.
             return True
 
         return ActivityTable.get_or_none(act_name=name) is not None
@@ -254,18 +252,17 @@ class SqliteActivityRepo(ActivityRepo):
         Raises:
             KeyError if there is no activity with the given *id*.
         """
-        if self._do_caching and name in self.cache:
+        if name in self.cache:
             return self.cache[name]
 
-        activity: Activity
         for record in ActivityTable.select().where(ActivityTable.act_name == name):
-            activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
-                                Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
-                                record.charge_once, record.locked)
-            if self._do_caching:
-                self.cache[name] = activity
-            return activity
+            # ToDo following String don't need validation because they were already validated.
+            self.cache[name] = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
+                                        Currency(record.price, max_currency=constants.MAX_CURRENCY),
+                                        String(record.description, optional=True,
+                                               max_len=constants.ACTIVITY_DESCR_CHARS),
+                                        record.charge_once, record.locked)
+            return self.cache[name]
 
         raise KeyError(f"There is no activity with the id '{name}'")
 
@@ -279,8 +276,7 @@ class SqliteActivityRepo(ActivityRepo):
         if activity.locked:
             raise PersistenceError(f"The [activity={activity.name}] cannot be removed because its locked.")
 
-        if self._do_caching:
-            self.cache.pop(activity.name)
+        self.cache.pop(activity.name)
         ActivityTable.delete_by_id(activity.name)
 
     @log_responsible(action_tag="update_activity", action_name="Actualizar actividad")
@@ -291,8 +287,7 @@ class SqliteActivityRepo(ActivityRepo):
                               description=activity.description.as_primitive(),
                               locked=activity.locked).execute()
 
-        if self._do_caching:
-            self.cache.move_to_front(activity.name)
+        self.cache.move_to_front(activity.name)
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
@@ -307,7 +302,7 @@ class SqliteActivityRepo(ActivityRepo):
 
         for record in activities_q:
             activity: Activity
-            if self._do_caching and record.act_name in self.cache:
+            if record.act_name in self.cache:
                 activity = self.cache[record.act_name]
             else:
                 activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
@@ -315,10 +310,8 @@ class SqliteActivityRepo(ActivityRepo):
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
                                     record.charge_once,
                                     record.locked)
-                if self._do_caching:
-                    self.cache[activity.name] = activity
-                    logger.getChild(type(self).__name__).info(f"Activity with [activity.name={record.act_name}] not in "
-                                                              f"cache. The activity will be created from raw data.")
+                self.cache[activity.name] = activity
+                logger.getChild(type(self).__name__).info(f"Caching [activity.name={record.act_name}].")
             yield activity
 
     def n_subscribers(self, activity: Activity) -> int:
