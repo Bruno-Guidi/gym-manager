@@ -70,9 +70,9 @@ class SqliteClientRepo(ClientRepo):
             activity = self.activity_repo.get(sub_record.activity_id)
             trans_record, transaction = sub_record.transaction, None
             if trans_record is not None:
-                transaction = self.transaction_repo.from_record(
-                    trans_record.id, trans_record.type, client, trans_record.when, trans_record.amount,
-                    trans_record.method, trans_record.responsible, trans_record.description
+                transaction = self.transaction_repo.from_data(
+                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
+                    trans_record.responsible, trans_record.description, client, trans_record.balance_id
                 )
             client.add(Subscription(sub_record.when, client, activity, transaction))
 
