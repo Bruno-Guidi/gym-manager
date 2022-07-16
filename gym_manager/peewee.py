@@ -88,15 +88,13 @@ class SqliteClientRepo(ClientRepo):
         if dni in self.cache:
             return self.cache[dni]
 
-        # If there is no caching or if the client isn't in the cache, query the db.
         clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
         subs_q, trans_q = SubscriptionTable.select(), TransactionTable.select()
         # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
         # one record.
         for record in prefetch(clients_q, subs_q, trans_q):
-            client = self._from_record(record)
-            self.cache[dni] = client
-            return client
+            self.cache[dni] = self._from_record(record)
+            return self.cache[dni]
 
         # This is only reached if the previous query doesn't return anything.
         raise KeyError(f"There is no client with [dni={dni}].")
@@ -116,18 +114,15 @@ class SqliteClientRepo(ClientRepo):
 
         if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()) is None:
             # The client doesn't exist in the table.
-            logger.getChild(type(self).__name__).info(f"Adding new client [client={repr(client)}].")
+            logger.getChild(type(self).__name__).info(f"Creating client [client.dni={client.dni}].")
         else:
             # The client exists in the table. Because previous check of self.is_active(args) failed, we can assume that
             # the client is inactive.
-            logger.getChild(type(self).__name__).info(f"Activating existing client [client={repr(client)}].")
+            logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={client.dni}].")
 
-        ClientTable.replace(dni=client.dni.as_primitive(),
-                            cli_name=client.name.as_primitive(),
-                            admission=client.admission,
-                            birth_day=client.birth_day,
-                            telephone=client.telephone.as_primitive(),
-                            direction=client.direction.as_primitive(),
+        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
+                            admission=client.admission, birth_day=client.birth_day,
+                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=client.is_active).execute()
         self.cache[client.dni] = client
 
@@ -135,24 +130,18 @@ class SqliteClientRepo(ClientRepo):
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
-        ClientTable.replace(dni=client.dni.as_primitive(),
-                            cli_name=client.name.as_primitive(),
-                            admission=client.admission,
-                            birth_day=client.birth_day,
-                            telephone=client.telephone.as_primitive(),
-                            direction=client.direction.as_primitive(),
+        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
+                            admission=client.admission, birth_day=client.birth_day,
+                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=False).execute()
         self.cache.pop(client.dni)
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     @log_responsible(action_tag="update_client", action_name="Actualizar cliente")
     def update(self, client: Client):
-        ClientTable.replace(dni=client.dni.as_primitive(),
-                            cli_name=client.name.as_primitive(),
-                            admission=client.admission,
-                            birth_day=client.birth_day,
-                            telephone=client.telephone.as_primitive(),
-                            direction=client.direction.as_primitive(),
+        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
+                            admission=client.admission, birth_day=client.birth_day,
+                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=True).execute()
 
         self.cache.move_to_front(client.dni)
@@ -168,33 +157,31 @@ class SqliteClientRepo(ClientRepo):
             filters: filters to apply.
         """
         clients_q = ClientTable.select()
-        if filters is not None:
+        clients_q = clients_q.where(ClientTable.is_active)  # Retrieve only active clients.
+
+        if filters is not None:  # Apply given filters.
             for filter_, value in filters:
                 clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
 
-        clients_q = clients_q.where(ClientTable.is_active)
         if page_len is not None:
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
-        subs_q, trans_q = SubscriptionTable.select(), TransactionTable.select()
-
-        for record in prefetch(clients_q, subs_q, trans_q):
+        for record in prefetch(clients_q, SubscriptionTable.select(), TransactionTable.select()):
             client: Client
             if record.dni in self.cache:
+                logger.getChild(type(self).__name__).info(f"Using cached client [client.dni={record.dni}].")
                 client = self.cache[record.dni]
             else:
                 # If there is no caching or if the client isn't in the cache, creates the client from the db record.
+                logger.getChild(type(self).__name__).info(f"Querying client [client.dni={record.dni}].")
                 client = self._from_record(record)
                 self.cache[client.dni] = client
-                logger.getChild(type(self).__name__).info(
-                    f"Client with [dni={record.dni}] not in cache. The client will be created from raw data."
-                )
             yield client
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of clients in the repository.
         """
-        clients_q = ClientTable.select("1")
+        clients_q = ClientTable.select("1").where(ClientTable.is_active)
         if filters is not None:
             for filter_, value in filters:
                 clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
