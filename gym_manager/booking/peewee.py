@@ -91,21 +91,13 @@ class SqliteBookingRepo(BookingRepo):
         # associated transaction.
         if isinstance(booking, FixedBooking):
             booking: FixedBooking
-            FixedBookingTable.create(day_of_week=booking.day_of_week,
-                                     court=booking.court,
-                                     start=booking.start,
-                                     client_id=booking.client.dni.as_primitive(),
-                                     end=booking.end,
-                                     first_when=booking.first_when,
-                                     last_when=booking.when,
-                                     inactive_dates=[])
+            FixedBookingTable.create(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
+                                     client_id=booking.client.dni.as_primitive(), end=booking.end,
+                                     first_when=booking.first_when, last_when=booking.when, inactive_dates=[])
         elif isinstance(booking, TempBooking):
             booking: TempBooking
-            BookingTable.create(when=datetime.combine(booking.when, booking.start),
-                                court=booking.court,
-                                client_id=booking.client.dni.as_primitive(),
-                                end=booking.end,
-                                is_fixed=False)
+            BookingTable.create(when=datetime.combine(booking.when, booking.start), court=booking.court,
+                                client_id=booking.client.dni.as_primitive(), end=booking.end, is_fixed=False)
 
         else:
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
