@@ -232,7 +232,13 @@ class SqliteActivityRepo(ActivityRepo):
 
     def add(self, activity: Activity):
         """Adds *activity* to the repository.
+
+        Raises:
+            PersistenceError if there is an existing activity with *activity.name*.
         """
+        if self.exists(activity.name):
+            raise PersistenceError(f"An activity with [activity.name={activity.name}] already exists.")
+
         ActivityTable.create(act_name=activity.name.as_primitive(),
                              price=str(activity.price),
                              charge_once=activity.charge_once,
@@ -244,14 +250,13 @@ class SqliteActivityRepo(ActivityRepo):
         if name in self.cache:  # First search in the cache.
             return True
 
-        return ActivityTable.get_or_none(act_name=name) is not None
+        return ActivityTable.get_or_none(act_name=name) is not None  # Then search in the db.
 
-    # noinspection PyShadowingBuiltins
     def get(self, name: str | String) -> Activity:
         """Retrieves the activity with the given *name* in the repository, if it exists.
 
         Raises:
-            KeyError if there is no activity with the given *id*.
+            KeyError if there is no activity with the given *name*.
         """
         if name in self.cache:
             return self.cache[name]
