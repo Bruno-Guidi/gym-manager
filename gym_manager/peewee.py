@@ -459,8 +459,8 @@ class SqliteTransactionRepo(TransactionRepo):
             if record.client is not None:
                 client = SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
                                       created_by="SqliteClientRepo.all")
-            yield self.from_data(record.id, record.type, client, record.when, record.amount, record.method,
-                                 record.responsible, record.description, record.balance)
+            yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
+                                 record.description, client, record.balance)
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of transactions in the repository.
