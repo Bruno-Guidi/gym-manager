@@ -233,13 +233,6 @@ class TransactionRepo(abc.ABC):
 
     # noinspection PyShadowingBuiltins
     @abc.abstractmethod
-    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
-        """Creates a Transaction with the given data.
-        """
-        raise NotImplementedError
-
-    # noinspection PyShadowingBuiltins
-    @abc.abstractmethod
     def create(
             self, type: str, when: date, amount: Currency, method: str, responsible: String, description: str,
             client: Client | None = None

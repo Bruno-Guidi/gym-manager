@@ -432,17 +432,6 @@ class SqliteTransactionRepo(TransactionRepo):
         return self.cache[id_]
 
     # noinspection PyShadowingBuiltins
-    def from_record(self, id, type, client: Client, when, amount, method, responsible, description, balance_date=None):
-        """Creates a Transaction with the given data.
-        """
-        if id in self.cache:
-            return self.cache[id]
-
-        self.cache[id] = Transaction(id, type, when, Currency(amount, max_currency=constants.MAX_CURRENCY), method,
-                                     responsible, description, client, balance_date)
-        return self.cache[id]
-
-    # noinspection PyShadowingBuiltins
     def create(
             self, type: str, when: date, amount: Currency, method: str, responsible: String, description: str,
             client: Client | None = None
