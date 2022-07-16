@@ -67,6 +67,20 @@ class LRUCache:
         self._cache.move_to_end(key, last=False)
 
 
+class SimpleClient(Client):
+    """Stores only the client's dni and number. Could evolve into a proxy if needed later.
+    """
+
+    def __init__(self, dni: Number, name: String, created_by: str):
+        self.dni = dni
+        self.name = name
+        self.created_by = created_by
+
+    def __getattr__(self, attr_name):
+        raise NotImplementedError(f"The object '{type(self).__name__}' created by '{self.created_by}' has no "
+                                  f"implementation of '{attr_name}'.")
+
+
 class ClientRepo(abc.ABC):
     """Clients repository interface.
     """
