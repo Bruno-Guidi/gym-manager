@@ -417,14 +417,12 @@ class SqliteTransactionRepo(TransactionRepo):
     ):
         """Creates a Transaction with the given data.
         """
-        if self._do_caching and id in self.cache:
+        if id in self.cache:
             return self.cache[id]
 
-        transaction = Transaction(id, type, when, Currency(amount, max_currency=constants.MAX_CURRENCY), method,
-                                  responsible, description, client, balance_date)
-        if self._do_caching:
-            self.cache[id] = transaction
-        return transaction
+        self.cache[id] = Transaction(id, type, when, Currency(amount, max_currency=constants.MAX_CURRENCY), method,
+                                     responsible, description, client, balance_date)
+        return self.cache[id]
 
     # noinspection PyShadowingBuiltins
     def create(
@@ -446,11 +444,8 @@ class SqliteTransactionRepo(TransactionRepo):
             description=description
         )
 
-        transaction = Transaction(record.id, type, when, amount, method, responsible, description, client)
-        if self._do_caching:
-            self.cache[record.id] = transaction
-
-        return transaction
+        self.cache[record.id] = Transaction(record.id, type, when, amount, method, responsible, description, client)
+        return self.cache[record.id]
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
