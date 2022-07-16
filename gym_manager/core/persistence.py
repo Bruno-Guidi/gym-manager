@@ -29,10 +29,10 @@ class LRUCache:
     def __getitem__(self, key: Any) -> Any:
         if not isinstance(key, self.key_types):
             raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
-        if key not in self._cache:
+        if key not in self._cache:  # There is one implicit __getitem__ call.
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
 
-        self._cache.move_to_end(key, last=False)
+        self._cache.move_to_end(key, last=False)  # There is one implicit __getitem__ call.
         return self._cache[key]
 
     def __setitem__(self, key: Any, value: Any):
