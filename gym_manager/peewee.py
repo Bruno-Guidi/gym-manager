@@ -49,11 +49,10 @@ class SqliteClientRepo(ClientRepo):
     """Clients repository implementation based on Sqlite and peewee ORM.
     """
 
-    # noinspection PyProtectedMember
     def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
         """If cache_len == 0, then there won't be any caching.
         """
-        ClientTable._meta.database.create_tables([ClientTable])
+        DATABASE_PROXY.create_tables([ClientTable])
 
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
