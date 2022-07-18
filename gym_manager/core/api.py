@@ -156,7 +156,7 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
 
 
 @log_responsible(action_tag="close_balance", action_name="Cierre caja diaria")
-def close_balance(  # ToDo Integrate test with generate_balance().
+def close_balance(
         transaction_repo: TransactionRepo,
         balance_repo: BalanceRepo,
         balance: Balance,
@@ -182,7 +182,7 @@ def close_balance(  # ToDo Integrate test with generate_balance().
         # Creates the extraction done at the end of the day.
         extraction = create_extraction_fn()
 
-        # Adds the extraction to the balance. ToDo refactor this into Balance class.
+        # Adds the extraction to the balance.
         if extraction.method not in balance["Extracción"]:
             balance["Extracción"][extraction.method] = Currency(0)
         balance["Extracción"][extraction.method].increase(extraction.amount)
@@ -190,7 +190,7 @@ def close_balance(  # ToDo Integrate test with generate_balance().
 
     balance_repo.add(balance_date, responsible, balance)
 
-    transaction_gen = transaction_repo.all(page=1, without_balance=False)
+    transaction_gen = transaction_repo.all(page=1)
     for transaction in transaction_gen:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
