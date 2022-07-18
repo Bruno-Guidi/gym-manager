@@ -78,9 +78,9 @@ class SqliteBookingRepo(BookingRepo):
             self,
             client_repo: ClientRepo,
             transaction_repo: TransactionRepo,
-            cache_len: int = 0
+            cache_len: int
     ) -> None:
-        BookingTable._meta.database.create_tables([BookingTable, FixedBookingTable, CancelledLog])
+        peewee.DATABASE_PROXY.create_tables([BookingTable, FixedBookingTable, CancelledLog])
 
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
