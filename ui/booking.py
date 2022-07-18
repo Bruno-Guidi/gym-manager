@@ -136,8 +136,7 @@ class MainController:
                                    String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30),
                                    register_booking_charge)
         self._charge_ui.exec_()
-        transaction = self._charge_ui.controller.transaction
-        if transaction is not None:
+        if self._charge_ui.controller.success:
             text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
                     f"{' (Pago)' if booking.was_paid(when) else ''}")
             self.main_ui.booking_table.item(row, col).setText(text)

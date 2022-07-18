@@ -30,8 +30,8 @@ class MockSecurityHandler(SecurityHandler):
     def cant_perform_action(self, action_tag: str) -> bool:
         return False
 
-    def handle_action(self, action_level: str, action_name: str):
-        print(f"Ignoring {action_name}")
+    def handle_action(self, action_level: str, action_description: str):
+        print(f"Ignoring {action_description}")
 
     def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
         pass

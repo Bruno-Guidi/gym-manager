@@ -428,10 +428,10 @@ def test_integration_registerCharge_fixedBooking():
         transaction_repo.create, "Cobro", booking_date, dummy_activity.price, "dummy_method",
         String("dummy_resp", max_len=20), "dummy_descr", dummy_client
     )
-    transaction = booking_system.register_charge(booking, booking_date, create_transaction_fn)
+    booking = booking_system.register_charge(booking, booking_date, create_transaction_fn)
 
     # The length of all temporal bookings is checked to ensure that the charge was registered.
-    assert booking.transaction == transaction and len([b for b in booking_repo.all_temporal()]) == 1
+    assert len([b for b in booking_repo.all_temporal()]) == 1
     assert booking.transaction == [b for b in booking_repo.all_fixed()][0].transaction
 
 
