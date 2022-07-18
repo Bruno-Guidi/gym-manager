@@ -67,7 +67,7 @@ def main(security_handler: SecurityHandler):
         booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), String("d", max_len=10),
                                     charge_once=True, locked=True)
         activity_repo.add(booking_activity)
-    booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo)
+    booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)
     booking_system = BookingSystem(
         booking_activity, booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),
         courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=30
