@@ -70,9 +70,9 @@ def subtract_times(start: time, end: time) -> timedelta:
 
 Court = namedtuple("Court", ["name", "id"])
 
-
-Cancellation = namedtuple("Cancellation", ["cancel_datetime", "responsible", "client", "when", "court", "start", "end",
-                                           "is_fixed", "definitely_cancelled"])
+Cancellation = namedtuple("Cancellation",
+                          ["number", "cancel_datetime", "responsible", "client", "when", "court", "start", "end",
+                           "is_fixed", "definitely_cancelled"])
 
 
 class Duration:
