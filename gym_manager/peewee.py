@@ -344,18 +344,19 @@ class SqliteBalanceRepo(BalanceRepo):
             self, from_date: date, to_date: date
     ) -> Generator[tuple[date, String, Balance, list[Transaction]], None, None]:
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
+        client_q = ClientTable.select(ClientTable.dni, ClientTable.cli_name)
 
-        for record in prefetch(balance_q, TransactionTable.select()):
+        for record in prefetch(balance_q, TransactionTable.select(), client_q):
             transactions = []
             for transaction_record in record.transactions:
-                client = None
+                client: ClientView | None = None
                 if transaction_record.client is not None:
                     dni = Number(transaction_record.client.dni)
-                    if dni in self.client_cache:
-                        client = self.client_cache[dni]
-                    else:
-                        client = ClientView(dni, String(transaction_record.client.cli_name, max_len=30),
-                                            created_by="SqliteClientRepo.all")
+                    if dni not in self.client_cache:
+                        self.client_cache[dni] = client = ClientView(
+                            dni, String(transaction_record.client.cli_name, max_len=30),
+                            created_by="SqliteBalanceRepo.all"
+                        )
                 transactions.append(self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when,
                     transaction_record.amount, transaction_record.method, transaction_record.responsible,
