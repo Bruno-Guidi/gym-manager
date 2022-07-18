@@ -1,6 +1,6 @@
 import dataclasses
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import Generator
 
 from peewee import (
@@ -79,6 +79,13 @@ class TempBookingKey:
     court: str
 
 
+@dataclasses.dataclass(frozen=True)
+class FixedBookingKey:
+    day_of_week: int
+    court: str
+    start: time
+
+
 class SqliteBookingRepo(BookingRepo):
 
     def __init__(
@@ -93,6 +100,7 @@ class SqliteBookingRepo(BookingRepo):
         self.transaction_repo = transaction_repo
 
         self.temp_booking_cache = LRUCache(TempBookingKey, TempBooking, max_len=cache_len)
+        self.fixed_booking_cache = LRUCache(FixedBookingKey, FixedBooking, max_len=cache_len)
 
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
@@ -102,6 +110,7 @@ class SqliteBookingRepo(BookingRepo):
             FixedBookingTable.create(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
                                      client_id=booking.client.dni.as_primitive(), end=booking.end,
                                      first_when=booking.first_when, last_when=booking.when, inactive_dates=[])
+            self.fixed_booking_cache[FixedBookingKey(booking.day_of_week, booking.court, booking.start)] = booking
         elif isinstance(booking, TempBooking):
             booking: TempBooking
             when = datetime.combine(booking.when, booking.start)
@@ -133,7 +142,9 @@ class SqliteBookingRepo(BookingRepo):
     def cancel(self, booking: Booking, definitely_cancelled: bool = True):
         if isinstance(booking, FixedBooking):
             if definitely_cancelled:  # The FixedBooking is temporally cancelled.
-                FixedBookingTable.delete_by_id((booking.day_of_week, booking.court, booking.start))
+                pk = FixedBookingKey(booking.day_of_week, booking.court, booking.start)
+                FixedBookingTable.delete_by_id(dataclasses.astuple(pk))
+                self.fixed_booking_cache.pop(pk)
             else:  # The FixedBooking is definitely cancelled.
                 transaction_id = None if booking.transaction is None else booking.transaction.id
                 FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
@@ -204,17 +215,34 @@ class SqliteBookingRepo(BookingRepo):
 
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
-            transaction_record, transaction = record.transaction, None
-            client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
-                                created_by="SqliteBookingRepo.all_fixed")
-            if transaction_record is not None:
-                transaction = self.transaction_repo.from_data(
-                    transaction_record.id, transaction_record.type, transaction_record.when, transaction_record.amount,
-                    transaction_record.method, transaction_record.responsible, transaction_record.description, client,
-                    transaction_record.balance_id
+            booking: FixedBooking
+            pk = FixedBookingKey(record.day_of_week, record.court, record.start)
+            if pk in self.fixed_booking_cache:
+                booking = self.fixed_booking_cache[pk]
+                logger.getChild(type(self).__name__).info(
+                    f"Using cached booking [booking.day_of_week={booking.day_of_week},  booking.court={booking.court}, "
+                    f"booking.start={booking.start}]."
                 )
-            yield FixedBooking(record.court, client, record.start, record.end, record.day_of_week, record.first_when,
-                               record.last_when, deserialize_inactive_dates(record.inactive_dates), transaction)
+            else:
+                transaction_record, transaction = record.transaction, None
+                client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                                    created_by="SqliteBookingRepo.all_fixed")
+                if transaction_record is not None:
+                    transaction = self.transaction_repo.from_data(
+                        transaction_record.id, transaction_record.type, transaction_record.when,
+                        transaction_record.amount, transaction_record.method, transaction_record.responsible,
+                        transaction_record.description, client, transaction_record.balance_id
+                    )
+                booking = FixedBooking(record.court, client, record.start, record.end, record.day_of_week,
+                                       record.first_when, record.last_when,
+                                       deserialize_inactive_dates(record.inactive_dates), transaction)
+                self.fixed_booking_cache[pk] = booking
+                logger.getChild(type(self).__name__).info(
+                    f"Querying booking [booking.day_of_week={booking.day_of_week},  booking.court={booking.court}, "
+                    f"booking.start={booking.start}]."
+                )
+
+            yield booking
 
     def cancelled(
             self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
