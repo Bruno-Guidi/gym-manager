@@ -125,7 +125,7 @@ class SqliteClientRepo(ClientRepo):
         self._views.pop(client.dni, None)
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
-        return Client
+        return client
 
     def update(self, client: Client):
         ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
