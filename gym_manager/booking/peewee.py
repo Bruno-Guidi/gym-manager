@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 from datetime import date, datetime
 from typing import Generator
@@ -72,6 +73,12 @@ class CancelledLog(Model):
         database = peewee.DATABASE_PROXY
 
 
+@dataclasses.dataclass(frozen=True)
+class TempBookingKey:
+    when: datetime
+    court: str
+
+
 class SqliteBookingRepo(BookingRepo):
 
     def __init__(
@@ -85,7 +92,7 @@ class SqliteBookingRepo(BookingRepo):
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
 
-        self.temp_booking_cache = LRUCache((tuple[datetime, str], ), TempBooking, max_len=cache_len)
+        self.temp_booking_cache = LRUCache(TempBookingKey, TempBooking, max_len=cache_len)
 
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
@@ -101,7 +108,7 @@ class SqliteBookingRepo(BookingRepo):
             BookingTable.create(when=when, court=booking.court, client_id=booking.client.dni.as_primitive(),
                                 end=booking.end, is_fixed=False)
 
-            self.temp_booking_cache[(when, booking.court)] = booking
+            self.temp_booking_cache[TempBookingKey(when, booking.court)] = booking
         else:
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                    f"SqliteBookingRepo.")
@@ -136,8 +143,8 @@ class SqliteBookingRepo(BookingRepo):
                                           inactive_dates=serialize_inactive_dates(booking.inactive_dates)).execute()
         elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
             when = datetime.combine(booking.when, booking.start)
-            pk = (when, booking.court)
-            BookingTable.delete_by_id(pk)
+            pk = TempBookingKey(when, booking.court)
+            BookingTable.delete_by_id(dataclasses.astuple(pk))
             self.temp_booking_cache.pop(pk)
 
     def log_cancellation(
@@ -168,7 +175,7 @@ class SqliteBookingRepo(BookingRepo):
 
         for record in prefetch(bookings_q, TransactionTable.select()):
             booking: TempBooking
-            pk = (record.court, record.when)
+            pk = TempBookingKey(record.court, record.when)
             if pk in self.temp_booking_cache:
                 booking = self.temp_booking_cache[pk]
             else:
