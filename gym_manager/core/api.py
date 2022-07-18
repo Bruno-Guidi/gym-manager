@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 CreateTransactionFn: TypeAlias = Callable[[], Transaction]
 
 
-@log_responsible(action_tag="subscribe", action_name="Inscribir")
+def _subscribe_description(subscription: Subscription) -> str:
+    return f"Inscripción a actividad {subscription.activity.name} de {subscription.client.name}"
+
+
+@log_responsible(action_tag="subscribe", to_str=_subscribe_description)
 def subscribe(
         subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity,
         transaction: Transaction | None = None
@@ -59,8 +63,12 @@ def subscribe(
     return subscription
 
 
-@log_responsible(action_tag="cancel", action_name="Desinscribir")
-def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> None:
+def _cancel_sub_description(subscription: Subscription) -> str:
+    return f"Cancelación inscripción de actividad {subscription.activity.name} a {subscription.client.name}"
+
+
+@log_responsible(action_tag="cancel", to_str=_cancel_sub_description)
+def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> Subscription:
     """Cancels the *subscription*.
 
     Args:
@@ -73,12 +81,18 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> N
     logger.getChild(__name__).info(
         f"Client [dni={subscription.client.dni}] unsubscribed of activity [activity_name={subscription.activity.name}]."
     )
+    return subscription
 
 
-@log_responsible(action_tag="register_subscription_charge", action_name="Cobro actividad")
+def _charge_sub_description(subscription: Subscription) -> str:
+    return (f"Cobro de {subscription.activity.price} por actividad {subscription.activity.name} a "
+            f"{subscription.client.name}")
+
+
+@log_responsible(action_tag="register_subscription_charge", to_str=_charge_sub_description)
 def register_subscription_charge(
         subscription_repo: SubscriptionRepo, subscription: Subscription, create_transaction_fn: CreateTransactionFn
-) -> Transaction:
+) -> Subscription:
     """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
@@ -103,7 +117,7 @@ def register_subscription_charge(
         f"{subscription.activity.price}]."
     )
 
-    return transaction
+    return subscription
 
 
 def extract(
@@ -155,7 +169,7 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
     return balance
 
 
-@log_responsible(action_tag="close_balance", action_name="Cierre caja diaria")
+@log_responsible(action_tag="close_balance", to_str=lambda when: f"Cierre caja diaria {when}")
 def close_balance(
         transaction_repo: TransactionRepo,
         balance_repo: BalanceRepo,
@@ -197,3 +211,6 @@ def close_balance(
 
     logger.getChild(__name__).info(f"Responsible [responsible={responsible}] closed the balance [balance={balance}] of "
                                    f"[balance_date={balance_date}].")
+    # This is only used in the log_responsible decorator. If needed, other things can be returned. Remember to update
+    # the to_str callable in the decorator.
+    return balance_date
