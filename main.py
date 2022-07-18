@@ -61,10 +61,11 @@ def main(security_handler: SecurityHandler):
     balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
 
     booking_activity: Activity
-    if activity_repo.exists("Padel"):
-        booking_activity = activity_repo.get("Padel")
+    booking_activity_name = String("Padel", max_len=10)
+    if activity_repo.exists(booking_activity_name):
+        booking_activity = activity_repo.get(booking_activity_name)
     else:
-        booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), String("d", max_len=10),
+        booking_activity = Activity(booking_activity_name, Currency(100.00), String("d", max_len=10),
                                     charge_once=True, locked=True)
         activity_repo.add(booking_activity)
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)

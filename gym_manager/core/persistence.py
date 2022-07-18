@@ -151,11 +151,11 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def exists(self, name: str | String) -> bool:
+    def exists(self, name: String) -> bool:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, name: str | String) -> Activity:
+    def get(self, name: String) -> Activity:
         """Retrieves the activity with the given *id* in the repository, if it exists.
 
         Raises:

@@ -73,7 +73,7 @@ class SqliteClientRepo(ClientRepo):
                         is_active)
 
         for sub_record in subscriptions:
-            activity = self.activity_repo.get(sub_record.activity_id)
+            activity = self.activity_repo.get(String(sub_record.activity_id, max_len=30))
             trans_record, transaction = sub_record.transaction, None
             if trans_record is not None:
                 transaction = self.transaction_repo.from_data(
@@ -199,7 +199,7 @@ class SqliteActivityRepo(ActivityRepo):
     def __init__(self, cache_len: int = 50) -> None:
         DATABASE_PROXY.create_tables([ActivityTable])
 
-        self.cache = LRUCache(key_type=(str, String), value_type=Activity, max_len=cache_len)
+        self.cache = LRUCache(String, Activity, max_len=cache_len)
 
     def add(self, activity: Activity):
         """Adds *activity* to the repository.
@@ -215,13 +215,13 @@ class SqliteActivityRepo(ActivityRepo):
                              locked=activity.locked)
         self.cache[activity.name] = activity
 
-    def exists(self, name: str | String) -> bool:
+    def exists(self, name: String) -> bool:
         if name in self.cache:  # First search in the cache.
             return True
 
         return ActivityTable.get_or_none(act_name=name) is not None  # Then search in the db.
 
-    def get(self, name: str | String) -> Activity:
+    def get(self, name: String) -> Activity:
         """Retrieves the activity with the given *name* in the repository, if it exists.
 
         Raises:
@@ -277,13 +277,13 @@ class SqliteActivityRepo(ActivityRepo):
 
         for record in activities_q:
             activity: Activity
-            if record.act_name in self.cache:
-                logger.getChild(type(self).__name__).info(f"Using cached [activity.name={record.act_name}].")
-                activity = self.cache[record.act_name]
+            activity_name = String(record.act_name, max_len=30)
+            if activity_name in self.cache:
+                logger.getChild(type(self).__name__).info(f"Using cached [activity.name={activity_name}].")
+                activity = self.cache[activity_name]
             else:
-                logger.getChild(type(self).__name__).info(f"Querying [activity.name={record.act_name}].")
-                activity = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
-                                    Currency(record.price, max_currency=constants.MAX_CURRENCY),
+                logger.getChild(type(self).__name__).info(f"Querying [activity.name={activity_name}].")
+                activity = Activity(activity_name, Currency(record.price, max_currency=constants.MAX_CURRENCY),
                                     String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
                                     record.charge_once, record.locked)
                 self.cache[activity.name] = activity
