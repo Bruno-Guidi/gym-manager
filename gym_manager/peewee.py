@@ -61,18 +61,18 @@ class SqliteClientRepo(ClientRepo):
         ClientView.repository = self
         self._views: dict[Number, ClientView] = {}
 
-    def _from_record(self, raw) -> Client:
-        client = Client(Number(raw.dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI),
-                        String(raw.cli_name, max_len=constants.CLIENT_NAME_CHARS),
-                        raw.admission,
-                        raw.birth_day,
-                        String(raw.telephone, optional=constants.CLIENT_TEL_OPTIONAL,
+    def _from_record(
+            self, dni: Number, raw_name: str, admission: date, birth_day: date, raw_telephone: str, raw_direction: str,
+            is_active: bool, subscriptions
+    ) -> Client:
+        client = Client(dni, String(raw_name, max_len=constants.CLIENT_NAME_CHARS), admission, birth_day,
+                        String(raw_telephone, optional=constants.CLIENT_TEL_OPTIONAL,
                                max_len=constants.CLIENT_TEL_CHARS),
-                        String(raw.direction, optional=constants.CLIENT_DIR_OPTIONAL,
+                        String(raw_direction, optional=constants.CLIENT_DIR_OPTIONAL,
                                max_len=constants.CLIENT_DIR_CHARS),
-                        raw.is_active)
+                        is_active)
 
-        for sub_record in raw.subscriptions:
+        for sub_record in subscriptions:
             activity = self.activity_repo.get(sub_record.activity_id)
             trans_record, transaction = sub_record.transaction, None
             if trans_record is not None:
@@ -156,14 +156,16 @@ class SqliteClientRepo(ClientRepo):
 
         for record in prefetch(clients_q, SubscriptionTable.select(), TransactionTable.select()):
             client: Client
-            if record.dni in self.cache:
-                logger.getChild(type(self).__name__).info(f"Using cached client [client.dni={record.dni}].")
-                client = self.cache[record.dni]
+            dni = Number(record.dni)
+            if dni in self.cache:
+                logger.getChild(type(self).__name__).info(f"Using cached client [client.dni={dni}].")
+                client = self.cache[dni]
             else:
                 # If there is no caching or if the client isn't in the cache, creates the client from the db record.
-                logger.getChild(type(self).__name__).info(f"Querying client [client.dni={record.dni}].")
-                client = self._from_record(record)
-                self.cache[client.dni] = client
+                logger.getChild(type(self).__name__).info(f"Querying client [client.dni={dni}].")
+                client = self._from_record(dni, record.cli_name, record.admission, record.birth_day, record.telephone,
+                                           record.direction, record.is_active, record.subscriptions)
+                self.cache[dni] = client
             yield client
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
