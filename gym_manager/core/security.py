@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import logging
 from datetime import datetime
-from typing import Callable, ClassVar, Generator, TypeAlias, Iterable
+from typing import Callable, ClassVar, Generator, TypeAlias, Iterable, Any
 
 from gym_manager.core.base import String
 
@@ -33,14 +33,12 @@ class SecurityError(Exception):
             responsible: Responsible | None = None,
             executed_fn: Callable = None,
             action_tag: str | None = None,
-            action_name: str | None = None,
             *args: object
     ) -> None:
         super().__init__(cause, *args)
         self.responsible = responsible
         self.executed_fn = executed_fn
         self.action_tag = action_tag
-        self.action_name = action_name
         self.code = code
 
 
@@ -59,15 +57,15 @@ class log_responsible:
     def config(cls, handler: SecurityHandler):
         cls.handler = handler
 
-    def __init__(self, action_tag: str, action_name: str):
+    def __init__(self, action_tag: str, to_str: Callable[[Any], str]):
         """Init method.
 
         Args:
             action_tag: tag used to identify the function being performed.
-            action_name: display name of the function being performed.
+            to_str: display name of the function being performed.
         """
         self.action_tag = action_tag
-        self.action_name = action_name
+        self.to_str = to_str
 
     def __call__(self, fn):
         def wrapped(*args):
@@ -75,12 +73,12 @@ class log_responsible:
                 raise ValueError("There is no SecurityHandler defined.")
             if self.handler.unregistered_action(self.action_tag):
                 raise SecurityError("Tried to execute an unregistered action.", SecurityError.UNREGISTERED_ACTION,
-                                    self.handler.current_responsible, fn, self.action_tag, self.action_name)
+                                    self.handler.current_responsible, fn, self.action_tag)
             if self.handler.cant_perform_action(self.action_tag):
                 raise SecurityError("Tried to execute action without a defined responsible.", SecurityError.NEEDS_RESP,
-                                    self.handler.current_responsible, fn, self.action_tag, self.action_name)
+                                    self.handler.current_responsible, fn, self.action_tag)
             result = fn(*args)
-            self.handler.handle_action(self.action_tag, self.action_name)
+            self.handler.handle_action(self.action_tag, self.to_str(result))
             return result
 
         return wrapped
@@ -135,7 +133,7 @@ class SecurityHandler(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def handle_action(self, action_level: str, action_name: str):
+    def handle_action(self, action_level: str, action_description: str):
         """Does whatever is needed after executing a given action.
         """
         raise NotImplementedError
@@ -209,13 +207,13 @@ class SimpleSecurityHandler(SecurityHandler):
         """
         return action_tag in self._needs_responsible and self._responsible == NO_RESPONSIBLE
 
-    def handle_action(self, action_level: str, action_name: str):
+    def handle_action(self, action_level: str, action_description: str):
         """Creates a logger entry.
         """
         logger.getChild(type(self).__name__).info(
-            f"Responsible '{self._responsible}' did the action '{action_name}' that has a level '{action_level}'."
+            f"Responsible '{self._responsible.name}' did the action '{action_description}'."
         )
-        self.security_repo.log_action(datetime.now(), self.current_responsible, action_level, action_name)
+        self.security_repo.log_action(datetime.now(), self.current_responsible, action_level, action_description)
 
     def actions(self, page: int = 1, page_len: int = 20) -> Iterable[Action]:
         yield from self.security_repo.actions(page, page_len)
