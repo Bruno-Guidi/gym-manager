@@ -65,14 +65,13 @@ def remaining_blocks(
 
 def subtract_times(start: time, end: time) -> timedelta:
     return datetime.combine(date.min, end) - datetime.combine(date.min, start)
-    # return time(td.seconds // 3600, (td.seconds // 60) % 60)
 
 
 Court = namedtuple("Court", ["name", "id"])
 
-
-Cancellation = namedtuple("Cancellation", ["cancel_datetime", "responsible", "client", "when", "court", "start", "end",
-                                           "is_fixed", "definitely_cancelled"])
+Cancellation = namedtuple("Cancellation",
+                          ["number", "cancel_datetime", "responsible", "client", "when", "court", "start", "end",
+                           "is_fixed", "definitely_cancelled"])
 
 
 class Duration:

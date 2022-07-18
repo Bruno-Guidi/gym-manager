@@ -57,18 +57,18 @@ def main(security_handler: SecurityHandler):
     activity_repo = peewee.SqliteActivityRepo()
     transaction_repo = peewee.SqliteTransactionRepo(methods=("Efectivo", "Débito", "Crédito"))
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
-    transaction_repo.client_repo = client_repo
     subscription_repo = peewee.SqliteSubscriptionRepo()
-    balance_repo = peewee.SqliteBalanceRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
 
     booking_activity: Activity
-    if activity_repo.exists("Padel"):
-        booking_activity = activity_repo.get("Padel")
+    booking_activity_name = String("Padel", max_len=10)
+    if activity_repo.exists(booking_activity_name):
+        booking_activity = activity_repo.get(booking_activity_name)
     else:
-        booking_activity = Activity(String("Padel", max_len=10), Currency(100.00), String("d", max_len=10),
+        booking_activity = Activity(booking_activity_name, Currency(100.00), String("d", max_len=10),
                                     charge_once=True, locked=True)
         activity_repo.add(booking_activity)
-    booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo)
+    booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)
     booking_system = BookingSystem(
         booking_activity, booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),
         courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=30

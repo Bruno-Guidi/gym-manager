@@ -10,11 +10,18 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as constants
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
-from gym_manager.core.security import SecurityHandler
+from gym_manager.core.security import SecurityHandler, log_responsible
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table,
     fill_cell)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
+
+
+@log_responsible(action_tag="update_activity", action_name="Actualizar actividad")
+def update_activity(activity_repo: ActivityRepo, activity: Activity, price: Currency, description: String):
+    activity.price = price
+    activity.description = description
+    activity_repo.update(activity)
 
 
 class MainController:
@@ -104,7 +111,8 @@ class MainController:
         else:
             activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
             activity = self._activities[activity_name]
-            update_fn = functools.partial(self.activity_repo.update, activity)
+            update_fn = functools.partial(update_activity, self.activity_repo, self._activities[activity_name],
+                                          self.main_ui.price_field.value(), descr)
 
             if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
                 # Updates the activity.

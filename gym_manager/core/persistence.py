@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import abc
 from collections import OrderedDict
 from datetime import date
-from typing import Generator, Type, Any, Iterable, TypeAlias
+from typing import Generator, Type, Any, Iterable, TypeAlias, ClassVar
 
 from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter, Balance
 
@@ -16,8 +18,8 @@ class PersistenceError(Exception):
 
 class LRUCache:
 
-    def __init__(self, key_types: tuple[Type, ...], value_type: Type, max_len: int) -> None:
-        self.key_types = key_types
+    def __init__(self, key_type: Type, value_type: Type, max_len: int) -> None:
+        self.key_type = key_type
         self.value_type = value_type
 
         self.max_len = max_len
@@ -27,17 +29,17 @@ class LRUCache:
         return len(self._cache)
 
     def __getitem__(self, key: Any) -> Any:
-        if not isinstance(key, self.key_types):
-            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
-        if key not in self._cache.keys():
+        if not isinstance(key, self.key_type):
+            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if key not in self._cache:  # There is one implicit __getitem__ call.
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
 
-        self._cache.move_to_end(key, last=False)
+        self._cache.move_to_end(key, last=False)  # There is one implicit __getitem__ call.
         return self._cache[key]
 
     def __setitem__(self, key: Any, value: Any):
-        if not isinstance(key, self.key_types):
-            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
+        if not isinstance(key, self.key_type):
+            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
         if not isinstance(value, self.value_type):
             raise TypeError(f"The LRUCache expected a '{self.value_type}' as value, but received a '{type(value)}'.")
 
@@ -47,32 +49,49 @@ class LRUCache:
             self._cache.popitem(last=True)
 
     def pop(self, key: Any):
-        if not isinstance(key, self.key_types):
-            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
-        if key not in self._cache.keys():
+        if not isinstance(key, self.key_type):
+            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if key not in self._cache:
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
         self._cache.pop(key)
 
+    def __contains__(self, key: Any) -> bool:
+        return key in self._cache
+
     def __iter__(self):
-        yield from iter(self._cache.keys())
+        yield from iter(self._cache)
 
     def move_to_front(self, key: Any):
-        if not isinstance(key, self.key_types):
-            raise TypeError(f"The LRUCache expected a '{self.key_types}' as key, but received a '{type(key)}'.")
-        if key not in self._cache.keys():
+        if not isinstance(key, self.key_type):
+            raise TypeError(f"The LRUCache expected a '{self.key_type}' as key, but received a '{type(key)}'.")
+        if key not in self._cache:
             raise KeyError(f"The LRUCache does not contains the key '{key}'.")
         self._cache.move_to_end(key, last=False)
+
+
+class ClientView(Client):
+    """Stores only the client's dni and number. Could evolve into a proxy if needed later.
+    """
+
+    repository: ClassVar[ClientRepo] = None
+
+    def __init__(self, dni: Number, name: String, created_by: str):
+        self.dni = dni
+        self.name = name
+        self.created_by = created_by
+
+        if self.repository is None:
+            raise AttributeError("ClassVar 'repository' wasn't set in ClientView.")
+        self.repository.register_view(self)
+
+    def __getattr__(self, attr_name):
+        raise NotImplementedError(f"The object '{type(self).__name__}' created by '{self.created_by}' has no "
+                                  f"implementation of '{attr_name}'.")
 
 
 class ClientRepo(abc.ABC):
     """Clients repository interface.
     """
-
-    @abc.abstractmethod
-    def get(self, dni: int | Number) -> Client:
-        """Returns the client with the given *dni*.
-        """
-        raise NotImplementedError
 
     @abc.abstractmethod
     def is_active(self, dni: Number) -> bool:
@@ -117,6 +136,10 @@ class ClientRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def register_view(self, view: ClientView):
+        raise NotImplementedError
+
 
 class ActivityRepo(abc.ABC):
     """Activities repository interface.
@@ -128,11 +151,11 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def exists(self, name: str | String) -> bool:
+    def exists(self, name: String) -> bool:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, name: str | String) -> Activity:
+    def get(self, name: String) -> Activity:
         """Retrieves the activity with the given *id* in the repository, if it exists.
 
         Raises:
@@ -201,12 +224,16 @@ class TransactionRepo(abc.ABC):
     """
 
     def __init__(self, methods: Iterable[str] | None = None) -> None:
-        self.methods = methods
+        self.methods = methods if methods is not None else []
 
-    # noinspection PyShadowingBuiltins
     @abc.abstractmethod
-    def from_record(self, id, type, client: Client, when, amount, method, responsible, description):
-        """Creates a Transaction with the given data.
+    def from_data(
+            self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
+            method: str | None = None, raw_responsible: str | None = None, description: str | None = None,
+            client: Client | None = None, balance_date: date | None = None
+    ) -> Transaction:
+        """If there is an existing Transaction with the given *id_*, return it. If not, and all others arguments aren't
+        None, create a new Transaction and return it.
         """
         raise NotImplementedError
 
@@ -223,7 +250,7 @@ class TransactionRepo(abc.ABC):
     @abc.abstractmethod
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
-            include_closed: bool = True, balance_date: date | None = None
+            without_balance: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
         raise NotImplementedError
 

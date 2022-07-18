@@ -14,13 +14,21 @@ from PyQt5.QtWidgets import (
 from gym_manager.core import constants as constants, api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
-from gym_manager.core.security import SecurityHandler, SecurityError
+from gym_manager.core.security import SecurityHandler, SecurityError, log_responsible
 from ui.accounting import ChargeUI
 from ui.translated_messages import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
+
+
+@log_responsible(action_tag="update_client", action_name="Actualizar cliente")
+def update_client(client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String):
+    client.name = name
+    client.telephone = telephone
+    client.direction = direction
+    client_repo.update(client)
 
 
 class MainController:
@@ -132,14 +140,11 @@ class MainController:
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-            update_fn = functools.partial(self.client_repo.update, self._clients[client_dni])
+            update_fn = functools.partial(update_client, self.client_repo, self._clients[client_dni],
+                                          self.main_ui.name_field.value(), self.main_ui.tel_field.value(),
+                                          self.main_ui.dir_field.value())
 
             if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
-                # Updates the client.
-                self._clients[client_dni].name = self.main_ui.name_field.value()
-                self._clients[client_dni].telephone = self.main_ui.tel_field.value()
-                self._clients[client_dni].direction = self.main_ui.dir_field.value()
-
                 # Updates the ui.
                 row = self.main_ui.client_table.currentRow()
                 client = self._clients[client_dni]
