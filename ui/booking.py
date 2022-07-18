@@ -563,7 +563,6 @@ class HistoryController:
                                                 for duration in booking_system.durations}
 
         # Configure the filtering widget.
-        # ToDo The two following filters won't work until Cancellation objects stores Client objects.
         filters = (ClientLike("client_name", display_name="Nombre cliente",
                               translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
