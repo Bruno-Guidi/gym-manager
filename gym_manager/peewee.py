@@ -84,27 +84,6 @@ class SqliteClientRepo(ClientRepo):
 
         return client
 
-    def get(self, dni: int | Number) -> Client:
-        if not isinstance(dni, (Number, int)):
-            raise TypeError(f"The argument 'dni' should be a 'Number' or 'int', not a '{type(dni)}'")
-        if isinstance(dni, int):
-            dni = Number(dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI)
-            logger.getChild(type(self).__name__).warning(f"Converting raw dni [dni={dni}] from int to Number.")
-
-        if dni in self.cache:
-            return self.cache[dni]
-
-        clients_q = ClientTable.select().where(ClientTable.dni == dni.as_primitive())
-        subs_q, trans_q = SubscriptionTable.select(), TransactionTable.select()
-        # Because the clients are queried according to the pk, the query resulting from the prefetch will have only
-        # one record.
-        for record in prefetch(clients_q, subs_q, trans_q):
-            self.cache[dni] = self._from_record(record)
-            return self.cache[dni]
-
-        # This is only reached if the previous query doesn't return anything.
-        raise KeyError(f"There is no client with [dni={dni}].")
-
     def is_active(self, dni: Number) -> bool:
         """Checks if there is an active client with the given *dni*.
         """
