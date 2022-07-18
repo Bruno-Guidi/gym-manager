@@ -101,6 +101,7 @@ class SqliteBookingRepo(BookingRepo):
 
         self.temp_booking_cache = LRUCache(TempBookingKey, TempBooking, max_len=cache_len)
         self.fixed_booking_cache = LRUCache(FixedBookingKey, FixedBooking, max_len=cache_len)
+        self.cancellation_cache = LRUCache(int, Cancellation, max_len=int(cache_len / 2))
 
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
@@ -161,10 +162,13 @@ class SqliteBookingRepo(BookingRepo):
     def log_cancellation(
             self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
     ):
-        CancelledLog.create(cancel_datetime=cancel_datetime, responsible=responsible.as_primitive(),
-                            client_id=booking.client.dni.as_primitive(), when=booking.when, court=booking.court,
-                            start=booking.start, end=booking.end, is_fixed=booking.is_fixed,
-                            definitely_cancelled=definitely_cancelled)
+        record = CancelledLog.create(cancel_datetime=cancel_datetime, responsible=responsible.as_primitive(),
+                                     client_id=booking.client.dni.as_primitive(), when=booking.when,
+                                     court=booking.court, start=booking.start, end=booking.end,
+                                     is_fixed=booking.is_fixed, definitely_cancelled=definitely_cancelled)
+        self.cancellation_cache[record.id] = Cancellation(record.id, cancel_datetime, responsible, booking.client,
+                                                          booking.when, booking.court, booking.start, booking.end,
+                                                          booking.is_fixed, definitely_cancelled)
 
     def all_temporal(
             self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None
@@ -247,11 +251,7 @@ class SqliteBookingRepo(BookingRepo):
     def cancelled(
             self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
     ) -> Generator[Cancellation, None, None]:
-        cancelled_q = CancelledLog.select(
-            CancelledLog.cancel_datetime, CancelledLog.responsible, CancelledLog.client_id, CancelledLog.when,
-            CancelledLog.court, CancelledLog.start, CancelledLog.end, CancelledLog.is_fixed,
-            CancelledLog.definitely_cancelled
-        )
+        cancelled_q = CancelledLog.select()
         # The left outer join is required because the client name is required.
         cancelled_q = cancelled_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
 
@@ -260,12 +260,17 @@ class SqliteBookingRepo(BookingRepo):
                 cancelled_q = cancelled_q.where(filter_.passes_in_repo(CancelledLog, value))
 
         for record in cancelled_q.paginate(page, page_len):
-            yield Cancellation(
-                record.cancel_datetime, record.responsible,
-                ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
-                           created_by="SqliteBookingRepo.cancelled"),
-                record.when, record.court, record.start, record.end, record.is_fixed, record.definitely_cancelled
-            )
+            if record.id not in self.cancellation_cache:
+                self.cancellation_cache[record.id] = Cancellation(
+                    record.id, record.cancel_datetime, record.responsible,
+                    ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                               created_by="SqliteBookingRepo.cancelled"),
+                    record.when, record.court, record.start, record.end, record.is_fixed, record.definitely_cancelled
+                )
+                logger.getChild(type(self).__name__).info(
+                    f"Creating Cancellation [cancellation.id={record.id}] from queried data."
+                )
+            yield self.cancellation_cache[record.id]
 
     def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of bookings in the repository.
