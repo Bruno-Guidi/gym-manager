@@ -17,11 +17,13 @@ from ui.widget_config import (
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 
-@log_responsible(action_tag="update_activity", action_name="Actualizar actividad")
+@log_responsible(action_tag="update_activity", to_str=lambda activity: f"Actualizar actividad {activity.name}")
 def update_activity(activity_repo: ActivityRepo, activity: Activity, price: Currency, description: String):
     activity.price = price
     activity.description = description
     activity_repo.update(activity)
+
+    return activity
 
 
 class MainController:
