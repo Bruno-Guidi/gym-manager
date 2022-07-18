@@ -172,7 +172,7 @@ class DailyBalanceController:
                 )
                 # noinspection PyTypeChecker
                 api.close_balance(self.transaction_repo, self.balance_repo, self.balance, today,
-                                  self.daily_balance_ui.responsible_field.value(), create_extraction_fn)
+                                  self.security_handler.current_responsible.name, create_extraction_fn)
                 self.daily_balance_ui.confirm_btn.window().close()
         except SecurityError as sec_err:
             Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
@@ -333,6 +333,7 @@ class BalanceHistoryController:
         self._load_balance_table(from_date=when, to_date=when)
 
     def refresh_balance_info(self):
+
         print("refreshing")  # ToDo requires Balance rework.
 
 
