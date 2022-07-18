@@ -113,7 +113,7 @@ class SqliteClientRepo(ClientRepo):
         if client.dni in self._views:
             self._views[client.dni].name = client.name
 
-    @log_responsible(action_tag="remove_client", action_name="Eliminar cliente")
+    @log_responsible(action_tag="remove_client", to_str=lambda client: f"Eliminar cliente {client.name}")
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
@@ -124,6 +124,8 @@ class SqliteClientRepo(ClientRepo):
         self.cache.pop(client.dni)
         self._views.pop(client.dni, None)
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
+
+        return Client
 
     def update(self, client: Client):
         ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
@@ -240,7 +242,7 @@ class SqliteActivityRepo(ActivityRepo):
         logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={name}] from queried data.")
         return self.cache[name]
 
-    @log_responsible(action_tag="remove_activity", action_name="Eliminar actividad")
+    @log_responsible(action_tag="remove_activity", to_str=lambda activity: f"Eliminar actividad {activity.name}")
     def remove(self, activity: Activity):
         """Removes the given *activity*.
 
@@ -252,6 +254,8 @@ class SqliteActivityRepo(ActivityRepo):
 
         self.cache.pop(activity.name)
         ActivityTable.delete_by_id(activity.name)
+
+        return activity
 
     def update(self, activity: Activity):
         ActivityTable.replace(act_name=activity.name.as_primitive(),
@@ -570,4 +574,4 @@ class SqliteSecurityRepo(SecurityRepo):
             # ToDo those Strings don't need validation.
             resp = Responsible(String(record.responsible.resp_name, max_len=30),
                                String(record.responsible.resp_code, max_len=30))
-            yield record.when, resp, record.action_tag, record.action_name
+            yield record.when, resp, record.action_tag, record.to_str
