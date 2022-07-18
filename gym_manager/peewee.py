@@ -134,8 +134,6 @@ class SqliteClientRepo(ClientRepo):
         if client.dni in self._views:  # Refreshes the view of the updated client, if there is one.
             self._views[client.dni].name = client.name
 
-        self.cache.move_to_front(client.dni)
-
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Client, None, None]:
