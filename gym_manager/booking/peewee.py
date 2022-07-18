@@ -12,7 +12,7 @@ from gym_manager.booking.core import TempBooking, BookingRepo, Booking, FixedBoo
 from gym_manager.core.base import Transaction, String, Number
 from gym_manager.core.persistence import (
     ClientRepo, TransactionRepo, FilterValuePair, PersistenceError,
-    ClientView)
+    ClientView, LRUCache)
 from gym_manager.peewee import TransactionTable
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,8 @@ class SqliteBookingRepo(BookingRepo):
         self.client_repo = client_repo
         self.transaction_repo = transaction_repo
 
+        self.temp_booking_cache = LRUCache((tuple[datetime, str], ), TempBooking, max_len=cache_len)
+
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
         # associated transaction.
@@ -95,9 +97,11 @@ class SqliteBookingRepo(BookingRepo):
                                      first_when=booking.first_when, last_when=booking.when, inactive_dates=[])
         elif isinstance(booking, TempBooking):
             booking: TempBooking
-            BookingTable.create(when=datetime.combine(booking.when, booking.start), court=booking.court,
-                                client_id=booking.client.dni.as_primitive(), end=booking.end, is_fixed=False)
+            when = datetime.combine(booking.when, booking.start)
+            BookingTable.create(when=when, court=booking.court, client_id=booking.client.dni.as_primitive(),
+                                end=booking.end, is_fixed=False)
 
+            self.temp_booking_cache[(when, booking.court)] = booking
         else:
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                    f"SqliteBookingRepo.")
@@ -131,7 +135,10 @@ class SqliteBookingRepo(BookingRepo):
                                           last_when=booking.when,
                                           inactive_dates=serialize_inactive_dates(booking.inactive_dates)).execute()
         elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
-            BookingTable.delete_by_id((datetime.combine(booking.when, booking.start), booking.court))
+            when = datetime.combine(booking.when, booking.start)
+            pk = (when, booking.court)
+            BookingTable.delete_by_id(pk)
+            self.temp_booking_cache.pop(pk)
 
     def log_cancellation(
             self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
@@ -160,19 +167,26 @@ class SqliteBookingRepo(BookingRepo):
                 bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
         for record in prefetch(bookings_q, TransactionTable.select()):
-            client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
-                                created_by="SqliteBookingRepo.all_temporal")
+            booking: TempBooking
+            pk = (record.court, record.when)
+            if pk in self.temp_booking_cache:
+                booking = self.temp_booking_cache[pk]
+            else:
+                client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                                    created_by="SqliteBookingRepo.all_temporal")
 
-            trans_record, transaction = record.transaction, None
-            if trans_record is not None:
-                transaction = self.transaction_repo.from_data(
-                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
-                    trans_record.responsible, trans_record.description, client, trans_record.balance_id
-                )
+                trans_record, transaction = record.transaction, None
+                if trans_record is not None:
+                    transaction = self.transaction_repo.from_data(
+                        trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
+                        trans_record.responsible, trans_record.description, client, trans_record.balance_id
+                    )
 
-            when = record.when.date()
-            start = record.when.time()
-            yield TempBooking(record.court, client, start, record.end, when, transaction, record.is_fixed)
+                when = record.when.date()
+                start = record.when.time()
+                booking = TempBooking(record.court, client, start, record.end, when, transaction, record.is_fixed)
+
+            yield booking
 
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
