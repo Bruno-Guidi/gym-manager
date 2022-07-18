@@ -9,6 +9,7 @@ from gym_manager.core import api
 from gym_manager.core.base import (
     Client, Number, String, Activity, Currency, Subscription, OperationalError,
     Transaction, InvalidDate)
+from gym_manager.core.persistence import ClientView
 from gym_manager.core.security import (
     SecurityHandler, log_responsible, Responsible, Action)
 
@@ -178,3 +179,31 @@ def test_charge_notChargeOnceActivity():
     api.register_subscription_charge(subscription_repo, subscription, create_transaction_fn)
     # Check that the activity is up-to-date, because a charge was registered.
     assert subscription.up_to_date(date(2022, 4, 1))
+
+
+def test_ClientViewRefreshedAfterClientUpdate():
+    log_responsible.config(MockSecurityHandler())
+
+    # Repositories setup.
+    peewee.create_database(":memory:")
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # Creates a Client.
+    client = Client(Number(12345), String("CliName", max_len=30), date(2000, 2, 2), date(2022, 1, 1),
+                    String("Tel", max_len=20), String("Dir", max_len=20))
+    client_repo.add(client)
+
+    # Then creates a Transaction related to the client. The transaction has a ClientView instead of a Client.
+    transaction = transaction_repo.from_data(0, "type", date(2022, 2, 2), "100.00", "method", "resp", "descr",
+                                             ClientView(Number(12345), String("CliName", max_len=30), ""))
+
+    # Updates the Client.
+    client.name = String("OtherName", max_len=30)
+    client_repo.update(client)
+
+    # Assert that the ClientView in the Transaction was updated.
+    assert transaction.client.name == client.name
+
