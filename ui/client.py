@@ -217,10 +217,10 @@ class MainController:
             post_charge_fn=register_sub_charge
         )
         self._charge_ui.exec_()
-        if self._charge_ui.controller.transaction is not None:
+        if self._charge_ui.controller.success:
             # Updates the last charged date of the subscription.
             fill_cell(self.main_ui.subscription_table, self.main_ui.subscription_table.currentRow(), 1,
-                      self._charge_ui.controller.transaction.when, data_type=bool)
+                      self._subscriptions[self.main_ui.subscription_table.currentRow()], data_type=bool)
             # If 'only overdue' filtering is active, then remove the activity from the table, because it is no longer
             # overdue.
             if self.main_ui.overdue_subs_checkbox.isChecked():

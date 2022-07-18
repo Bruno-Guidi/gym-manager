@@ -500,6 +500,7 @@ class ChargeController:
         self.security_handler = security_handler
         self.client, self.amount = client, amount
         self.transaction: Transaction | None = None
+        self.success = False
 
         # This is a partial function, where the only argument left is a callable that creates a transaction with the
         # data extracted from the form. In this way, the transaction is created in the same place as the subsequent
@@ -528,8 +529,9 @@ class ChargeController:
                 self.charge_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
                 self.charge_ui.descr_text.toPlainText(), self.client
             )
-            self.transaction = self.post_charge_fn(create_transaction_fn)
-            Dialog.confirm(f"Se ha registrado un cobro con número de identificación '{self.transaction.id}'.")
+            self.success = True
+            self.post_charge_fn(create_transaction_fn)
+            Dialog.confirm(f"Cobro registrado correctamente.")
             self.charge_ui.descr_text.window().close()
         except SecurityError as sec_err:
             Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
