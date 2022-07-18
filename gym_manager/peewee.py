@@ -15,7 +15,7 @@ from gym_manager.core.base import (
     Balance)
 from gym_manager.core.persistence import (
     ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
-    BalanceRepo, FilterValuePair, PersistenceError, SimpleClient)
+    BalanceRepo, FilterValuePair, PersistenceError, ClientView)
 from gym_manager.core.security import log_responsible, SecurityRepo, Responsible, Action
 
 logger = logging.getLogger(__name__)
@@ -455,8 +455,8 @@ class SqliteTransactionRepo(TransactionRepo):
         for record in transactions_q:
             client = None
             if record.client is not None:
-                client = SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
-                                      created_by="SqliteClientRepo.all")
+                client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                                    created_by="SqliteClientRepo.all")
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
 

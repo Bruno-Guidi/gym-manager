@@ -12,7 +12,7 @@ from gym_manager.booking.core import TempBooking, BookingRepo, Booking, FixedBoo
 from gym_manager.core.base import Transaction, String, Number
 from gym_manager.core.persistence import (
     ClientRepo, TransactionRepo, FilterValuePair, PersistenceError,
-    SimpleClient)
+    ClientView)
 from gym_manager.peewee import TransactionTable
 
 logger = logging.getLogger(__name__)
@@ -160,8 +160,8 @@ class SqliteBookingRepo(BookingRepo):
                 bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
         for record in prefetch(bookings_q, TransactionTable.select()):
-            client = SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
-                                  created_by="SqliteBookingRepo.all_temporal")
+            client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                                created_by="SqliteBookingRepo.all_temporal")
 
             trans_record, transaction = record.transaction, None
             if trans_record is not None:
@@ -177,8 +177,8 @@ class SqliteBookingRepo(BookingRepo):
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
             transaction_record, transaction = record.transaction, None
-            client = SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
-                                  created_by="SqliteBookingRepo.all_fixed")
+            client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                                created_by="SqliteBookingRepo.all_fixed")
             if transaction_record is not None:
                 transaction = self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when, transaction_record.amount,
@@ -206,8 +206,8 @@ class SqliteBookingRepo(BookingRepo):
         for record in cancelled_q.paginate(page, page_len):
             yield Cancellation(
                 record.cancel_datetime, record.responsible,
-                SimpleClient(Number(record.client.dni), String(record.client.cli_name, max_len=30),
-                             created_by="SqliteBookingRepo.cancelled"),
+                ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                           created_by="SqliteBookingRepo.cancelled"),
                 record.when, record.court, record.start, record.end, record.is_fixed, record.definitely_cancelled
             )
 

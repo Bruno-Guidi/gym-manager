@@ -67,7 +67,7 @@ class LRUCache:
         self._cache.move_to_end(key, last=False)
 
 
-class SimpleClient(Client):
+class ClientView(Client):
     """Stores only the client's dni and number. Could evolve into a proxy if needed later.
     """
 
