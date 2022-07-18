@@ -178,6 +178,9 @@ class SqliteBookingRepo(BookingRepo):
             pk = TempBookingKey(record.court, record.when)
             if pk in self.temp_booking_cache:
                 booking = self.temp_booking_cache[pk]
+                logger.getChild(type(self).__name__).info(f"Using cached booking [booking.when={booking.when}, "
+                                                          f"booking.court={booking.court}, "
+                                                          f"booking.start={booking.start}].")
             else:
                 client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
                                     created_by="SqliteBookingRepo.all_temporal")
@@ -192,6 +195,10 @@ class SqliteBookingRepo(BookingRepo):
                 when = record.when.date()
                 start = record.when.time()
                 booking = TempBooking(record.court, client, start, record.end, when, transaction, record.is_fixed)
+                self.temp_booking_cache[pk] = booking
+                logger.getChild(type(self).__name__).info(f"Querying booking [booking.when={booking.when}, "
+                                                          f"booking.court={booking.court}, "
+                                                          f"booking.start={booking.start}].")
 
             yield booking
 
