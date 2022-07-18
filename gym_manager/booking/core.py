@@ -17,6 +17,10 @@ ONE_WEEK_TD = timedelta(weeks=1)
 ONE_DAY_TD = timedelta(days=1)
 
 
+def booking_description(booking: Booking) -> str:
+    return f"Reserva turno {booking.when.strftime('%d/%m/%Y')} - {booking.start.strftime('%H:%M')} - Cancha {booking.court}"
+
+
 def time_range(start: time, end: time, minute_step: int) -> Generator[time, None, None]:
     """Generates all the times between *start* and *end* (inclusive), with steps of *minute_step* minutes.
     """
@@ -405,7 +409,7 @@ class BookingSystem:
                 return False
         return True
 
-    @log_responsible(action_tag="create_booking", action_name="Reservar turno")
+    @log_responsible(action_tag="create_booking", to_str=booking_description)
     def book(
             self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
     ) -> Booking:
@@ -432,7 +436,7 @@ class BookingSystem:
         self.repo.add(booking)
         return booking
 
-    @log_responsible(action_tag="cancel_booking", action_name="Cancelar turno")
+    @log_responsible(action_tag="cancel_booking", to_str=booking_description)
     def cancel(
             self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
             cancel_datetime: datetime | None = None
@@ -445,7 +449,7 @@ class BookingSystem:
         self.repo.cancel(booking, definitely_cancelled)
         self.repo.log_cancellation(cancel_datetime, responsible, booking, definitely_cancelled)
 
-    @log_responsible(action_tag="charge_booking", action_name="Cobrar turno")
+    @log_responsible(action_tag="charge_booking", to_str=booking_description)
     def register_charge(
             self, booking: Booking, booking_date: date, create_transaction_fn: CreateTransactionFn
     ) -> Transaction:
