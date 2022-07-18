@@ -351,7 +351,7 @@ class SqliteBalanceRepo(BalanceRepo):
             transactions = []
             for transaction_record in record.transactions:
                 client = None
-                if record.client is not None:
+                if transaction_record.client is not None:
                     dni = Number(transaction_record.client.dni)
                     if dni in self.client_cache:
                         client = self.client_cache[dni]
