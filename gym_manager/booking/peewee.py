@@ -189,14 +189,8 @@ class SqliteBookingRepo(BookingRepo):
                 bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
         for record in prefetch(bookings_q, TransactionTable.select()):
-            booking: TempBooking
             pk = TempBookingKey(record.court, record.when)
-            if pk in self.temp_booking_cache:
-                booking = self.temp_booking_cache[pk]
-                logger.getChild(type(self).__name__).info(f"Using cached booking [booking.when={booking.when}, "
-                                                          f"booking.court={booking.court}, "
-                                                          f"booking.start={booking.start}].")
-            else:
+            if pk not in self.temp_booking_cache:
                 client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
                                     created_by="SqliteBookingRepo.all_temporal")
 
@@ -209,25 +203,19 @@ class SqliteBookingRepo(BookingRepo):
 
                 when = record.when.date()
                 start = record.when.time()
-                booking = TempBooking(record.court, client, start, record.end, when, transaction, record.is_fixed)
-                self.temp_booking_cache[pk] = booking
-                logger.getChild(type(self).__name__).info(f"Querying booking [booking.when={booking.when}, "
-                                                          f"booking.court={booking.court}, "
-                                                          f"booking.start={booking.start}].")
+                self.temp_booking_cache[pk] = TempBooking(record.court, client, start, record.end, when, transaction,
+                                                          record.is_fixed)
+                logger.getChild(type(self).__name__).info(
+                    f"Creating Booking [booking.when={when}, booking.court={record.court}, booking.start={start}] from "
+                    f"queried data."
+                )
 
-            yield booking
+            yield self.temp_booking_cache[pk]
 
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
         for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
-            booking: FixedBooking
             pk = FixedBookingKey(record.day_of_week, record.court, record.start)
-            if pk in self.fixed_booking_cache:
-                booking = self.fixed_booking_cache[pk]
-                logger.getChild(type(self).__name__).info(
-                    f"Using cached booking [booking.day_of_week={booking.day_of_week},  booking.court={booking.court}, "
-                    f"booking.start={booking.start}]."
-                )
-            else:
+            if pk not in self.fixed_booking_cache:
                 transaction_record, transaction = record.transaction, None
                 client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
                                     created_by="SqliteBookingRepo.all_fixed")
@@ -237,16 +225,16 @@ class SqliteBookingRepo(BookingRepo):
                         transaction_record.amount, transaction_record.method, transaction_record.responsible,
                         transaction_record.description, client, transaction_record.balance_id
                     )
-                booking = FixedBooking(record.court, client, record.start, record.end, record.day_of_week,
-                                       record.first_when, record.last_when,
-                                       deserialize_inactive_dates(record.inactive_dates), transaction)
-                self.fixed_booking_cache[pk] = booking
+                self.fixed_booking_cache[pk] = FixedBooking(
+                    record.court, client, record.start, record.end, record.day_of_week, record.first_when,
+                    record.last_when, deserialize_inactive_dates(record.inactive_dates), transaction
+                )
                 logger.getChild(type(self).__name__).info(
-                    f"Querying booking [booking.day_of_week={booking.day_of_week},  booking.court={booking.court}, "
-                    f"booking.start={booking.start}]."
+                    f"Creating Booking [booking.day_of_week={record.day_of_week},  booking.court={record.court}, "
+                    f"booking.start={record.start}] from queried data."
                 )
 
-            yield booking
+            yield self.fixed_booking_cache[pk]
 
     def cancelled(
             self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
