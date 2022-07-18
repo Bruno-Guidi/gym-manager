@@ -23,12 +23,14 @@ from ui.widget_config import (
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
 
 
-@log_responsible(action_tag="update_client", action_name="Actualizar cliente")
+@log_responsible(action_tag="update_client", to_str=lambda client: f"Actualizar cliente {client.name}")
 def update_client(client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String):
     client.name = name
     client.telephone = telephone
     client.direction = direction
     client_repo.update(client)
+
+    return client
 
 
 class MainController:
