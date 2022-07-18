@@ -80,8 +80,9 @@ class ClientView(Client):
         self.name = name
         self.created_by = created_by
 
-        if self.repository is not None:
-            self.repository.register_view(self)
+        if self.repository is None:
+            raise AttributeError("ClassVar 'repository' wasn't set in ClientView.")
+        self.repository.register_view(self)
 
     def __getattr__(self, attr_name):
         raise NotImplementedError(f"The object '{type(self).__name__}' created by '{self.created_by}' has no "
