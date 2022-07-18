@@ -161,7 +161,6 @@ class SqliteClientRepo(ClientRepo):
                 logger.getChild(type(self).__name__).info(f"Using cached client [client.dni={dni}].")
                 client = self.cache[dni]
             else:
-                # If there is no caching or if the client isn't in the cache, creates the client from the db record.
                 logger.getChild(type(self).__name__).info(f"Querying client [client.dni={dni}].")
                 client = self._from_record(dni, record.cli_name, record.admission, record.birth_day, record.telephone,
                                            record.direction, record.is_active, record.subscriptions)
