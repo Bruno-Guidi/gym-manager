@@ -157,15 +157,13 @@ class SqliteClientRepo(ClientRepo):
         for record in prefetch(clients_q, SubscriptionTable.select(), TransactionTable.select()):
             client: Client
             dni = Number(record.dni)
-            if dni in self.cache:
-                logger.getChild(type(self).__name__).info(f"Using cached client [client.dni={dni}].")
-                client = self.cache[dni]
-            else:
-                logger.getChild(type(self).__name__).info(f"Querying client [client.dni={dni}].")
-                client = self._from_record(dni, record.cli_name, record.admission, record.birth_day, record.telephone,
-                                           record.direction, record.is_active, record.subscriptions)
-                self.cache[dni] = client
-            yield client
+            if dni not in self.cache:
+                logger.getChild(type(self).__name__).info(f"Creating Client [client.dni={dni}] from queried data.")
+                self.cache[dni] = self._from_record(
+                    dni, record.cli_name, record.admission, record.birth_day, record.telephone, record.direction,
+                    record.is_active, record.subscriptions
+                )
+            yield self.cache[dni]
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of clients in the repository.
@@ -239,6 +237,7 @@ class SqliteActivityRepo(ActivityRepo):
                                     String(record.description, optional=True,
                                            max_len=constants.ACTIVITY_DESCR_CHARS),
                                     record.charge_once, record.locked)
+        logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={name}] from queried data.")
         return self.cache[name]
 
     @log_responsible(action_tag="remove_activity", action_name="Eliminar actividad")
@@ -275,16 +274,15 @@ class SqliteActivityRepo(ActivityRepo):
         for record in activities_q:
             activity: Activity
             activity_name = String(record.act_name, max_len=30)
-            if activity_name in self.cache:
-                logger.getChild(type(self).__name__).info(f"Using cached [activity.name={activity_name}].")
-                activity = self.cache[activity_name]
-            else:
-                logger.getChild(type(self).__name__).info(f"Querying [activity.name={activity_name}].")
-                activity = Activity(activity_name, Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
-                                    record.charge_once, record.locked)
-                self.cache[activity.name] = activity
-            yield activity
+            if activity_name not in self.cache:
+                logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={activity_name}] from "
+                                                          f"queried data.")
+                self.cache[activity_name] = Activity(
+                    activity_name, Currency(record.price, max_currency=constants.MAX_CURRENCY),
+                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
+                    record.charge_once, record.locked
+                )
+            yield self.cache[activity_name]
 
     def n_subscribers(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
@@ -413,6 +411,7 @@ class SqliteTransactionRepo(TransactionRepo):
 
         self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method,
                                       String(raw_responsible, max_len=30), description, client, balance_date)
+        logger.getChild(type(self).__name__).info(f"Creating Transaction [transaction.id={id_}] from queried data.")
         return self.cache[id_]
 
     # noinspection PyShadowingBuiltins
