@@ -57,6 +57,10 @@ class SqliteClientRepo(ClientRepo):
 
         self.cache = LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
 
+        # Links this repo with the ClientView, so they can be refreshed after a client change.
+        ClientView.repository = self
+        self._views: dict[Number, ClientView] = {}
+
     def _from_record(self, raw) -> Client:
         client = Client(Number(raw.dni, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI),
                         String(raw.cli_name, max_len=constants.CLIENT_NAME_CHARS),
@@ -144,6 +148,9 @@ class SqliteClientRepo(ClientRepo):
                             admission=client.admission, birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=True).execute()
+
+        if client.dni in self._views:  # Refreshes the view of the updated client, if there is one.
+            self._views[client.dni].name = client.name
 
         self.cache.move_to_front(client.dni)
 

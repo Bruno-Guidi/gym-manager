@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import abc
 from collections import OrderedDict
 from datetime import date
-from typing import Generator, Type, Any, Iterable, TypeAlias
+from typing import Generator, Type, Any, Iterable, TypeAlias, ClassVar
 
 from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter, Balance
 
@@ -71,10 +73,15 @@ class ClientView(Client):
     """Stores only the client's dni and number. Could evolve into a proxy if needed later.
     """
 
+    repository: ClassVar[ClientRepo] = None
+
     def __init__(self, dni: Number, name: String, created_by: str):
         self.dni = dni
         self.name = name
         self.created_by = created_by
+
+        if self.repository is not None:
+            self.repository.register_view(self)
 
     def __getattr__(self, attr_name):
         raise NotImplementedError(f"The object '{type(self).__name__}' created by '{self.created_by}' has no "
