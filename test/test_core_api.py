@@ -207,3 +207,33 @@ def test_ClientViewRefreshedAfterClientUpdate():
     # Assert that the ClientView in the Transaction was updated.
     assert transaction.client.name == client.name
 
+
+def test_ClientViewRefreshedAfterClientCreation():
+    log_responsible.config(MockSecurityHandler())
+
+    # Repositories setup.
+    peewee.create_database(":memory:")
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # Creates a Client.
+    client = Client(Number(12345), String("CliName", max_len=30), date(2000, 2, 2), date(2022, 1, 1),
+                    String("Tel", max_len=20), String("Dir", max_len=20))
+    client_repo.add(client)
+
+    # Removes a Client. It is marked as inactive.
+    client_repo.remove(client)
+
+    # Then creates a Transaction related to the client. The transaction has a ClientView of an inactive Client.
+    transaction = transaction_repo.from_data(0, "type", date(2022, 2, 2), "100.00", "method", "resp", "descr",
+                                             ClientView(Number(12345), String("CliName", max_len=30), ""))
+
+    # Creates the Client again. It has the same dni, but a different name.
+    client.name = String("OtherName", max_len=30)
+    client_repo.add(client)
+
+    # Assert that the ClientView in the Transaction was updated.
+    assert transaction.client.name == client.name
+

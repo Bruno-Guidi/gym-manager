@@ -131,6 +131,8 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=client.is_active).execute()
         self.cache[client.dni] = client
+        if client.dni in self._views:
+            self._views[client.dni].name = client.name
 
     @log_responsible(action_tag="remove_client", action_name="Eliminar cliente")
     def remove(self, client: Client):
