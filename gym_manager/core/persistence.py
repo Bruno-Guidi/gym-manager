@@ -134,6 +134,10 @@ class ClientRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def register_view(self, view: ClientView):
+        raise NotImplementedError
+
 
 class ActivityRepo(abc.ABC):
     """Activities repository interface.

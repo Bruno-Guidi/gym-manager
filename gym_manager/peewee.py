@@ -188,6 +188,9 @@ class SqliteClientRepo(ClientRepo):
                 clients_q = clients_q.where(filter_.passes_in_repo(ClientTable, value))
         return clients_q.count()
 
+    def register_view(self, view: ClientView):
+        self._views[view.dni] = view
+
 
 class ActivityTable(Model):
     act_name = CharField(primary_key=True)
