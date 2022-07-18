@@ -339,6 +339,7 @@ class SqliteBalanceRepo(BalanceRepo):
         DATABASE_PROXY.create_tables([BalanceTable])
 
         self.transaction_repo = transaction_repo
+        self.client_cache = LRUCache((Number, int), value_type=ClientView, max_len=64)
 
     def balance_done(self, when: date) -> bool:
         return BalanceTable.get_or_none(BalanceTable.when == when) is not None
@@ -373,10 +374,18 @@ class SqliteBalanceRepo(BalanceRepo):
         for record in prefetch(balance_q, TransactionTable.select()):
             transactions = []
             for transaction_record in record.transactions:
+                client = None
+                if record.client is not None:
+                    if transaction_record.client.dni in self.client_cache:
+                        client = self.client_cache[transaction_record.client.dni]
+                    else:
+                        client = ClientView(Number(transaction_record.client.dni),
+                                            String(transaction_record.client.cli_name, max_len=30),
+                                            created_by="SqliteClientRepo.all")
                 transactions.append(self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when,
                     transaction_record.amount, transaction_record.method, transaction_record.responsible,
-                    transaction_record.description, transaction_record.balance_id
+                    transaction_record.description, client, transaction_record.balance_id
                 ))
             yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
                    self.json_to_balance(record.balance_dict), transactions)
