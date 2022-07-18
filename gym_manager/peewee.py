@@ -262,8 +262,6 @@ class SqliteActivityRepo(ActivityRepo):
                               description=activity.description.as_primitive(),
                               locked=activity.locked).execute()
 
-        self.cache.move_to_front(activity.name)
-
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Activity, None, None]:
