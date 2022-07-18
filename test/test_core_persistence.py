@@ -7,19 +7,19 @@ from gym_manager.core.persistence import LRUCache
 
 
 def test_LRUCache_getItem_raisesTypeError():
-    cache = LRUCache(key_types=(int,), value_type=str, max_len=3)
+    cache = LRUCache(int, value_type=str, max_len=3)
     with pytest.raises(TypeError):
         value = cache["abc"]
 
 
 def test_LRUCache_getItem_raisesKeyError():
-    cache = LRUCache(key_types=(int,), value_type=str, max_len=3)
+    cache = LRUCache(key_type=int, value_type=str, max_len=3)
     with pytest.raises(KeyError):
         value = cache[123]
 
 
 def test_LRUCache_iter_completeIteration():
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=3)
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
     keys = [i for i in range(3)]
     for i in keys:
         cache[i] = i
@@ -30,13 +30,13 @@ def test_LRUCache_iter_completeIteration():
 
 
 def test_LRUCache_iter_completeIteration_zeroKeys():
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=3)
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
 
     assert [] == [key for key in cache]
 
 
 def test_LRUCache_iter_keyContained():
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=3)
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
     cache[5] = 5
     assert 5 in cache
 
@@ -48,7 +48,7 @@ def test_LRUCache_iter_keyContained():
 
 
 def test_LRUCache_iter_keyNotContained():
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=3)
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
 
     assert 5 not in cache
 
@@ -62,7 +62,7 @@ def test_LRUCache_iter_keyNotContained():
 
 def test_LRUCache_getItem_maxLenIsNeverExceeded():
     max_len = 3
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=max_len)
+    cache = LRUCache(key_type=int, value_type=int, max_len=max_len)
 
     cache[1] = 1
     assert len(cache) <= max_len
@@ -76,7 +76,7 @@ def test_LRUCache_getItem_maxLenIsNeverExceeded():
 
 def test_LRUCache_getItem_correctlyReturned():
     max_len = 3
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=max_len)
+    cache = LRUCache(key_type=int, value_type=int, max_len=max_len)
 
     cache[1] = 1
     assert cache[1] == 1
@@ -86,19 +86,19 @@ def test_LRUCache_getItem_correctlyReturned():
 
 
 def test_LRUCache_pop_raisesTypeError():
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=3)
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
     with pytest.raises(TypeError):
         cache.pop("abc")
 
 
 def test_LRUCache_pop_raisesKeyError():
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=3)
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
     with pytest.raises(KeyError):
         cache.pop(2)
 
 
 def test_LRUCache_pop_lenReduced():
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=3)
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
     cache[1] = 1
     cache[2] = 2
     assert len(cache) == 2
@@ -110,19 +110,19 @@ def test_LRUCache_pop_lenReduced():
     assert len(cache) == 0
 
 
-def test_LRUCache_multipleKeyTypes():
-    cache = LRUCache(key_types=(int, Number), value_type=int, max_len=3)
+def test_LRUCache_setItem_raisesTypeError():
+    cache = LRUCache(key_type=int, value_type=int, max_len=3)
 
-    cache[Number(1)] = 1
-    cache[2] = 2
-    cache[1] = 3
+    with pytest.raises(TypeError):
+        cache[Number(1)] = 1
 
-    assert len(cache) == 2 and cache[1] == 3 and cache[Number(1)] == 3
+    with pytest.raises(TypeError):
+        cache[1] = Number(1)
 
 
 def test_LRUCache_moveToFront():
     max_len = 3
-    cache = LRUCache(key_types=(int,), value_type=int, max_len=max_len)
+    cache = LRUCache(key_type=int, value_type=int, max_len=max_len)
 
     cache[1] = 1
     cache[2] = 2

@@ -55,7 +55,7 @@ class SqliteClientRepo(ClientRepo):
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
 
-        self.cache = LRUCache(key_types=(Number, int), value_type=Client, max_len=cache_len)
+        self.cache = LRUCache(key_type=(Number, int), value_type=Client, max_len=cache_len)
 
         # Links this repo with the ClientView, so they can be refreshed after a client change.
         ClientView.repository = self
@@ -220,7 +220,7 @@ class SqliteActivityRepo(ActivityRepo):
     def __init__(self, cache_len: int = 50) -> None:
         DATABASE_PROXY.create_tables([ActivityTable])
 
-        self.cache = LRUCache(key_types=(str, String), value_type=Activity, max_len=cache_len)
+        self.cache = LRUCache(key_type=(str, String), value_type=Activity, max_len=cache_len)
 
     def add(self, activity: Activity):
         """Adds *activity* to the repository.
@@ -415,8 +415,8 @@ class SqliteTransactionRepo(TransactionRepo):
         super().__init__(methods)
         DATABASE_PROXY.create_tables([TransactionTable])
 
-        self.cache = LRUCache(key_types=(int,), value_type=Transaction, max_len=cache_len)
-        self.client_cache = LRUCache(key_types=(Number, int), value_type=ClientView, max_len=64)
+        self.cache = LRUCache(key_type=(int,), value_type=Transaction, max_len=cache_len)
+        self.client_cache = LRUCache(key_type=(Number, int), value_type=ClientView, max_len=64)
 
     def from_data(
             self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
