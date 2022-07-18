@@ -574,4 +574,4 @@ class SqliteSecurityRepo(SecurityRepo):
             # ToDo those Strings don't need validation.
             resp = Responsible(String(record.responsible.resp_name, max_len=30),
                                String(record.responsible.resp_code, max_len=30))
-            yield record.when, resp, record.action_tag, record.to_str
+            yield record.when, resp, record.action_tag, record.action_name
