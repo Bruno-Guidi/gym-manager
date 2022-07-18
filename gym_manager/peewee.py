@@ -141,6 +141,7 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=False).execute()
         self.cache.pop(client.dni)
+        self._views.pop(client.dni, None)
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
     def update(self, client: Client):
