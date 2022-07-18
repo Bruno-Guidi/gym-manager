@@ -88,6 +88,12 @@ class ClientView(Client):
         raise NotImplementedError(f"The object '{type(self).__name__}' created by '{self.created_by}' has no "
                                   f"implementation of '{attr_name}'.")
 
+    def __repr__(self) -> str:
+        return f"ClientView(dni={self.dni}, name={self.name}, created_by={self.created_by})"
+
+    def __str__(self) -> str:
+        return repr(self)
+
 
 class ClientRepo(abc.ABC):
     """Clients repository interface.

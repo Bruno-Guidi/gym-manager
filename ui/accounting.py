@@ -172,7 +172,7 @@ class DailyBalanceController:
                 )
                 # noinspection PyTypeChecker
                 api.close_balance(self.transaction_repo, self.balance_repo, self.balance, today,
-                                  self.daily_balance_ui.responsible_field.value(), create_extraction_fn)
+                                  self.security_handler.current_responsible.name, create_extraction_fn)
                 self.daily_balance_ui.confirm_btn.window().close()
         except SecurityError as sec_err:
             Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
@@ -283,7 +283,8 @@ class BalanceHistoryController:
         fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
                       display=lambda pair: pair[0])
 
-        self._balances: dict[int, tuple[date, String, Balance]] = {}
+        self._transactions: dict[int, list[Transaction]] = {}
+        self._balances: dict[int, Balance] = {}
         self.load_last_n_balances()
 
         # Sets callbacks.
@@ -313,9 +314,10 @@ class BalanceHistoryController:
     def _load_balance_table(self, from_date: date, to_date: date):
         self.history_ui.balance_table.setRowCount(0)
 
-        for when, responsible, balance, _ in self.balance_repo.all(from_date, to_date):
+        for when, responsible, balance, transactions in self.balance_repo.all(from_date, to_date):
             row_count = self.history_ui.balance_table.rowCount()
-            self._balances[row_count] = when, responsible, balance
+            self._transactions[row_count] = transactions
+            self._balances[row_count] = balance
             fill_cell(self.history_ui.balance_table, row_count, 0, when, data_type=int)
             fill_cell(self.history_ui.balance_table, row_count, 1, responsible, data_type=str)
             total = balance["Cobro"].get("Total") - balance["Extracción"].get("Total")
@@ -333,7 +335,48 @@ class BalanceHistoryController:
         self._load_balance_table(from_date=when, to_date=when)
 
     def refresh_balance_info(self):
-        print("refreshing")  # ToDo requires Balance rework.
+        if self.history_ui.balance_table.currentRow() != -1:
+            # Loads transactions of the selected daily balance.
+            self.history_ui.transaction_table.setRowCount(0)
+            transactions = self._transactions[self.history_ui.balance_table.currentRow()]
+            for i, transaction in enumerate(transactions):
+                fill_cell(self.history_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
+                name = transaction.client.name if transaction.client is not None else "-"
+                fill_cell(self.history_ui.transaction_table, i, 1, name, data_type=str)
+                fill_cell(self.history_ui.transaction_table, i, 2, transaction.amount, data_type=int)
+                fill_cell(self.history_ui.transaction_table, i, 3, transaction.description, data_type=str)
+
+            # Loads balance detail.
+            balance = self._balances[self.history_ui.balance_table.currentRow()]
+            charges, extractions = balance["Cobro"], balance["Extracción"]
+
+            c_cash = QLabel(self.history_ui.widget)
+            config_lbl(c_cash, str(charges.get("Efectivo", Currency(0))))
+            c_debit = QLabel(self.history_ui.widget)
+            config_lbl(c_debit, str(charges.get("Débito", Currency(0))))
+            c_credit = QLabel(self.history_ui.widget)
+            config_lbl(c_credit, str(charges.get("Crédito", Currency(0))))
+            c_total = QLabel(self.history_ui.widget)
+            config_lbl(c_total, str(charges.get("Total", Currency(0))))
+
+            self.history_ui.detail_layout.addWidget(c_cash, 2, 1, alignment=Qt.AlignRight)
+            self.history_ui.detail_layout.addWidget(c_debit, 2, 2, alignment=Qt.AlignRight)
+            self.history_ui.detail_layout.addWidget(c_credit, 2, 3, alignment=Qt.AlignRight)
+            self.history_ui.detail_layout.addWidget(c_total, 2, 4, alignment=Qt.AlignRight)
+
+            e_cash = QLabel(self.history_ui.widget)
+            config_lbl(e_cash, str(extractions.get("Efectivo", Currency(0))))
+            e_debit = QLabel(self.history_ui.widget)
+            config_lbl(e_debit, str(extractions.get("Débito", Currency(0))))
+            e_credit = QLabel(self.history_ui.widget)
+            config_lbl(e_credit, str(extractions.get("Crédito", Currency(0))))
+            e_total = QLabel(self.history_ui.widget)
+            config_lbl(e_total, str(extractions.get("Total", Currency(0))))
+
+            self.history_ui.detail_layout.addWidget(e_cash, 3, 1, alignment=Qt.AlignRight)
+            self.history_ui.detail_layout.addWidget(e_debit, 3, 2, alignment=Qt.AlignRight)
+            self.history_ui.detail_layout.addWidget(e_credit, 3, 3, alignment=Qt.AlignRight)
+            self.history_ui.detail_layout.addWidget(e_total, 3, 4, alignment=Qt.AlignRight)
 
 
 class BalanceHistoryUI(QMainWindow):

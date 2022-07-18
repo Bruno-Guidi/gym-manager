@@ -6,6 +6,7 @@ import pytest
 
 from gym_manager import peewee
 from gym_manager.core import api
+from gym_manager.core.api import close_balance, generate_balance
 from gym_manager.core.base import (
     Client, Number, String, Activity, Currency, Subscription, OperationalError,
     Transaction, InvalidDate)
@@ -236,4 +237,140 @@ def test_ClientViewRefreshedAfterClientCreation():
 
     # Assert that the ClientView in the Transaction was updated.
     assert transaction.client.name == client.name
+
+
+def test_closeBalance():
+    log_responsible.config(MockSecurityHandler())
+
+    # Repositories setup.
+    peewee.create_database(":memory:")
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # The following transactions should be included in the daily balance of 04/05/2022.
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+
+    balance = generate_balance(transaction_repo.all())
+    # First assert that the balance generated is the expected balance.
+    assert balance == {"Cobro": {"Total": Currency(0)},
+                       "Extracción": {"Efectivo": Currency(200), "Total": Currency(200)}}
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp", max_len=30))
+    # Then assert that all transactions included in the balance have their balance_date correctly set.
+    assert [date(2022, 5, 4), date(2022, 5, 4)] == [t.balance_date for t in transaction_repo.all(without_balance=False)]
+
+    # Now we are generating and closing the balance of 05/05/2022.
+    # This transaction was made after the previous daily balance was closed, so it should be included in the balance of
+    # 05/05/2022.
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    # The following transactions were made on 05/05/2022.
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+
+    balance = generate_balance(transaction_repo.all())
+    # Assert that the balance generated is the expected balance.
+    assert balance == {"Cobro": {"Total": Currency(0)},
+                       "Extracción": {"Efectivo": Currency(1100), "Total": Currency(1100)}}
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp", max_len=30))
+    # Then assert that all transactions included in the balance have their balance_date correctly set.
+    expected = [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5),
+                date(2022, 5, 5), date(2022, 5, 5)]
+    assert expected == [t.balance_date for t in transaction_repo.all(without_balance=False)]
+
+
+def test_closeBalance_withNoTransactions():
+    log_responsible.config(MockSecurityHandler())
+
+    # Repositories setup.
+    peewee.create_database(":memory:")
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # The following transactions should be included in the daily balance of 04/05/2022.
+    # transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    #                         "TestDescr")
+    # transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    #                         "TestDescr")
+
+    balance = generate_balance(transaction_repo.all())
+    # First assert that the balance generated is the expected balance.
+    assert balance == {"Cobro": {"Total": Currency(0)}, "Extracción": {"Total": Currency(0)}}
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp", max_len=30))
+    assert balance == [b for _, _, b, _ in balance_repo.all(date(2022, 4, 4), date(2022, 6, 4))][0]
+
+
+def _create_extraction_fn(transaction_repo: peewee.SqliteTransactionRepo, when: date) -> Transaction:
+    return transaction_repo.create("Extracción", when, Currency(100), "Débito", String("TestResp", max_len=30),
+                                   "TestDescr")
+
+
+def test_closeBalance_withCreateExtractionFn():
+    """This test case is the same as the previous one, but a function to create an "end of day" extraction is provided.
+    """
+    log_responsible.config(MockSecurityHandler())
+
+    # Repositories setup.
+    peewee.create_database(":memory:")
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # The following transactions should be included in the daily balance of 04/05/2022.
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+
+    balance = generate_balance(transaction_repo.all())
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp", max_len=30),
+                  functools.partial(_create_extraction_fn, transaction_repo, date(2022, 5, 4)))
+    # First assert that the balance generated is the expected balance.
+    assert balance == {"Cobro": {"Total": Currency(0)},
+                       "Extracción": {"Efectivo": Currency(200), "Débito": Currency(100), "Total": Currency(300)}}
+    # Then assert that all transactions included in the balance have their balance_date correctly set.
+    assert [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 4)] == [t.balance_date for t
+                                                                      in transaction_repo.all(without_balance=False)]
+
+    # We are generating and closing the balance of 05/05/2022.
+    # This transaction was made after the previous daily balance was closed, so it should be included in the balance of
+    # 05/05/2022.
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    # The following transactions were made on 05/05/2022.
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+                            "TestDescr")
+
+    balance = generate_balance(transaction_repo.all())
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp", max_len=30),
+                  functools.partial(_create_extraction_fn, transaction_repo, date(2022, 5, 5)))
+    # Assert that the balance generated is the expected balance.
+    assert balance == {"Cobro": {"Total": Currency(0)},
+                       "Extracción": {"Efectivo": Currency(1100), "Débito": Currency(100), "Total": Currency(1200)}}
+    # Then assert that all transactions included in the balance have their balance_date correctly set.
+    expected = [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 5), date(2022, 5, 5),
+                date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5)]
+    assert expected == [t.balance_date for t in transaction_repo.all(without_balance=False)]
 
