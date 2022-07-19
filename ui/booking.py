@@ -627,9 +627,12 @@ class HistoryUI(QMainWindow):
                      "Fijo": (4, bool)}
         )
 
+        new_config_table(self.booking_table, width=1250,
+                         columns={"Fecha borrado": (.19, bool), "Fecha turno": (.12, bool), "Cancha": (.08, bool),
+                                  "Hora": (.09, bool), "Duración": (.09, bool), "Cliente": (.19, str),
+                                  "Responsable": (.14, str), "Día": (.05, bool), "Fijo": (.05, bool)},
+                         min_rows_to_show=10)
+
         # Index.
         self.page_index = PageIndex(self)
         self.layout.addWidget(self.page_index)
-
-        # Adjusts size.
-        self.setMaximumWidth(self.widget.sizeHint().width())
