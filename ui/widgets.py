@@ -56,6 +56,10 @@ class Field(QLineEdit):
             self.setEchoMode(QLineEdit.Password)
         self.base_style_sheet = self.styleSheet()
 
+    def setText(self, text: str) -> None:
+        self.setStyleSheet(self.base_style_sheet)
+        super().setText(text)
+
     def valid_value(self) -> bool:
         try:
             self.validatable(self.text(), **self.validate_args)
