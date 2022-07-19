@@ -341,7 +341,6 @@ class BalanceHistoryController:
             # Loads transactions of the selected daily balance.
             self.history_ui.transaction_table.setRowCount(0)
             transactions = self._transactions[self.history_ui.balance_table.currentRow()]
-            print(self._balances[self.history_ui.balance_table.currentRow()])
             for i, transaction in enumerate(transactions):
                 fill_cell(self.history_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
                 name = transaction.client.name if transaction.client is not None else "-"
@@ -354,22 +353,22 @@ class BalanceHistoryController:
             charges, extractions = balance["Cobro"], balance["Extracción"]
 
             config_lbl(self.history_ui.c_cash_lbl, Currency.fmt(charges.get("Efectivo", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
             config_lbl(self.history_ui.c_debit_lbl, Currency.fmt(charges.get("Débito", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
             config_lbl(self.history_ui.c_credit_lbl, Currency.fmt(charges.get("Crédito", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
             config_lbl(self.history_ui.c_total_lbl, Currency.fmt(charges.get("Total", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
 
             config_lbl(self.history_ui.e_cash_lbl, Currency.fmt(extractions.get("Efectivo", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
             config_lbl(self.history_ui.e_debit_lbl, Currency.fmt(extractions.get("Débito", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
             config_lbl(self.history_ui.e_credit_lbl, Currency.fmt(extractions.get("Crédito", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
             config_lbl(self.history_ui.e_total_lbl, Currency.fmt(extractions.get("Total", Currency(0))),
-                       alignment=Qt.AlignRight)
+                       alignment=Qt.AlignRight, fixed_width=110)
 
 
 class BalanceHistoryUI(QMainWindow):
@@ -419,12 +418,12 @@ class BalanceHistoryUI(QMainWindow):
         self.left_layout.addWidget(self.balance_table)
         new_config_table(self.balance_table, width=500,
                          columns={"Fecha": (.28, bool), "Responsable": (.42, str), "Total": (.3, int)},
-                         min_rows_to_show=5)
+                         min_rows_to_show=5, fix_width=True)
 
         # Balance detail.
         self.detail_layout = QGridLayout()
         self.right_layout.addLayout(self.detail_layout)
-        self.detail_layout.setAlignment(Qt.AlignLeft)
+        self.detail_layout.setAlignment(Qt.AlignCenter)
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
@@ -440,19 +439,19 @@ class BalanceHistoryUI(QMainWindow):
 
         self.cash_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.cash_lbl, 1, 1, alignment=Qt.AlignCenter)
-        config_lbl(self.cash_lbl, "Efectivo")
+        config_lbl(self.cash_lbl, "Efectivo", alignment=Qt.AlignRight, fixed_width=110)
 
         self.debit_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.debit_lbl, 1, 2, alignment=Qt.AlignCenter)
-        config_lbl(self.debit_lbl, "Débito")
+        config_lbl(self.debit_lbl, "Débito", alignment=Qt.AlignRight, fixed_width=110)
 
         self.credit_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.credit_lbl, 1, 3, alignment=Qt.AlignCenter)
-        config_lbl(self.credit_lbl, "Crédito")
+        config_lbl(self.credit_lbl, "Crédito", alignment=Qt.AlignRight, fixed_width=110)
 
         self.total_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.total_lbl, 1, 4, alignment=Qt.AlignCenter)
-        config_lbl(self.total_lbl, "TOTAL")
+        config_lbl(self.total_lbl, "TOTAL", alignment=Qt.AlignRight, fixed_width=110)
 
         self.charges_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.charges_lbl, 2, 0)
@@ -493,12 +492,10 @@ class BalanceHistoryUI(QMainWindow):
 
         self.transaction_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.transaction_table)
-        config_table(self.transaction_table, allow_resizing=False,
-                     columns={"Responsable": (8, str), "Cliente": (8, str), "Monto": (8, int),
-                              "Descripción": (12, str)})
 
-        # Adjusts size.
-        # self.setFixedWidth(self.sizeHint().width())
+        new_config_table(self.transaction_table, width=700,
+                         columns={"Responsable": (.22, str), "Cliente": (.26, str), "Monto": (.2, int),
+                                  "Descripción": (.32, str)}, min_rows_to_show=0)
 
 
 class ChargeController:
