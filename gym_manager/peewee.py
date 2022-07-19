@@ -459,18 +459,6 @@ class SqliteTransactionRepo(TransactionRepo):
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
 
-    def count(self, filters: list[FilterValuePair] | None = None) -> int:
-        """Counts the number of transactions in the repository.
-        """
-        transactions_q = TransactionTable.select("1")
-        if filters is not None:
-            # The left outer join is required because transactions might be filtered by the client name, which isn't
-            # an attribute of TransactionTable.
-            transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
-            for filter_, value in filters:
-                transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
-        return transactions_q.count()
-
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
         record = TransactionTable.get_by_id(transaction.id)
         record.balance_id = balance_date
