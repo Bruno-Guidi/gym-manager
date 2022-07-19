@@ -620,12 +620,6 @@ class HistoryUI(QMainWindow):
         # Bookings.
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
-        config_table(
-            target=self.booking_table, allow_resizing=True, min_rows_to_show=10,
-            columns={"Fecha borrado": (14, bool), "Fecha turno": (10, bool), "Cancha": (6, bool), "Hora": (6, bool),
-                     "Duración": (8, int), "Cliente": (18, str), "Responsable": (18, str), "Día": (4, bool),
-                     "Fijo": (4, bool)}
-        )
 
         new_config_table(self.booking_table, width=1250,
                          columns={"Fecha borrado": (.19, bool), "Fecha turno": (.12, bool), "Cancha": (.08, bool),
