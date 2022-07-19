@@ -17,14 +17,20 @@ from ui.widget_config import (
     fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
     config_date_edit)
 
+_text_base_stylesheet = None
+
 
 def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> tuple[bool, Any]:
+    global _text_base_stylesheet
+    if _text_base_stylesheet is None:
+        _text_base_stylesheet = QTextEdit().styleSheet()
     valid, value = False, None
     try:
         value = String(text.toPlainText(), optional=optional, max_len=max_len)
         valid = True
+        text.setStyleSheet(_text_base_stylesheet)
     except ValidationError:
-        pass  # ToDo self.setStyleSheet("border: 1px solid red")
+        text.setStyleSheet("border: 1px solid red")
     return valid, value
 
 
@@ -55,6 +61,10 @@ class Field(QLineEdit):
         if is_password:
             self.setEchoMode(QLineEdit.Password)
         self.base_style_sheet = self.styleSheet()
+
+    def setText(self, text: str) -> None:
+        self.setStyleSheet(self.base_style_sheet)
+        super().setText(text)
 
     def valid_value(self) -> bool:
         try:
@@ -91,6 +101,14 @@ class FilterHeader(QWidget):
         self.search_btn.clicked.connect(self.on_search_click)
         # noinspection PyUnresolvedReferences
         self.clear_filter_btn.clicked.connect(self.on_clear_click)
+        # noinspection PyUnresolvedReferences
+        self.filter_line_edit.returnPressed.connect(self.on_search_click)
+        if date_greater_filtering:
+            # noinspection PyUnresolvedReferences
+            self.from_date_edit.dateChanged.connect(self.on_search_click)
+        if date_lesser_filtering:
+            # noinspection PyUnresolvedReferences
+            self.to_date_edit.dateChanged.connect(self.on_search_click)
 
     def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool, show_clear_button: bool):
         self.layout = QHBoxLayout(self)

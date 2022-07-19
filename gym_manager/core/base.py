@@ -153,6 +153,7 @@ class String(Validatable):
         Keyword Args:
             optional: True if the String may be empty, False otherwise. If not given, it is False.
             max_len: maximum amount of characters.
+            invalid_values: values that can't be used.
 
         Raises:
             KeyError if a kwarg is missing.
@@ -163,6 +164,11 @@ class String(Validatable):
 
         if not optional and len(value) == 0:
             raise ValidationError(f"The argument 'value' cannot be empty. [value={value}, optional={optional}]")
+        if 'invalid_values' in kwargs:
+            for invalid in kwargs['invalid_values']:
+                if invalid in value:
+                    raise ValidationError(f"The argument 'value' contains an invalid str. "
+                                          f"[value{value}, invalid_value={invalid}")
         if len(value) >= max_len:
             raise ValidationError(f"The argument 'value' has more characters than allowed. "
                                   f"[len(value)={len(value)}, max_len={max_len}]")
@@ -228,7 +234,7 @@ class Currency(Validatable):
             return self._value == other.as_primitive()
         return NotImplemented
 
-    def validate(self, value: str, **kwargs) -> Decimal:
+    def validate(self, value: str | int, **kwargs) -> Decimal:
         """Validates the given *value*. If the validation succeeds, returns the created Decimal object.
 
         Keyword Args:
@@ -238,11 +244,14 @@ class Currency(Validatable):
             KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-
+        if isinstance(value, str):
+            value = value.replace(",", ".")
         try:
             value = Decimal(value)
         except InvalidOperation:
             raise ValidationError(f"The argument 'value' is not a valid currency. [value={value}]")
+        if value < 0:
+            raise ValidationError(f"Negative currencies are not allowed. [value={value}]")
         return value
 
     def increase(self, other_currency: Currency) -> None:
