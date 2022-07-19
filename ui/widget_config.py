@@ -112,12 +112,6 @@ def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], s
     target.setModel(model)
 
 
-class AlignDelegate(QStyledItemDelegate):
-    def initStyleOption(self, option, index):
-        super(AlignDelegate, self).initStyleOption(option, index)
-        option.displayAlignment = Qt.AlignJustify
-
-
 def config_table(
         target: QTableWidget, columns: dict[str, tuple[int, type]], n_rows: int = 0, font_size: int = 14,
         allow_resizing: bool = False, min_rows_to_show: int = 0
