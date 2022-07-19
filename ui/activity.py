@@ -13,7 +13,7 @@ from gym_manager.core.security import SecurityHandler, log_responsible
 from ui import utils
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table,
-    fill_cell)
+    fill_cell, new_config_table)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 
@@ -184,8 +184,9 @@ class ActivityMainUI(QMainWindow):
         # Activities.
         self.activity_table = QTableWidget(self.widget)  # ToDO adjust columns width.
         self.left_layout.addWidget(self.activity_table)
-        config_table(self.activity_table, allow_resizing=True, min_rows_to_show=10,
-                     columns={"Nombre": (8, str), "Precio": (8, int), "Inscriptos": (8, int)})
+        new_config_table(self.activity_table, width=600,
+                         columns={"Nombre": (.55, str), "Precio": (.25, int), "Inscriptos": (.2, int)},
+                         min_rows_to_show=10)
 
         # Index.
         self.page_index = PageIndex(self.widget)
