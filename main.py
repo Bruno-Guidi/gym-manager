@@ -50,16 +50,19 @@ QCheckBox::indicator::checked {
 """
 
 
-def main(security_handler: SecurityHandler):
+def main():
+    # PyQt App.
     app = QApplication(sys.argv)
     app.setStyleSheet(stylesheet)
 
+    # Repository initialization
     activity_repo = peewee.SqliteActivityRepo()
     transaction_repo = peewee.SqliteTransactionRepo(methods=("Efectivo", "Débito", "Crédito"))
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     subscription_repo = peewee.SqliteSubscriptionRepo()
     balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
 
+    # Booking initialization.
     booking_activity: Activity
     booking_activity_name = String("Padel", max_len=10)
     if activity_repo.exists(booking_activity_name):
@@ -74,10 +77,23 @@ def main(security_handler: SecurityHandler):
         courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=30
     )
 
+    # Security initialization.
+    security_handler = SimpleSecurityHandler(
+        peewee.SqliteSecurityRepo(),
+        action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
+                     "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
+                     "create_booking"},
+        needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
+                           "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
+                           "create_booking"}
+    )
+    security_handler.add_responsible(Responsible(String("Admin", max_len=10), String("python", max_len=10)))
+    log_responsible.config(security_handler)
+
+    # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
                     security_handler)
     window.show()
-
     app.exec()
 
 
@@ -89,20 +105,8 @@ if __name__ == "__main__":
     peewee_logger = logging.getLogger("peewee")
     peewee_logger.setLevel(logging.WARNING)
 
-    sec_handler = SimpleSecurityHandler(
-        peewee.SqliteSecurityRepo(),
-        action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
-                     "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
-                     "create_booking"},
-        needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
-                           "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
-                           "create_booking"}
-    )
-    sec_handler.add_responsible(Responsible(String("Admin", max_len=10), String("python", max_len=10)))
-    log_responsible.config(sec_handler)
-
     # noinspection PyBroadException
     try:
-        main(sec_handler)
+        main()
     except Exception as e:
         logging.exception(e)
