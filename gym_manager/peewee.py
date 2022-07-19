@@ -361,7 +361,7 @@ class SqliteBalanceRepo(BalanceRepo):
                     transaction_record.amount, transaction_record.method, transaction_record.responsible,
                     transaction_record.description, client, transaction_record.balance_id
                 ))
-            yield (record.when, String(record.responsible), self.json_to_balance(record.balance_dict), transactions)
+            yield record.when, String(record.responsible), self.json_to_balance(record.balance_dict), transactions
 
 
 class TransactionTable(Model):
