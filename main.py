@@ -1,7 +1,7 @@
 import logging
 import os
 import sys
-from datetime import time, date
+from datetime import time
 from logging import config
 
 from PyQt5.QtWidgets import QApplication
@@ -9,36 +9,9 @@ from PyQt5.QtWidgets import QApplication
 from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
 from gym_manager.booking.core import BookingSystem, Duration
-from gym_manager.core.base import Currency, String, Activity, Client, Number, Subscription
-from gym_manager.core.security import log_responsible, SimpleSecurityHandler, SecurityHandler, Responsible
+from gym_manager.core.base import Currency, String, Activity
+from gym_manager.core.security import log_responsible, SimpleSecurityHandler, Responsible
 from ui.main import MainUI
-
-log_config = {
-    "version": 1,
-    "root": {
-        "handlers": ["console", "file"],
-        "level": "DEBUG"
-    },
-    "handlers": {
-        "console": {
-            "formatter": "std_out",
-            "class": "logging.StreamHandler",
-            "level": "DEBUG"
-        },
-        "file": {
-            "formatter": "std_out",
-            "class": "logging.FileHandler",
-            "level": "DEBUG",
-            "filename": "logs/gym_manager.log"
-        }
-    },
-    "formatters": {
-        "std_out": {
-            "format": "%(asctime)s : %(levelname)s : %(name)s : %(funcName)s : %(message)s",
-            "datefmt": "%d-%m-%Y %I:%M:%S"
-        }
-    },
-}
 
 stylesheet = """
 QCheckBox::indicator { 
