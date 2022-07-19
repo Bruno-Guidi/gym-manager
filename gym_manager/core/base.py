@@ -234,7 +234,7 @@ class Currency(Validatable):
             return self._value == other.as_primitive()
         return NotImplemented
 
-    def validate(self, value: str, **kwargs) -> Decimal:
+    def validate(self, value: str | int, **kwargs) -> Decimal:
         """Validates the given *value*. If the validation succeeds, returns the created Decimal object.
 
         Keyword Args:
@@ -244,7 +244,8 @@ class Currency(Validatable):
             KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-
+        if isinstance(value, str):
+            value = value.replace(",", ".")
         try:
             value = Decimal(value)
         except InvalidOperation:
