@@ -229,7 +229,7 @@ class DailyBalanceUI(QDialog):
         self.form_layout.addWidget(self.extract_lbl, 4, 0)
         config_lbl(self.extract_lbl, "Monto extracción*")
 
-        self.extract_field = Field(Currency, self)  # ToDo check that the currency is always positive.
+        self.extract_field = Field(Currency, self)
         self.form_layout.addWidget(self.extract_field, 4, 1)
         config_line(self.extract_field, place_holder="00000,00", alignment=Qt.AlignRight)
 
