@@ -95,6 +95,12 @@ class FilterHeader(QWidget):
         self.search_btn.clicked.connect(self.on_search_click)
         # noinspection PyUnresolvedReferences
         self.clear_filter_btn.clicked.connect(self.on_clear_click)
+        if date_greater_filtering:
+            # noinspection PyUnresolvedReferences
+            self.from_date_edit.dateChanged.connect(self.on_search_click)
+        if date_lesser_filtering:
+            # noinspection PyUnresolvedReferences
+            self.to_date_edit.dateChanged.connect(self.on_search_click)
 
     def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool, show_clear_button: bool):
         self.layout = QHBoxLayout(self)
