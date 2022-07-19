@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QTableWidget, QPushButton,
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem,
-    QTextEdit, QCheckBox, QDateEdit, QWidget, QStyledItemDelegate)
+    QTextEdit, QCheckBox, QDateEdit, QWidget)
 
 
 def config_widget(
@@ -112,12 +112,6 @@ def fill_combobox(target: QComboBox, items: Iterable, display: Callable[[Any], s
     target.setModel(model)
 
 
-class AlignDelegate(QStyledItemDelegate):
-    def initStyleOption(self, option, index):
-        super(AlignDelegate, self).initStyleOption(option, index)
-        option.displayAlignment = Qt.AlignJustify
-
-
 def config_table(
         target: QTableWidget, columns: dict[str, tuple[int, type]], n_rows: int = 0, font_size: int = 14,
         allow_resizing: bool = False, min_rows_to_show: int = 0
@@ -159,6 +153,43 @@ def config_table(
     target.setMinimumWidth(max_width + target.verticalScrollBar().height() - 7)
     target.setSelectionMode(QAbstractItemView.SingleSelection)
 
+    if min_rows_to_show > 0:
+        # One extra row is added to include header height, and another one is added to include the scrollbar.
+        target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())
+
+
+def new_config_table(
+        target: QTableWidget, width: int, columns: dict[str, tuple[float, type]], n_rows: int = 0, font_size: int = 14,
+        allow_resizing: bool = True, min_rows_to_show: int = 0, fix_width: bool = False,
+        select_whole_row: bool = True
+):
+    target.horizontalHeader().setFont(QFont("Inconsolata", font_size))
+    target.setFont(QFont("Inconsolata", font_size))  # This font is monospaced.
+    target.verticalHeader().setVisible(False)  # Hides rows number.
+
+    target.setEditTriggers(QAbstractItemView.NoEditTriggers)  # Blocks cell modification.
+    if not allow_resizing:
+        target.horizontalHeader().setSectionResizeMode(QHeaderView.Fixed)  # Blocks column resizing.
+
+    target.setColumnCount(len(columns))
+    target.setRowCount(n_rows)
+
+    target.setMinimumWidth(width)
+    if fix_width:
+        target.setFixedWidth(width)
+    width = width - target.verticalScrollBar().height()  # Allocates some spaces to the vertical scrollbar.
+    for i, (column_name, (percentage_width, column_type)) in enumerate(columns.items()):
+        item = QTableWidgetItem(column_name)
+        align = Qt.AlignRight if column_type is int else Qt.AlignLeft
+        align = Qt.AlignCenter if column_type is bool else align
+        item.setTextAlignment(align)
+        target.setHorizontalHeaderItem(i, item)
+        target.setColumnWidth(i, int(percentage_width * width))
+
+    target.horizontalHeader().setHighlightSections(False)  # This makes the header non-selectable
+    if select_whole_row:
+        target.setSelectionBehavior(QAbstractItemView.SelectRows)  # Allows selecting only complete rows.
+    target.setSelectionMode(QAbstractItemView.SingleSelection)  # Allows selecting only one row at a time.
     if min_rows_to_show > 0:
         # One extra row is added to include header height, and another one is added to include the scrollbar.
         target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())

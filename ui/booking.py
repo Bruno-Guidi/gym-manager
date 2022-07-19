@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QTableWidgetItem, QDateEdit, QDialog, QGridLayout, QLabel,
-    QComboBox, QCheckBox, QLineEdit)
+    QComboBox, QCheckBox, QLineEdit, QDesktopWidget)
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
@@ -20,8 +20,8 @@ from ui import utils
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
-    config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
-    config_combobox, config_checkbox, config_line, fill_combobox)
+    config_layout, config_btn, config_date_edit, fill_cell, config_lbl,
+    config_combobox, config_checkbox, config_line, fill_combobox, new_config_table)
 from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
@@ -233,14 +233,15 @@ class BookingMainUI(QMainWindow):
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
 
-        config_table(
-            target=self.booking_table, min_rows_to_show=10,
-            columns={"Hora": (12, bool), "Cancha 1": (16, bool), "Cancha 2": (16, bool),
-                     "Cancha 3 (Singles)": (16, bool)}
-        )
+        new_config_table(self.booking_table, width=1000, select_whole_row=False,
+                         columns={"Hora": (.19, bool), "Cancha 1": (.27, bool), "Cancha 2": (.27, bool),
+                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=10)
 
         # Adjusts size.
         self.setMaximumWidth(self.widget.sizeHint().width())
+
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
 class CreateController:
@@ -622,16 +623,16 @@ class HistoryUI(QMainWindow):
         # Bookings.
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
-        config_table(
-            target=self.booking_table, allow_resizing=True, min_rows_to_show=10,
-            columns={"Fecha borrado": (14, bool), "Fecha turno": (10, bool), "Cancha": (6, bool), "Hora": (6, bool),
-                     "Duración": (8, int), "Cliente": (18, str), "Responsable": (18, str), "Día": (4, bool),
-                     "Fijo": (4, bool)}
-        )
+
+        new_config_table(self.booking_table, width=1250,
+                         columns={"Fecha borrado": (.19, bool), "Fecha turno": (.12, bool), "Cancha": (.08, bool),
+                                  "Hora": (.09, bool), "Duración": (.09, bool), "Cliente": (.19, str),
+                                  "Responsable": (.14, str), "Día": (.05, bool), "Fijo": (.05, bool)},
+                         min_rows_to_show=10)
 
         # Index.
         self.page_index = PageIndex(self)
         self.layout.addWidget(self.page_index)
 
-        # Adjusts size.
-        self.setMaximumWidth(self.widget.sizeHint().width())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))

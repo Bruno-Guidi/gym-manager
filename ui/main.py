@@ -6,7 +6,7 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
-    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget)
+    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget)
 
 from gym_manager.booking.core import BookingSystem
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
@@ -16,7 +16,7 @@ from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
-from ui.widget_config import config_lbl, config_btn, config_table, fill_cell
+from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table
 from ui.widgets import PageIndex
 
 
@@ -130,7 +130,7 @@ class MainUI(QMainWindow):
 
         self.config_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.config_btn)
-        config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32)
+        config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32, enabled=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -273,14 +273,13 @@ class ActionUI(QMainWindow):
         # Actions.
         self.action_table = QTableWidget(self.widget)
         self.layout.addWidget(self.action_table)
-        config_table(
-            target=self.action_table, allow_resizing=True, min_rows_to_show=10,
-            columns={"Fecha": (14, bool), "Responsable": (18, bool), "Acción": (18, bool)}
-        )
+        new_config_table(self.action_table, width=900,
+                         columns={"Fecha": (.25, bool), "Responsable": (.25, bool), "Acción": (.5, bool)},
+                         min_rows_to_show=10)
 
         # Index.
         self.page_index = PageIndex(self)
         self.layout.addWidget(self.page_index)
 
-        # Adjusts size.
-        self.setMaximumWidth(self.widget.sizeHint().width())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
