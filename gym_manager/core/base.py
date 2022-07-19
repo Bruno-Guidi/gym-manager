@@ -153,6 +153,7 @@ class String(Validatable):
         Keyword Args:
             optional: True if the String may be empty, False otherwise. If not given, it is False.
             max_len: maximum amount of characters.
+            invalid_values: values that can't be used.
 
         Raises:
             KeyError if a kwarg is missing.
@@ -163,6 +164,11 @@ class String(Validatable):
 
         if not optional and len(value) == 0:
             raise ValidationError(f"The argument 'value' cannot be empty. [value={value}, optional={optional}]")
+        if 'invalid_values' in kwargs:
+            for invalid in kwargs['invalid_values']:
+                if invalid in value:
+                    raise ValidationError(f"The argument 'value' contains an invalid str. "
+                                          f"[value{value}, invalid_value={invalid}")
         if len(value) >= max_len:
             raise ValidationError(f"The argument 'value' has more characters than allowed. "
                                   f"[len(value)={len(value)}, max_len={max_len}]")
