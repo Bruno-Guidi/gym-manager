@@ -60,7 +60,13 @@ def main():
                            "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
                            "create_booking"}
     )
-    security_handler.add_responsible(Responsible(String("Admin", max_len=10), String("python", max_len=10)))
+    security_handler.add_responsible(Responsible(String("Admin"), String("python")),
+                                     Responsible(String("Stella Palladini"), String("1")),
+                                     Responsible(String("Mariana Irazabal"), String("2")),
+                                     Responsible(String("Camila Palladini"), String("3")),
+                                     Responsible(String("Hornella Palladini"), String("4")),
+                                     Responsible(String("Pablo"), String("5")),
+                                     Responsible(String("Fernanda"), String("6")))
     log_responsible.config(security_handler)
 
     # Main window launch.
