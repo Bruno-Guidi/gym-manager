@@ -8,3 +8,5 @@ MESSAGE: dict[int, str] = {
 
 ACTIVITY_NAME_CHARS = 20
 ACTIVITY_DESCR_CHARS = 50
+
+DATE_FORMAT, DATE_TIME_FORMAT = "%d/%m/%Y", "%d/%m/%Y - %H:%M"
