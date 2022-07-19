@@ -182,7 +182,7 @@ class ActivityMainUI(QMainWindow):
         self.left_layout.addWidget(self.filter_header)
 
         # Activities.
-        self.activity_table = QTableWidget(self.widget)  # ToDO adjust columns width.
+        self.activity_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.activity_table)
         new_config_table(self.activity_table, width=600,
                          columns={"Nombre": (.55, str), "Precio": (.25, int), "Inscriptos": (.2, int)},
