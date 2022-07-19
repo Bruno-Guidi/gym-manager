@@ -184,7 +184,7 @@ class ActivityMainUI(QMainWindow):
         # Activities.
         self.activity_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.activity_table)
-        new_config_table(self.activity_table, width=600,
+        new_config_table(self.activity_table, width=600, allow_resizing=False,
                          columns={"Nombre": (.55, str), "Precio": (.25, int), "Inscriptos": (.2, int)},
                          min_rows_to_show=10)
 
