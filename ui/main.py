@@ -16,7 +16,7 @@ from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
-from ui.widget_config import config_lbl, config_btn, config_table, fill_cell, new_config_table
+from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table
 from ui.widgets import PageIndex
 
 

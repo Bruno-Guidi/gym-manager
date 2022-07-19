@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QTableWidget, QPushButton,
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem,
-    QTextEdit, QCheckBox, QDateEdit, QWidget, QStyledItemDelegate)
+    QTextEdit, QCheckBox, QDateEdit, QWidget)
 
 
 def config_widget(

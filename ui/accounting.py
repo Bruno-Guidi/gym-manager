@@ -17,7 +17,7 @@ from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
 from ui.utils import MESSAGE
 from ui.widget_config import (
-    config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
+    config_lbl, config_btn, config_line, fill_cell, config_combobox,
     fill_combobox, config_checkbox, config_date_edit, new_config_table)
 from ui.widgets import Separator, Field, Dialog, responsible_field
 

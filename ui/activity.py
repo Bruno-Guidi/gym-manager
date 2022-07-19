@@ -12,8 +12,7 @@ from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from gym_manager.core.security import SecurityHandler, log_responsible
 from ui import utils
 from ui.widget_config import (
-    config_lbl, config_line, config_btn, config_table,
-    fill_cell, new_config_table)
+    config_lbl, config_line, config_btn, fill_cell, new_config_table)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 

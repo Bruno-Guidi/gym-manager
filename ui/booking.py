@@ -20,7 +20,7 @@ from ui import utils
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
-    config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
+    config_layout, config_btn, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox, new_config_table)
 from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 
