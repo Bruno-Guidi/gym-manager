@@ -150,6 +150,7 @@ class ClientRepo(abc.ABC):
 class ActivityRepo(abc.ABC):
     """Activities repository interface.
     """
+
     @abc.abstractmethod
     def add(self, activity: Activity):
         """Adds *activity* to the repository.
@@ -206,6 +207,7 @@ class ActivityRepo(abc.ABC):
 class SubscriptionRepo(abc.ABC):
     """Repository interface for client's activities subscriptions.
     """
+
     @abc.abstractmethod
     def add(self, subscription: Subscription):
         """Adds the given *subscription* to the repository.
