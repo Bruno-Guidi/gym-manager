@@ -9,7 +9,6 @@ from peewee import (
     CompositeKey, prefetch, Proxy, JOIN, IntegrityError, DateTimeField)
 from playhouse.sqlite_ext import JSONField
 
-from gym_manager.core import constants
 from gym_manager.core.base import (
     Client, Number, String, Currency, Activity, Transaction, Subscription,
     Balance)
