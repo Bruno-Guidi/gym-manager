@@ -143,7 +143,7 @@ class SecurityHandler(abc.ABC):
         raise NotImplementedError
 
 
-NO_RESPONSIBLE = Responsible(String("", optional=True, max_len=30), String("", optional=True, max_len=3))
+NO_RESPONSIBLE = Responsible(name=String("", optional=True), code=String("", optional=True))
 
 
 class SimpleSecurityHandler(SecurityHandler):
