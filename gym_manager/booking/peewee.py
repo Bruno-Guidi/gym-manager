@@ -264,15 +264,3 @@ class SqliteBookingRepo(BookingRepo):
                     f"Creating Cancellation [cancellation.id={record.id}] from queried data."
                 )
             yield self.cancellation_cache[record.id]
-
-    def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
-        """Counts the number of bookings in the repository.
-        """
-        bookings_q = BookingTable.select("1")
-        if filters is not None:
-            # The left outer join is required because bookings might be filtered by the client name, which isn't
-            # an attribute of BookingTable.
-            bookings_q = bookings_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
-            for filter_, value in filters:
-                bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
-        return bookings_q.count()
