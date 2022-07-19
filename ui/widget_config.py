@@ -183,7 +183,9 @@ def new_config_table(
         target.setHorizontalHeaderItem(i, item)
         target.setColumnWidth(i, int(percentage_width * width))
 
-    target.setSelectionMode(QAbstractItemView.SingleSelection)
+    target.horizontalHeader().setHighlightSections(False)  # This makes the header non-selectable
+    target.setSelectionBehavior(QAbstractItemView.SelectRows)  # Allows selecting only complete rows.
+    target.setSelectionMode(QAbstractItemView.SingleSelection)  # Allows selecting only one row.
     if min_rows_to_show > 0:
         # One extra row is added to include header height, and another one is added to include the scrollbar.
         target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())
