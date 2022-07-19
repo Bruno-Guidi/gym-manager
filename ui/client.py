@@ -310,9 +310,6 @@ class ClientMainUI(QMainWindow):
         # Clients.
         self.client_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.client_table)
-        # config_table(self.client_table, allow_resizing=True, min_rows_to_show=10,
-        #              columns={"Nombre": (8, str), "DNI": (8, int), "Ingreso": (8, bool), "Edad": (8, int),
-        #                       "Teléfono": (8, str), "Dirección": (8, str)})
         new_config_table(self.client_table, width=860, allow_resizing=False,
                          columns={"Nombre": (.25, str), "DNI": (.145, int), "Ingreso": (.155, bool), "Edad": (.08, int),
                                   "Teléfono": (.18, str), "Dirección": (.18, str)}, min_rows_to_show=10)
@@ -415,6 +412,8 @@ class ClientMainUI(QMainWindow):
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        self.setFixedSize(self.minimumSizeHint())
 
 
 class CreateController:
