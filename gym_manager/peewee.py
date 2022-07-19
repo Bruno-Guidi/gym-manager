@@ -544,8 +544,7 @@ class SqliteSecurityRepo(SecurityRepo):
 
     def responsible(self) -> Generator[Responsible, None, None]:
         for record in ResponsibleTable.select():
-            # ToDo This String don't need validation.
-            yield Responsible(String(record.resp_name, max_len=30), String(record.resp_code, max_len=30))
+            yield Responsible(String(record.resp_name), String(record.resp_code))
 
     def add_responsible(self, *responsible):
         try:
@@ -563,7 +562,5 @@ class SqliteSecurityRepo(SecurityRepo):
         actions_q = actions_q.paginate(page, page_len)
 
         for record in prefetch(actions_q, ResponsibleTable.select()):
-            # ToDo those Strings don't need validation.
-            resp = Responsible(String(record.responsible.resp_name, max_len=30),
-                               String(record.responsible.resp_code, max_len=30))
+            resp = Responsible(String(record.responsible.resp_name), String(record.responsible.resp_code))
             yield record.when, resp, record.action_tag, record.action_name
