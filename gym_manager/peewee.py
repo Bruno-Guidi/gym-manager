@@ -431,7 +431,7 @@ class SqliteTransactionRepo(TransactionRepo):
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
             without_balance: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
-        transactions_q = TransactionTable.select()
+        transactions_q = TransactionTable.select(TransactionTable, ClientTable.cli_name, ClientTable.dni)
 
         if without_balance:  # Retrieve transactions that weren't linked to a balance.
             transactions_q = transactions_q.where(TransactionTable.balance.is_null())
@@ -458,18 +458,6 @@ class SqliteTransactionRepo(TransactionRepo):
                     client = ClientView(dni, String(record.client.cli_name), created_by="SqliteTransactionRepo.all")
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
-
-    def count(self, filters: list[FilterValuePair] | None = None) -> int:
-        """Counts the number of transactions in the repository.
-        """
-        transactions_q = TransactionTable.select("1")
-        if filters is not None:
-            # The left outer join is required because transactions might be filtered by the client name, which isn't
-            # an attribute of TransactionTable.
-            transactions_q = transactions_q.join(ClientTable, JOIN.LEFT_OUTER)
-            for filter_, value in filters:
-                transactions_q = transactions_q.where(filter_.passes_in_repo(TransactionTable, value))
-        return transactions_q.count()
 
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
         record = TransactionTable.get_by_id(transaction.id)

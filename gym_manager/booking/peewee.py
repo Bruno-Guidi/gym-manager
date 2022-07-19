@@ -174,17 +174,19 @@ class SqliteBookingRepo(BookingRepo):
             self, when: date | None = None, court: str | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[TempBooking, None, None]:
         bookings_q = BookingTable.select()
+
+        # The left outer join is required to obtain the client data needed in ClientView.
+        bookings_q = bookings_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
+
         if when is not None:
             year, month, day = when.year, when.month, when.day
             # noinspection PyPropertyAccess
             bookings_q = bookings_q.where(year == BookingTable.when.year, month == BookingTable.when.month,
                                           day == BookingTable.when.day)
+
         if court is not None:
             bookings_q = bookings_q.where(BookingTable.court == court)
         if filters is not None:
-            # The left outer join is required because bookings might be filtered by the client name, which isn't
-            # an attribute of BookingTable.
-            bookings_q = bookings_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
             for filter_, value in filters:
                 bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
 
@@ -213,7 +215,10 @@ class SqliteBookingRepo(BookingRepo):
             yield self.temp_booking_cache[pk]
 
     def all_fixed(self) -> Generator[FixedBooking, None, None]:
-        for record in prefetch(FixedBookingTable.select(), TransactionTable.select()):
+        # The left outer join is required to obtain the client data needed in ClientView.
+        bookings_q = FixedBookingTable.select().join(peewee.ClientTable, JOIN.LEFT_OUTER)
+
+        for record in prefetch(bookings_q, TransactionTable.select()):
             pk = FixedBookingKey(record.day_of_week, record.court, record.start)
             if pk not in self.fixed_booking_cache:
                 transaction_record, transaction = record.transaction, None
@@ -240,14 +245,14 @@ class SqliteBookingRepo(BookingRepo):
             self, page: int = 1, page_len: int = 10, filters: list[FilterValuePair] | None = None
     ) -> Generator[Cancellation, None, None]:
         cancelled_q = CancelledLog.select()
-        # The left outer join is required because the client name is required.
+        # The left outer join is required because some client data is needed in the ClientView.
         cancelled_q = cancelled_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
 
         if filters is not None:
             for filter_, value in filters:
                 cancelled_q = cancelled_q.where(filter_.passes_in_repo(CancelledLog, value))
 
-        for record in cancelled_q.paginate(page, page_len):
+        for record in cancelled_q.paginate(page, page_len).order_by(CancelledLog.cancel_datetime.desc()):
             if record.id not in self.cancellation_cache:
                 self.cancellation_cache[record.id] = Cancellation(
                     record.id, record.cancel_datetime, record.responsible,
@@ -259,15 +264,3 @@ class SqliteBookingRepo(BookingRepo):
                     f"Creating Cancellation [cancellation.id={record.id}] from queried data."
                 )
             yield self.cancellation_cache[record.id]
-
-    def count_cancelled(self, filters: list[FilterValuePair] | None = None) -> int:
-        """Counts the number of bookings in the repository.
-        """
-        bookings_q = BookingTable.select("1")
-        if filters is not None:
-            # The left outer join is required because bookings might be filtered by the client name, which isn't
-            # an attribute of BookingTable.
-            bookings_q = bookings_q.join(peewee.ClientTable, JOIN.LEFT_OUTER)
-            for filter_, value in filters:
-                bookings_q = bookings_q.where(filter_.passes_in_repo(BookingTable, value))
-        return bookings_q.count()
