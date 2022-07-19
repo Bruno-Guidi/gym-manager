@@ -7,7 +7,6 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
 
-from gym_manager.core import constants as constants
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from gym_manager.core.security import SecurityHandler, log_responsible
