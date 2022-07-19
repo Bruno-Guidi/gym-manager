@@ -233,7 +233,7 @@ class BookingMainUI(QMainWindow):
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
 
-        new_config_table(self.booking_table, width=1000,
+        new_config_table(self.booking_table, width=1000, select_whole_row=False,
                          columns={"Hora": (.19, bool), "Cancha 1": (.27, bool), "Cancha 2": (.27, bool),
                                   "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=10)
 

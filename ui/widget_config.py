@@ -160,7 +160,8 @@ def config_table(
 
 def new_config_table(
         target: QTableWidget, width: int, columns: dict[str, tuple[float, type]], n_rows: int = 0, font_size: int = 14,
-        allow_resizing: bool = True, min_rows_to_show: int = 0, fix_width: bool = False
+        allow_resizing: bool = True, min_rows_to_show: int = 0, fix_width: bool = False,
+        select_whole_row: bool = True
 ):
     target.horizontalHeader().setFont(QFont("Inconsolata", font_size))
     target.setFont(QFont("Inconsolata", font_size))  # This font is monospaced.
@@ -186,8 +187,9 @@ def new_config_table(
         target.setColumnWidth(i, int(percentage_width * width))
 
     target.horizontalHeader().setHighlightSections(False)  # This makes the header non-selectable
-    target.setSelectionBehavior(QAbstractItemView.SelectRows)  # Allows selecting only complete rows.
-    target.setSelectionMode(QAbstractItemView.SingleSelection)  # Allows selecting only one row.
+    if select_whole_row:
+        target.setSelectionBehavior(QAbstractItemView.SelectRows)  # Allows selecting only complete rows.
+    target.setSelectionMode(QAbstractItemView.SingleSelection)  # Allows selecting only one row at a time.
     if min_rows_to_show > 0:
         # One extra row is added to include header height, and another one is added to include the scrollbar.
         target.setMinimumHeight((min_rows_to_show + 2) * target.horizontalHeader().height())
