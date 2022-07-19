@@ -248,6 +248,8 @@ class ActivityMainUI(QMainWindow):
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
+        self.setFixedSize(self.minimumSizeHint())
+
 
 class CreateController:
 
