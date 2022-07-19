@@ -352,18 +352,16 @@ class SqliteBalanceRepo(BalanceRepo):
                 if transaction_record.client is not None:
                     dni = Number(transaction_record.client.dni)
                     if dni not in self.client_cache:
-                        self.client_cache[dni] = ClientView(
-                            dni, String(transaction_record.client.cli_name, max_len=30),
-                            created_by="SqliteBalanceRepo.all"
-                        )
+                        self.client_cache[dni] = ClientView(dni, String(transaction_record.client.cli_name),
+                                                            created_by="SqliteBalanceRepo.all")
                     client = self.client_cache[dni]
+
                 transactions.append(self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when,
                     transaction_record.amount, transaction_record.method, transaction_record.responsible,
                     transaction_record.description, client, transaction_record.balance_id
                 ))
-            yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
-                   self.json_to_balance(record.balance_dict), transactions)
+            yield (record.when, String(record.responsible), self.json_to_balance(record.balance_dict), transactions)
 
 
 class TransactionTable(Model):
