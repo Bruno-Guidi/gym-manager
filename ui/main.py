@@ -9,9 +9,9 @@ from PyQt5.QtWidgets import (
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget)
 
 from gym_manager.booking.core import BookingSystem
-from gym_manager.core import constants
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler
+from ui import utils
 from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
@@ -253,7 +253,7 @@ class ActionController:
 
         actions_it = self.security_handler.actions(self.action_ui.page_index.page, self.action_ui.page_index.page_len)
         for row, (when, resp, _, action_name) in enumerate(actions_it):
-            fill_cell(self.action_ui.action_table, row, 0, when.strftime(constants.DATE_TIME_FORMAT), bool)
+            fill_cell(self.action_ui.action_table, row, 0, when.strftime(utils.DATE_TIME_FORMAT), bool)
             fill_cell(self.action_ui.action_table, row, 1, resp.name, str)
             fill_cell(self.action_ui.action_table, row, 2, action_name, str)
 
