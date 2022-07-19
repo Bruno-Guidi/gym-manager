@@ -256,13 +256,13 @@ def test_closeBalance():
     transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
 
-    balance = generate_balance(transaction_repo.all())
+    balance, transactions = generate_balance(transaction_repo.all())
     # First assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(200), "Total": Currency(200)}}
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp"))
+    close_balance(transaction_repo, balance_repo, balance, transactions, date(2022, 5, 4), String("TestResp"))
     # Then assert that all transactions included in the balance have their balance_date correctly set.
-    assert [date(2022, 5, 4), date(2022, 5, 4)] == [t.balance_date for t in transaction_repo.all(without_balance=False)]
+    assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 4))]
 
     # Now we are generating and closing the balance of 05/05/2022.
     # This transaction was made after the previous daily balance was closed, so it should be included in the balance of
@@ -279,15 +279,13 @@ def test_closeBalance():
     transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp"),
                             "TestDescr")
 
-    balance = generate_balance(transaction_repo.all())
+    balance, transactions = generate_balance(transaction_repo.all())
     # Assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(1100), "Total": Currency(1100)}}
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp"))
+    close_balance(transaction_repo, balance_repo, balance, transactions, date(2022, 5, 5), String("TestResp"))
     # Then assert that all transactions included in the balance have their balance_date correctly set.
-    expected = [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5),
-                date(2022, 5, 5), date(2022, 5, 5)]
-    assert expected == [t.balance_date for t in transaction_repo.all(without_balance=False)]
+    assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 5))]
 
 
 def test_closeBalance_withNoTransactions():
@@ -301,10 +299,10 @@ def test_closeBalance_withNoTransactions():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
-    balance = generate_balance(transaction_repo.all())
+    balance, _ = generate_balance(transaction_repo.all())
     # First assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)}, "Extracción": {"Total": Currency(0)}}
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp"))
+    close_balance(transaction_repo, balance_repo, balance, [], date(2022, 5, 4), String("TestResp"))
     assert balance == [b for _, _, b, _ in balance_repo.all(date(2022, 4, 4), date(2022, 6, 4))][0]
 
 
@@ -332,15 +330,14 @@ def test_closeBalance_withCreateExtractionFn():
     transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
 
-    balance = generate_balance(transaction_repo.all())
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp"),
+    balance, transactions = generate_balance(transaction_repo.all())
+    close_balance(transaction_repo, balance_repo, balance, transactions, date(2022, 5, 4), String("TestResp"),
                   functools.partial(_create_extraction_fn, transaction_repo, date(2022, 5, 4)))
     # First assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(200), "Débito": Currency(100), "Total": Currency(300)}}
     # Then assert that all transactions included in the balance have their balance_date correctly set.
-    assert [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 4)] == [t.balance_date for t
-                                                                      in transaction_repo.all(without_balance=False)]
+    assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 4))]
 
     # We are generating and closing the balance of 05/05/2022.
     # This transaction was made after the previous daily balance was closed, so it should be included in the balance of
@@ -357,13 +354,12 @@ def test_closeBalance_withCreateExtractionFn():
     transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp"),
                             "TestDescr")
 
-    balance = generate_balance(transaction_repo.all())
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp"),
+    balance, transactions = generate_balance(transaction_repo.all())
+    close_balance(transaction_repo, balance_repo, balance, transactions, date(2022, 5, 5), String("TestResp"),
                   functools.partial(_create_extraction_fn, transaction_repo, date(2022, 5, 5)))
     # Assert that the balance generated is the expected balance.
+    print(balance)
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(1100), "Débito": Currency(100), "Total": Currency(1200)}}
     # Then assert that all transactions included in the balance have their balance_date correctly set.
-    expected = [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 5), date(2022, 5, 5),
-                date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5)]
-    assert expected == [t.balance_date for t in transaction_repo.all(without_balance=False)]
+    assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 5))]

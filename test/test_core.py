@@ -83,7 +83,7 @@ def test_generateBalance():
             yield t
 
     # Feature to test.
-    balance = api.generate_balance(transactions_gen())
+    balance, _ = api.generate_balance(transactions_gen())
     expected_balance = {
         trans_charge: {trans_cash: Currency("200.9901"), trans_debit: Currency("200"), total: Currency("400.9901")},
         trans_extract: {trans_cash: Currency("100"), trans_debit: Currency("100"), trans_credit: Currency("0.0005"),
