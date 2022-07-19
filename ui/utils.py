@@ -5,3 +5,6 @@ MESSAGE: dict[int, str] = {
     SecurityError.INVALID_RESP: "El responsable ingresado no pudo ser identificado.",
     SecurityError.UNREGISTERED_ACTION: "La acción que esta queriendo ejecutar no esta registrada.",
 }
+
+ACTIVITY_NAME_CHARS = 20
+ACTIVITY_DESCR_CHARS = 50
