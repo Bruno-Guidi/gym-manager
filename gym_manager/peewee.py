@@ -408,8 +408,8 @@ class SqliteTransactionRepo(TransactionRepo):
             raise PersistenceError(f"Failed to create a 'Transaction' from data because one of the arguments is None."
                                    f"[none_args={none_args}]")
 
-        self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method,
-                                      String(raw_responsible, max_len=30), description, client, balance_date)
+        self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method, String(raw_responsible),
+                                      description, client, balance_date)
         logger.getChild(type(self).__name__).info(f"Creating Transaction [transaction.id={id_}] from queried data.")
         return self.cache[id_]
 
@@ -456,8 +456,7 @@ class SqliteTransactionRepo(TransactionRepo):
                 if dni in self.client_cache:
                     client = self.client_cache[dni]
                 else:
-                    client = ClientView(dni, String(record.client.cli_name, max_len=30),
-                                        created_by="SqliteClientRepo.all")
+                    client = ClientView(dni, String(record.client.cli_name), created_by="SqliteTransactionRepo.all")
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
 
