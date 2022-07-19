@@ -250,6 +250,8 @@ class Currency(Validatable):
             value = Decimal(value)
         except InvalidOperation:
             raise ValidationError(f"The argument 'value' is not a valid currency. [value={value}]")
+        if value < 0:
+            raise ValidationError(f"Negative currencies are not allowed. [value={value}]")
         return value
 
     def increase(self, other_currency: Currency) -> None:
