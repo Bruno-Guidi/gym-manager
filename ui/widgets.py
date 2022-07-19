@@ -12,7 +12,7 @@ from gym_manager.core import constants
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import SecurityHandler, SecurityError
-from ui.translated_messages import MESSAGE
+from ui.utils import MESSAGE
 from ui.widget_config import (
     fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
     config_date_edit)

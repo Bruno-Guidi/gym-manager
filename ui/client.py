@@ -16,7 +16,7 @@ from gym_manager.core.base import String, TextLike, Client, Number, Activity, Su
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError, log_responsible
 from ui.accounting import ChargeUI
-from ui.translated_messages import MESSAGE
+from ui.utils import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit)

@@ -14,7 +14,7 @@ from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Balance
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
-from ui.translated_messages import MESSAGE
+from ui.utils import MESSAGE
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
     fill_combobox, config_checkbox, config_date_edit)

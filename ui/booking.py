@@ -18,7 +18,7 @@ from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqu
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
-from ui.translated_messages import MESSAGE
+from ui.utils import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
