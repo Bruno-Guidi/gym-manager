@@ -21,7 +21,7 @@ from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
-    config_combobox, config_checkbox, config_line, fill_combobox)
+    config_combobox, config_checkbox, config_line, fill_combobox, new_config_table)
 from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
@@ -233,11 +233,9 @@ class BookingMainUI(QMainWindow):
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
 
-        config_table(
-            target=self.booking_table, min_rows_to_show=10,
-            columns={"Hora": (12, bool), "Cancha 1": (16, bool), "Cancha 2": (16, bool),
-                     "Cancha 3 (Singles)": (16, bool)}
-        )
+        new_config_table(self.booking_table, width=1000,
+                         columns={"Hora": (.19, bool), "Cancha 1": (.27, bool), "Cancha 2": (.27, bool),
+                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=10)
 
         # Adjusts size.
         self.setMaximumWidth(self.widget.sizeHint().width())
