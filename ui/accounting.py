@@ -9,11 +9,12 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit, QDialog,
     QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QCheckBox, QDateEdit)
 
-from gym_manager.core import api, constants
+from gym_manager.core import api
 from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Balance
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
+from ui import utils
 from ui.utils import MESSAGE
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
@@ -152,11 +153,11 @@ class DailyBalanceController:
 
         today = date.today()
         if self.balance_repo.balance_done(today):
-            Dialog.info("Error", f"La caja diaria de {today.strftime(constants.DATE_FORMAT)} ya fue cerrada.")
+            Dialog.info("Error", f"La caja diaria de {today.strftime(utils.DATE_FORMAT)} ya fue cerrada.")
             return
 
         try:
-            ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(constants.DATE_FORMAT)}."
+            ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(utils.DATE_FORMAT)}."
                                 f"\nEsta accion no se puede deshacer, todas las transacciones no incluidas en esta caja"
                                 f" diaria se incluiran en la caja del día de mañana."
                                 f"\n¿Desea continuar?")
