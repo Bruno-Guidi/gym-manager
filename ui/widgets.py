@@ -17,14 +17,20 @@ from ui.widget_config import (
     fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
     config_date_edit)
 
+_text_base_stylesheet = None
+
 
 def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> tuple[bool, Any]:
+    global _text_base_stylesheet
+    if _text_base_stylesheet is None:
+        _text_base_stylesheet = QTextEdit().styleSheet()
     valid, value = False, None
     try:
         value = String(text.toPlainText(), optional=optional, max_len=max_len)
         valid = True
+        text.setStyleSheet(_text_base_stylesheet)
     except ValidationError:
-        pass  # ToDo self.setStyleSheet("border: 1px solid red")
+        text.setStyleSheet("border: 1px solid red")
     return valid, value
 
 
