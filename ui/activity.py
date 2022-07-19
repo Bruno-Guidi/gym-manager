@@ -67,7 +67,7 @@ class MainController:
         self._activities[activity.name.as_primitive()] = activity
         row = self.main_ui.activity_table.rowCount()
         fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
-        fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int)
+        fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int)
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
 
     def fill_activity_table(self, filters: list[FilterValuePair]):
@@ -83,7 +83,7 @@ class MainController:
             activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
             activity = self._activities[activity_name]
             self.main_ui.name_field.setText(str(activity.name))
-            self.main_ui.price_field.setText(str(activity.price))
+            self.main_ui.price_field.setText(Currency.fmt(activity.price, symbol=''))
             self.main_ui.description_text.setText(str(activity.description))
         else:
             # Clears the form.
@@ -122,7 +122,8 @@ class MainController:
                 # Updates the ui.
                 row = self.main_ui.activity_table.currentRow()
                 fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.activity_table, row, 1, activity.price, data_type=int, increase_row_count=False)
+                fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int,
+                          increase_row_count=False)
                 fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int,
                           increase_row_count=False)
 

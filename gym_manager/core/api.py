@@ -85,7 +85,7 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> S
 
 
 def _charge_sub_description(subscription: Subscription) -> str:
-    return (f"Cobro de {subscription.activity.price} por actividad {subscription.activity.name} a "
+    return (f"Cobro de {Currency.fmt(subscription.activity.price)} por actividad {subscription.activity.name} a "
             f"{subscription.client.name}")
 
 

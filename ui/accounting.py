@@ -44,14 +44,14 @@ class MainController:
 
         # Calculates charges of the day.
         self.balance = api.generate_balance(self._today_transactions)
-        self.acc_main_ui.today_charges_line.setText(str(self.balance.get("Cobro", Currency(0))))
+        self.acc_main_ui.today_charges_line.setText(Currency.fmt(self.balance["Cobro"].get("Total", Currency(0))))
 
         # Shows transactions of the day.
         for i, transaction in enumerate(self._today_transactions):
             fill_cell(self.acc_main_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
             name = transaction.client.name if transaction.client is not None else "-"
             fill_cell(self.acc_main_ui.transaction_table, i, 1, name, data_type=str)
-            fill_cell(self.acc_main_ui.transaction_table, i, 2, transaction.amount, data_type=int)
+            fill_cell(self.acc_main_ui.transaction_table, i, 2, Currency.fmt(transaction.amount), data_type=int)
             fill_cell(self.acc_main_ui.transaction_table, i, 3, transaction.description, data_type=str)
 
         # Sets callbacks.
@@ -97,7 +97,7 @@ class AccountingMainUI(QMainWindow):
 
         self.today_charges_line = QLineEdit(self.widget)
         self.header_layout.addWidget(self.today_charges_line, 1, 0)
-        config_line(self.today_charges_line, place_holder="00000,00", enabled=False)
+        config_line(self.today_charges_line, place_holder="00000,00", enabled=False, alignment=Qt.AlignRight)
 
         self.close_balance_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.close_balance_btn, 0, 1, 2, 1)
@@ -322,7 +322,7 @@ class BalanceHistoryController:
             fill_cell(self.history_ui.balance_table, row_count, 0, when, data_type=int)
             fill_cell(self.history_ui.balance_table, row_count, 1, responsible, data_type=str)
             total = balance["Cobro"].get("Total") - balance["Extracción"].get("Total")
-            fill_cell(self.history_ui.balance_table, row_count, 2, total, data_type=int)
+            fill_cell(self.history_ui.balance_table, row_count, 2, Currency.fmt(total), data_type=int)
 
         if self.history_ui.balance_table.rowCount() != 0:
             self.history_ui.balance_table.selectRow(1)
@@ -344,7 +344,7 @@ class BalanceHistoryController:
                 fill_cell(self.history_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
                 name = transaction.client.name if transaction.client is not None else "-"
                 fill_cell(self.history_ui.transaction_table, i, 1, name, data_type=str)
-                fill_cell(self.history_ui.transaction_table, i, 2, transaction.amount, data_type=int)
+                fill_cell(self.history_ui.transaction_table, i, 2, Currency.fmt(transaction.amount), data_type=int)
                 fill_cell(self.history_ui.transaction_table, i, 3, transaction.description, data_type=str)
 
             # Loads balance detail.
@@ -352,13 +352,13 @@ class BalanceHistoryController:
             charges, extractions = balance["Cobro"], balance["Extracción"]
 
             c_cash = QLabel(self.history_ui.widget)
-            config_lbl(c_cash, str(charges.get("Efectivo", Currency(0))))
+            config_lbl(c_cash, Currency.fmt(charges.get("Efectivo", Currency(0))))
             c_debit = QLabel(self.history_ui.widget)
-            config_lbl(c_debit, str(charges.get("Débito", Currency(0))))
+            config_lbl(c_debit, Currency.fmt(charges.get("Débito", Currency(0))))
             c_credit = QLabel(self.history_ui.widget)
-            config_lbl(c_credit, str(charges.get("Crédito", Currency(0))))
+            config_lbl(c_credit, Currency.fmt(charges.get("Crédito", Currency(0))))
             c_total = QLabel(self.history_ui.widget)
-            config_lbl(c_total, str(charges.get("Total", Currency(0))))
+            config_lbl(c_total, Currency.fmt(charges.get("Total", Currency(0))))
 
             self.history_ui.detail_layout.addWidget(c_cash, 2, 1, alignment=Qt.AlignRight)
             self.history_ui.detail_layout.addWidget(c_debit, 2, 2, alignment=Qt.AlignRight)
@@ -366,13 +366,13 @@ class BalanceHistoryController:
             self.history_ui.detail_layout.addWidget(c_total, 2, 4, alignment=Qt.AlignRight)
 
             e_cash = QLabel(self.history_ui.widget)
-            config_lbl(e_cash, str(extractions.get("Efectivo", Currency(0))))
+            config_lbl(e_cash, Currency.fmt(extractions.get("Efectivo", Currency(0))))
             e_debit = QLabel(self.history_ui.widget)
-            config_lbl(e_debit, str(extractions.get("Débito", Currency(0))))
+            config_lbl(e_debit, Currency.fmt(extractions.get("Débito", Currency(0))))
             e_credit = QLabel(self.history_ui.widget)
-            config_lbl(e_credit, str(extractions.get("Crédito", Currency(0))))
+            config_lbl(e_credit, Currency.fmt(extractions.get("Crédito", Currency(0))))
             e_total = QLabel(self.history_ui.widget)
-            config_lbl(e_total, str(extractions.get("Total", Currency(0))))
+            config_lbl(e_total, Currency.fmt(extractions.get("Total", Currency(0))))
 
             self.history_ui.detail_layout.addWidget(e_cash, 3, 1, alignment=Qt.AlignRight)
             self.history_ui.detail_layout.addWidget(e_debit, 3, 2, alignment=Qt.AlignRight)
