@@ -144,7 +144,7 @@ def extract(
     return transaction
 
 
-def generate_balance(transactions: Iterable[Transaction]) -> Balance:
+def generate_balance(transactions: Iterable[Transaction]) -> tuple[Balance, list[Transaction]]:
     """Generates the balance from the given *transactions*. The transactions are grouped by type and by method, and then
     summed up.
 
@@ -158,7 +158,9 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
     total = "Total"
     balance["Cobro"][total], balance["Extracción"][total] = Currency(0), Currency(0)
 
+    _transactions = []
     for transaction in transactions:
+        _transactions.append(transaction)
         if transaction.method not in balance[transaction.type]:
             balance[transaction.type][transaction.method] = Currency(0)
         balance[transaction.type][transaction.method].increase(transaction.amount)
@@ -166,7 +168,7 @@ def generate_balance(transactions: Iterable[Transaction]) -> Balance:
 
     logger.info(f"Generated balance [balance={balance}].")
 
-    return balance
+    return balance, _transactions
 
 
 @log_responsible(action_tag="close_balance", to_str=lambda when: f"Cierre caja diaria {when}")
@@ -174,6 +176,7 @@ def close_balance(
         transaction_repo: TransactionRepo,
         balance_repo: BalanceRepo,
         balance: Balance,
+        transactions: Iterable[Transaction],
         balance_date: date,
         responsible: String,
         create_extraction_fn: CreateTransactionFn | None = None
@@ -184,6 +187,7 @@ def close_balance(
         transaction_repo: repository implementation that registers transactions.
         balance_repo: repository implementation that registers balances.
         balance: balance to close.
+        transactions: transactions included in the balance.
         balance_date: date when the balance was done.
         responsible: responsible for closing the balance.
         create_extraction_fn: function used to create the extraction.
@@ -204,8 +208,8 @@ def close_balance(
 
     balance_repo.add(balance_date, responsible, balance)
 
-    transaction_gen = transaction_repo.all(page=1)
-    for transaction in transaction_gen:
+    # transaction_gen = transaction_repo.all(page=1)
+    for transaction in transactions:
         transaction.balance_date = balance_date
         transaction_repo.bind_to_balance(transaction, balance_date)
 
