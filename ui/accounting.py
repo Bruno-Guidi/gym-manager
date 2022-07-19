@@ -351,33 +351,15 @@ class BalanceHistoryController:
             balance = self._balances[self.history_ui.balance_table.currentRow()]
             charges, extractions = balance["Cobro"], balance["Extracción"]
 
-            c_cash = QLabel(self.history_ui.widget)
-            config_lbl(c_cash, Currency.fmt(charges.get("Efectivo", Currency(0))))
-            c_debit = QLabel(self.history_ui.widget)
-            config_lbl(c_debit, Currency.fmt(charges.get("Débito", Currency(0))))
-            c_credit = QLabel(self.history_ui.widget)
-            config_lbl(c_credit, Currency.fmt(charges.get("Crédito", Currency(0))))
-            c_total = QLabel(self.history_ui.widget)
-            config_lbl(c_total, Currency.fmt(charges.get("Total", Currency(0))))
+            config_lbl(self.history_ui.c_cash_lbl, Currency.fmt(charges.get("Efectivo", Currency(0))))
+            config_lbl(self.history_ui.c_debit_lbl, Currency.fmt(charges.get("Débito", Currency(0))))
+            config_lbl(self.history_ui.c_credit_lbl, Currency.fmt(charges.get("Crédito", Currency(0))))
+            config_lbl(self.history_ui.c_total_lbl, Currency.fmt(charges.get("Total", Currency(0))))
 
-            self.history_ui.detail_layout.addWidget(c_cash, 2, 1, alignment=Qt.AlignRight)
-            self.history_ui.detail_layout.addWidget(c_debit, 2, 2, alignment=Qt.AlignRight)
-            self.history_ui.detail_layout.addWidget(c_credit, 2, 3, alignment=Qt.AlignRight)
-            self.history_ui.detail_layout.addWidget(c_total, 2, 4, alignment=Qt.AlignRight)
-
-            e_cash = QLabel(self.history_ui.widget)
-            config_lbl(e_cash, Currency.fmt(extractions.get("Efectivo", Currency(0))))
-            e_debit = QLabel(self.history_ui.widget)
-            config_lbl(e_debit, Currency.fmt(extractions.get("Débito", Currency(0))))
-            e_credit = QLabel(self.history_ui.widget)
-            config_lbl(e_credit, Currency.fmt(extractions.get("Crédito", Currency(0))))
-            e_total = QLabel(self.history_ui.widget)
-            config_lbl(e_total, Currency.fmt(extractions.get("Total", Currency(0))))
-
-            self.history_ui.detail_layout.addWidget(e_cash, 3, 1, alignment=Qt.AlignRight)
-            self.history_ui.detail_layout.addWidget(e_debit, 3, 2, alignment=Qt.AlignRight)
-            self.history_ui.detail_layout.addWidget(e_credit, 3, 3, alignment=Qt.AlignRight)
-            self.history_ui.detail_layout.addWidget(e_total, 3, 4, alignment=Qt.AlignRight)
+            config_lbl(self.history_ui.e_cash_lbl, Currency.fmt(extractions.get("Efectivo", Currency(0))))
+            config_lbl(self.history_ui.e_debit_lbl, Currency.fmt(extractions.get("Débito", Currency(0))))
+            config_lbl(self.history_ui.e_credit_lbl, Currency.fmt(extractions.get("Crédito", Currency(0))))
+            config_lbl(self.history_ui.e_total_lbl, Currency.fmt(extractions.get("Total", Currency(0))))
 
 
 class BalanceHistoryUI(QMainWindow):
@@ -446,14 +428,6 @@ class BalanceHistoryUI(QMainWindow):
         self.detail_layout.addWidget(self.method_lbl, 1, 0)
         config_lbl(self.method_lbl, "Método")
 
-        self.charges_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.charges_lbl, 2, 0)
-        config_lbl(self.charges_lbl, "Cobros")
-
-        self.extractions_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.extractions_lbl, 3, 0)
-        config_lbl(self.extractions_lbl, "Extracciones")
-
         self.cash_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.cash_lbl, 1, 1, alignment=Qt.AlignCenter)
         config_lbl(self.cash_lbl, "Efectivo")
@@ -469,6 +443,46 @@ class BalanceHistoryUI(QMainWindow):
         self.total_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.total_lbl, 1, 4, alignment=Qt.AlignCenter)
         config_lbl(self.total_lbl, "TOTAL")
+
+        self.charges_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.charges_lbl, 2, 0)
+        config_lbl(self.charges_lbl, "Cobros")
+
+        self.c_cash_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.c_cash_lbl, 2, 1)
+        config_lbl(self.c_cash_lbl)
+
+        self.c_debit_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.c_debit_lbl, 2, 2)
+        config_lbl(self.c_debit_lbl)
+
+        self.c_credit_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.c_credit_lbl, 2, 3)
+        config_lbl(self.c_credit_lbl)
+
+        self.c_total_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.c_total_lbl, 2, 4)
+        config_lbl(self.c_total_lbl)
+
+        self.extractions_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.extractions_lbl, 3, 0)
+        config_lbl(self.extractions_lbl, "Extracciones")
+
+        self.e_cash_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.e_cash_lbl, 3, 1)
+        config_lbl(self.e_cash_lbl)
+
+        self.e_debit_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.e_debit_lbl, 3, 2)
+        config_lbl(self.e_debit_lbl)
+
+        self.e_credit_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.e_credit_lbl, 3, 3)
+        config_lbl(self.e_credit_lbl)
+
+        self.e_total_lbl = QLabel(self.widget)
+        self.detail_layout.addWidget(self.e_total_lbl, 3, 4)
+        config_lbl(self.e_total_lbl)
 
         # Transactions of the balance.
         self.transactions_lbl = QLabel(self.widget)
