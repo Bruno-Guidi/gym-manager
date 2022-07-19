@@ -130,7 +130,7 @@ class MainUI(QMainWindow):
 
         self.config_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.config_btn)
-        config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32)
+        config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32, enabled=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
