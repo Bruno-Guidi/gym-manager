@@ -11,10 +11,11 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
     QDateEdit)
 
-from gym_manager.core import constants as constants, api
+from gym_manager.core import api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError, log_responsible
+from ui import utils
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
@@ -215,7 +216,7 @@ class MainController:
         self._charge_ui = ChargeUI(
             self.transaction_repo, self.security_handler, self._clients[client_dni],
             amount=self._subscriptions[activity_name].activity.price,
-            description=String(f"Cobro de actividad {activity_name}.", max_len=constants.TRANSACTION_DESCR_CHARS),
+            description=String(f"Cobro de actividad {activity_name}."),
             post_charge_fn=register_sub_charge
         )
         self._charge_ui.exec_()
@@ -348,7 +349,7 @@ class ClientMainUI(QMainWindow):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, self.widget, max_len=constants.CLIENT_NAME_CHARS)
+        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
@@ -357,8 +358,7 @@ class ClientMainUI(QMainWindow):
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
         config_lbl(self.dni_lbl, "DNI*")
 
-        self.dni_field = Field(Number, self.widget, min_value=constants.CLIENT_MIN_DNI,
-                               max_value=constants.CLIENT_MAX_DNI)
+        self.dni_field = Field(Number, self.widget, min_value=utils.CLIENT_MIN_DNI, max_value=utils.CLIENT_MAX_DNI)
         self.form_layout.addWidget(self.dni_field, 1, 1)
         config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False, enabled=False)
 
@@ -367,8 +367,7 @@ class ClientMainUI(QMainWindow):
         self.form_layout.addWidget(self.tel_lbl, 2, 0)
         config_lbl(self.tel_lbl, "Teléfono")
 
-        self.tel_field = Field(String, self.widget, optional=constants.CLIENT_TEL_OPTIONAL,
-                               max_len=constants.CLIENT_TEL_CHARS)
+        self.tel_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_TEL_CHARS)
         self.form_layout.addWidget(self.tel_field, 2, 1)
         config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
 
@@ -377,8 +376,7 @@ class ClientMainUI(QMainWindow):
         self.form_layout.addWidget(self.dir_lbl, 3, 0)
         config_lbl(self.dir_lbl, "Dirección")
 
-        self.dir_field = Field(String, self.widget, optional=constants.CLIENT_DIR_OPTIONAL,
-                               max_len=constants.CLIENT_DIR_CHARS)
+        self.dir_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 3, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
@@ -465,7 +463,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, parent=self, max_len=constants.CLIENT_NAME_CHARS)
+        self.name_field = Field(String, parent=self, max_len=utils.CLIENT_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
@@ -474,7 +472,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
         config_lbl(self.dni_lbl, "DNI*")
 
-        self.dni_field = Field(Number, self, min_value=constants.CLIENT_MIN_DNI, max_value=constants.CLIENT_MAX_DNI)
+        self.dni_field = Field(Number, self, min_value=utils.CLIENT_MIN_DNI, max_value=utils.CLIENT_MAX_DNI)
         self.form_layout.addWidget(self.dni_field, 1, 1)
         config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
@@ -492,7 +490,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.tel_lbl, 3, 0)
         config_lbl(self.tel_lbl, "Teléfono")
 
-        self.tel_field = Field(String, self, optional=constants.CLIENT_TEL_OPTIONAL, max_len=constants.CLIENT_TEL_CHARS)
+        self.tel_field = Field(String, self, optional=True, max_len=utils.CLIENT_TEL_CHARS)
         self.form_layout.addWidget(self.tel_field, 3, 1)
         config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
 
@@ -501,7 +499,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.dir_lbl, 4, 0)
         config_lbl(self.dir_lbl, "Dirección")
 
-        self.dir_field = Field(String, self, optional=constants.CLIENT_DIR_OPTIONAL, max_len=constants.CLIENT_DIR_CHARS)
+        self.dir_field = Field(String, self, optional=True, max_len=utils.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 4, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
