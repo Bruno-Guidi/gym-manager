@@ -160,7 +160,7 @@ def config_table(
 
 def new_config_table(
         target: QTableWidget, width: int, columns: dict[str, tuple[float, type]], n_rows: int = 0, font_size: int = 14,
-        allow_resizing: bool = True, min_rows_to_show: int = 0
+        allow_resizing: bool = True, min_rows_to_show: int = 0, fix_width: bool = False
 ):
     target.horizontalHeader().setFont(QFont("Inconsolata", font_size))
     target.setFont(QFont("Inconsolata", font_size))  # This font is monospaced.
@@ -174,6 +174,8 @@ def new_config_table(
     target.setRowCount(n_rows)
 
     target.setMinimumWidth(width)
+    if fix_width:
+        target.setFixedWidth(width)
     width = width - target.verticalScrollBar().height()  # Allocates some spaces to the vertical scrollbar.
     for i, (column_name, (percentage_width, column_type)) in enumerate(columns.items()):
         item = QTableWidgetItem(column_name)
