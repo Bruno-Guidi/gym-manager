@@ -353,15 +353,23 @@ class BalanceHistoryController:
             balance = self._balances[self.history_ui.balance_table.currentRow()]
             charges, extractions = balance["Cobro"], balance["Extracción"]
 
-            config_lbl(self.history_ui.c_cash_lbl, Currency.fmt(charges.get("Efectivo", Currency(0))))
-            config_lbl(self.history_ui.c_debit_lbl, Currency.fmt(charges.get("Débito", Currency(0))))
-            config_lbl(self.history_ui.c_credit_lbl, Currency.fmt(charges.get("Crédito", Currency(0))))
-            config_lbl(self.history_ui.c_total_lbl, Currency.fmt(charges.get("Total", Currency(0))))
+            config_lbl(self.history_ui.c_cash_lbl, Currency.fmt(charges.get("Efectivo", Currency(0))),
+                       alignment=Qt.AlignRight)
+            config_lbl(self.history_ui.c_debit_lbl, Currency.fmt(charges.get("Débito", Currency(0))),
+                       alignment=Qt.AlignRight)
+            config_lbl(self.history_ui.c_credit_lbl, Currency.fmt(charges.get("Crédito", Currency(0))),
+                       alignment=Qt.AlignRight)
+            config_lbl(self.history_ui.c_total_lbl, Currency.fmt(charges.get("Total", Currency(0))),
+                       alignment=Qt.AlignRight)
 
-            config_lbl(self.history_ui.e_cash_lbl, Currency.fmt(extractions.get("Efectivo", Currency(0))))
-            config_lbl(self.history_ui.e_debit_lbl, Currency.fmt(extractions.get("Débito", Currency(0))))
-            config_lbl(self.history_ui.e_credit_lbl, Currency.fmt(extractions.get("Crédito", Currency(0))))
-            config_lbl(self.history_ui.e_total_lbl, Currency.fmt(extractions.get("Total", Currency(0))))
+            config_lbl(self.history_ui.e_cash_lbl, Currency.fmt(extractions.get("Efectivo", Currency(0))),
+                       alignment=Qt.AlignRight)
+            config_lbl(self.history_ui.e_debit_lbl, Currency.fmt(extractions.get("Débito", Currency(0))),
+                       alignment=Qt.AlignRight)
+            config_lbl(self.history_ui.e_credit_lbl, Currency.fmt(extractions.get("Crédito", Currency(0))),
+                       alignment=Qt.AlignRight)
+            config_lbl(self.history_ui.e_total_lbl, Currency.fmt(extractions.get("Total", Currency(0))),
+                       alignment=Qt.AlignRight)
 
 
 class BalanceHistoryUI(QMainWindow):
@@ -388,6 +396,7 @@ class BalanceHistoryUI(QMainWindow):
         # Filters.
         self.filters_layout = QGridLayout()
         self.left_layout.addLayout(self.filters_layout)
+        self.filters_layout.setAlignment(Qt.AlignCenter)
 
         self.last_n_checkbox = QCheckBox(self.widget)
         self.filters_layout.addWidget(self.last_n_checkbox, 0, 0)
@@ -408,13 +417,9 @@ class BalanceHistoryUI(QMainWindow):
         # Balances.
         self.balance_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.balance_table)
-        config_table(
-            target=self.balance_table, allow_resizing=True, min_rows_to_show=1,
-            columns={"Fecha": (10, int), "Responsable": (12, str), "Total": (12, int)}
-        )
-        new_config_table(self.transaction_table, width=850,
-                         columns={"Responsable": (.22, str), "Cliente": (.25, str), "Monto": (.16, int),
-                                  "Descripción": (.37, str)}, min_rows_to_show=8)
+        new_config_table(self.balance_table, width=500,
+                         columns={"Fecha": (.28, bool), "Responsable": (.42, str), "Total": (.3, int)},
+                         min_rows_to_show=5)
 
         # Balance detail.
         self.detail_layout = QGridLayout()
@@ -454,40 +459,32 @@ class BalanceHistoryUI(QMainWindow):
         config_lbl(self.charges_lbl, "Cobros")
 
         self.c_cash_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_cash_lbl, 2, 1)
-        config_lbl(self.c_cash_lbl)
+        self.detail_layout.addWidget(self.c_cash_lbl, 2, 1, alignment=Qt.AlignRight)
 
         self.c_debit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_debit_lbl, 2, 2)
-        config_lbl(self.c_debit_lbl)
+        self.detail_layout.addWidget(self.c_debit_lbl, 2, 2, alignment=Qt.AlignRight)
 
         self.c_credit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_credit_lbl, 2, 3)
-        config_lbl(self.c_credit_lbl)
+        self.detail_layout.addWidget(self.c_credit_lbl, 2, 3, alignment=Qt.AlignRight)
 
         self.c_total_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_total_lbl, 2, 4)
-        config_lbl(self.c_total_lbl)
+        self.detail_layout.addWidget(self.c_total_lbl, 2, 4, alignment=Qt.AlignRight)
 
         self.extractions_lbl = QLabel(self.widget)
         self.detail_layout.addWidget(self.extractions_lbl, 3, 0)
         config_lbl(self.extractions_lbl, "Extracciones")
 
         self.e_cash_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_cash_lbl, 3, 1)
-        config_lbl(self.e_cash_lbl)
+        self.detail_layout.addWidget(self.e_cash_lbl, 3, 1, alignment=Qt.AlignRight)
 
         self.e_debit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_debit_lbl, 3, 2)
-        config_lbl(self.e_debit_lbl)
+        self.detail_layout.addWidget(self.e_debit_lbl, 3, 2, alignment=Qt.AlignRight)
 
         self.e_credit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_credit_lbl, 3, 3)
-        config_lbl(self.e_credit_lbl)
+        self.detail_layout.addWidget(self.e_credit_lbl, 3, 3, alignment=Qt.AlignRight)
 
         self.e_total_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_total_lbl, 3, 4)
-        config_lbl(self.e_total_lbl)
+        self.detail_layout.addWidget(self.e_total_lbl, 3, 4, alignment=Qt.AlignRight)
 
         # Transactions of the balance.
         self.transactions_lbl = QLabel(self.widget)
@@ -501,7 +498,7 @@ class BalanceHistoryUI(QMainWindow):
                               "Descripción": (12, str)})
 
         # Adjusts size.
-        self.setFixedWidth(self.sizeHint().width())
+        # self.setFixedWidth(self.sizeHint().width())
 
 
 class ChargeController:
