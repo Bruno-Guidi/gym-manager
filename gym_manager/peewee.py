@@ -534,11 +534,8 @@ class SqliteSecurityRepo(SecurityRepo):
             yield Responsible(String(record.resp_name), String(record.resp_code))
 
     def add_responsible(self, *responsible):
-        try:
-            for resp in responsible:
-                ResponsibleTable.create(resp_code=resp.code, resp_name=resp.name)
-        except IntegrityError:
-            pass
+        for resp in responsible:
+            ResponsibleTable.replace(resp_code=resp.code, resp_name=resp.name).execute()
 
     def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
         ActionTable.create(when=when, responsible_id=responsible.code.as_primitive(), action_tag=action_tag,
