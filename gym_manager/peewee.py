@@ -65,15 +65,13 @@ class SqliteClientRepo(ClientRepo):
             self, dni: Number, raw_name: str, admission: date, birth_day: date, raw_telephone: str, raw_direction: str,
             is_active: bool, subscriptions
     ) -> Client:
-        client = Client(dni, String(raw_name, max_len=constants.CLIENT_NAME_CHARS), admission, birth_day,
-                        String(raw_telephone, optional=constants.CLIENT_TEL_OPTIONAL,
-                               max_len=constants.CLIENT_TEL_CHARS),
-                        String(raw_direction, optional=constants.CLIENT_DIR_OPTIONAL,
-                               max_len=constants.CLIENT_DIR_CHARS),
-                        is_active)
+        # There is no need to validate max_len of String because they were validated when the client was created.
+        client = Client(dni, String(raw_name), admission, birth_day, String(raw_telephone, optional=True),
+                        String(raw_direction, optional=True), is_active)
 
         for sub_record in subscriptions:
-            activity = self.activity_repo.get(String(sub_record.activity_id, max_len=30))
+            # The activity name was validated when it was created.
+            activity = self.activity_repo.get(String(sub_record.activity_id))
             trans_record, transaction = sub_record.transaction, None
             if trans_record is not None:
                 transaction = self.transaction_repo.from_data(
