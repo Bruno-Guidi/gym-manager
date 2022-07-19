@@ -176,7 +176,7 @@ def close_balance(
         transaction_repo: TransactionRepo,
         balance_repo: BalanceRepo,
         balance: Balance,
-        transactions: Iterable[Transaction],
+        transactions: list[Transaction],
         balance_date: date,
         responsible: String,
         create_extraction_fn: CreateTransactionFn | None = None
@@ -199,6 +199,7 @@ def close_balance(
     if create_extraction_fn is not None:
         # Creates the extraction done at the end of the day.
         extraction = create_extraction_fn()
+        transactions.append(extraction)
 
         # Adds the extraction to the balance.
         if extraction.method not in balance["Extracción"]:
