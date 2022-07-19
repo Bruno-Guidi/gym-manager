@@ -99,7 +99,7 @@ def main():
 
 if __name__ == "__main__":
     os.makedirs(os.path.dirname("logs/gym_manager.log"), exist_ok=True)
-    config.dictConfig(log_config)
+    config.fileConfig("logging.conf")
 
     peewee.create_database("test.db")
     peewee_logger = logging.getLogger("peewee")
