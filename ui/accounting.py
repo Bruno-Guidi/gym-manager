@@ -119,7 +119,7 @@ class AccountingMainUI(QMainWindow):
                          columns={"Responsable": (.22, str), "Cliente": (.25, str), "Monto": (.16, int),
                                   "Descripción": (.37, str)}, min_rows_to_show=8)
 
-        self.setFixedSize(self.minimumSizeHint())
+        self.setFixedWidth(self.minimumSizeHint().width())
 
 
 class DailyBalanceController:
@@ -412,6 +412,9 @@ class BalanceHistoryUI(QMainWindow):
             target=self.balance_table, allow_resizing=True, min_rows_to_show=1,
             columns={"Fecha": (10, int), "Responsable": (12, str), "Total": (12, int)}
         )
+        new_config_table(self.transaction_table, width=850,
+                         columns={"Responsable": (.22, str), "Cliente": (.25, str), "Monto": (.16, int),
+                                  "Descripción": (.37, str)}, min_rows_to_show=8)
 
         # Balance detail.
         self.detail_layout = QGridLayout()
