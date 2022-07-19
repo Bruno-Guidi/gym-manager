@@ -85,8 +85,6 @@ class MainController:
             self.main_ui.name_field.setText(str(activity.name))
             self.main_ui.price_field.setText(str(activity.price))
             self.main_ui.description_text.setText(str(activity.description))
-
-            self.main_ui.name_field.setEnabled(not activity.locked)
         else:
             # Clears the form.
             self.main_ui.name_field.clear()
@@ -220,11 +218,11 @@ class ActivityMainUI(QMainWindow):
         # Name.
         self.name_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre*")
+        config_lbl(self.name_lbl, "Nombre")
 
         self.name_field = Field(String, self.widget, max_len=utils.ACTIVITY_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False, enabled=False)
 
         # Price.
         self.price_lbl = QLabel(self.widget)
