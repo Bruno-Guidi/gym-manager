@@ -18,7 +18,7 @@ from ui import utils
 from ui.utils import MESSAGE
 from ui.widget_config import (
     config_table, config_lbl, config_btn, config_line, fill_cell, config_combobox,
-    fill_combobox, config_checkbox, config_date_edit)
+    fill_combobox, config_checkbox, config_date_edit, new_config_table)
 from ui.widgets import Separator, Field, Dialog, responsible_field
 
 
@@ -79,25 +79,32 @@ class AccountingMainUI(QMainWindow):
         self.layout = QVBoxLayout(self.widget)
 
         # Header layout.
-        self.header_layout = QGridLayout()
+        self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
-        self.header_layout.setAlignment(Qt.AlignLeft)
+        self.header_layout.setAlignment(Qt.AlignCenter)
+
+        # Today charges layout.
+        self.today_charges_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.today_charges_layout)
 
         self.today_charges_lbl = QLabel(self.widget)
-        self.header_layout.addWidget(self.today_charges_lbl, 0, 0)
+        self.today_charges_layout.addWidget(self.today_charges_lbl)
         config_lbl(self.today_charges_lbl, "Cobros del día")
 
         self.today_charges_line = QLineEdit(self.widget)
-        self.header_layout.addWidget(self.today_charges_line, 1, 0)
+        self.today_charges_layout.addWidget(self.today_charges_line)
         config_line(self.today_charges_line, place_holder="00000,00", enabled=False, alignment=Qt.AlignRight)
 
+        # Horizontal spacer.
+        self.header_layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+
         self.close_balance_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.close_balance_btn, 0, 1, 2, 1)
-        config_btn(self.close_balance_btn, "Cerrar caja", font_size=16)
+        self.header_layout.addWidget(self.close_balance_btn)
+        config_btn(self.close_balance_btn, "Cerrar caja", font_size=16, extra_width=30)
 
         self.history_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.history_btn, 0, 2, 2, 1)
-        config_btn(self.history_btn, "Historial", font_size=16)
+        self.header_layout.addWidget(self.history_btn)
+        config_btn(self.history_btn, "Historial", font_size=16, extra_width=30)
 
         self.layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
@@ -108,9 +115,11 @@ class AccountingMainUI(QMainWindow):
 
         self.transaction_table = QTableWidget(self.widget)
         self.layout.addWidget(self.transaction_table)
-        config_table(self.transaction_table, allow_resizing=False,
-                     columns={"Responsable": (8, str), "Cliente": (8, str), "Monto": (8, int),
-                              "Descripción": (12, str)})
+        new_config_table(self.transaction_table, width=850,
+                         columns={"Responsable": (.22, str), "Cliente": (.25, str), "Monto": (.16, int),
+                                  "Descripción": (.37, str)}, min_rows_to_show=8)
+
+        self.setFixedSize(self.minimumSizeHint())
 
 
 class DailyBalanceController:
