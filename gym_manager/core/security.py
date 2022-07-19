@@ -42,6 +42,7 @@ class SecurityError(Exception):
         self.code = code
 
 
+# noinspection PyPep8Naming
 class log_responsible:
     """Decorator used to facilitate the registering of action's responsible.
 

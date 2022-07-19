@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core import api
 from gym_manager.core.api import CreateTransactionFn
-from gym_manager.core.base import DateGreater, DateLesser, Currency, Transaction, String, Client, Balance
+from gym_manager.core.base import Currency, Transaction, String, Client, Balance
 from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils

@@ -13,16 +13,16 @@ from PyQt5.QtWidgets import (
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
     remaining_blocks, Booking, Duration, subtract_times)
-from ui import utils
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
+from ui import utils
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
-from ui.widgets import FilterHeader, PageIndex, Field, Dialog, responsible_field
+from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 
 ScheduleColumn: TypeAlias = dict[int, Booking]
 

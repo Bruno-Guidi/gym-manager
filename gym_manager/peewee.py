@@ -6,7 +6,7 @@ from typing import Generator, Iterable
 
 from peewee import (
     SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-    CompositeKey, prefetch, Proxy, JOIN, IntegrityError, DateTimeField)
+    CompositeKey, prefetch, Proxy, JOIN, DateTimeField)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core.base import (

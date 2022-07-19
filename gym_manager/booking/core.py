@@ -17,16 +17,16 @@ ONE_WEEK_TD = timedelta(weeks=1)
 ONE_DAY_TD = timedelta(days=1)
 
 
-def book_description(booking: Booking) -> str:
-    return f"Reserva turno {booking.when.strftime('%d/%m/%Y')} - {booking.start.strftime('%H:%M')} - Cancha {booking.court}"
+def book_description(b: Booking) -> str:
+    return f"Reserva turno {b.when.strftime('%d/%m/%Y')} - {b.start.strftime('%H:%M')} - Cancha {b.court}"
 
 
-def cancel_description(booking: Booking) -> str:
-    return f"Cancelación turno {booking.when.strftime('%d/%m/%Y')} - {booking.start.strftime('%H:%M')} - Cancha {booking.court}"
+def cancel_description(b: Booking) -> str:
+    return f"Cancelación turno {b.when.strftime('%d/%m/%Y')} - {b.start.strftime('%H:%M')} - Cancha {b.court}"
 
 
-def charge_description(booking: Booking) -> str:
-    return f"Cobro turno {booking.when.strftime('%d/%m/%Y')} - {booking.start.strftime('%H:%M')} - Cancha {booking.court}"
+def charge_description(b: Booking) -> str:
+    return f"Cobro turno {b.when.strftime('%d/%m/%Y')} - {b.start.strftime('%H:%M')} - Cancha {b.court}"
 
 
 def time_range(start: time, end: time, minute_step: int) -> Generator[time, None, None]:

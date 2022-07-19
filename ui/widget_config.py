@@ -6,7 +6,7 @@ from PyQt5.QtGui import QFont, QStandardItemModel, QStandardItem, QIcon
 from PyQt5.QtWidgets import (
     QLabel, QLineEdit, QTableWidget, QPushButton,
     QLayout, QComboBox, QAbstractItemView, QHeaderView, QTableWidgetItem,
-    QTextEdit, QCheckBox, QDateEdit, QWidget, QSizePolicy, QStyledItemDelegate)
+    QTextEdit, QCheckBox, QDateEdit, QWidget, QStyledItemDelegate)
 
 
 def config_widget(
@@ -76,9 +76,9 @@ def config_btn(
 
 
 def config_checkbox(
-        target: QCheckBox, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14, adjust_to_hint: bool = True,
-        extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0, enabled: bool = True,
-        layout_dir=Qt.LayoutDirection.LeftToRight, checked: bool = False
+        target: QCheckBox, text: str = "", font: str = "MS Shell Dlg 2", font_size: int = 14,
+        adjust_to_hint: bool = True, extra_width: int = 0, extra_height: int = 0, fixed_width: int = 0,
+        enabled: bool = True, layout_dir=Qt.LayoutDirection.LeftToRight, checked: bool = False
 ):
     target.setText(text)
     target.setChecked(checked)

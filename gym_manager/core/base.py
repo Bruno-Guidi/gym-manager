@@ -184,6 +184,7 @@ class Currency(Validatable):
     """Decimal wrapper that supports a max currency value.
     """
 
+    # noinspection PyShadowingBuiltins
     @classmethod
     def fmt(
             cls, currency: Currency, places: int = 2, symbol: str = '$', sep: str = '.', dp_sep: str = ','
@@ -280,7 +281,8 @@ class Client:
 
     def age(self, reference_date: date | None = None) -> int:
         today = date.today() if reference_date is None else reference_date
-        return today.year - self.birth_day.year - ((today.month, today.day) < (self.birth_day.month, self.birth_day.day))
+        cmp = (today.month, today.day) < (self.birth_day.month, self.birth_day.day)
+        return today.year - self.birth_day.year - cmp
 
     def add(self, subscription: Subscription):
         """Registers the *subscription*.

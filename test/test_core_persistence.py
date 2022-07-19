@@ -1,5 +1,3 @@
-import logging
-
 import pytest
 
 from gym_manager.core.base import Number

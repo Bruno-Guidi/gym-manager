@@ -5,8 +5,7 @@ import pytest
 
 from gym_manager.core.base import String
 from gym_manager.core.security import (
-    SimpleSecurityHandler, SecurityRepo, Responsible, SecurityError, log_responsible,
-    Action)
+    SimpleSecurityHandler, SecurityRepo, Responsible, SecurityError, Action)
 
 
 class MockSecurityRepo(SecurityRepo):

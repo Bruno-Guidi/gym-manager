@@ -411,14 +411,15 @@ class DialogWithResp(QDialog):
 
 
 class PageIndex(QWidget):
+    # noinspection PyPep8
     """
-    Setting up a PageIndex:
+        Setting up a PageIndex:
 
-    + Create the widget and add it to a layout of the QMainWindow.
-    + Call (BEFORE FILLING THE TABLE IN DISPLAY) the method config(args). Pass the Callable to run when changing page, the page length, and the total length.
-    + Inside the method that fills the table in display, set the PageIndex total_len property with the amount of expected rows (with the active filters applied).
-    + If it is possible to add or remove rows manually, after each of these actions update the PageIndex total_len property accordingly.
-    """
+        + Create the widget and add it to a layout of the QMainWindow.
+        + Call (BEFORE FILLING THE TABLE IN DISPLAY) the method config(args). Pass the Callable to run when changing page, the page length, and the total length.
+        + Inside the method that fills the table in display, set the PageIndex total_len property with the amount of expected rows (with the active filters applied).
+        + If it is possible to add or remove rows manually, after each of these actions update the PageIndex total_len property accordingly.
+        """
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
