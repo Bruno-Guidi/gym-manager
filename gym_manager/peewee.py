@@ -231,11 +231,8 @@ class SqliteActivityRepo(ActivityRepo):
         if record is None:
             raise KeyError(f"There is no activity with the id '{name}'")
 
-        # ToDo following String don't need validation because they were already validated.
-        self.cache[name] = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
-                                    Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                    String(record.description, optional=True,
-                                           max_len=constants.ACTIVITY_DESCR_CHARS),
+        # The activity description was validated when it was created.
+        self.cache[name] = Activity(name, Currency(record.price), String(record.description, optional=True),
                                     record.charge_once, record.locked)
         logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={name}] from queried data.")
         return self.cache[name]
@@ -275,13 +272,13 @@ class SqliteActivityRepo(ActivityRepo):
 
         for record in activities_q:
             activity: Activity
-            activity_name = String(record.act_name, max_len=30)
+            # The activity name and description were validated when it was created.
+            activity_name = String(record.act_name)
             if activity_name not in self.cache:
                 logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={activity_name}] from "
                                                           f"queried data.")
                 self.cache[activity_name] = Activity(
-                    activity_name, Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
+                    activity_name, Currency(record.price), String(record.description, optional=True),
                     record.charge_once, record.locked
                 )
             yield self.cache[activity_name]
