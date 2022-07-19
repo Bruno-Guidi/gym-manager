@@ -431,7 +431,7 @@ class SqliteTransactionRepo(TransactionRepo):
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
             without_balance: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
-        transactions_q = TransactionTable.select()
+        transactions_q = TransactionTable.select(TransactionTable, ClientTable.cli_name, ClientTable.dni)
 
         if without_balance:  # Retrieve transactions that weren't linked to a balance.
             transactions_q = transactions_q.where(TransactionTable.balance.is_null())
