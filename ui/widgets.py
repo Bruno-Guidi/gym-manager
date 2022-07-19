@@ -95,6 +95,8 @@ class FilterHeader(QWidget):
         self.search_btn.clicked.connect(self.on_search_click)
         # noinspection PyUnresolvedReferences
         self.clear_filter_btn.clicked.connect(self.on_clear_click)
+        # noinspection PyUnresolvedReferences
+        self.filter_line_edit.returnPressed.connect(self.on_search_click)
         if date_greater_filtering:
             # noinspection PyUnresolvedReferences
             self.from_date_edit.dateChanged.connect(self.on_search_click)
