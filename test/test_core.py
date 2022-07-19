@@ -19,8 +19,7 @@ def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
     peewee.create_database(":memory:")
 
     repo = peewee.SqliteActivityRepo()
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
-                        charge_once=True, locked=True)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
     repo.add(activity)
     with pytest.raises(PersistenceError) as p_err:
         repo.remove(activity)
@@ -102,18 +101,18 @@ def test_base_filterOverdue():
 
 
 def test_base_Client_age():
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 12, 15),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 12, 15),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 7, 12),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 7, 12),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 2), date(1998, 7, 11),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 24
 

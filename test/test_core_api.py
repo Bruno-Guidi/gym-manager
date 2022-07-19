@@ -22,7 +22,7 @@ class MockSecurityHandler(SecurityHandler):
 
     @property
     def current_responsible(self) -> Responsible:
-        return Responsible(String("DefaultResp", max_len=30), String("DefaultCode", max_len=30))
+        return Responsible(String("DefaultResp"), String("DefaultCode"))
 
     def unregistered_action(self, action_tag: str) -> bool:
         return False
@@ -48,11 +48,11 @@ def test_subscribe():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
     client_repo.add(client)
 
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
     activity_repo.add(activity)
 
@@ -64,9 +64,9 @@ def test_subscribe():
 def test_subscribe_activityChargeOnce_raisesOperationalError():
     log_responsible.config(MockSecurityHandler())
 
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=True, locked=True)
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
@@ -78,11 +78,11 @@ def test_subscribe_activityChargeOnce_raisesOperationalError():
 def test_subscribe_invalidClients_raisesOperationalError():
     log_responsible.config(MockSecurityHandler())
 
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
-    other = Client(Number(2), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                   String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    other = Client(Number(2), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                   String("dummy_tel"), String("dummy_descr"), is_active=True)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False, locked=True)
     # noinspection PyTypeChecker
     transaction = Transaction(1, type=None, when=None, amount=None, method=None, responsible=None, description=None,
@@ -108,9 +108,9 @@ def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
 
     lesser, greater = date(2022, 2, 1), date(2022, 2, 2)
 
-    client = Client(Number(1), String("dummy_name", max_len=20), greater, date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
+    client = Client(Number(1), String("dummy_name"), greater, date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False, locked=True)
     with pytest.raises(InvalidDate):
         # noinspection PyTypeChecker
@@ -128,11 +128,11 @@ def test_cancel():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
     client_repo.add(client)
 
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
     activity_repo.add(activity)
 
@@ -157,11 +157,11 @@ def test_charge_notChargeOnceActivity():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = Client(Number(1), String("dummy_name", max_len=20), date(2022, 2, 1), date(2022, 2, 1),
-                    String("dummy_tel", max_len=20), String("dummy_descr", max_len=20), is_active=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
     client_repo.add(client)
 
-    activity = Activity(String("dummy_name", max_len=20), Currency(0.0), String("dummy_descr", max_len=20),
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
     activity_repo.add(activity)
 
@@ -173,7 +173,7 @@ def test_charge_notChargeOnceActivity():
     assert not subscription.up_to_date(date(2022, 4, 1))
     create_transaction_fn = functools.partial(
         transaction_repo.create, "Cobro", date(2022, 4, 1), Currency(0.0), "dummy_method",
-        String("dummy_resp", max_len=20), "dummy_descr", client
+        String("dummy_resp"), "dummy_descr", client
     )
 
     # Feature being tested.
@@ -193,16 +193,16 @@ def test_ClientViewRefreshedAfterClientUpdate():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Creates a Client.
-    client = Client(Number(12345), String("CliName", max_len=30), date(2000, 2, 2), date(2022, 1, 1),
-                    String("Tel", max_len=20), String("Dir", max_len=20))
+    client = Client(Number(12345), String("CliName"), date(2000, 2, 2), date(2022, 1, 1),
+                    String("Tel"), String("Dir"))
     client_repo.add(client)
 
     # Then creates a Transaction related to the client. The transaction has a ClientView instead of a Client.
     transaction = transaction_repo.from_data(0, "type", date(2022, 2, 2), "100.00", "method", "resp", "descr",
-                                             ClientView(Number(12345), String("CliName", max_len=30), ""))
+                                             ClientView(Number(12345), String("CliName"), ""))
 
     # Updates the Client.
-    client.name = String("OtherName", max_len=30)
+    client.name = String("OtherName")
     client_repo.update(client)
 
     # Assert that the ClientView in the Transaction was updated.
@@ -220,8 +220,8 @@ def test_ClientViewRefreshedAfterClientCreation():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Creates a Client.
-    client = Client(Number(12345), String("CliName", max_len=30), date(2000, 2, 2), date(2022, 1, 1),
-                    String("Tel", max_len=20), String("Dir", max_len=20))
+    client = Client(Number(12345), String("CliName"), date(2000, 2, 2), date(2022, 1, 1),
+                    String("Tel"), String("Dir"))
     client_repo.add(client)
 
     # Removes a Client. It is marked as inactive.
@@ -229,10 +229,10 @@ def test_ClientViewRefreshedAfterClientCreation():
 
     # Then creates a Transaction related to the client. The transaction has a ClientView of an inactive Client.
     transaction = transaction_repo.from_data(0, "type", date(2022, 2, 2), "100.00", "method", "resp", "descr",
-                                             ClientView(Number(12345), String("CliName", max_len=30), ""))
+                                             ClientView(Number(12345), String("CliName"), ""))
 
     # Creates the Client again. It has the same dni, but a different name.
-    client.name = String("OtherName", max_len=30)
+    client.name = String("OtherName")
     client_repo.add(client)
 
     # Assert that the ClientView in the Transaction was updated.
@@ -251,39 +251,39 @@ def test_closeBalance():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # The following transactions should be included in the daily balance of 04/05/2022.
-    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
 
     balance = generate_balance(transaction_repo.all())
     # First assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(200), "Total": Currency(200)}}
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp", max_len=30))
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp"))
     # Then assert that all transactions included in the balance have their balance_date correctly set.
     assert [date(2022, 5, 4), date(2022, 5, 4)] == [t.balance_date for t in transaction_repo.all(without_balance=False)]
 
     # Now we are generating and closing the balance of 05/05/2022.
     # This transaction was made after the previous daily balance was closed, so it should be included in the balance of
     # 05/05/2022.
-    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
     # The following transactions were made on 05/05/2022.
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp"),
                             "TestDescr")
 
     balance = generate_balance(transaction_repo.all())
     # Assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(1100), "Total": Currency(1100)}}
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp", max_len=30))
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp"))
     # Then assert that all transactions included in the balance have their balance_date correctly set.
     expected = [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5),
                 date(2022, 5, 5), date(2022, 5, 5)]
@@ -301,21 +301,15 @@ def test_closeBalance_withNoTransactions():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
-    # The following transactions should be included in the daily balance of 04/05/2022.
-    # transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
-    #                         "TestDescr")
-    # transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
-    #                         "TestDescr")
-
     balance = generate_balance(transaction_repo.all())
     # First assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)}, "Extracción": {"Total": Currency(0)}}
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp", max_len=30))
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp"))
     assert balance == [b for _, _, b, _ in balance_repo.all(date(2022, 4, 4), date(2022, 6, 4))][0]
 
 
 def _create_extraction_fn(transaction_repo: peewee.SqliteTransactionRepo, when: date) -> Transaction:
-    return transaction_repo.create("Extracción", when, Currency(100), "Débito", String("TestResp", max_len=30),
+    return transaction_repo.create("Extracción", when, Currency(100), "Débito", String("TestResp"),
                                    "TestDescr")
 
 
@@ -333,13 +327,13 @@ def test_closeBalance_withCreateExtractionFn():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # The following transactions should be included in the daily balance of 04/05/2022.
-    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
 
     balance = generate_balance(transaction_repo.all())
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp", max_len=30),
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 4), String("TestResp"),
                   functools.partial(_create_extraction_fn, transaction_repo, date(2022, 5, 4)))
     # First assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)},
@@ -351,20 +345,20 @@ def test_closeBalance_withCreateExtractionFn():
     # We are generating and closing the balance of 05/05/2022.
     # This transaction was made after the previous daily balance was closed, so it should be included in the balance of
     # 05/05/2022.
-    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 4), Currency(100), "Efectivo", String("TestResp"),
                             "TestDescr")
     # The following transactions were made on 05/05/2022.
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(150), "Efectivo", String("TestResp"),
                             "TestDescr")
-    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp", max_len=30),
+    transaction_repo.create("Extracción", date(2022, 5, 5), Currency(350), "Efectivo", String("TestResp"),
                             "TestDescr")
 
     balance = generate_balance(transaction_repo.all())
-    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp", max_len=30),
+    close_balance(transaction_repo, balance_repo, balance, date(2022, 5, 5), String("TestResp"),
                   functools.partial(_create_extraction_fn, transaction_repo, date(2022, 5, 5)))
     # Assert that the balance generated is the expected balance.
     assert balance == {"Cobro": {"Total": Currency(0)},
@@ -373,4 +367,3 @@ def test_closeBalance_withCreateExtractionFn():
     expected = [date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 4), date(2022, 5, 5), date(2022, 5, 5),
                 date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5), date(2022, 5, 5)]
     assert expected == [t.balance_date for t in transaction_repo.all(without_balance=False)]
-

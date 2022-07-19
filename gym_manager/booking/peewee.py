@@ -191,7 +191,7 @@ class SqliteBookingRepo(BookingRepo):
         for record in prefetch(bookings_q, TransactionTable.select()):
             pk = TempBookingKey(record.court, record.when)
             if pk not in self.temp_booking_cache:
-                client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                client = ClientView(Number(record.client.dni), String(record.client.cli_name),
                                     created_by="SqliteBookingRepo.all_temporal")
 
                 trans_record, transaction = record.transaction, None
@@ -217,7 +217,7 @@ class SqliteBookingRepo(BookingRepo):
             pk = FixedBookingKey(record.day_of_week, record.court, record.start)
             if pk not in self.fixed_booking_cache:
                 transaction_record, transaction = record.transaction, None
-                client = ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                client = ClientView(Number(record.client.dni), String(record.client.cli_name),
                                     created_by="SqliteBookingRepo.all_fixed")
                 if transaction_record is not None:
                     transaction = self.transaction_repo.from_data(
@@ -251,7 +251,7 @@ class SqliteBookingRepo(BookingRepo):
             if record.id not in self.cancellation_cache:
                 self.cancellation_cache[record.id] = Cancellation(
                     record.id, record.cancel_datetime, record.responsible,
-                    ClientView(Number(record.client.dni), String(record.client.cli_name, max_len=30),
+                    ClientView(Number(record.client.dni), String(record.client.cli_name),
                                created_by="SqliteBookingRepo.cancelled"),
                     record.when, record.court, record.start, record.end, record.is_fixed, record.definitely_cancelled
                 )

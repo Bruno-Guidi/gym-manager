@@ -13,12 +13,12 @@ from PyQt5.QtWidgets import (
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
     remaining_blocks, Booking, Duration, subtract_times)
-from gym_manager.core import constants
+from ui import utils
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui.accounting import ChargeUI
-from ui.translated_messages import MESSAGE
+from ui.utils import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_table, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox)
@@ -133,7 +133,7 @@ class MainController:
         # noinspection PyAttributeOutsideInit
         self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler, booking.client,
                                    self.booking_system.activity.price,
-                                   String(f"Cobro de turno de {self.booking_system.activity.name}.", max_len=30),
+                                   String(f"Cobro de turno de {self.booking_system.activity.name}."),
                                    register_booking_charge)
         self._charge_ui.exec_()
         if self._charge_ui.controller.success:
@@ -590,8 +590,8 @@ class HistoryController:
                                                                            self.history_ui.page_index.page_len,
                                                                            filters)):
             fill_cell(self.history_ui.booking_table, row, 0,
-                      cancelled.cancel_datetime.strftime(constants.DATE_TIME_FORMAT), bool)
-            fill_cell(self.history_ui.booking_table, row, 1, cancelled.when.strftime(constants.DATE_FORMAT), bool)
+                      cancelled.cancel_datetime.strftime(utils.DATE_TIME_FORMAT), bool)
+            fill_cell(self.history_ui.booking_table, row, 1, cancelled.when.strftime(utils.DATE_FORMAT), bool)
             fill_cell(self.history_ui.booking_table, row, 2, cancelled.court, bool)
             fill_cell(self.history_ui.booking_table, row, 3, cancelled.start.strftime('%Hh:%Mm'), bool)
             duration = self._durations[subtract_times(cancelled.start, cancelled.end).seconds]

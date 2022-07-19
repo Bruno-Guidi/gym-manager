@@ -41,16 +41,11 @@ class MockBookingRepo(BookingRepo):
     ) -> Generator[TempBooking, None, None]:
         # noinspection PyTypeChecker
         to_yield = [
-            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
-                        start=time(8, 0), end=time(9, 0)),
-            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
-                        start=time(12, 0), end=time(13, 0)),
-            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11),
-                        start=time(16, 0), end=time(17, 0)),
-            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
-                        start=time(16, 0), end=time(17, 0)),
-            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12),
-                        start=time(16, 0), end=time(17, 0))
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11), start=time(8, 0), end=time(9, 0)),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11), start=time(12, 0), end=time(13, 0)),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 11), start=time(16, 0), end=time(17, 0)),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12), start=time(16, 0), end=time(17, 0)),
+            TempBooking("1", client=None, is_fixed=False, when=date(2022, 7, 12), start=time(16, 0), end=time(17, 0))
         ]
 
         for booking in to_yield:
@@ -81,12 +76,12 @@ class MockBookingRepo(BookingRepo):
 
 @pytest.fixture
 def empty_resp():
-    return String("", optional=True, max_len=30)
+    return String("", optional=True)
 
 
 @pytest.fixture
 def resp_name():
-    return String("TestResp", optional=True, max_len=30)
+    return String("TestResp", optional=True)
 
 
 def test_timeRange():
@@ -181,8 +176,7 @@ def test_TempBooking_collides():
 def test_BookingSystem_blocks():
     # noinspection PyTypeChecker
     booking_system = BookingSystem(courts_names=("1", "2"), durations=(), start=time(8, 0), end=time(12, 0),
-                                   minute_step=60,
-                                   activity=None, repo=MockBookingRepo())
+                                   minute_step=60, activity=None, repo=MockBookingRepo())
 
     # start is under the booking system start.
     expected = [Block(0, time(8, 0), end=time(9, 0)), Block(1, time(9, 0), end=time(10, 0)),
@@ -226,8 +220,7 @@ def test_BookingSystem_outOfRange():
 def test_FixedBooking_wasPaid():
     before, last_when, after = date(2022, 7, 10), date(2022, 7, 11), date(2022, 7, 12)
 
-    transaction = Transaction(0, "dummy_type", before, Currency(100), "dummy_method", String("TestResp", max_len=20),
-                              "test_desc")
+    transaction = Transaction(0, "dummy_type", before, Currency(100), "dummy_method", String("TestResp"), "test_desc")
     # noinspection PyTypeChecker
     booking = FixedBooking("1", None, start=time(10, 0), end=time(12, 0), day_of_week=0, first_when=last_when,
                            transaction=transaction)
@@ -343,7 +336,7 @@ def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
 
 
 def test_BookingSystem_bookingAvailable():
-    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     booking_repo = MockBookingRepo()
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
@@ -356,7 +349,7 @@ def test_BookingSystem_bookingAvailable():
 
 
 def test_BookingSystem_bookings():
-    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     booking_repo = MockBookingRepo()
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
@@ -413,10 +406,10 @@ def test_integration_registerCharge_fixedBooking():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
-    dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
-                          String("TestTel", max_len=20), String("TestDir", max_len=20))
+    dummy_client = Client(Number(1), String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), String("TestTel"),
+                          String("TestDir"))
     client_repo.add(dummy_client)
-    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
@@ -425,8 +418,8 @@ def test_integration_registerCharge_fixedBooking():
     booking = booking_system.book("1", dummy_client, True, booking_date, time(8, 0), Duration(60, "1h"))
 
     create_transaction_fn = functools.partial(
-        transaction_repo.create, "Cobro", booking_date, dummy_activity.price, "dummy_method",
-        String("dummy_resp", max_len=20), "dummy_descr", dummy_client
+        transaction_repo.create, "Cobro", booking_date, dummy_activity.price, "dummy_method", String("dummy_resp"),
+        "dummy_descr", dummy_client
     )
     booking = booking_system.register_charge(booking, booking_date, create_transaction_fn)
 
@@ -447,10 +440,10 @@ def test_integration_cancelTemporary_fixedBooking(resp_name):
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
-    dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
-                          String("TestTel", max_len=20), String("TestDir", max_len=20))
+    dummy_client = Client(Number(1), String("TestCli"), date(2022, 6, 6), date(2000, 1, 1),
+                          String("TestTel"), String("TestDir"))
     client_repo.add(dummy_client)
-    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
@@ -482,10 +475,10 @@ def test_integration_cancelDefinitely_fixedBooking(resp_name):
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
-    dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
-                          String("TestTel", max_len=20), String("TestDir", max_len=20))
+    dummy_client = Client(Number(1), String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), String("TestTel"),
+                          String("TestDir"))
     client_repo.add(dummy_client)
-    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
@@ -516,10 +509,10 @@ def test_integration_cancelDefinitely_tempBooking(resp_name):
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
-    dummy_client = Client(Number(1), String("TestCli", max_len=20), date(2022, 6, 6), date(2000, 1, 1),
-                          String("TestTel", max_len=20), String("TestDir", max_len=20))
+    dummy_client = Client(Number(1), String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), String("TestTel"),
+                          String("TestDir"))
     client_repo.add(dummy_client)
-    dummy_activity = Activity(String("TestName", max_len=20), Currency(100), String("TestDescr", max_len=20))
+    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)

@@ -158,15 +158,14 @@ class String(Validatable):
             KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-        if 'max_len' not in kwargs:
-            raise KeyError(f"The method is missing the kwarg 'max_len'. [kwargs={kwargs}]")
         optional = False if 'optional' not in kwargs else kwargs['optional']
+        max_len = 100 if 'max_len' not in kwargs else kwargs['max_len']
 
         if not optional and len(value) == 0:
             raise ValidationError(f"The argument 'value' cannot be empty. [value={value}, optional={optional}]")
-        if len(value) >= kwargs['max_len']:
+        if len(value) >= max_len:
             raise ValidationError(f"The argument 'value' has more characters than allowed. "
-                                  f"[len(value)={len(value)}, max_len={kwargs['max_len']}]")
+                                  f"[len(value)={len(value)}, max_len={max_len}]")
         return value
 
     def contains(self, substring: str | String) -> bool:

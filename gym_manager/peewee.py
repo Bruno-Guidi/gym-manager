@@ -9,7 +9,6 @@ from peewee import (
     CompositeKey, prefetch, Proxy, JOIN, IntegrityError, DateTimeField)
 from playhouse.sqlite_ext import JSONField
 
-from gym_manager.core import constants
 from gym_manager.core.base import (
     Client, Number, String, Currency, Activity, Transaction, Subscription,
     Balance)
@@ -65,15 +64,13 @@ class SqliteClientRepo(ClientRepo):
             self, dni: Number, raw_name: str, admission: date, birth_day: date, raw_telephone: str, raw_direction: str,
             is_active: bool, subscriptions
     ) -> Client:
-        client = Client(dni, String(raw_name, max_len=constants.CLIENT_NAME_CHARS), admission, birth_day,
-                        String(raw_telephone, optional=constants.CLIENT_TEL_OPTIONAL,
-                               max_len=constants.CLIENT_TEL_CHARS),
-                        String(raw_direction, optional=constants.CLIENT_DIR_OPTIONAL,
-                               max_len=constants.CLIENT_DIR_CHARS),
-                        is_active)
+        # There is no need to validate max_len of String because they were validated when the client was created.
+        client = Client(dni, String(raw_name), admission, birth_day, String(raw_telephone, optional=True),
+                        String(raw_direction, optional=True), is_active)
 
         for sub_record in subscriptions:
-            activity = self.activity_repo.get(String(sub_record.activity_id, max_len=30))
+            # The activity name was validated when it was created.
+            activity = self.activity_repo.get(String(sub_record.activity_id))
             trans_record, transaction = sub_record.transaction, None
             if trans_record is not None:
                 transaction = self.transaction_repo.from_data(
@@ -233,11 +230,8 @@ class SqliteActivityRepo(ActivityRepo):
         if record is None:
             raise KeyError(f"There is no activity with the id '{name}'")
 
-        # ToDo following String don't need validation because they were already validated.
-        self.cache[name] = Activity(String(record.act_name, max_len=constants.ACTIVITY_NAME_CHARS),
-                                    Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                                    String(record.description, optional=True,
-                                           max_len=constants.ACTIVITY_DESCR_CHARS),
+        # The activity description was validated when it was created.
+        self.cache[name] = Activity(name, Currency(record.price), String(record.description, optional=True),
                                     record.charge_once, record.locked)
         logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={name}] from queried data.")
         return self.cache[name]
@@ -277,13 +271,13 @@ class SqliteActivityRepo(ActivityRepo):
 
         for record in activities_q:
             activity: Activity
-            activity_name = String(record.act_name, max_len=30)
+            # The activity name and description were validated when it was created.
+            activity_name = String(record.act_name)
             if activity_name not in self.cache:
                 logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={activity_name}] from "
                                                           f"queried data.")
                 self.cache[activity_name] = Activity(
-                    activity_name, Currency(record.price, max_currency=constants.MAX_CURRENCY),
-                    String(record.description, optional=True, max_len=constants.ACTIVITY_DESCR_CHARS),
+                    activity_name, Currency(record.price), String(record.description, optional=True),
                     record.charge_once, record.locked
                 )
             yield self.cache[activity_name]
@@ -357,18 +351,16 @@ class SqliteBalanceRepo(BalanceRepo):
                 if transaction_record.client is not None:
                     dni = Number(transaction_record.client.dni)
                     if dni not in self.client_cache:
-                        self.client_cache[dni] = ClientView(
-                            dni, String(transaction_record.client.cli_name, max_len=30),
-                            created_by="SqliteBalanceRepo.all"
-                        )
+                        self.client_cache[dni] = ClientView(dni, String(transaction_record.client.cli_name),
+                                                            created_by="SqliteBalanceRepo.all")
                     client = self.client_cache[dni]
+
                 transactions.append(self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when,
                     transaction_record.amount, transaction_record.method, transaction_record.responsible,
                     transaction_record.description, client, transaction_record.balance_id
                 ))
-            yield (record.when, String(record.responsible, max_len=constants.CLIENT_NAME_CHARS),
-                   self.json_to_balance(record.balance_dict), transactions)
+            yield record.when, String(record.responsible), self.json_to_balance(record.balance_dict), transactions
 
 
 class TransactionTable(Model):
@@ -415,8 +407,8 @@ class SqliteTransactionRepo(TransactionRepo):
             raise PersistenceError(f"Failed to create a 'Transaction' from data because one of the arguments is None."
                                    f"[none_args={none_args}]")
 
-        self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method,
-                                      String(raw_responsible, max_len=30), description, client, balance_date)
+        self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method, String(raw_responsible),
+                                      description, client, balance_date)
         logger.getChild(type(self).__name__).info(f"Creating Transaction [transaction.id={id_}] from queried data.")
         return self.cache[id_]
 
@@ -463,8 +455,7 @@ class SqliteTransactionRepo(TransactionRepo):
                 if dni in self.client_cache:
                     client = self.client_cache[dni]
                 else:
-                    client = ClientView(dni, String(record.client.cli_name, max_len=30),
-                                        created_by="SqliteClientRepo.all")
+                    client = ClientView(dni, String(record.client.cli_name), created_by="SqliteTransactionRepo.all")
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
 
@@ -552,8 +543,7 @@ class SqliteSecurityRepo(SecurityRepo):
 
     def responsible(self) -> Generator[Responsible, None, None]:
         for record in ResponsibleTable.select():
-            # ToDo This String don't need validation.
-            yield Responsible(String(record.resp_name, max_len=30), String(record.resp_code, max_len=30))
+            yield Responsible(String(record.resp_name), String(record.resp_code))
 
     def add_responsible(self, *responsible):
         try:
@@ -571,7 +561,5 @@ class SqliteSecurityRepo(SecurityRepo):
         actions_q = actions_q.paginate(page, page_len)
 
         for record in prefetch(actions_q, ResponsibleTable.select()):
-            # ToDo those Strings don't need validation.
-            resp = Responsible(String(record.responsible.resp_name, max_len=30),
-                               String(record.responsible.resp_code, max_len=30))
+            resp = Responsible(String(record.responsible.resp_name), String(record.responsible.resp_code))
             yield record.when, resp, record.action_tag, record.action_name

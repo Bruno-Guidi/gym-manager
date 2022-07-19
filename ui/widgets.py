@@ -8,11 +8,11 @@ from PyQt5.QtWidgets import (
     QLineEdit, QWidget, QTextEdit, QHBoxLayout, QComboBox, QDialog, QVBoxLayout, QLabel,
     QPushButton, QDateEdit, QSpacerItem, QSizePolicy, QFrame)
 
-from gym_manager.core import constants
 from gym_manager.core.base import Validatable, ValidationError, String, Filter, ONE_MONTH_TD, DateGreater, DateLesser
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import SecurityHandler, SecurityError
-from ui.translated_messages import MESSAGE
+from ui import utils
+from ui.utils import MESSAGE
 from ui.widget_config import (
     fill_combobox, config_combobox, config_line, config_lbl, config_btn, config_layout,
     config_date_edit)
@@ -29,7 +29,7 @@ def valid_text_value(text: QTextEdit, max_len: int, optional: bool = False) -> t
 
 
 def responsible_field(parent: QWidget | None = None) -> Field:
-    return Field(String, parent, is_password=True, optional=True, max_len=constants.TRANSACTION_RESP_CHARS)
+    return Field(String, parent, is_password=True, optional=True, max_len=utils.RESP_CHARS)
 
 
 def Separator(vertical: bool, parent: QWidget | None = None):

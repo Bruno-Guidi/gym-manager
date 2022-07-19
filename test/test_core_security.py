@@ -12,8 +12,8 @@ from gym_manager.core.security import (
 class MockSecurityRepo(SecurityRepo):
 
     def responsible(self) -> Generator[Responsible, None, None]:
-        to_yield = [Responsible(String("RespA", max_len=10), String("1", max_len=3)),
-                    Responsible(String("RespB", max_len=10), String("2", max_len=3))]
+        to_yield = [Responsible(String("RespA"), String("1")),
+                    Responsible(String("RespB"), String("2"))]
         for resp in to_yield:
             yield resp
 
@@ -31,15 +31,15 @@ def test_SimpleSecurityHandler_currentResponsibleSetter():
     security_handler = SimpleSecurityHandler(MockSecurityRepo(), action_tags=set(), needs_responsible=set())
 
     # There is a name match.
-    security_handler.current_responsible = String("RespA", max_len=10)
+    security_handler.current_responsible = String("RespA")
     # There is a code match.
-    security_handler.current_responsible = String("1", max_len=3)
+    security_handler.current_responsible = String("1")
 
     with pytest.raises(SecurityError) as sec_err:
         # optional kwarg is True because responsible field is optional by default, to allow executing actions without
         # responsible. If a particular action needs a responsible, then it's the job of SecurityHandler to block the
         # execution.
-        security_handler.current_responsible = String("RespC", optional=True, max_len=10)
+        security_handler.current_responsible = String("RespC", optional=True)
     assert sec_err.value.code == SecurityError.INVALID_RESP
 
 
@@ -58,12 +58,12 @@ def test_SimpleSecurityHandler_CantPerformAction():
     assert not security_handler.cant_perform_action("b")
 
     # There is a responsible, so both actions can be executed.
-    security_handler.current_responsible = String("RespA", max_len=15)
+    security_handler.current_responsible = String("RespA")
     assert not security_handler.cant_perform_action("a")
     assert not security_handler.cant_perform_action("b")
 
     # There is a responsible, so both actions can be executed.
-    security_handler.current_responsible = String("2", max_len=15)
+    security_handler.current_responsible = String("2")
     assert not security_handler.cant_perform_action("a")
     assert not security_handler.cant_perform_action("b")
 
