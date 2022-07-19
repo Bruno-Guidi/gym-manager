@@ -32,18 +32,10 @@ class MainController:
         self.balance_repo = balance_repo
         self.security_handler = security_handler
 
-        self._date_greater_filter = DateGreater("from", display_name="Desde", attr="when",
-                                                translate_fun=lambda trans, when: trans.when >= when)
-        self._date_lesser_filter = DateLesser("to", display_name="Hasta", attr="when",
-                                              translate_fun=lambda trans, when: trans.when <= when)
-        today = str(date.today())
-        _filters = [(self._date_greater_filter, today), (self._date_lesser_filter, today)]
-
-        self._today_transactions: list[Transaction] = [t for t in transaction_repo.all(filters=_filters,
-                                                                                       without_balance=True)]
+        self._today_transactions: list[Transaction] = [t for t in transaction_repo.all()]
 
         # Calculates charges of the day.
-        self.balance = api.generate_balance(self._today_transactions)
+        self.balance, _ = api.generate_balance(self._today_transactions)
         self.acc_main_ui.today_charges_line.setText(Currency.fmt(self.balance["Cobro"].get("Total", Currency(0))))
 
         # Shows transactions of the day.
@@ -153,7 +145,7 @@ class DailyBalanceController:
 
         today = date.today()
         if self.balance_repo.balance_done(today):
-            Dialog.info("Error", f"La caja diaria de {today.strftime(utils.DATE_FORMAT)} ya fue cerrada.")
+            Dialog.info("Error", f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} ya fue cerrada.")
             return
 
         try:
@@ -340,6 +332,7 @@ class BalanceHistoryController:
             # Loads transactions of the selected daily balance.
             self.history_ui.transaction_table.setRowCount(0)
             transactions = self._transactions[self.history_ui.balance_table.currentRow()]
+            print(self._balances[self.history_ui.balance_table.currentRow()])
             for i, transaction in enumerate(transactions):
                 fill_cell(self.history_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
                 name = transaction.client.name if transaction.client is not None else "-"
