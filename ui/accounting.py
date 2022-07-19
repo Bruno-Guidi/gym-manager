@@ -7,7 +7,7 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit, QDialog,
-    QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QCheckBox, QDateEdit)
+    QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QCheckBox, QDateEdit, QDesktopWidget)
 
 from gym_manager.core import api
 from gym_manager.core.api import CreateTransactionFn
@@ -500,6 +500,9 @@ class BalanceHistoryUI(QMainWindow):
         new_config_table(self.transaction_table, width=700,
                          columns={"Responsable": (.22, str), "Cliente": (.26, str), "Monto": (.2, int),
                                   "Descripción": (.32, str)}, min_rows_to_show=0)
+
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
 class ChargeController:

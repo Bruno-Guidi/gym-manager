@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit)
+    QDateEdit, QDesktopWidget)
 
 from gym_manager.core import api
 from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
@@ -414,6 +414,9 @@ class ClientMainUI(QMainWindow):
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         self.setFixedSize(self.minimumSizeHint())
+
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
 class CreateController:

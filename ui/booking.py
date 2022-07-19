@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QTableWidgetItem, QDateEdit, QDialog, QGridLayout, QLabel,
-    QComboBox, QCheckBox, QLineEdit)
+    QComboBox, QCheckBox, QLineEdit, QDesktopWidget)
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
@@ -239,6 +239,9 @@ class BookingMainUI(QMainWindow):
 
         # Adjusts size.
         self.setMaximumWidth(self.widget.sizeHint().width())
+
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
 class CreateController:
@@ -630,3 +633,6 @@ class HistoryUI(QMainWindow):
         # Index.
         self.page_index = PageIndex(self)
         self.layout.addWidget(self.page_index)
+
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))

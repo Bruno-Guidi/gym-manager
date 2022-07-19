@@ -6,7 +6,7 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
-    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget)
+    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget)
 
 from gym_manager.booking.core import BookingSystem
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
@@ -280,3 +280,6 @@ class ActionUI(QMainWindow):
         # Index.
         self.page_index = PageIndex(self)
         self.layout.addWidget(self.page_index)
+
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
