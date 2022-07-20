@@ -81,7 +81,7 @@ if __name__ == "__main__":
     logging_config_path = path.join(path.dirname(path.abspath(__file__)), 'logging.conf')
     config.fileConfig(logging_config_path)
 
-    peewee.create_database("test.db")
+    peewee.create_database("gym_manager.db")
     peewee_logger = logging.getLogger("peewee")
     peewee_logger.setLevel(logging.WARNING)
 
