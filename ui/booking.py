@@ -70,7 +70,8 @@ class MainController:
                                 f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}")
         item.setTextAlignment(Qt.AlignCenter)
         self.main_ui.booking_table.setItem(start, self._courts[booking.court], item)
-        self.main_ui.booking_table.setSpan(start, self._courts[booking.court], end - start, 1)
+        if end - start != 1:
+            self.main_ui.booking_table.setSpan(start, self._courts[booking.court], end - start, 1)
 
         # Saves the booking to be used later if needed.
         if start not in self._bookings:
