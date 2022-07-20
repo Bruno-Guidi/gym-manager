@@ -93,7 +93,6 @@ def logging_excepthook(exc_type, exc_value, exc_tb):
 if __name__ == "__main__":
     sys.excepthook = logging_excepthook
 
-    makedirs(path.dirname("logs/gym_manager.log"), exist_ok=True)
     logging_config_path = path.join(path.dirname(path.abspath(__file__)), 'logging.conf')
     config.fileConfig(logging_config_path)
 
