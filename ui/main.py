@@ -97,8 +97,12 @@ class Controller:
             for x in range(32, 0, -1):
                 _aux(x)
 
+        def raise_exception():
+            raise ValueError("This is a test exception to see if the error is logged.")
+
         # noinspection PyAttributeOutsideInit
-        self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance))
+        self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance),
+                                   ("raise exception", raise_exception))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
