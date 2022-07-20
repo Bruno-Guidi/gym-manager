@@ -104,14 +104,15 @@ class MainUI(QMainWindow):
             transaction_repo: TransactionRepo,
             balance_repo: BalanceRepo,
             booking_system: BookingSystem,
-            security_handler: SecurityHandler
+            security_handler: SecurityHandler,
+            enable_tools: bool = False
     ):
         super().__init__()
-        self._setup_ui()
+        self._setup_ui(enable_tools)
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
                                      balance_repo, booking_system, security_handler)
 
-    def _setup_ui(self):
+    def _setup_ui(self, enable_tools: bool):
         self.setWindowTitle("Gestor La Cascada")
 
         self.widget = QWidget()

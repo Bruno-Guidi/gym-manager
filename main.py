@@ -74,7 +74,7 @@ def main():
 
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
-                    security_handler)
+                    security_handler, enable_tools=True)
     window.show()
     app.exec()
 
