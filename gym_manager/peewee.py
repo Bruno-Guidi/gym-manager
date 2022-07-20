@@ -344,7 +344,7 @@ class SqliteBalanceRepo(BalanceRepo):
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
         client_q = ClientTable.select(ClientTable.dni, ClientTable.cli_name)
 
-        for record in prefetch(balance_q, TransactionTable.select(), client_q):
+        for record in prefetch(balance_q.order_by(BalanceTable.when.desc()), TransactionTable.select(), client_q):
             transactions = []
             for transaction_record in record.transactions:
                 client: ClientView | None = None
