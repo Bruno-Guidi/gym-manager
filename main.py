@@ -1,4 +1,5 @@
 import logging
+import traceback
 from os import path, makedirs
 import sys
 from datetime import time
@@ -79,7 +80,15 @@ def main():
     app.exec()
 
 
+def logging_excepthook(exc_type, exc_value, exc_tb):
+    tb = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
+    logging.error(tb)
+    QApplication.quit()
+
+
 if __name__ == "__main__":
+    sys.excepthook = logging_excepthook
+
     makedirs(path.dirname("logs/gym_manager.log"), exist_ok=True)
     logging_config_path = path.join(path.dirname(path.abspath(__file__)), 'logging.conf')
     config.fileConfig(logging_config_path)
@@ -92,4 +101,5 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
+        print("exception caught")
         logging.exception(e)
