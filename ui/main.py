@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from datetime import date
 from typing import Callable
 
 from PyQt5.QtCore import Qt
@@ -9,6 +10,8 @@ from PyQt5.QtWidgets import (
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget)
 
 from gym_manager.booking.core import BookingSystem
+from gym_manager.core import api
+from gym_manager.core.base import Client, String, Number, Activity, Currency
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler
 from ui import utils
@@ -56,8 +59,21 @@ class Controller:
         self.main_ui.actions_btn.clicked.connect(self.show_action_ui)
 
     def show_config_ui(self):
+        def setup():
+            today = date.today()
+            self.security_handler.current_responsible = String("Admin")
+            activity = Activity(String("TestAct"), Currency("2000"), String("descr"))
+            self.activity_repo.add(activity)
+            for i in range(0, 50):
+                client = Client(Number(i), String(str(i)), today, today, String(str(i)), String(str(i)))
+                self.client_repo.add(client)
+                sub = api.subscribe(self.subscription_repo, today, client, activity)
+                create_t = functools.partial(self.transaction_repo.create, "Cobro", today, activity.price, "Efectivo",
+                                             String("Admin"), "descr", client)
+                api.register_subscription_charge(self.subscription_repo, sub, create_t)
+
         # noinspection PyAttributeOutsideInit
-        self._config_ui = ConfigUI()
+        self._config_ui = ConfigUI(("setup", setup))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
@@ -131,7 +147,7 @@ class MainUI(QMainWindow):
 
         self.config_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.config_btn)
-        config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32, enabled=False)
+        config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32, enabled=enable_tools)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
