@@ -35,7 +35,7 @@ class MainController:
         self._today_transactions: list[Transaction] = [t for t in transaction_repo.all()]
 
         # Calculates charges of the day.
-        self.balance, _ = api.generate_balance(self._today_transactions)
+        self.balance, self._today_transactions = api.generate_balance(self._today_transactions)
         self.acc_main_ui.today_charges_line.setText(Currency.fmt(self.balance["Cobro"].get("Total", Currency(0))))
 
         # Shows transactions of the day.
@@ -55,7 +55,7 @@ class MainController:
     def close_balance(self):
         # noinspection PyAttributeOutsideInit
         self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.security_handler,
-                                                self.balance)
+                                                self.balance, self._today_transactions)
         self._daily_balance_ui.exec_()
 
     def balance_history(self):
@@ -125,13 +125,14 @@ class AccountingMainUI(QMainWindow):
 class DailyBalanceController:
     def __init__(
             self, daily_balance_ui: DailyBalanceUI, balance_repo: BalanceRepo, transaction_repo: TransactionRepo,
-            security_handler: SecurityHandler, balance: Balance
+            security_handler: SecurityHandler, balance: Balance, transactions: list[Transaction]
     ):
         self.daily_balance_ui = daily_balance_ui
         self.balance_repo = balance_repo
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
         self.balance = balance
+        self.transactions = transactions
 
         # Fills line edits.
         self.daily_balance_ui.cash_line.setText(Currency.fmt(self.balance["Cobro"].get("Efectivo", Currency(0))))
@@ -173,7 +174,7 @@ class DailyBalanceController:
                     description=f"Extracción al cierre de caja diaria del día {today}."
                 )
                 # noinspection PyTypeChecker
-                api.close_balance(self.transaction_repo, self.balance_repo, self.balance, today,
+                api.close_balance(self.transaction_repo, self.balance_repo, self.balance, self.transactions, today,
                                   self.security_handler.current_responsible.name, create_extraction_fn)
                 self.daily_balance_ui.confirm_btn.window().close()
         except SecurityError as sec_err:
@@ -183,11 +184,12 @@ class DailyBalanceController:
 class DailyBalanceUI(QDialog):
     def __init__(
             self, balance_repo: BalanceRepo, transaction_repo: TransactionRepo, security_handler: SecurityHandler,
-            balance: Balance
+            balance: Balance, transactions: list[Transaction]
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, security_handler, balance)
+        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, security_handler, balance,
+                                                 transactions)
 
     def _setup_ui(self):
         self.setWindowTitle("Cerrar caja diaria")
