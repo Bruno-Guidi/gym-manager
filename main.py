@@ -1,5 +1,5 @@
 import logging
-import os
+from os import path, makedirs
 import sys
 from datetime import time
 from logging import config
@@ -77,8 +77,9 @@ def main():
 
 
 if __name__ == "__main__":
-    os.makedirs(os.path.dirname("logs/gym_manager.log"), exist_ok=True)
-    config.fileConfig("logging.conf")
+    makedirs(path.dirname("logs/gym_manager.log"), exist_ok=True)
+    logging_config_path = path.join(path.dirname(path.abspath(__file__)), 'logging.conf')
+    config.fileConfig(logging_config_path)
 
     peewee.create_database("test.db")
     peewee_logger = logging.getLogger("peewee")
