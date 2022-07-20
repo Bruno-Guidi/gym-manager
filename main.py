@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 from os import path, makedirs
@@ -28,6 +29,9 @@ QCheckBox::indicator::checked {
 
 
 def main():
+    with open(path.join(path.dirname(path.abspath(__file__)), 'config.json')) as config_file:
+        config_dict = json.load(config_file)
+
     # PyQt App.
     app = QApplication(sys.argv)
     app.setStyleSheet(stylesheet)
@@ -75,7 +79,7 @@ def main():
 
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
-                    security_handler, enable_tools=True)
+                    security_handler, enable_tools=config_dict["enable_utility_functions"])
     window.show()
     app.exec()
 
