@@ -358,7 +358,6 @@ def test_closeBalance_withCreateExtractionFn():
     close_balance(transaction_repo, balance_repo, balance, transactions, date(2022, 5, 5), String("TestResp"),
                   functools.partial(_create_extraction_fn, transaction_repo, date(2022, 5, 5)))
     # Assert that the balance generated is the expected balance.
-    print(balance)
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(1100), "Débito": Currency(100), "Total": Currency(1200)}}
     # Then assert that all transactions included in the balance have their balance_date correctly set.
