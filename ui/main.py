@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from datetime import date
+from datetime import date, time
 from typing import Callable
 
 from PyQt5.QtCore import Qt
@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget)
 
-from gym_manager.booking.core import BookingSystem
+from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
 from gym_manager.core import api
 from gym_manager.core.base import Client, String, Number, Activity, Currency
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
@@ -71,6 +71,12 @@ class Controller:
                 create_t = functools.partial(self.transaction_repo.create, "Cobro", today, activity.price, "Efectivo",
                                              String("Admin"), "descr", client)
                 api.register_subscription_charge(self.subscription_repo, sub, create_t)
+
+            client = [c for c in self.client_repo.all(page_len=1)][0]
+            for start in time_range(time(8, 0), time(22, 30), 30):
+                self.booking_system.book("1", client, False, today + ONE_DAY_TD, start, Duration(30, "30m"))
+                self.booking_system.book("2", client, True, today + ONE_DAY_TD, start, Duration(30, "30m"))
+                self.booking_system.book("3", client, False, today + ONE_DAY_TD, start, Duration(30, "30m"))
 
         # noinspection PyAttributeOutsideInit
         self._config_ui = ConfigUI(("setup", setup))
