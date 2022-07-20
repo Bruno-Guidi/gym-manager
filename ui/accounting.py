@@ -57,6 +57,9 @@ class MainController:
         self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.security_handler,
                                                 self.balance, self._today_transactions)
         self._daily_balance_ui.exec_()
+        if self._daily_balance_ui.controller.closed:
+            self.acc_main_ui.transaction_table.setRowCount(0)
+            self.acc_main_ui.today_charges_line.setText(Currency.fmt(Currency(0)))
 
     def balance_history(self):
         # noinspection PyAttributeOutsideInit
@@ -134,6 +137,8 @@ class DailyBalanceController:
         self.balance = balance
         self.transactions = transactions
 
+        self.closed = False
+
         # Fills line edits.
         self.daily_balance_ui.cash_line.setText(Currency.fmt(self.balance["Cobro"].get("Efectivo", Currency(0))))
         self.daily_balance_ui.debit_line.setText(Currency.fmt(self.balance["Cobro"].get("Débito", Currency(0))))
@@ -178,6 +183,7 @@ class DailyBalanceController:
                                   self.security_handler.current_responsible.name, create_extraction_fn)
                 Dialog.info("Éxito",
                             f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} fue cerrada correctamente")
+                self.closed = True
                 self.daily_balance_ui.confirm_btn.window().close()
         except SecurityError as sec_err:
             Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
