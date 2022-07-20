@@ -176,6 +176,8 @@ class DailyBalanceController:
                 # noinspection PyTypeChecker
                 api.close_balance(self.transaction_repo, self.balance_repo, self.balance, self.transactions, today,
                                   self.security_handler.current_responsible.name, create_extraction_fn)
+                Dialog.info("Éxito",
+                            f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} fue cerrada correctamente")
                 self.daily_balance_ui.confirm_btn.window().close()
         except SecurityError as sec_err:
             Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
