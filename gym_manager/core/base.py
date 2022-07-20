@@ -240,6 +240,7 @@ class Currency(Validatable):
 
         Keyword Args:
             max_currency: maximum valid currency.
+            positive: if True, the currency value must be zero or greater.
 
         Raises:
             KeyError if a kwarg is missing.
@@ -252,7 +253,8 @@ class Currency(Validatable):
             value = Decimal(value)
         except InvalidOperation:
             raise ValidationError(f"The argument 'value' is not a valid currency. [value={value}]")
-        if value < 0:
+
+        if 'positive' in kwargs and kwargs['positive'] and value < 0:
             raise ValidationError(f"Negative currencies are not allowed. [value={value}]")
         return value
 
@@ -260,7 +262,7 @@ class Currency(Validatable):
         self._value += other_currency.as_primitive()
 
     def __sub__(self, other: Currency) -> Currency:
-        return Currency(self._value - other.as_primitive())
+        return Currency(self._value - other.as_primitive(), positive=False)
 
 
 Balance: TypeAlias = dict[str, dict[str, Currency]]
