@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from datetime import date, time
+from datetime import date, time, timedelta
 from typing import Callable
 
 from PyQt5.QtCore import Qt
@@ -78,8 +78,27 @@ class Controller:
                 self.booking_system.book("2", client, True, today + ONE_DAY_TD, start, Duration(30, "30m"))
                 self.booking_system.book("3", client, False, today + ONE_DAY_TD, start, Duration(30, "30m"))
 
+        def generate_balance():
+            self.security_handler.current_responsible = String("Admin")
+
+            def _aux(i):
+                when = date.today() - timedelta(days=i)
+                self.transaction_repo.create("Extracción", when, Currency(100), "Efectivo", String("TestResp"), "TestDescr")
+                self.transaction_repo.create("Extracción", when, Currency(150), "Efectivo", String("TestResp"), "TestDescr")
+                self.transaction_repo.create("Extracción", when, Currency(350), "Efectivo", String("TestResp"), "TestDescr")
+                self.transaction_repo.create("Extracción", when, Currency(150), "Efectivo", String("TestResp"), "TestDescr")
+                self.transaction_repo.create("Extracción", when, Currency(350), "Efectivo", String("TestResp"), "TestDescr")
+
+                balance, transactions = api.generate_balance(self.transaction_repo.all())
+                api.close_balance(self.transaction_repo, self.balance_repo, balance, transactions, when, String("TestResp"),
+                                  functools.partial(self.transaction_repo.create, "Extracción", when, Currency(100),
+                                                    "Débito", String("Admin"), "TestDescr"))
+
+            for x in range(32, 0, -1):
+                _aux(x)
+
         # noinspection PyAttributeOutsideInit
-        self._config_ui = ConfigUI(("setup", setup))
+        self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
