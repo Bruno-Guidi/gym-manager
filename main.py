@@ -17,6 +17,9 @@ stylesheet = """
 QCheckBox::indicator { 
     width:32px; height: 32px;
 } 
+QCheckBox::indicator::unchecked {
+    image: url(ui/resources/checkbox_unchecked.png);
+}
 QCheckBox::indicator::checked {
     image: url(ui/resources/checkbox_checked.png);
 }
