@@ -245,8 +245,9 @@ class Currency(Validatable):
             KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-        if isinstance(value, str):
-            value = value.replace(",", ".")
+        if isinstance(value, str) and "," in value:
+            a, b = value.split(",")
+            value = f"{a.replace('.', '')}.{b}"
         try:
             value = Decimal(value)
         except InvalidOperation:
