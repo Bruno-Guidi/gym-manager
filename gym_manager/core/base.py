@@ -86,7 +86,7 @@ class Validatable(abc.ABC):
 
 
 class Number(Validatable):
-    """int wrapper that supports min and max optional values.
+    """int wrapper.
     """
 
     def __eq__(self, other: int | Number) -> bool:
