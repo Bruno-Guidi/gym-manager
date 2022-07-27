@@ -75,7 +75,8 @@ class ClientView(Client):
 
     repository: ClassVar[ClientRepo] = None
 
-    def __init__(self, dni: Number, name: String, created_by: str):
+    def __init__(self, id_: int, dni: Number, name: String, created_by: str):
+        self.id = id_
         self.dni = dni
         self.name = name
         self.created_by = created_by
@@ -89,7 +90,7 @@ class ClientView(Client):
                                   f"implementation of '{attr_name}'.")
 
     def __repr__(self) -> str:
-        return f"ClientView(dni={self.dni}, name={self.name}, created_by={self.created_by})"
+        return f"ClientView(id={self.id}, dni={self.dni}, name={self.name}, created_by={self.created_by})"
 
     def __str__(self) -> str:
         return repr(self)
