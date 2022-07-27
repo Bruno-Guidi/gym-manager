@@ -25,8 +25,9 @@ class MockActivityRepo(ActivityRepo):
     def update(self, activity: Activity):
         pass
 
-    def all(self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None) -> \
-    Generator[Activity, None, None]:
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Activity, None, None]:
         pass
 
     def n_subscribers(self, activity: Activity) -> int:
@@ -42,19 +43,19 @@ class MockTransactionRepo(TransactionRepo):
             self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
             method: str | None = None, raw_responsible: str | None = None, description: str | None = None,
             client: Client | None = None, balance_date: date | None = None
-            ) -> Transaction:
+    ) -> Transaction:
         pass
 
     def create(
             self, type: str, when: date, amount: Currency, method: str, responsible: String, description: str,
             client: Client | None = None
-            ) -> Transaction:
+    ) -> Transaction:
         pass
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None,
             without_balance: bool = True, balance_date: date | None = None
-            ) -> Generator[Transaction, None, None]:
+    ) -> Generator[Transaction, None, None]:
         pass
 
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
