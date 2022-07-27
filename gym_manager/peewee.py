@@ -313,7 +313,7 @@ class SqliteBalanceRepo(BalanceRepo):
         DATABASE_PROXY.create_tables([BalanceTable])
 
         self.transaction_repo = transaction_repo
-        self.client_cache = LRUCache(Number, ClientView, max_len=64)
+        self.client_view_cache = LRUCache(int, ClientView, max_len=64)
 
     def balance_done(self, when: date) -> bool:
         return BalanceTable.get_or_none(BalanceTable.when == when) is not None
@@ -349,13 +349,14 @@ class SqliteBalanceRepo(BalanceRepo):
         for record in prefetch(balance_q.order_by(BalanceTable.when.desc()), TransactionTable.select(), client_q):
             transactions = []
             for transaction_record in record.transactions:
-                client: ClientView | None = None
-                if transaction_record.client is not None:
-                    dni = Number(transaction_record.client.dni)
-                    if dni not in self.client_cache:
-                        self.client_cache[dni] = ClientView(dni, String(transaction_record.client.cli_name),
-                                                            created_by="SqliteBalanceRepo.all")
-                    client = self.client_cache[dni]
+                client_record, client = transaction_record.client, None
+                if client_record is not None:
+                    if client_record.id in self.client_view_cache:
+                        client = self.client_view_cache[client_record.id]
+                    else:
+                        client = ClientView(client_record.id, String(client_record.cli_name),
+                                            created_by="SqliteTransactionRepo.all",
+                                            dni=Number(client_record.dni) if client_record.dni is not None else None)
 
                 transactions.append(self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when,
