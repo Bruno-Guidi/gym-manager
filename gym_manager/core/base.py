@@ -109,7 +109,7 @@ class Number(Validatable):
         Keyword Args:
             min_value: minimum valid value. If None, min_value will be -inf.
             max_value: maximum valid value. If None, max_value will be inf.
-            optional: the object will store a default int that represents an "optional number". If not given, its False.
+            optional: the object will store a default int that represents an "optional number". If not given, its True.
 
         Raises:
             ValidationError if the validation failed.
@@ -119,7 +119,7 @@ class Number(Validatable):
                 f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type(value)}]"
             )
 
-        optional = kwargs['optional'] if 'optional' in kwargs else False
+        optional = kwargs['optional'] if 'optional' in kwargs else True
         if optional and isinstance(value, str) and (len(value) == 0 or value.isspace()):
             return Number.OPTIONAL_INT
 
@@ -167,7 +167,7 @@ class String(Validatable):
         """Validates the given *value*. If the validation succeeds, return the given *value*.
 
         Keyword Args:
-            optional: True if the String may be empty, False otherwise. If not given, it is False.
+            optional: True if the String may be empty, False otherwise. If not given, it is True.
             max_len: maximum amount of characters.
             invalid_values: values that can't be used.
 
@@ -175,7 +175,7 @@ class String(Validatable):
             KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-        optional = False if 'optional' not in kwargs else kwargs['optional']
+        optional = True if 'optional' not in kwargs else kwargs['optional']
         max_len = 100 if 'max_len' not in kwargs else kwargs['max_len']
 
         if not optional and len(value) == 0:
