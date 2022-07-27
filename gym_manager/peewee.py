@@ -390,7 +390,7 @@ class SqliteTransactionRepo(TransactionRepo):
         DATABASE_PROXY.create_tables([TransactionTable])
 
         self.cache = LRUCache(int, Transaction, max_len=cache_len)
-        self.client_cache = LRUCache(Number, ClientView, max_len=64)
+        self.client_view_cache = LRUCache(Number, ClientView, max_len=64)
 
     # ToDo make arguments mandatory.
     def from_data(
@@ -455,8 +455,8 @@ class SqliteTransactionRepo(TransactionRepo):
             client = None
             if record.client is not None:
                 dni = Number(record.client.dni)
-                if dni in self.client_cache:
-                    client = self.client_cache[dni]
+                if dni in self.client_view_cache:
+                    client = self.client_view_cache[dni]
                 else:
                     client = ClientView(dni, String(record.client.cli_name), created_by="SqliteTransactionRepo.all")
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
