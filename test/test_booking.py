@@ -9,7 +9,7 @@ from gym_manager.booking.core import (
     Duration, BookingRepo, TempBooking, State, Court, FixedBooking, FixedBookingHandler, BookingSystem,
     Booking, time_range, Block, Cancellation, remaining_blocks, subtract_times)
 from gym_manager.booking.peewee import SqliteBookingRepo, serialize_inactive_dates, deserialize_inactive_dates
-from gym_manager.core.base import Client, Activity, String, Currency, Transaction, OperationalError
+from gym_manager.core.base import Client, Activity, String, Currency, Transaction, OperationalError, Number
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import log_responsible
 from test.test_core_api import MockSecurityHandler
@@ -407,7 +407,7 @@ def test_integration_registerCharge_fixedBooking():
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), String("TestTel"),
-                                      String("TestDir"))
+                                      String("TestDir"), Number(""))
     dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
@@ -440,7 +440,7 @@ def test_integration_cancelTemporary_fixedBooking(resp_name):
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), String("TestTel"),
-                                      String("TestDir"))
+                                      String("TestDir"), Number(""))
     dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
@@ -474,7 +474,7 @@ def test_integration_cancelDefinitely_fixedBooking(resp_name):
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), String("TestTel"),
-                                      String("TestDir"))
+                                      String("TestDir"), Number(""))
     dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
@@ -507,7 +507,7 @@ def test_integration_cancelDefinitely_tempBooking(resp_name):
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), String("TestTel"),
-                                      String("TestDir"))
+                                      String("TestDir"), Number(""))
     dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),

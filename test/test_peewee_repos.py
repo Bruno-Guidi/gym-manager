@@ -69,7 +69,8 @@ def test_ClientRepo_remove():
     log_responsible.config(MockSecurityHandler())
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(""))
 
     client_repo.remove(client)
     assert not ClientTable.get_by_id(1).is_active
@@ -80,9 +81,10 @@ def test_ClientRepo_create_withNonExistingClient_withNoDni():
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
 
     expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"))
-    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"))
+    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(""))
 
-    assert expected == result and ClientTable.get_by_id(1).is_active
+    assert expected == result and ClientTable.get_by_id(1).is_active and result.dni.as_primitive() is None
 
 
 def test_ClientRepo_create_withNonExistingClient_withDni():

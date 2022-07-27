@@ -14,10 +14,10 @@ def test_base_Number():
     assert number.as_primitive() is None
 
     with pytest.raises(ValidationError):
-        Number("")
+        Number("", optional=False)
 
     with pytest.raises(ValidationError):
-        Number("      ")
+        Number("      ", optional=False)
 
     with pytest.raises(ValidationError):
         Number(str(Number.OPTIONAL_INT))

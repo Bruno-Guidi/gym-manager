@@ -48,7 +48,7 @@ def test_subscribe():
 
     # Data setup.
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                                String("dummy_descr"))
+                                String("dummy_descr"), Number(""))
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
@@ -123,7 +123,7 @@ def test_cancel():
 
     # Data setup.
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                                String("dummy_descr"))
+                                String("dummy_descr"), Number(""))
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False)
     activity_repo.add(activity)
@@ -150,7 +150,7 @@ def test_charge_notChargeOnceActivity():
 
     # Data setup.
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                                String("dummy_descr"))
+                                String("dummy_descr"), Number(""))
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
@@ -183,7 +183,8 @@ def test_ClientViewRefreshedAfterClientUpdate():
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
 
     # Creates a Client.
-    client = client_repo.create(String("CliName"), date(2000, 2, 2), date(2022, 1, 1), String("Tel"), String("Dir"))
+    client = client_repo.create(String("CliName"), date(2000, 2, 2), date(2022, 1, 1), String("Tel"), String("Dir"),
+                                Number(""))
     first_id = client.id
 
     # Then creates a Transaction related to the client. The transaction has a ClientView instead of a Client.
