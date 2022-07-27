@@ -91,25 +91,30 @@ class SqliteClientRepo(ClientRepo):
         record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
         return record is not None and record.is_active
 
-    def add(self, client: Client):
-        if self.is_active(client.dni):
-            raise PersistenceError(f"There is an existing client with [client.dni={client.dni}].")
+    def create(
+            self, name: String, admission: date, birthday: date, telephone: String, direction: String,
+            dni: Number | None = None
+    ) -> Client:
+        if dni is not None and self.is_active(dni):
+            raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
 
-        if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()) is None:
-            # The client doesn't exist in the table.
-            logger.getChild(type(self).__name__).info(f"Creating client [client.dni={client.dni}].")
-        else:
-            # The client exists in the table. Because previous check of self.is_active(args) failed, we can assume that
-            # the client is inactive.
-            logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={client.dni}].")
+        if dni is not None:
+            if ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) is None:
+                logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
+            else:
+                # There is an inactive client whose dni matches with the received one.
+                logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={dni}].")
 
-        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
-                            admission=client.admission, birth_day=client.birth_day,
-                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
-                            is_active=client.is_active).execute()
-        self.cache[client.dni] = client
-        if client.dni in self._views:
-            self._views[client.dni].name = client.name
+        client_id = ClientTable.replace(dni=dni.as_primitive() if dni is not None else None, cli_name=name.as_primitive(),
+                                     admission=admission, birth_day=birthday,
+                                     telephone=telephone.as_primitive(), direction=direction.as_primitive(),
+                                     is_active=True).execute()
+        client = Client(client_id, name, admission, birthday, telephone, direction, dni)
+        self.cache[client_id] = client
+        if client_id in self._views:
+            self._views[client_id].name = client.name
+
+        return client
 
     @log_responsible(action_tag="remove_client", to_str=lambda client: f"Eliminar cliente {client.name}")
     def remove(self, client: Client):
