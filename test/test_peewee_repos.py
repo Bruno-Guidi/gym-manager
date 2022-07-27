@@ -114,3 +114,19 @@ def test_ClientRepo_create_withInactiveClient_withDni():
     assert expected == result and expected.dni == result.dni and ClientTable.get_by_id(1).is_active
 
 
+def test_ClientRepo_update():
+    create_database(":memory:")
+    client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
+
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(1))
+
+    client.name = String("OtherName")
+    client.telephone = String("OtherTel")
+    client.direction = String("OtherDir")
+
+    client_repo.update(client)
+
+    record = ClientTable.get_by_id(1)
+    assert (record.cli_name == client.name.as_primitive() and record.telephone == client.telephone.as_primitive()
+            and record.direction == client.direction.as_primitive())

@@ -140,8 +140,8 @@ class SqliteClientRepo(ClientRepo):
         return client
 
     def update(self, client: Client):
-        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
-                            admission=client.admission, birth_day=client.birth_day,
+        ClientTable.replace(id=client.id, dni=client.dni.as_primitive() if client.dni is not None else None,
+                            cli_name=client.name.as_primitive(), admission=client.admission, birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=True).execute()
 
