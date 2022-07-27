@@ -77,21 +77,21 @@ class SqliteClientRepo(ClientRepo):
             self, name: String, admission: date, birthday: date, telephone: String, direction: String,
             dni: Number
     ) -> Client:
-        if dni is not None and self.is_active(dni):
+        if dni.as_primitive() is not None and self.is_active(dni):
             raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
 
         record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) if dni is not None else None
         if record is None:
             # record will be None if *dni* is None or if there is no client in the table whose dni matches it.
             logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
-            record = ClientTable.create(dni=dni.as_primitive() if dni is not None else None,
+            record = ClientTable.create(dni=dni.as_primitive(),
                                         cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
                                         telephone=telephone.as_primitive(), direction=direction.as_primitive(),
                                         is_active=True)
         else:
             # There is an inactive client whose dni matches with the received one.
             logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={dni}].")
-            ClientTable.replace(id=record.id, dni=dni.as_primitive() if dni is not None else None,
+            ClientTable.replace(id=record.id, dni=dni.as_primitive(),
                                 cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
                                 telephone=telephone.as_primitive(), direction=direction.as_primitive(),
                                 is_active=True).execute()
@@ -107,7 +107,7 @@ class SqliteClientRepo(ClientRepo):
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
-        ClientTable.replace(id=client.id, dni=client.dni.as_primitive() if client.dni is not None else None,
+        ClientTable.replace(id=client.id, dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(), admission=client.admission, birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=False).execute()
@@ -119,7 +119,7 @@ class SqliteClientRepo(ClientRepo):
         return client
 
     def update(self, client: Client):
-        ClientTable.replace(id=client.id, dni=client.dni.as_primitive() if client.dni is not None else None,
+        ClientTable.replace(id=client.id, dni=client.dni.as_primitive(),
                             cli_name=client.name.as_primitive(), admission=client.admission, birth_day=client.birth_day,
                             telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=True).execute()
@@ -152,7 +152,7 @@ class SqliteClientRepo(ClientRepo):
                 logger.getChild(type(self).__name__).info(f"Creating Client [client.id={record.id}] from queried data.")
                 client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
                                 String(record.telephone), String(record.direction),
-                                Number(record.dni) if record.dni is not None else None)
+                                Number(record.dni if record.dni is not None else ""))
                 self.cache[record.id] = client
                 for sub_record in record.subscriptions:
                     activity = self.activity_repo.get(String(sub_record.activity_id))
