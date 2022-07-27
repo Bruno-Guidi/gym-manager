@@ -440,10 +440,10 @@ class CreateController:
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
         else:
-            self.client = Client(self.create_ui.dni_field.value(), self.create_ui.name_field.value(), date.today(),
-                                 self.create_ui.birth_date_edit.date().toPyDate(), self.create_ui.tel_field.value(),
-                                 self.create_ui.dir_field.value())
-            self.client_repo.add(self.client)
+            self.client = self.client_repo.create(
+                self.create_ui.name_field.value(), date.today(), self.create_ui.birth_date_edit.date().toPyDate(),
+                self.create_ui.tel_field.value(), self.create_ui.dir_field.value(), self.create_ui.dni_field.value()
+            )
             Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
