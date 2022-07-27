@@ -392,6 +392,7 @@ class SqliteTransactionRepo(TransactionRepo):
         self.cache = LRUCache(int, Transaction, max_len=cache_len)
         self.client_cache = LRUCache(Number, ClientView, max_len=64)
 
+    # ToDo make arguments mandatory.
     def from_data(
             self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
             method: str | None = None, raw_responsible: str | None = None, description: str | None = None,
