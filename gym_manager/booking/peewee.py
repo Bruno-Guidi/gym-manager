@@ -111,14 +111,14 @@ class SqliteBookingRepo(BookingRepo):
         if isinstance(booking, FixedBooking):
             booking: FixedBooking
             FixedBookingTable.create(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
-                                     client_id=booking.client.dni.as_primitive(), end=booking.end,
-                                     first_when=booking.first_when, last_when=booking.when, inactive_dates=[])
+                                     client_id=booking.client.id, end=booking.end, first_when=booking.first_when,
+                                     last_when=booking.when, inactive_dates=[])
             self.fixed_booking_cache[FixedBookingKey(booking.day_of_week, booking.court, booking.start)] = booking
         elif isinstance(booking, TempBooking):
             booking: TempBooking
             when = datetime.combine(booking.when, booking.start)
-            BookingTable.create(when=when, court=booking.court, client_id=booking.client.dni.as_primitive(),
-                                end=booking.end, is_fixed=False)
+            BookingTable.create(when=when, court=booking.court, client_id=booking.client.id, end=booking.end,
+                                is_fixed=False)
 
             self.temp_booking_cache[TempBookingKey(when, booking.court)] = booking
         else:
@@ -128,7 +128,7 @@ class SqliteBookingRepo(BookingRepo):
     def charge(self, booking: Booking, transaction: Transaction):
         if isinstance(booking, FixedBooking):
             FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
-                                      client_id=booking.client.dni.as_primitive(), end=booking.end,
+                                      client_id=booking.client.id, end=booking.end,
                                       transaction_id=booking.transaction.id, first_when=booking.first_when,
                                       last_when=booking.when, inactive_dates=booking.inactive_dates).execute()
             # Creates a TempBooking based on the FixedBooking, so the charging is registered.
@@ -139,7 +139,7 @@ class SqliteBookingRepo(BookingRepo):
                                    f"SqliteBookingRepo.")
 
         BookingTable.replace(when=datetime.combine(booking.when, booking.start), court=booking.court,
-                             client_id=booking.client.dni.as_primitive(), end=booking.end, is_fixed=booking.is_fixed,
+                             client_id=booking.client.id, end=booking.end, is_fixed=booking.is_fixed,
                              transaction_id=transaction.id).execute()
 
     def cancel(self, booking: Booking, definitely_cancelled: bool = True):
@@ -151,9 +151,8 @@ class SqliteBookingRepo(BookingRepo):
             else:  # The FixedBooking is definitely cancelled.
                 transaction_id = None if booking.transaction is None else booking.transaction.id
                 FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
-                                          client_id=booking.client.dni.as_primitive(), end=booking.end,
-                                          transaction_id=transaction_id, first_when=booking.first_when,
-                                          last_when=booking.when,
+                                          client_id=booking.client.id, end=booking.end, transaction_id=transaction_id,
+                                          first_when=booking.first_when, last_when=booking.when,
                                           inactive_dates=serialize_inactive_dates(booking.inactive_dates)).execute()
         elif isinstance(booking, TempBooking):  # A TempBooking is always definitely cancelled.
             when = datetime.combine(booking.when, booking.start)
@@ -165,9 +164,9 @@ class SqliteBookingRepo(BookingRepo):
             self, cancel_datetime: datetime, responsible: String, booking: Booking, definitely_cancelled: bool
     ):
         record = CancelledLog.create(cancel_datetime=cancel_datetime, responsible=responsible.as_primitive(),
-                                     client_id=booking.client.dni.as_primitive(), when=booking.when,
-                                     court=booking.court, start=booking.start, end=booking.end,
-                                     is_fixed=booking.is_fixed, definitely_cancelled=definitely_cancelled)
+                                     client_id=booking.client.id, when=booking.when, court=booking.court,
+                                     start=booking.start, end=booking.end, is_fixed=booking.is_fixed,
+                                     definitely_cancelled=definitely_cancelled)
         self.cancellation_cache[record.id] = Cancellation(record.id, cancel_datetime, responsible, booking.client,
                                                           booking.when, booking.court, booking.start, booking.end,
                                                           booking.is_fixed, definitely_cancelled)
