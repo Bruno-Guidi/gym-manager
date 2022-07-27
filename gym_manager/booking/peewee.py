@@ -102,6 +102,8 @@ class SqliteBookingRepo(BookingRepo):
         self.temp_booking_cache = LRUCache(TempBookingKey, TempBooking, max_len=cache_len)
         self.fixed_booking_cache = LRUCache(FixedBookingKey, FixedBooking, max_len=cache_len)
         self.cancellation_cache = LRUCache(int, Cancellation, max_len=int(cache_len / 2))
+        # In the worst case, all bookings in the cache have a different client.
+        self.client_view_cache = LRUCache(int, ClientView, max_len=cache_len)
 
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
@@ -193,8 +195,13 @@ class SqliteBookingRepo(BookingRepo):
         for record in prefetch(bookings_q, TransactionTable.select()):
             pk = TempBookingKey(record.court, record.when)
             if pk not in self.temp_booking_cache:
-                client = ClientView(Number(record.client.dni), String(record.client.cli_name),
-                                    created_by="SqliteBookingRepo.all_temporal")
+                client_record, client = record.client, None
+                if client_record.id in self.client_view_cache:
+                    client = self.client_view_cache[client_record.id]
+                else:
+                    client = ClientView(client_record.id, String(client_record.cli_name),
+                                        created_by="SqliteBookingRepo.all_temporal",
+                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
 
                 trans_record, transaction = record.transaction, None
                 if trans_record is not None:
@@ -221,9 +228,15 @@ class SqliteBookingRepo(BookingRepo):
         for record in prefetch(bookings_q, TransactionTable.select()):
             pk = FixedBookingKey(record.day_of_week, record.court, record.start)
             if pk not in self.fixed_booking_cache:
+                client_record, client = record.client, None
+                if client_record.id in self.client_view_cache:
+                    client = self.client_view_cache[client_record.id]
+                else:
+                    client = ClientView(client_record.id, String(client_record.cli_name),
+                                        created_by="SqliteBookingRepo.all_fixed",
+                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
+
                 transaction_record, transaction = record.transaction, None
-                client = ClientView(Number(record.client.dni), String(record.client.cli_name),
-                                    created_by="SqliteBookingRepo.all_fixed")
                 if transaction_record is not None:
                     transaction = self.transaction_repo.from_data(
                         transaction_record.id, transaction_record.type, transaction_record.when,
@@ -254,10 +267,16 @@ class SqliteBookingRepo(BookingRepo):
 
         for record in cancelled_q.paginate(page, page_len).order_by(CancelledLog.cancel_datetime.desc()):
             if record.id not in self.cancellation_cache:
+                client_record, client = record.client, None
+                if client_record.id in self.client_view_cache:
+                    client = self.client_view_cache[client_record.id]
+                else:
+                    client = ClientView(client_record.id, String(client_record.cli_name),
+                                        created_by="SqliteBookingRepo.cancelled",
+                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
+
                 self.cancellation_cache[record.id] = Cancellation(
-                    record.id, record.cancel_datetime, record.responsible,
-                    ClientView(Number(record.client.dni), String(record.client.cli_name),
-                               created_by="SqliteBookingRepo.cancelled"),
+                    record.id, record.cancel_datetime, record.responsible, client,
                     record.when, record.court, record.start, record.end, record.is_fixed, record.definitely_cancelled
                 )
                 logger.getChild(type(self).__name__).info(
