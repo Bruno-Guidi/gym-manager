@@ -505,8 +505,7 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
     def update(self, subscription: Subscription):
         """Registers in the repository that the *client* was charged for the *activity*.
         """
-        sub_record = SubscriptionTable.get_by_id((subscription.client.dni.as_primitive(),
-                                                  subscription.activity.name.as_primitive()))
+        sub_record = SubscriptionTable.get_by_id((subscription.client.id, subscription.activity.name.as_primitive()))
         if subscription.transaction is not None:
             sub_record.transaction_id = subscription.transaction.id
         sub_record.save()
