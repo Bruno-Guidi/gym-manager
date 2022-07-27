@@ -55,7 +55,7 @@ class SqliteClientRepo(ClientRepo):
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
 
-        self.cache = LRUCache(Number, value_type=Client, max_len=cache_len)
+        self.cache = LRUCache(int, value_type=Client, max_len=cache_len)
 
         # Links this repo with the ClientView, so they can be refreshed after a client change.
         ClientView.repository = self
