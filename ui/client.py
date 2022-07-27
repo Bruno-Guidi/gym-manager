@@ -358,9 +358,10 @@ class ClientMainUI(QMainWindow):
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
         config_lbl(self.dni_lbl, "DNI*")
 
-        self.dni_field = Field(Number, self.widget, min_value=utils.CLIENT_MIN_DNI, max_value=utils.CLIENT_MAX_DNI)
+        self.dni_field = Field(Number, self.widget, optional=True, min_value=utils.CLIENT_MIN_DNI,
+                               max_value=utils.CLIENT_MAX_DNI)
         self.form_layout.addWidget(self.dni_field, 1, 1)
-        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False, enabled=False)
+        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
         # Telephone.
         self.tel_lbl = QLabel(self.widget)
@@ -477,7 +478,8 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
         config_lbl(self.dni_lbl, "DNI*")
 
-        self.dni_field = Field(Number, self, min_value=utils.CLIENT_MIN_DNI, max_value=utils.CLIENT_MAX_DNI)
+        self.dni_field = Field(Number, self, optional=True, min_value=utils.CLIENT_MIN_DNI,
+                               max_value=utils.CLIENT_MAX_DNI)
         self.form_layout.addWidget(self.dni_field, 1, 1)
         config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
