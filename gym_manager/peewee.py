@@ -75,7 +75,7 @@ class SqliteClientRepo(ClientRepo):
 
     def create(
             self, name: String, admission: date, birthday: date, telephone: String, direction: String,
-            dni: Number | None = None
+            dni: Number
     ) -> Client:
         if dni is not None and self.is_active(dni):
             raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
