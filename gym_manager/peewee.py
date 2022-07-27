@@ -32,7 +32,8 @@ def client_name_like(client, filter_value) -> bool:
 
 
 class ClientTable(Model):
-    dni = IntegerField(primary_key=True)
+    id = IntegerField(primary_key=True)
+    dni = IntegerField(unique=True)
     cli_name = CharField()
     admission = DateField()
     birth_day = DateField()
