@@ -75,7 +75,7 @@ class ClientView(Client):
 
     repository: ClassVar[ClientRepo] = None
 
-    def __init__(self, id_: int, dni: Number, name: String, created_by: str):
+    def __init__(self, id_: int, name: String, created_by: str, dni: Number | None):
         self.id = id_
         self.dni = dni
         self.name = name
