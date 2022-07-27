@@ -82,9 +82,12 @@ class SqliteClientRepo(ClientRepo):
 
         return client
 
-    def is_active(self, dni: Number) -> bool:
+    def is_active(self, dni: Number | None) -> bool:
         """Checks if there is an active client with the given *dni*.
         """
+        if dni is None:
+            # If the client doesn't have a dni, then there won't be any active or inactive client that matches with it.
+            return False
         if not isinstance(dni, Number):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
