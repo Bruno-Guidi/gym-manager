@@ -1,29 +1,10 @@
 from datetime import date
 from typing import Iterable
 
-import pytest
-
-from gym_manager import peewee
 from gym_manager.core import api
 from gym_manager.core.base import (
-    Activity, String, Currency, Client, Number, Transaction,
+    String, Currency, Client, Number, Transaction,
     Subscription, discard_subscription)
-from gym_manager.core.persistence import PersistenceError
-from gym_manager.core.security import log_responsible
-from test.test_core_api import MockSecurityHandler
-
-
-def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
-    log_responsible.config(MockSecurityHandler())
-
-    peewee.create_database(":memory:")
-
-    repo = peewee.SqliteActivityRepo()
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
-    repo.add(activity)
-    with pytest.raises(PersistenceError) as p_err:
-        repo.remove(activity)
-    assert str(p_err.value) == "The [activity.name=dummy_name] cannot be removed because its locked."
 
 
 # noinspection PyTypeChecker

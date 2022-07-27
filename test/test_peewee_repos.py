@@ -1,8 +1,10 @@
 from datetime import date
 from typing import Generator
 
+import pytest
+
 from gym_manager.core.base import Activity, String, Transaction, Currency, Client, Number
-from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo
+from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo, PersistenceError
 from gym_manager.core.security import log_responsible
 from gym_manager.peewee import SqliteClientRepo, create_database, ClientTable, SqliteActivityRepo, SqliteTransactionRepo
 from test.test_core_api import MockSecurityHandler
@@ -154,4 +156,17 @@ def test_ClientRepo_all():
     client_repo.remove(cli1)
     client_repo.remove(cli3)
     assert [cli2] == [client for client in client_repo.all()]
+
+
+def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
+    log_responsible.config(MockSecurityHandler())
+
+    create_database(":memory:")
+
+    repo = SqliteActivityRepo()
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
+    repo.add(activity)
+    with pytest.raises(PersistenceError) as p_err:
+        repo.remove(activity)
+    assert str(p_err.value) == "The [activity.name=dummy_name] cannot be removed because its locked."
 
