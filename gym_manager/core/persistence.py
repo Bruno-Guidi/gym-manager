@@ -106,7 +106,10 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add(self, client: Client):
+    def create(
+            self, name: String, admission: date, birthday: date, telephone: String, direction: String,
+            dni: Number | None = None
+    ) -> Client:
         """Adds the *client* to the repository.
         """
         raise NotImplementedError
