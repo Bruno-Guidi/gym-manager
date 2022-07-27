@@ -1,10 +1,29 @@
 from datetime import date
 from typing import Iterable
 
+import pytest
+
 from gym_manager.core import api
 from gym_manager.core.base import (
     String, Currency, Client, Number, Transaction,
-    Subscription, discard_subscription)
+    Subscription, discard_subscription, ValidationError)
+
+
+def test_base_Number():
+    number = Number("", optional=True)
+    assert number.as_primitive() is None
+
+    with pytest.raises(ValidationError):
+        Number("")
+
+    with pytest.raises(ValidationError):
+        Number("      ")
+
+    with pytest.raises(ValidationError):
+        Number(str(Number.OPTIONAL_INT))
+
+    with pytest.raises(ValidationError):
+        Number(Number.OPTIONAL_INT)
 
 
 # noinspection PyTypeChecker
