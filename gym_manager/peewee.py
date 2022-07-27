@@ -61,27 +61,6 @@ class SqliteClientRepo(ClientRepo):
         ClientView.repository = self
         self._views: dict[Number, ClientView] = {}
 
-    def _from_record(
-            self, dni: Number, raw_name: str, admission: date, birth_day: date, raw_telephone: str, raw_direction: str,
-            is_active: bool, subscriptions
-    ) -> Client:
-        # There is no need to validate max_len of String because they were validated when the client was created.
-        client = Client(dni, String(raw_name), admission, birth_day, String(raw_telephone, optional=True),
-                        String(raw_direction, optional=True), is_active)
-
-        for sub_record in subscriptions:
-            # The activity name was validated when it was created.
-            activity = self.activity_repo.get(String(sub_record.activity_id))
-            trans_record, transaction = sub_record.transaction, None
-            if trans_record is not None:
-                transaction = self.transaction_repo.from_data(
-                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
-                    trans_record.responsible, trans_record.description, client, trans_record.balance_id
-                )
-            client.add(Subscription(sub_record.when, client, activity, transaction))
-
-        return client
-
     def is_active(self, dni: Number | None) -> bool:
         """Checks if there is an active client with the given *dni*.
         """
@@ -169,15 +148,23 @@ class SqliteClientRepo(ClientRepo):
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
         for record in prefetch(clients_q, SubscriptionTable.select(), TransactionTable.select()):
-            client: Client
-            dni = Number(record.dni)
-            if dni not in self.cache:
-                logger.getChild(type(self).__name__).info(f"Creating Client [client.dni={dni}] from queried data.")
-                self.cache[dni] = self._from_record(
-                    dni, record.cli_name, record.admission, record.birth_day, record.telephone, record.direction,
-                    record.is_active, record.subscriptions
-                )
-            yield self.cache[dni]
+            if record.id not in self.cache:
+                logger.getChild(type(self).__name__).info(f"Creating Client [client.id={record.id}] from queried data.")
+                client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
+                                String(record.telephone), String(record.direction),
+                                Number(record.dni) if record.dni is not None else None)
+                self.cache[record.id] = client
+                for sub_record in record.subscriptions:
+                    activity = self.activity_repo.get(String(sub_record.activity_id))
+                    trans_record, transaction = sub_record.transaction, None
+                    if trans_record is not None:
+                        transaction = self.transaction_repo.from_data(
+                            trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
+                            trans_record.method,
+                            trans_record.responsible, trans_record.description, client, trans_record.balance_id
+                        )
+                    client.add(Subscription(sub_record.when, client, activity, transaction))
+            yield self.cache[record.id]
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of clients in the repository.
