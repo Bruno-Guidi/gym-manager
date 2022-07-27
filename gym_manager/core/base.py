@@ -273,12 +273,13 @@ class Client:
     """Stores information about a client.
     """
 
-    dni: Number
+    id: int
     name: String = field(compare=False)
     admission: date = field(compare=False)
     birth_day: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
+    dni: Number | None = field(compare=False, default=None)
     is_active: bool = field(compare=False, default=True)
     _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
 
