@@ -101,21 +101,26 @@ class SqliteClientRepo(ClientRepo):
         if dni is not None and self.is_active(dni):
             raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
 
-        if dni is not None:
-            if ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) is None:
-                logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
-            else:
-                # There is an inactive client whose dni matches with the received one.
-                logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={dni}].")
+        record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) if dni is not None else None
+        if record is None:
+            # record will be None if *dni* is None or if there is no client in the table whose dni matches it.
+            logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
+            record = ClientTable.create(dni=dni.as_primitive() if dni is not None else None,
+                                        cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
+                                        telephone=telephone.as_primitive(), direction=direction.as_primitive(),
+                                        is_active=True)
+        else:
+            # There is an inactive client whose dni matches with the received one.
+            logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={dni}].")
+            ClientTable.replace(id=record.id, dni=dni.as_primitive() if dni is not None else None,
+                                cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
+                                telephone=telephone.as_primitive(), direction=direction.as_primitive(),
+                                is_active=True).execute()
 
-        client_id = ClientTable.replace(dni=dni.as_primitive() if dni is not None else None, cli_name=name.as_primitive(),
-                                     admission=admission, birth_day=birthday,
-                                     telephone=telephone.as_primitive(), direction=direction.as_primitive(),
-                                     is_active=True).execute()
-        client = Client(client_id, name, admission, birthday, telephone, direction, dni)
-        self.cache[client_id] = client
-        if client_id in self._views:
-            self._views[client_id].name = client.name
+        client = Client(record.id, name, admission, birthday, telephone, direction, dni)
+        self.cache[client.id] = client
+        if client.id in self._views:
+            self._views[client.id].name = client.name
 
         return client
 
