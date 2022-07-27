@@ -208,7 +208,7 @@ class SqliteActivityRepo(ActivityRepo):
     """
 
     def __init__(self, cache_len: int = 50) -> None:
-        DATABASE_PROXY.create_tables([ActivityTable])
+        DATABASE_PROXY.create_tables([ActivityTable, SubscriptionTable])
 
         self.cache = LRUCache(String, Activity, max_len=cache_len)
 
