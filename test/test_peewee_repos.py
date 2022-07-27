@@ -4,7 +4,7 @@ from typing import Generator
 from gym_manager.core.base import Activity, String, Transaction, Currency, Client, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import log_responsible
-from gym_manager.peewee import SqliteClientRepo, create_database, ClientTable
+from gym_manager.peewee import SqliteClientRepo, create_database, ClientTable, SqliteActivityRepo, SqliteTransactionRepo
 from test.test_core_api import MockSecurityHandler
 
 
@@ -131,3 +131,27 @@ def test_ClientRepo_update():
     record = ClientTable.get_by_id(1)
     assert (record.cli_name == client.name.as_primitive() and record.telephone == client.telephone.as_primitive()
             and record.direction == client.direction.as_primitive())
+
+
+def test_ClientRepo_all():
+    create_database(":memory:")
+    log_responsible.config(MockSecurityHandler())
+    # Because client querying also queries subscriptions and transactions associated to them, mock repositories can't be
+    # used.
+    client_repo = SqliteClientRepo(SqliteActivityRepo(), SqliteTransactionRepo())
+
+    cli1 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                              Number(1))
+    cli2 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                              Number(2))
+    cli3 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                              Number(3))
+
+    # All clients are active.
+    assert [cli1, cli2, cli3] == [client for client in client_repo.all()]
+
+    # Only the second client is active.
+    client_repo.remove(cli1)
+    client_repo.remove(cli3)
+    assert [cli2] == [client for client in client_repo.all()]
+
