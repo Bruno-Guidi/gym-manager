@@ -390,7 +390,9 @@ class SqliteTransactionRepo(TransactionRepo):
         DATABASE_PROXY.create_tables([TransactionTable])
 
         self.cache = LRUCache(int, Transaction, max_len=cache_len)
-        self.client_view_cache = LRUCache(Number, ClientView, max_len=64)
+        # In the worst case the cache can store as many clients views as transactions, supposing each transaction has
+        # a different client.
+        self.client_view_cache = LRUCache(int, ClientView, max_len=cache_len)
 
     # ToDo make arguments mandatory.
     def from_data(
@@ -423,8 +425,8 @@ class SqliteTransactionRepo(TransactionRepo):
         """Register a new transaction with the given information. This method must return the created transaction.
         """
         # There is no need to check the cache because the Transaction is being created, it didn't exist before.
-        record = TransactionTable.create(type=type, client=client.dni.as_primitive() if client is not None else None,
-                                         when=when, amount=amount.as_primitive(), method=method,
+        record = TransactionTable.create(type=type, client=client.id if client is not None else None, when=when,
+                                         amount=amount.as_primitive(), method=method,
                                          responsible=responsible.as_primitive(), description=description)
 
         self.cache[record.id] = Transaction(record.id, type, when, amount, method, responsible, description, client)
@@ -452,13 +454,14 @@ class SqliteTransactionRepo(TransactionRepo):
             transactions_q = transactions_q.paginate(page, page_len)
 
         for record in transactions_q:
-            client = None
-            if record.client is not None:
-                dni = Number(record.client.dni)
-                if dni in self.client_view_cache:
-                    client = self.client_view_cache[dni]
+            client_record, client = record.client, None
+            if client_record is not None:
+                if client_record.id in self.client_view_cache:
+                    client = self.client_view_cache[client_record.id]
                 else:
-                    client = ClientView(dni, String(record.client.cli_name), created_by="SqliteTransactionRepo.all")
+                    client = ClientView(client_record.id, String(client_record.cli_name),
+                                        created_by="SqliteTransactionRepo.all",
+                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
 
