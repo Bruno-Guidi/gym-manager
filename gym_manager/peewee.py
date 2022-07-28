@@ -59,7 +59,7 @@ class SqliteClientRepo(ClientRepo):
 
         # Links this repo with the ClientView, so they can be refreshed after a client change.
         ClientView.repository = self
-        self._views: dict[Number, ClientView] = {}
+        self._views: dict[int, ClientView] = {}
 
     def is_active(self, dni: Number | None) -> bool:
         """Checks if there is an active client with the given *dni*.
@@ -176,7 +176,7 @@ class SqliteClientRepo(ClientRepo):
         return clients_q.count()
 
     def register_view(self, view: ClientView):
-        self._views[view.dni] = view
+        self._views[view.id] = view
 
 
 class ActivityTable(Model):
