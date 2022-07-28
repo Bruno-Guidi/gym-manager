@@ -102,7 +102,7 @@ class ClientRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def is_active(self, dni: Number | None) -> bool:
+    def is_active(self, dni: Number) -> bool:
         """Checks if there is an active client with the given *dni*.
         """
         raise NotImplementedError
