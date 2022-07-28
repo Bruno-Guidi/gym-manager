@@ -189,7 +189,7 @@ def test_ClientViewRefreshedAfterClientUpdate():
 
     # Then creates a Transaction related to the client. The transaction has a ClientView instead of a Client.
     transaction = transaction_repo.from_data(0, "type", date(2022, 2, 2), "100.00", "method", "resp", "descr",
-                                             ClientView(1, String("CliName"), ""))
+                                             ClientView(1, String("CliName"), "created_by", Number("")))
 
     # Updates the Client.
     client.name = String("OtherName")
