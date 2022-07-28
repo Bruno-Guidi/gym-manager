@@ -200,7 +200,7 @@ class SqliteBookingRepo(BookingRepo):
                 else:
                     client = ClientView(client_record.id, String(client_record.cli_name),
                                         created_by="SqliteBookingRepo.all_temporal",
-                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
+                                        dni=Number(client_record.dni if client_record.dni is not None else ""))
 
                 trans_record, transaction = record.transaction, None
                 if trans_record is not None:
@@ -233,7 +233,7 @@ class SqliteBookingRepo(BookingRepo):
                 else:
                     client = ClientView(client_record.id, String(client_record.cli_name),
                                         created_by="SqliteBookingRepo.all_fixed",
-                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
+                                        dni=Number(client_record.dni if client_record.dni is not None else ""))
 
                 transaction_record, transaction = record.transaction, None
                 if transaction_record is not None:
@@ -272,7 +272,7 @@ class SqliteBookingRepo(BookingRepo):
                 else:
                     client = ClientView(client_record.id, String(client_record.cli_name),
                                         created_by="SqliteBookingRepo.cancelled",
-                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
+                                        dni=Number(client_record.dni if client_record.dni is not None else ""))
 
                 self.cancellation_cache[record.id] = Cancellation(
                     record.id, record.cancel_datetime, record.responsible, client,

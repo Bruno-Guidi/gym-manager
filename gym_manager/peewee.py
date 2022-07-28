@@ -124,8 +124,8 @@ class SqliteClientRepo(ClientRepo):
                             telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
                             is_active=True).execute()
 
-        if client.dni in self._views:  # Refreshes the view of the updated client, if there is one.
-            self._views[client.dni].name = client.name
+        if client.id in self._views:  # Refreshes the view of the updated client, if there is one.
+            self._views[client.id].name = client.name
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
@@ -356,7 +356,7 @@ class SqliteBalanceRepo(BalanceRepo):
                     else:
                         client = ClientView(client_record.id, String(client_record.cli_name),
                                             created_by="SqliteBalanceRepo.all",
-                                            dni=Number(client_record.dni) if client_record.dni is not None else None)
+                                            dni=Number(client_record.dni if client_record.dni is not None else ""))
 
                 transactions.append(self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when,
@@ -462,7 +462,7 @@ class SqliteTransactionRepo(TransactionRepo):
                 else:
                     client = ClientView(client_record.id, String(client_record.cli_name),
                                         created_by="SqliteTransactionRepo.all",
-                                        dni=Number(client_record.dni) if client_record.dni is not None else None)
+                                        dni=Number(client_record.dni if client_record.dni is not None else ""))
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
 
