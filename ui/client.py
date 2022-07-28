@@ -25,8 +25,12 @@ from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, Dialog
 
 
 @log_responsible(action_tag="update_client", to_str=lambda client: f"Actualizar cliente {client.name}")
-def update_client(client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String):
+def update_client(
+        client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String,
+        dni: Number
+):
     client.name = name
+    client.dni = dni
     client.telephone = telephone
     client.direction = direction
     client_repo.update(client)
@@ -93,7 +97,8 @@ class MainController:
         row = self.main_ui.client_table.rowCount()
         self._clients[row] = client
         fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str)
-        fill_cell(self.main_ui.client_table, row, 1, client.dni, data_type=int)
+        dni = "" if client.dni.as_primitive() is None else client.dni.as_primitive()
+        fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int)
         fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool)
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int)
         fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str)
@@ -112,7 +117,8 @@ class MainController:
         if row != -1:
             # Fills the form.
             self.main_ui.name_field.setText(str(self._clients[row].name))
-            self.main_ui.dni_field.setText(str(self._clients[row].dni))
+            dni = "" if self._clients[row].dni.as_primitive() is None else self._clients[row].dni.as_primitive()
+            self.main_ui.dni_field.setText(str(dni))
             self.main_ui.tel_field.setText(str(self._clients[row].telephone))
             self.main_ui.dir_field.setText(str(self._clients[row].direction))
 
@@ -140,18 +146,19 @@ class MainController:
             return
 
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel_field.valid_value(),
-                    self.main_ui.dir_field.valid_value()]):
+                    self.main_ui.dir_field.valid_value(), self.main_ui.dni_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             update_fn = functools.partial(update_client, self.client_repo, self._clients[row],
                                           self.main_ui.name_field.value(), self.main_ui.tel_field.value(),
-                                          self.main_ui.dir_field.value())
+                                          self.main_ui.dir_field.value(), self.main_ui.dni_field.value())
 
             if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
                 # Updates the ui.
                 client = self._clients[row]
-                # ToDo update dni.
                 fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+                dni = "" if client.dni.as_primitive() is None else client.dni.as_primitive()
+                fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
 
