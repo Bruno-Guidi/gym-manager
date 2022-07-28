@@ -50,7 +50,7 @@ class MainController:
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
         self.activities_fn = activities_fn
-        self._clients: dict[int, Client] = {}  # Dict that maps raw client dni to the associated client.
+        self._clients: dict[int, Client] = {}  # Dict that maps row numbers to the displayed client.
         self._subscriptions: dict[str, Subscription] = {}  # Maps raw activity name to subs of the selected client.
 
         # Configure the filtering widget.
@@ -90,8 +90,8 @@ class MainController:
         if check_filters and not self.main_ui.filter_header.passes_filters(client):
             return
 
-        self._clients[client.dni.as_primitive()] = client
         row = self.main_ui.client_table.rowCount()
+        self._clients[row] = client
         fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str)
         fill_cell(self.main_ui.client_table, row, 1, client.dni, data_type=int)
         fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool)
@@ -101,20 +101,20 @@ class MainController:
 
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
+        self._clients.clear()
 
         self.main_ui.page_index.total_len = self.client_repo.count(filters)
         for client in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-            self._clients[client.dni.as_primitive()] = client
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     def update_client_info(self):
-        if self.main_ui.client_table.currentRow() != -1:
-            client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+        row = self.main_ui.client_table.currentRow()
+        if row != -1:
             # Fills the form.
-            self.main_ui.name_field.setText(str(self._clients[client_dni].name))
-            self.main_ui.dni_field.setText(str(self._clients[client_dni].dni))
-            self.main_ui.tel_field.setText(str(self._clients[client_dni].telephone))
-            self.main_ui.dir_field.setText(str(self._clients[client_dni].direction))
+            self.main_ui.name_field.setText(str(self._clients[row].name))
+            self.main_ui.dni_field.setText(str(self._clients[row].dni))
+            self.main_ui.tel_field.setText(str(self._clients[row].telephone))
+            self.main_ui.dir_field.setText(str(self._clients[row].direction))
 
             self.fill_subscription_table()
 
@@ -134,7 +134,8 @@ class MainController:
             self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
@@ -142,15 +143,14 @@ class MainController:
                     self.main_ui.dir_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
-            client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-            update_fn = functools.partial(update_client, self.client_repo, self._clients[client_dni],
+            update_fn = functools.partial(update_client, self.client_repo, self._clients[row],
                                           self.main_ui.name_field.value(), self.main_ui.tel_field.value(),
                                           self.main_ui.dir_field.value())
 
             if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
                 # Updates the ui.
-                row = self.main_ui.client_table.currentRow()
-                client = self._clients[client_dni]
+                client = self._clients[row]
+                # ToDo update dni.
                 fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
@@ -158,17 +158,16 @@ class MainController:
                 Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
     def remove(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-        client = self._clients[client_dni]
+        client = self._clients[row]
 
         remove_fn = functools.partial(self.client_repo.remove, client)
-        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?",
-                                  self.security_handler, remove_fn):
-            self._clients.pop(client.dni.as_primitive())
+        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{client.name}'?", self.security_handler, remove_fn):
+            self._clients.pop(row)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             # Clears the form.
@@ -180,7 +179,8 @@ class MainController:
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
     def fill_subscription_table(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             self.main_ui.overdue_subs_checkbox.setChecked(not self.main_ui.overdue_subs_checkbox.isChecked())
             Dialog.info("Error", "Seleccione un cliente.")
             return
@@ -188,9 +188,7 @@ class MainController:
         self._subscriptions = {}  # Clears the dict.
         self.main_ui.subscription_table.setRowCount(0)  # Clears the table.
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-
-        for i, sub in enumerate(self._clients[client_dni].subscriptions()):
+        for i, sub in enumerate(self._clients[row].subscriptions()):
             self._subscriptions[sub.activity.name.as_primitive()] = sub
             if not discard_subscription(self.main_ui.overdue_subs_checkbox.isChecked(), sub.up_to_date(date.today())):
                 fill_cell(self.main_ui.subscription_table, i, 0, sub.activity.name, data_type=str)
@@ -199,7 +197,8 @@ class MainController:
                           data_type=bool)
 
     def charge_sub(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
@@ -207,14 +206,13 @@ class MainController:
             Dialog.info("Error", "Seleccione una actividad.")
             return
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
 
         register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo,
                                                 self._subscriptions[activity_name])
         # noinspection PyAttributeOutsideInit
         self._charge_ui = ChargeUI(
-            self.transaction_repo, self.security_handler, self._clients[client_dni],
+            self.transaction_repo, self.security_handler, self._clients[row],
             amount=self._subscriptions[activity_name].activity.price,
             description=String(f"Cobro de actividad {activity_name}."),
             post_charge_fn=register_sub_charge
@@ -230,14 +228,14 @@ class MainController:
                 self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
 
     def add_sub(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         # noinspection PyAttributeOutsideInit
         self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
-                                    (activity for activity in self.activities_fn()), self._clients[client_dni])
+                                    (activity for activity in self.activities_fn()), self._clients[row])
         self._add_sub_ui.exec_()
 
         subscription = self._add_sub_ui.controller.subscription
