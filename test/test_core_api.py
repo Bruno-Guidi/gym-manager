@@ -43,12 +43,14 @@ def test_subscribe():
     # Repositories setup.
     peewee.create_database(":memory:")
     activity_repo = peewee.SqliteActivityRepo()
-    client_repo = peewee.SqliteClientRepo(activity_repo, peewee.SqliteTransactionRepo())
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                                String("dummy_descr"), Number(""))
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    client_repo.add(client)
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
@@ -62,9 +64,10 @@ def test_subscribe():
 def test_subscribe_activityChargeOnce_raisesOperationalError():
     log_responsible.config(MockSecurityHandler())
 
-    client = Client(1, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                    String("dummy_descr"))
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
+                        charge_once=True, locked=True)
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
         api.subscribe(None, date(2022, 2, 2), client, activity)
@@ -75,11 +78,12 @@ def test_subscribe_activityChargeOnce_raisesOperationalError():
 def test_subscribe_invalidClients_raisesOperationalError():
     log_responsible.config(MockSecurityHandler())
 
-    client = Client(1, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                    String("dummy_descr"))
-    other = Client(2, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                   String("dummy_descr"))
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    other = Client(Number(2), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                   String("dummy_tel"), String("dummy_descr"), is_active=True)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
+                        charge_once=False, locked=True)
     # noinspection PyTypeChecker
     transaction = Transaction(1, type=None, when=None, amount=None, method=None, responsible=None, description=None,
                               client=client)
@@ -87,7 +91,7 @@ def test_subscribe_invalidClients_raisesOperationalError():
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
         api.subscribe(None, date(2022, 2, 2), other, activity, transaction)
-    assert str(op_error.value) == "The subscribed [client.id=2] is not the charged [client.id=1]."
+    assert str(op_error.value) == "The subscribed [client=2] is not the charged [client=1]."
 
     # Swaps client's positions.
     # noinspection PyTypeChecker
@@ -96,7 +100,7 @@ def test_subscribe_invalidClients_raisesOperationalError():
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
         api.subscribe(None, date(2022, 2, 2), client, activity, transaction)
-    assert str(op_error.value) == "The subscribed [client.id=1] is not the charged [client.id=2]."
+    assert str(op_error.value) == "The subscribed [client=1] is not the charged [client=2]."
 
 
 def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
@@ -104,8 +108,10 @@ def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
 
     lesser, greater = date(2022, 2, 1), date(2022, 2, 2)
 
-    client = Client(1, String("dummy_name"), greater, date(2022, 2, 1), String("dummy_tel"), String("dummy_descr"))
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
+    client = Client(Number(1), String("dummy_name"), greater, date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
+                        charge_once=False, locked=True)
     with pytest.raises(InvalidDate):
         # noinspection PyTypeChecker
         api.subscribe(None, lesser, client, activity)
@@ -122,10 +128,12 @@ def test_cancel():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                                String("dummy_descr"), Number(""))
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    client_repo.add(client)
 
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False)
+    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
+                        charge_once=False)
     activity_repo.add(activity)
 
     subscription = Subscription(date(2022, 2, 2), client, activity)
@@ -149,8 +157,9 @@ def test_charge_notChargeOnceActivity():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Data setup.
-    client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), String("dummy_tel"),
-                                String("dummy_descr"), Number(""))
+    client = Client(Number(1), String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1),
+                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    client_repo.add(client)
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
@@ -181,22 +190,23 @@ def test_ClientViewRefreshedAfterClientUpdate():
     activity_repo = peewee.SqliteActivityRepo()
     transaction_repo = peewee.SqliteTransactionRepo()
     client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Creates a Client.
-    client = client_repo.create(String("CliName"), date(2000, 2, 2), date(2022, 1, 1), String("Tel"), String("Dir"),
-                                Number(""))
-    first_id = client.id
+    client = Client(Number(12345), String("CliName"), date(2000, 2, 2), date(2022, 1, 1),
+                    String("Tel"), String("Dir"))
+    client_repo.add(client)
 
     # Then creates a Transaction related to the client. The transaction has a ClientView instead of a Client.
     transaction = transaction_repo.from_data(0, "type", date(2022, 2, 2), "100.00", "method", "resp", "descr",
-                                             ClientView(1, String("CliName"), "created_by", Number("")))
+                                             ClientView(Number(12345), String("CliName"), ""))
 
     # Updates the Client.
     client.name = String("OtherName")
     client_repo.update(client)
 
     # Assert that the ClientView in the Transaction was updated.
-    assert first_id == client.id and transaction.client.name == client.name
+    assert transaction.client.name == client.name
 
 
 def test_ClientViewRefreshedAfterClientCreation():
@@ -210,23 +220,23 @@ def test_ClientViewRefreshedAfterClientCreation():
     subscription_repo = peewee.SqliteSubscriptionRepo()
 
     # Creates a Client.
-    client = client_repo.create(String("CliName"), date(2000, 2, 2), date(2022, 1, 1), String("Tel"), String("Dir"),
-                                Number(1))
-    first_id = client.id
+    client = Client(Number(12345), String("CliName"), date(2000, 2, 2), date(2022, 1, 1),
+                    String("Tel"), String("Dir"))
+    client_repo.add(client)
 
     # Removes a Client. It is marked as inactive.
     client_repo.remove(client)
 
     # Then creates a Transaction related to the client. The transaction has a ClientView of an inactive Client.
     transaction = transaction_repo.from_data(0, "type", date(2022, 2, 2), "100.00", "method", "resp", "descr",
-                                             ClientView(1, String("CliName"), "", Number(1)))
+                                             ClientView(Number(12345), String("CliName"), ""))
 
     # Creates the Client again. It has the same dni, but a different name.
-    client = client_repo.create(String("OtherName"), date(2000, 2, 2), date(2022, 1, 1), String("Tel"), String("Dir"),
-                                Number(1))
+    client.name = String("OtherName")
+    client_repo.add(client)
 
     # Assert that the ClientView in the Transaction was updated.
-    assert first_id == client.id and transaction.client.name == client.name
+    assert transaction.client.name == client.name
 
 
 def test_closeBalance():

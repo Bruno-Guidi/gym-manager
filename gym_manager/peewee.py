@@ -32,8 +32,7 @@ def client_name_like(client, filter_value) -> bool:
 
 
 class ClientTable(Model):
-    id = IntegerField(primary_key=True)
-    dni = IntegerField(unique=True, null=True)
+    dni = IntegerField(primary_key=True)
     cli_name = CharField()
     admission = DateField()
     birth_day = DateField()
@@ -55,11 +54,32 @@ class SqliteClientRepo(ClientRepo):
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
 
-        self.cache = LRUCache(int, value_type=Client, max_len=cache_len)
+        self.cache = LRUCache(Number, value_type=Client, max_len=cache_len)
 
         # Links this repo with the ClientView, so they can be refreshed after a client change.
         ClientView.repository = self
-        self._views: dict[int, ClientView] = {}
+        self._views: dict[Number, ClientView] = {}
+
+    def _from_record(
+            self, dni: Number, raw_name: str, admission: date, birth_day: date, raw_telephone: str, raw_direction: str,
+            is_active: bool, subscriptions
+    ) -> Client:
+        # There is no need to validate max_len of String because they were validated when the client was created.
+        client = Client(dni, String(raw_name), admission, birth_day, String(raw_telephone, optional=True),
+                        String(raw_direction, optional=True), is_active)
+
+        for sub_record in subscriptions:
+            # The activity name was validated when it was created.
+            activity = self.activity_repo.get(String(sub_record.activity_id))
+            trans_record, transaction = sub_record.transaction, None
+            if trans_record is not None:
+                transaction = self.transaction_repo.from_data(
+                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount, trans_record.method,
+                    trans_record.responsible, trans_record.description, client, trans_record.balance_id
+                )
+            client.add(Subscription(sub_record.when, client, activity, transaction))
+
+        return client
 
     def is_active(self, dni: Number) -> bool:
         """Checks if there is an active client with the given *dni*.
@@ -67,79 +87,51 @@ class SqliteClientRepo(ClientRepo):
         if not isinstance(dni, Number):
             raise TypeError(f"The argument 'dni' should be a 'Number', not a '{type(dni)}'")
 
-        if dni.as_primitive() is None:
-            # If the client doesn't have a dni, then there won't be any active or inactive client that matches with it.
-            return False
-
         record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
         return record is not None and record.is_active
 
-    def create(
-            self, name: String, admission: date, birthday: date, telephone: String, direction: String,
-            dni: Number
-    ) -> Client:
-        if dni.as_primitive() is not None and self.is_active(dni):
-            raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
+    def add(self, client: Client):
+        if self.is_active(client.dni):
+            raise PersistenceError(f"There is an existing client with [client.dni={client.dni}].")
 
-        record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) if dni is not None else None
-        if record is None:
-            # record will be None if *dni* is None or if there is no client in the table whose dni matches it.
-            logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
-            record = ClientTable.create(dni=dni.as_primitive(),
-                                        cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
-                                        telephone=telephone.as_primitive(), direction=direction.as_primitive(),
-                                        is_active=True)
+        if ClientTable.get_or_none(ClientTable.dni == client.dni.as_primitive()) is None:
+            # The client doesn't exist in the table.
+            logger.getChild(type(self).__name__).info(f"Creating client [client.dni={client.dni}].")
         else:
-            # There is an inactive client whose dni matches with the received one.
-            logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={dni}].")
-            ClientTable.replace(id=record.id, dni=dni.as_primitive(),
-                                cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
-                                telephone=telephone.as_primitive(), direction=direction.as_primitive(),
-                                is_active=True).execute()
+            # The client exists in the table. Because previous check of self.is_active(args) failed, we can assume that
+            # the client is inactive.
+            logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={client.dni}].")
 
-        client = Client(record.id, name, admission, birthday, telephone, direction, dni)
-        self.cache[client.id] = client
-
-        if client.dni.as_primitive() is not None:
-            for view in self._views.values():
-                # If there is a view whose dni matches with the dni of the new (or activated client), update it.
-                if view.dni is not None and client.dni == view.dni:
-                    view.dni = client.dni
-                    view.name = client.name
-                    break
-
-        return client
+        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
+                            admission=client.admission, birth_day=client.birth_day,
+                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
+                            is_active=client.is_active).execute()
+        self.cache[client.dni] = client
+        if client.dni in self._views:
+            self._views[client.dni].name = client.name
 
     @log_responsible(action_tag="remove_client", to_str=lambda client: f"Eliminar cliente {client.name}")
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
-        record = ClientTable.get_by_id(client.id)
-        record.is_active = False
-        record.save()
-        self.cache.pop(client.id)
-        # The view isn't removed from the view cache, because it still may be used by a Transaction or a Booking.
-        SubscriptionTable.delete().where(SubscriptionTable.client_id == client.id).execute()
+        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
+                            admission=client.admission, birth_day=client.birth_day,
+                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
+                            is_active=False).execute()
+        self.cache.pop(client.dni)
+        self._views.pop(client.dni, None)
+        SubscriptionTable.delete().where(SubscriptionTable.client_id == client.dni.as_primitive()).execute()
 
         return client
 
     def update(self, client: Client):
-        record = ClientTable.get_by_id(client.id)
+        ClientTable.replace(dni=client.dni.as_primitive(), cli_name=client.name.as_primitive(),
+                            admission=client.admission, birth_day=client.birth_day,
+                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
+                            is_active=True).execute()
 
-        if client.dni.as_primitive() is not None and client.id != record.id and self.is_active(client.dni):
-            raise PersistenceError(f"There is an existing client with [client.dni={client.dni}].")
-
-        # IMPORTANT. The replace method deletes records that reference the one being updated, even if the pk isn't
-        # changed.
-        record.dni = client.dni.as_primitive()
-        record.cli_name = client.name.as_primitive()
-        record.telephone = client.telephone.as_primitive()
-        record.direction = client.direction.as_primitive()
-        record.save()
-
-        if client.id in self._views:  # Refreshes the view of the updated client, if there is one.
-            self._views[client.id].dni = client.dni
-            self._views[client.id].name = client.name
+        if client.dni in self._views:  # Refreshes the view of the updated client, if there is one.
+            self._views[client.dni].name = client.name
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
@@ -162,23 +154,15 @@ class SqliteClientRepo(ClientRepo):
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
         for record in prefetch(clients_q, SubscriptionTable.select(), TransactionTable.select()):
-            if record.id not in self.cache:
-                logger.getChild(type(self).__name__).info(f"Creating Client [client.id={record.id}] from queried data.")
-                client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
-                                String(record.telephone), String(record.direction),
-                                Number(record.dni if record.dni is not None else ""))
-                self.cache[record.id] = client
-                for sub_record in record.subscriptions:
-                    activity = self.activity_repo.get(String(sub_record.activity_id))
-                    trans_record, transaction = sub_record.transaction, None
-                    if trans_record is not None:
-                        transaction = self.transaction_repo.from_data(
-                            trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
-                            trans_record.method,
-                            trans_record.responsible, trans_record.description, client, trans_record.balance_id
-                        )
-                    client.add(Subscription(sub_record.when, client, activity, transaction))
-            yield self.cache[record.id]
+            client: Client
+            dni = Number(record.dni)
+            if dni not in self.cache:
+                logger.getChild(type(self).__name__).info(f"Creating Client [client.dni={dni}] from queried data.")
+                self.cache[dni] = self._from_record(
+                    dni, record.cli_name, record.admission, record.birth_day, record.telephone, record.direction,
+                    record.is_active, record.subscriptions
+                )
+            yield self.cache[dni]
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of clients in the repository.
@@ -190,7 +174,7 @@ class SqliteClientRepo(ClientRepo):
         return clients_q.count()
 
     def register_view(self, view: ClientView):
-        self._views[view.id] = view
+        self._views[view.dni] = view
 
 
 class ActivityTable(Model):
@@ -209,7 +193,7 @@ class SqliteActivityRepo(ActivityRepo):
     """
 
     def __init__(self, cache_len: int = 50) -> None:
-        DATABASE_PROXY.create_tables([ActivityTable, SubscriptionTable])
+        DATABASE_PROXY.create_tables([ActivityTable])
 
         self.cache = LRUCache(String, Activity, max_len=cache_len)
 
@@ -327,7 +311,7 @@ class SqliteBalanceRepo(BalanceRepo):
         DATABASE_PROXY.create_tables([BalanceTable])
 
         self.transaction_repo = transaction_repo
-        self.client_view_cache = LRUCache(int, ClientView, max_len=64)
+        self.client_cache = LRUCache(Number, ClientView, max_len=64)
 
     def balance_done(self, when: date) -> bool:
         return BalanceTable.get_or_none(BalanceTable.when == when) is not None
@@ -363,14 +347,13 @@ class SqliteBalanceRepo(BalanceRepo):
         for record in prefetch(balance_q.order_by(BalanceTable.when.desc()), TransactionTable.select(), client_q):
             transactions = []
             for transaction_record in record.transactions:
-                client_record, client = transaction_record.client, None
-                if client_record is not None:
-                    if client_record.id in self.client_view_cache:
-                        client = self.client_view_cache[client_record.id]
-                    else:
-                        client = ClientView(client_record.id, String(client_record.cli_name),
-                                            created_by="SqliteBalanceRepo.all",
-                                            dni=Number(client_record.dni if client_record.dni is not None else ""))
+                client: ClientView | None = None
+                if transaction_record.client is not None:
+                    dni = Number(transaction_record.client.dni)
+                    if dni not in self.client_cache:
+                        self.client_cache[dni] = ClientView(dni, String(transaction_record.client.cli_name),
+                                                            created_by="SqliteBalanceRepo.all")
+                    client = self.client_cache[dni]
 
                 transactions.append(self.transaction_repo.from_data(
                     transaction_record.id, transaction_record.type, transaction_record.when,
@@ -405,11 +388,8 @@ class SqliteTransactionRepo(TransactionRepo):
         DATABASE_PROXY.create_tables([TransactionTable])
 
         self.cache = LRUCache(int, Transaction, max_len=cache_len)
-        # In the worst case the cache can store as many clients views as transactions, supposing each transaction has
-        # a different client.
-        self.client_view_cache = LRUCache(int, ClientView, max_len=cache_len)
+        self.client_cache = LRUCache(Number, ClientView, max_len=64)
 
-    # ToDo make arguments mandatory.
     def from_data(
             self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
             method: str | None = None, raw_responsible: str | None = None, description: str | None = None,
@@ -440,8 +420,8 @@ class SqliteTransactionRepo(TransactionRepo):
         """Register a new transaction with the given information. This method must return the created transaction.
         """
         # There is no need to check the cache because the Transaction is being created, it didn't exist before.
-        record = TransactionTable.create(type=type, client=client.id if client is not None else None, when=when,
-                                         amount=amount.as_primitive(), method=method,
+        record = TransactionTable.create(type=type, client=client.dni.as_primitive() if client is not None else None,
+                                         when=when, amount=amount.as_primitive(), method=method,
                                          responsible=responsible.as_primitive(), description=description)
 
         self.cache[record.id] = Transaction(record.id, type, when, amount, method, responsible, description, client)
@@ -469,14 +449,13 @@ class SqliteTransactionRepo(TransactionRepo):
             transactions_q = transactions_q.paginate(page, page_len)
 
         for record in transactions_q:
-            client_record, client = record.client, None
-            if client_record is not None:
-                if client_record.id in self.client_view_cache:
-                    client = self.client_view_cache[client_record.id]
+            client = None
+            if record.client is not None:
+                dni = Number(record.client.dni)
+                if dni in self.client_cache:
+                    client = self.client_cache[dni]
                 else:
-                    client = ClientView(client_record.id, String(client_record.cli_name),
-                                        created_by="SqliteTransactionRepo.all",
-                                        dni=Number(client_record.dni if client_record.dni is not None else ""))
+                    client = ClientView(dni, String(record.client.cli_name), created_by="SqliteTransactionRepo.all")
             yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
                                  record.description, client, record.balance)
 
@@ -507,19 +486,20 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
 
     def add(self, subscription: Subscription):
         SubscriptionTable.create(
-            when=subscription.when, client_id=subscription.client.id,
+            when=subscription.when, client_id=subscription.client.dni.as_primitive(),
             activity_id=subscription.activity.name.as_primitive(),
             transaction_id=None if subscription.transaction is None else subscription.transaction.id
         )
 
     def remove(self, subscription: Subscription):
-        SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.id)
+        SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.dni.as_primitive())
                                          & (SubscriptionTable.activity_id == subscription.activity.name)).execute()
 
     def update(self, subscription: Subscription):
         """Registers in the repository that the *client* was charged for the *activity*.
         """
-        sub_record = SubscriptionTable.get_by_id((subscription.client.id, subscription.activity.name.as_primitive()))
+        sub_record = SubscriptionTable.get_by_id((subscription.client.dni.as_primitive(),
+                                                  subscription.activity.name.as_primitive()))
         if subscription.transaction is not None:
             sub_record.transaction_id = subscription.transaction.id
         sub_record.save()

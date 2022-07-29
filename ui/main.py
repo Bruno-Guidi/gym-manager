@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
 from gym_manager.core import api
-from gym_manager.core.base import String, Activity, Currency, Number
+from gym_manager.core.base import Client, String, Number, Activity, Currency
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler
 from ui import utils
@@ -65,8 +65,8 @@ class Controller:
             activity = Activity(String("TestAct"), Currency("2000"), String("descr"))
             self.activity_repo.add(activity)
             for i in range(0, 50):
-                client = self.client_repo.create(String(str(i)), today, today, String(str(i)), String(str(i)),
-                                                 Number(i))
+                client = Client(Number(i), String(str(i)), today, today, String(str(i)), String(str(i)))
+                self.client_repo.add(client)
                 sub = api.subscribe(self.subscription_repo, today, client, activity)
                 create_t = functools.partial(self.transaction_repo.create, "Cobro", today, activity.price, "Efectivo",
                                              String("Admin"), "descr", client)

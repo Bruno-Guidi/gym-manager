@@ -6,7 +6,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Any, Iterable, Callable, TypeAlias, ClassVar
+from typing import Any, Iterable, Callable, TypeAlias
 
 logger = logging.getLogger(__name__)
 decimal.getcontext().rounding = decimal.ROUND_HALF_UP
@@ -86,9 +86,8 @@ class Validatable(abc.ABC):
 
 
 class Number(Validatable):
-    """int wrapper.
+    """int wrapper that supports min and max optional values.
     """
-    OPTIONAL_INT: ClassVar[int] = -1
 
     def __eq__(self, other: int | Number) -> bool:
         if isinstance(other, type(self._value)):
@@ -109,7 +108,6 @@ class Number(Validatable):
         Keyword Args:
             min_value: minimum valid value. If None, min_value will be -inf.
             max_value: maximum valid value. If None, max_value will be inf.
-            optional: the object will store a default int that represents an "optional number". If not given, its True.
 
         Raises:
             ValidationError if the validation failed.
@@ -118,20 +116,10 @@ class Number(Validatable):
             raise ValidationError(
                 f"The type of the argument 'value' must be an 'str' or 'int'. [type(value)={type(value)}]"
             )
-
-        optional = kwargs['optional'] if 'optional' in kwargs else True
-        if optional and isinstance(value, str) and (len(value) == 0 or value.isspace()):
-            return Number.OPTIONAL_INT
-
         try:
             int_value = int(value)
         except ValueError:
             raise ValidationError(f"The argument 'value' is not a valid number. [value={value}]")
-
-        if int_value == Number.OPTIONAL_INT:
-            raise ValidationError(f"The argument 'value' is not a vali because it is a reserved value. [value="
-                                  f"{int_value}]")
-
         min_value = kwargs['min_value'] if 'min_value' in kwargs else float('-inf')
         max_value = kwargs['max_value'] if 'max_value' in kwargs else float('inf')
         if int_value < min_value or int_value >= max_value:
@@ -139,10 +127,6 @@ class Number(Validatable):
                 f"The argument 'value' must be in the range [{min_value}, {max_value}). [value={value}]"
             )
         return int_value
-
-    def as_primitive(self) -> Any | None:
-        int_value = super().as_primitive()
-        return int_value if int_value != Number.OPTIONAL_INT else None
 
 
 class String(Validatable):
@@ -167,7 +151,7 @@ class String(Validatable):
         """Validates the given *value*. If the validation succeeds, return the given *value*.
 
         Keyword Args:
-            optional: True if the String may be empty, False otherwise. If not given, it is True.
+            optional: True if the String may be empty, False otherwise. If not given, it is False.
             max_len: maximum amount of characters.
             invalid_values: values that can't be used.
 
@@ -175,7 +159,7 @@ class String(Validatable):
             KeyError if a kwarg is missing.
             ValidationError if the validation failed.
         """
-        optional = True if 'optional' not in kwargs else kwargs['optional']
+        optional = False if 'optional' not in kwargs else kwargs['optional']
         max_len = 100 if 'max_len' not in kwargs else kwargs['max_len']
 
         if not optional and len(value) == 0:
@@ -289,13 +273,12 @@ class Client:
     """Stores information about a client.
     """
 
-    id: int
+    dni: Number
     name: String = field(compare=False)
     admission: date = field(compare=False)
     birth_day: date = field(compare=False)
     telephone: String = field(compare=False)
     direction: String = field(compare=False)
-    dni: Number | None = field(compare=False, default=None)
     is_active: bool = field(compare=False, default=True)
     _subscriptions: dict[String, Subscription] = field(default_factory=dict, compare=False, init=False)
 
