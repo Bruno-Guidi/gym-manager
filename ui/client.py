@@ -145,9 +145,12 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
+        # noinspection PyTypeChecker
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel_field.valid_value(),
                     self.main_ui.dir_field.valid_value(), self.main_ui.dni_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
+        elif self.client_repo.is_active(self.main_ui.dni_field.value()):
+            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.main_ui.dni_field.value()}'.")
         else:
             update_fn = functools.partial(update_client, self.client_repo, self._clients[row],
                                           self.main_ui.name_field.value(), self.main_ui.tel_field.value(),
