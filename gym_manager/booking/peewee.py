@@ -127,6 +127,7 @@ class SqliteBookingRepo(BookingRepo):
 
     def charge(self, booking: Booking, transaction: Transaction):
         if isinstance(booking, FixedBooking):
+            # There is no problem in using replace method here, because no table has a fk that references this table.
             FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
                                       client_id=booking.client.id, end=booking.end,
                                       transaction_id=booking.transaction.id, first_when=booking.first_when,
@@ -138,17 +139,19 @@ class SqliteBookingRepo(BookingRepo):
             raise PersistenceError(f"Argument 'booking' of [type={type(booking)}] cannot be persisted in "
                                    f"SqliteBookingRepo.")
 
+        # There is no problem in using replace method here, because no table has a fk that references this table.
+        # Replace method is used because there is an existing booking with the given pk, but with no transaction.
         BookingTable.replace(when=datetime.combine(booking.when, booking.start), court=booking.court,
                              client_id=booking.client.id, end=booking.end, is_fixed=booking.is_fixed,
                              transaction_id=transaction.id).execute()
 
     def cancel(self, booking: Booking, definitely_cancelled: bool = True):
-        if isinstance(booking, FixedBooking):
-            if definitely_cancelled:  # The FixedBooking is temporally cancelled.
+        if isinstance(booking, FixedBooking):  # The FixedBooking is definitely cancelled.
+            if definitely_cancelled:
                 pk = FixedBookingKey(booking.day_of_week, booking.court, booking.start)
                 FixedBookingTable.delete_by_id(dataclasses.astuple(pk))
                 self.fixed_booking_cache.pop(pk)
-            else:  # The FixedBooking is definitely cancelled.
+            else:  # The FixedBooking is temporally cancelled.
                 transaction_id = None if booking.transaction is None else booking.transaction.id
                 FixedBookingTable.replace(day_of_week=booking.day_of_week, court=booking.court, start=booking.start,
                                           client_id=booking.client.id, end=booking.end, transaction_id=transaction_id,
