@@ -117,8 +117,9 @@ class MainController:
         if row != -1:
             # Fills the form.
             self.main_ui.name_field.setText(str(self._clients[row].name))
-            dni = "" if self._clients[row].dni.as_primitive() is None else self._clients[row].dni.as_primitive()
-            self.main_ui.dni_field.setText(str(dni))
+            dni = "" if self._clients[row].dni.as_primitive() is None else str(self._clients[row].dni.as_primitive())
+            self.main_ui.dni_field.setText(dni)
+            self.main_ui.dni_field.setEnabled(len(dni) == 0)
             self.main_ui.tel_field.setText(str(self._clients[row].telephone))
             self.main_ui.dir_field.setText(str(self._clients[row].direction))
 
@@ -160,10 +161,12 @@ class MainController:
                 # Updates the ui.
                 client = self._clients[row]
                 fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
-                dni = "" if client.dni.as_primitive() is None else client.dni.as_primitive()
+                dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
                 fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
+
+                self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
 
                 Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
@@ -185,6 +188,9 @@ class MainController:
             self.main_ui.dni_field.clear()
             self.main_ui.tel_field.clear()
             self.main_ui.dir_field.clear()
+
+            # Clears the subscriptions table.
+            self.main_ui.subscription_table.setRowCount(0)
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
@@ -364,7 +370,7 @@ class ClientMainUI(QMainWindow):
         # DNI.
         self.dni_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
-        config_lbl(self.dni_lbl, "DNI*")
+        config_lbl(self.dni_lbl, "DNI")
 
         self.dni_field = Field(Number, self.widget, optional=True, min_value=utils.CLIENT_MIN_DNI,
                                max_value=utils.CLIENT_MAX_DNI)
@@ -484,7 +490,7 @@ class CreateUI(QDialog):
         # DNI.
         self.dni_lbl = QLabel(self)
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
-        config_lbl(self.dni_lbl, "DNI*")
+        config_lbl(self.dni_lbl, "DNI")
 
         self.dni_field = Field(Number, self, optional=True, min_value=utils.CLIENT_MIN_DNI,
                                max_value=utils.CLIENT_MAX_DNI)
