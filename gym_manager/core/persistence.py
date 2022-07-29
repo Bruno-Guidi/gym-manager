@@ -75,7 +75,8 @@ class ClientView(Client):
 
     repository: ClassVar[ClientRepo] = None
 
-    def __init__(self, dni: Number, name: String, created_by: str):
+    def __init__(self, id_: int, name: String, created_by: str, dni: Number):
+        self.id = id_
         self.dni = dni
         self.name = name
         self.created_by = created_by
@@ -89,7 +90,8 @@ class ClientView(Client):
                                   f"implementation of '{attr_name}'.")
 
     def __repr__(self) -> str:
-        return f"ClientView(dni={self.dni}, name={self.name}, created_by={self.created_by})"
+        return f"ClientView(id={self.id}, dni={self.dni.as_primitive()}, name={self.name}, created_by=" \
+               f"{self.created_by})"
 
     def __str__(self) -> str:
         return repr(self)
@@ -106,7 +108,10 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add(self, client: Client):
+    def create(
+            self, name: String, admission: date, birthday: date, telephone: String, direction: String,
+            dni: Number
+    ) -> Client:
         """Adds the *client* to the repository.
         """
         raise NotImplementedError
