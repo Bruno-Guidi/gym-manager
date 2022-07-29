@@ -63,7 +63,8 @@ class log_responsible:
 
         Args:
             action_tag: tag used to identify the function being performed.
-            to_str: display name of the function being performed.
+            to_str: function that generates a str that describes the executed action. This function must check whether
+                the received object type is correct or not.
         """
         self.action_tag = action_tag
         self.to_str = to_str
