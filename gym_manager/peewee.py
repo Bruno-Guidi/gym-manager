@@ -268,11 +268,10 @@ class SqliteActivityRepo(ActivityRepo):
         return activity
 
     def update(self, activity: Activity):
-        ActivityTable.replace(act_name=activity.name.as_primitive(),
-                              price=str(activity.price),
-                              charge_once=activity.charge_once,
-                              description=activity.description.as_primitive(),
-                              locked=activity.locked).execute()
+        record = ActivityTable.get_by_id(activity.name.as_primitive())
+        record.price = activity.price.as_primitive()
+        record.description = activity.description.as_primitive()
+        record.save()
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
