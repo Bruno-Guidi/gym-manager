@@ -69,7 +69,7 @@ class MockTransactionRepo(TransactionRepo):
 def test_ClientRepo_remove():
     create_database(":memory:")
     log_responsible.config(MockSecurityHandler())
-    client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
+    client_repo = SqliteClientRepo(SqliteActivityRepo(), SqliteTransactionRepo())
 
     client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
                                 Number(""))
