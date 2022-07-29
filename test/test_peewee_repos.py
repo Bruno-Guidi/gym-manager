@@ -3,10 +3,12 @@ from typing import Generator
 
 import pytest
 
-from gym_manager.core.base import Activity, String, Transaction, Currency, Client, Number
+from gym_manager.core.base import Activity, String, Transaction, Currency, Client, Number, Subscription
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo, PersistenceError
 from gym_manager.core.security import log_responsible
-from gym_manager.peewee import SqliteClientRepo, create_database, ClientTable, SqliteActivityRepo, SqliteTransactionRepo
+from gym_manager.peewee import (
+    SqliteClientRepo, create_database, ClientTable, SqliteActivityRepo,
+    SqliteTransactionRepo, SqliteSubscriptionRepo)
 from test.test_core_api import MockSecurityHandler
 
 
@@ -74,6 +76,26 @@ def test_ClientRepo_remove():
 
     client_repo.remove(client)
     assert not ClientTable.get_by_id(1).is_active
+
+
+def test_ClientRepo_remove_withSubs():
+    create_database(":memory:")
+    log_responsible.config(MockSecurityHandler())
+    activity_repo = SqliteActivityRepo()
+    client_repo = SqliteClientRepo(activity_repo, SqliteTransactionRepo())
+    subscription_repo = SqliteSubscriptionRepo()
+
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(""))
+
+    activity = Activity(String("Act"), Currency(100), String("Descr"))
+    activity_repo.add(activity)
+
+    subscription_repo.add(Subscription(date(2022, 5, 5), client, activity))
+    assert activity_repo.n_subscribers(activity) == 1
+
+    client_repo.remove(client)
+    assert not ClientTable.get_by_id(1).is_active and activity_repo.n_subscribers(activity) == 0
 
 
 def test_ClientRepo_create_withNonExistingClient_withNoDni():

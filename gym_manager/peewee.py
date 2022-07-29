@@ -108,14 +108,12 @@ class SqliteClientRepo(ClientRepo):
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
-        ClientTable.replace(id=client.id, dni=client.dni.as_primitive(),
-                            cli_name=client.name.as_primitive(), admission=client.admission, birth_day=client.birth_day,
-                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
-                            is_active=False).execute()
+        record = ClientTable.get_by_id(client.id)
+        record.is_active = False
+        record.save()
         self.cache.pop(client.id)
         self._views.pop(client.id, None)
-        # ToDo invoke corresponding method of SubscriptionRepo.
-        # SubscriptionTable.delete().where(SubscriptionTable.client_id == client.id).execute()
+        SubscriptionTable.delete().where(SubscriptionTable.client_id == client.id).execute()
 
         return client
 
