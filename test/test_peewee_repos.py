@@ -8,7 +8,7 @@ from gym_manager.core.persistence import ActivityRepo, FilterValuePair, Transact
 from gym_manager.core.security import log_responsible
 from gym_manager.peewee import (
     SqliteClientRepo, create_database, ClientTable, SqliteActivityRepo,
-    SqliteTransactionRepo, SqliteSubscriptionRepo)
+    SqliteTransactionRepo, SqliteSubscriptionRepo, TransactionTable, SqliteBalanceRepo)
 from test.test_core_api import MockSecurityHandler
 
 
@@ -124,21 +124,29 @@ def test_ClientRepo_create_withNonExistingClient_withDni():
 def test_ClientRepo_create_withInactiveClient_withDni():
     create_database(":memory:")
     log_responsible.config(MockSecurityHandler())
-    client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
+    transaction_repo = SqliteTransactionRepo()
+    SqliteBalanceRepo(transaction_repo)  # Required to create the BalanceTable.
+    SqliteSubscriptionRepo()  # Required to create the SubscriptionTable.
+    client_repo = SqliteClientRepo(SqliteActivityRepo(), transaction_repo)
 
-    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
                                 Number(1))
+    # Creates some transactions, to see if they are preserved after removing and creating again the client.
+    transaction_repo.create("type", date(2022, 2, 2), Currency(1), "method", String("Resp"), "descr", client)
+    transaction_repo.create("type", date(2022, 2, 2), Currency(1), "method", String("Resp"), "descr", client)
 
     # Removes the client so it is marked as inactive.
-    client_repo.remove(result)
-    assert not client_repo.is_active(Number(1)) and ClientTable.get_or_none(ClientTable.dni == 1) is not None
+    client_repo.remove(client)
+    assert (not client_repo.is_active(Number(1)) and ClientTable.get_or_none(ClientTable.dni == 1) is not None
+            and TransactionTable.select().count() == 2)  # Test that the transactions are preserved in the table.
 
     # Creates again the client. It should be activated.
-    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
                                 Number(1))
     expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"), Number(1))
 
-    assert expected == result and expected.dni == result.dni and ClientTable.get_by_id(1).is_active
+    assert (expected == client and expected.dni == client.dni and ClientTable.get_by_id(1).is_active
+            and TransactionTable.select().where(TransactionTable.client_id == client.id).count() == 2)
 
 
 def test_ClientRepo_update():
