@@ -248,3 +248,32 @@ def test_ClientView_Transaction_updatedAfterReactivatingClient():
                                 Number(1))
 
     assert transaction.client.name == client.name
+
+
+def test_ActivityRepo_update_subsAreNotRemoved():
+    create_database(":memory:")
+    log_responsible.config(MockSecurityHandler())
+    # Because client querying also queries subscriptions and transactions associated to them, mock repositories can't be
+    # used.
+    activity_repo = SqliteActivityRepo()
+    client_repo = SqliteClientRepo(activity_repo, SqliteTransactionRepo())
+    subscription_repo = SqliteSubscriptionRepo()
+
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(1))
+
+    activity = Activity(String("Act"), Currency(1), String("Desc"))
+    activity_repo.add(activity)
+
+    subscription_repo.add(Subscription(date(2022, 2, 2), client, activity))
+
+    activity.description = String("NewDesc")
+    activity_repo.update(activity)
+
+    activity = activity_repo.get(String("Act"))
+
+    assert activity.description == String("NewDesc") and activity_repo.n_subscribers(activity) == 1
+
+
+
+
