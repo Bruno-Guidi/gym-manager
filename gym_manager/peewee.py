@@ -120,12 +120,17 @@ class SqliteClientRepo(ClientRepo):
         return client
 
     def update(self, client: Client):
-        ClientTable.replace(id=client.id, dni=client.dni.as_primitive(),
-                            cli_name=client.name.as_primitive(), admission=client.admission, birth_day=client.birth_day,
-                            telephone=client.telephone.as_primitive(), direction=client.direction.as_primitive(),
-                            is_active=True).execute()
+        # IMPORTANT. The replace method deletes records that reference the one being updated, even if the pk isn't
+        # changed.
+        record = ClientTable.get_by_id(client.id)
+        record.dni = client.dni.as_primitive()
+        record.cli_name = client.name.as_primitive()
+        record.telephone = client.telephone.as_primitive()
+        record.direction = client.direction.as_primitive()
+        record.save()
 
         if client.id in self._views:  # Refreshes the view of the updated client, if there is one.
+            self._views[client.id].dni = client.dni
             self._views[client.id].name = client.name
 
     def all(

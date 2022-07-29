@@ -137,6 +137,32 @@ def test_ClientRepo_update():
             and record.direction == client.direction.as_primitive())
 
 
+def test_ClientRepo_update_withSubs():
+    create_database(":memory:")
+    activity_repo = SqliteActivityRepo()
+    transaction_repo = SqliteTransactionRepo()
+    client_repo = SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = SqliteSubscriptionRepo()
+
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(1))
+    client.name = String("OtherName")
+    client.telephone = String("OtherTel")
+    client.direction = String("OtherDir")
+
+    activity = Activity(String("Act"), Currency(1), String("Descr"))
+    activity_repo.add(activity)
+    subscription_repo.add(Subscription(date(2022, 2, 2), client, activity))
+    assert activity_repo.n_subscribers(activity) == 1  # Asserts that the subscription was registered.
+
+    client_repo.update(client)
+
+    record = ClientTable.get_by_id(1)
+    assert (record.cli_name == client.name.as_primitive() and record.telephone == client.telephone.as_primitive()
+            and record.direction == client.direction.as_primitive())  # Asserts that the client was updated.
+    assert activity_repo.n_subscribers(activity) == 1  # Asserts that the subscription wasn't deleted.
+
+
 def test_ClientRepo_all():
     create_database(":memory:")
     log_responsible.config(MockSecurityHandler())
