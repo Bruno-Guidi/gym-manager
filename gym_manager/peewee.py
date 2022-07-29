@@ -99,8 +99,14 @@ class SqliteClientRepo(ClientRepo):
 
         client = Client(record.id, name, admission, birthday, telephone, direction, dni)
         self.cache[client.id] = client
-        if client.id in self._views:
-            self._views[client.id].name = client.name
+
+        if client.dni.as_primitive() is not None:
+            for view in self._views.values():
+                # If there is a view whose dni matches with the dni of the new (or activated client), update it.
+                if view.dni is not None and client.dni == view.dni:
+                    view.dni = client.dni
+                    view.name = client.name
+                    break
 
         return client
 
@@ -112,7 +118,7 @@ class SqliteClientRepo(ClientRepo):
         record.is_active = False
         record.save()
         self.cache.pop(client.id)
-        self._views.pop(client.id, None)
+        # The view isn't removed from the view cache, because it still may be used by a Transaction or a Booking.
         SubscriptionTable.delete().where(SubscriptionTable.client_id == client.id).execute()
 
         return client
