@@ -4,7 +4,7 @@ from typing import Generator
 import pytest
 
 from gym_manager.core.base import Activity, String, Transaction, Currency, Client, Number, Subscription
-from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo, PersistenceError
+from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo, PersistenceError, ClientView
 from gym_manager.core.security import log_responsible
 from gym_manager.peewee import (
     SqliteClientRepo, create_database, ClientTable, SqliteActivityRepo,
@@ -228,3 +228,23 @@ def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
         repo.remove(activity)
     assert str(p_err.value) == "The [activity.name=dummy_name] cannot be removed because its locked."
 
+
+def test_ClientView_Transaction_updatedAfterReactivatingClient():
+    create_database(":memory:")
+    log_responsible.config(MockSecurityHandler())
+    # Because client querying also queries subscriptions and transactions associated to them, mock repositories can't be
+    # used.
+    transaction_repo = SqliteTransactionRepo()
+    SqliteBalanceRepo(transaction_repo)
+    client_repo = SqliteClientRepo(SqliteActivityRepo(), transaction_repo)
+
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(1))
+    transaction = transaction_repo.create("type", date(2022, 2, 2), Currency(1), "method", String("Resp"),
+                                          "desc", ClientView(client.id, client.name, "created_by", client.dni))
+
+    client_repo.remove(client)
+    client = client_repo.create(String("OtherName"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
+                                Number(1))
+
+    assert transaction.client.name == client.name
