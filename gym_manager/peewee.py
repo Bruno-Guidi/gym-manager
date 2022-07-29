@@ -124,6 +124,9 @@ class SqliteClientRepo(ClientRepo):
         return client
 
     def update(self, client: Client):
+        if client.dni.as_primitive() is not None and self.is_active(client.dni):
+            raise PersistenceError(f"There is an existing client with [client.dni={client.dni}].")
+
         # IMPORTANT. The replace method deletes records that reference the one being updated, even if the pk isn't
         # changed.
         record = ClientTable.get_by_id(client.id)
