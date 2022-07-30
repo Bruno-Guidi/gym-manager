@@ -151,6 +151,12 @@ class ClientRepo(abc.ABC):
     def register_view(self, view: ClientView):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def add_all(self, raw_clients: Iterable[tuple]):
+        """Adds the clients in the iterable directly into the repository, without creating Client objects.
+        """
+        raise NotImplementedError
+
 
 class ActivityRepo(abc.ABC):
     """Activities repository interface.

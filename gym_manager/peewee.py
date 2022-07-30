@@ -192,6 +192,15 @@ class SqliteClientRepo(ClientRepo):
     def register_view(self, view: ClientView):
         self._views[view.id] = view
 
+    def add_all(self, raw_clients: Iterable[tuple]):
+        """Adds the clients in the iterable directly into the repository, without creating Client objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_clients, 256):
+                ClientTable.insert_many(batch, fields=[ClientTable.id, ClientTable.cli_name, ClientTable.admission,
+                                                       ClientTable.birth_day, ClientTable.telephone,
+                                                       ClientTable.direction, ClientTable.is_active]).execute()
+
 
 class ActivityTable(Model):
     act_name = CharField(primary_key=True)
