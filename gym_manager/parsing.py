@@ -6,7 +6,17 @@ from typing import TextIO
 def _create_temp_tables(db: Connection):
     """Creates the required tables.
     """
-    db.execute(
+    db.execute(  # Responsible
+        """CREATE TABLE usuario (
+          id int(10) NOT NULL,
+          usuario varchar(60) NOT NULL,
+          clave varchar(45) NOT NULL,
+          borrado tinyint(1) NOT NULL DEFAULT '0',
+          PRIMARY KEY (id)
+        )"""
+    )
+
+    db.execute(  # Activity
         """CREATE TABLE actividad (
             id int(10),
             descripcion varchar(45) NOT NULL,
@@ -16,7 +26,7 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    db.execute(
+    db.execute(  # Client
         """CREATE TABLE cliente (
             id int(10) NOT NULL,
             nombre varchar(45) NOT NULL,
@@ -32,7 +42,7 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    db.execute(
+    db.execute(  # Subscription
         """CREATE TABLE cliente_actividad (
           id_cliente int(10) NOT NULL,
           id_actividad int(10) NOT NULL,
