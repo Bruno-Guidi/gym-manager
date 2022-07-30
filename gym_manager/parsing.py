@@ -52,7 +52,23 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    return {'actividad', 'cliente', 'cliente_actividad'}
+    db.execute(  # Transaction
+        """CREATE TABLE item_caja (
+          id int(10) NOT NULL,
+          fecha date NOT NULL,
+          codigo int(10) NOT NULL,
+          cantidad smallint(5) NOT NULL,
+          descripcion varchar(60) NOT NULL,
+          precio float(6,2) NOT NULL,
+          entrada float(6,2) NOT NULL,
+          salida float(6,2) NOT NULL,
+          responsable int(10) NOT NULL,
+          PRIMARY KEY (id),
+          CONSTRAINT FK_item_caja_1 FOREIGN KEY (responsable) REFERENCES usuario (id)
+        )"""
+    )
+
+    return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_caja'}
 
 
 def clean_up(backup: TextIO, tables: set) -> str:
@@ -88,9 +104,8 @@ def parse(filepath: str):
             script = adjusted_backup.read()
             conn.executescript(script)
 
-    print("actividad", conn.execute("SELECT count(*) FROM actividad").fetchone()[0])
-    print("cliente", conn.execute("SELECT count(*) FROM cliente").fetchone()[0])
-    print("cliente_actividad", conn.execute("SELECT count(*) FROM cliente_actividad").fetchone()[0])
+    for table in tables:
+        print(table, conn.execute(f"SELECT count(*) from {table}").fetchone()[0])
 
     conn.close()
 
