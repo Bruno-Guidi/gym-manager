@@ -1,6 +1,5 @@
 import sqlite3
 from sqlite3 import Connection
-from typing import TextIO
 
 
 def _create_temp_tables(db: Connection):
@@ -112,41 +111,48 @@ def _create_temp_tables(db: Connection):
     return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_caja', 'articulo', 'pago', 'turno'}
 
 
-def clean_up(backup: TextIO, tables: set) -> str:
+def clean_up(backup_path: str, tables: set) -> str:
     """Takes the content of a .sql file and generates the insert instructions of the values that belong to *tables*.
 
     Returns:
          The filepath of the temporary .sql file that contains the cleaned up.
     """
     dst = "../adjusted_backup.sql"
-    with open(dst, 'w') as adjusted_backup:
-        for line in backup:
-            if line.startswith("INSERT"):  # Insert values in the backup in the corresponding temporary table.
-                _, _, table, _, values = line.split(' ', 4)
-                table = table.removesuffix("`").removeprefix("`")
-                if table in tables:
-                    sql_query = f"INSERT INTO {table} VALUES {values}".replace(r"\'", "")
-                    adjusted_backup.write(sql_query)
+    with open(backup_path) as backup:
+        with open(dst, 'w') as cleaned_up_backup:
+            for line in backup:
+                if line.startswith("INSERT"):  # Insert values in the backup in the corresponding temporary table.
+                    _, _, table, _, values = line.split(' ', 4)
+                    table = table.removesuffix("`").removeprefix("`")
+                    if table in tables:
+                        sql_query = f"INSERT INTO {table} VALUES {values}".replace(r"\'", "")
+                        cleaned_up_backup.write(sql_query)
     return dst
 
 
-def transfer_backup(filepath: str):
+def transfer_backup(backup_path: str, conn: Connection, tables: set[str]):
     """Parses the .sql file in *filepath* so the old database backup can be "loaded" into the current database.
 
     This parsing is made by creating a temporary in memory database. The old tables are created and populated, and then
     its contents are adjusted and inserted into the existing tables.
     """
-    conn = sqlite3.connect(':memory:')
-    tables = _create_temp_tables(conn)  # The tables aren't created from the backup file to avoid any problems.
-
-    with open(filepath) as backup:
-        filepath = clean_up(backup, tables)
-        with open(filepath) as adjusted_backup:
-            script = adjusted_backup.read()
-            conn.executescript(script)
+    with open(backup_path) as adjusted_backup:
+        script = adjusted_backup.read()
+        conn.executescript(script)
 
     for table in tables:
         print(table, conn.execute(f"SELECT count(*) from {table}").fetchone()[0])
 
+
+def parse(backup_path: str):
+    conn = sqlite3.connect(':memory:')
+
+    tables = _create_temp_tables(conn)  # The tables aren't created from the backup file to avoid any problems.
+
+    backup_path = clean_up(backup_path, tables)
+
+    transfer_backup(backup_path, conn, tables)
+
     conn.close()
+
 
