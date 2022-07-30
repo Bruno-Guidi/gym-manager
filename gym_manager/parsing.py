@@ -91,7 +91,25 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_caja', 'articulo', 'pago'}
+    db.execute(  # Bookings
+        """CREATE TABLE turno (
+          id int(10) NOT NULL,
+          fecha date NOT NULL,
+          nombre varchar(60) NOT NULL,
+          horario_inicio tinyint(3) NOT NULL,
+          medias_horas tinyint(3) NOT NULL,
+          cancha tinyint(3) NOT NULL,
+          responsable int(10) DEFAULT NULL,
+          importe float(6,2) DEFAULT '0.00',
+          fijo tinyint(1) NOT NULL DEFAULT '0',
+          borrado tinyint(1) NOT NULL DEFAULT '0',
+          fecha_borrado date DEFAULT NULL,
+          PRIMARY KEY (id),
+          CONSTRAINT FK_turno_1 FOREIGN KEY (responsable) REFERENCES usuario (id)
+        )"""
+    )
+
+    return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_caja', 'articulo', 'pago', 'turno'}
 
 
 def clean_up(backup: TextIO, tables: set) -> str:
