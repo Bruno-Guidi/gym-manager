@@ -32,7 +32,17 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    return {'actividad', 'cliente'}
+    db.execute(
+        """CREATE TABLE cliente_actividad (
+          id_cliente int(10) NOT NULL,
+          id_actividad int(10) NOT NULL,
+          PRIMARY KEY (id_cliente, id_actividad),
+          CONSTRAINT FK_cliente_actividad_1 FOREIGN KEY (id_actividad) REFERENCES actividad (id),
+          CONSTRAINT FK_cliente_actividad_2 FOREIGN KEY (id_cliente) REFERENCES cliente (id)
+        )"""
+    )
+
+    return {'actividad', 'cliente', 'cliente_actividad'}
 
 
 def clean_up(backup: TextIO, tables: set) -> str:
