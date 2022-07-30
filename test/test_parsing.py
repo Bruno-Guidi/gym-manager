@@ -5,5 +5,8 @@ from gym_manager.parsing import parse
 def test_parse():
     peewee.create_database(":memory:")
     activity_repo = peewee.SqliteActivityRepo()
-    parse(activity_repo, r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql")
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+
+    parse(activity_repo, client_repo, r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql")
 

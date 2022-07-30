@@ -1,7 +1,8 @@
 import sqlite3
+from datetime import date, timedelta
 from sqlite3 import Connection
 
-from gym_manager.core.persistence import ActivityRepo
+from gym_manager.core.persistence import ActivityRepo, ClientRepo
 
 
 def _create_temp_tables(db: Connection):
@@ -149,14 +150,24 @@ def _insert_activities(conn: Connection, activity_repo: ActivityRepo):
     activity_repo.add_all(gen)
 
 
-def parse(activity_repo: ActivityRepo, backup_path: str):
+def _insert_clients(conn: Connection, client_repo: ClientRepo):
+    today = date.today()
+    # (id, name, admission, birthday, tel, dir, is_active)
+    gen = ((raw[0], raw[1], raw[8], today if raw[5] == 0 or raw[5] is None else today - timedelta(raw[5]),
+           raw[3] if raw[3] is not None else "", raw[2] if raw[2] is not None else "", True)
+           for raw in conn.execute("select * from cliente"))
+    client_repo.add_all(gen)
+
+
+def parse(activity_repo: ActivityRepo, client_repo: ClientRepo, backup_path: str):
     conn = sqlite3.connect(':memory:')
 
     tables = _create_temp_tables(conn)  # The tables aren't created from the backup file to avoid any problems.
-    backup_path = clean_up(backup_path, {'actividad'})
+    backup_path = clean_up(backup_path, tables)
     transfer_backup(backup_path, conn, tables)
 
     _insert_activities(conn, activity_repo)
+    _insert_clients(conn, client_repo)
 
     conn.close()
 
