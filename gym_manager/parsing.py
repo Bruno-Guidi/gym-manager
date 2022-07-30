@@ -130,7 +130,7 @@ def clean_up(backup: TextIO, tables: set) -> str:
     return dst
 
 
-def parse(filepath: str):
+def transfer_backup(filepath: str):
     """Parses the .sql file in *filepath* so the old database backup can be "loaded" into the current database.
 
     This parsing is made by creating a temporary in memory database. The old tables are created and populated, and then

@@ -1,6 +1,6 @@
-from gym_manager.parsing import parse
+from gym_manager.parsing import transfer_backup
 
 
 def test_parse():
-    parse(r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql")
+    transfer_backup(r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql")
 
