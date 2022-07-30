@@ -147,16 +147,18 @@ def transfer_backup(backup_path: str, conn: Connection, tables: set[str]):
 
 def _insert_activities(conn: Connection, activity_repo: ActivityRepo):
     # (name, price, charge_once, description, locked)
-    gen = ((raw[1], "0", False, raw[2], False) for raw in conn.execute("SELECT * FROM actividad"))
+    gen = ((raw[0], "0", False, raw[1], False) for raw in conn.execute("SELECT a.descripcion, a.texto "
+                                                                       "FROM actividad a"))
     activity_repo.add_all(gen)
 
 
 def _insert_clients(conn: Connection, client_repo: ClientRepo):
     today = date.today()
     # (id, name, admission, birthday, tel, dir, is_active)
-    gen = ((raw[0], raw[1], raw[8], today if raw[5] == 0 or raw[5] is None else today - timedelta(raw[5]),
-            raw[3] if raw[3] is not None else "", raw[2] if raw[2] is not None else "", True)
-           for raw in conn.execute("select * from cliente"))
+    gen = ((raw[0], raw[1], raw[2], today if raw[3] == 0 or raw[3] is None else today - timedelta(raw[3]),
+            raw[4] if raw[4] is not None else "", raw[5] if raw[5] is not None else "", True)
+           for raw in conn.execute("select c.id, c.nombre, c.fecha_ingreso, c.edad, c.telefono, c.direccion "
+                                   "from cliente c"))
     client_repo.add_all(gen)
 
 
