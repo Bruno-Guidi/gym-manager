@@ -541,6 +541,15 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
             sub_record.transaction_id = subscription.transaction.id
         sub_record.save()
 
+    def add_all(self, raw_subscriptions: Iterable[tuple]):
+        """Adds the subscriptions in the iterable directly into the repository, without creating Subscription
+        objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_subscriptions, 1024):
+                SubscriptionTable.insert_many(batch, fields=[SubscriptionTable.when, SubscriptionTable.client,
+                                                             SubscriptionTable.activity_id]).execute()
+
 
 class ResponsibleTable(Model):
     resp_code = CharField(primary_key=True)
