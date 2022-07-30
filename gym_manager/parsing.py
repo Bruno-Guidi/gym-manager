@@ -2,7 +2,7 @@ import sqlite3
 from datetime import date, timedelta
 from sqlite3 import Connection
 
-from gym_manager.core.persistence import ActivityRepo, ClientRepo
+from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo
 
 
 def _create_temp_tables(db: Connection):
@@ -88,7 +88,8 @@ def _create_temp_tables(db: Connection):
           fecha_cobro date NOT NULL,
           id_usuario int(10) NOT NULL,
           PRIMARY KEY (fecha,id_cliente,id_actividad),
-          CONSTRAINT FK_pago_1 FOREIGN KEY (id_cliente, id_actividad) REFERENCES cliente_actividad (id_cliente, id_actividad),
+          CONSTRAINT FK_pago_1 FOREIGN KEY (id_cliente, id_actividad) REFERENCES cliente_actividad (id_cliente, 
+          id_actividad),
           CONSTRAINT FK_pago_2 FOREIGN KEY (id_usuario) REFERENCES usuario (id)
         )"""
     )
@@ -154,12 +155,25 @@ def _insert_clients(conn: Connection, client_repo: ClientRepo):
     today = date.today()
     # (id, name, admission, birthday, tel, dir, is_active)
     gen = ((raw[0], raw[1], raw[8], today if raw[5] == 0 or raw[5] is None else today - timedelta(raw[5]),
-           raw[3] if raw[3] is not None else "", raw[2] if raw[2] is not None else "", True)
+            raw[3] if raw[3] is not None else "", raw[2] if raw[2] is not None else "", True)
            for raw in conn.execute("select * from cliente"))
     client_repo.add_all(gen)
 
 
-def parse(activity_repo: ActivityRepo, client_repo: ClientRepo, backup_path: str):
+def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo):
+    today = date.today()
+    gen = ((today, *raw) for raw in conn.execute("select ca.id_cliente, a.descripcion "
+                                                 "from cliente_actividad ca "
+                                                 "inner join actividad a on ca.id_actividad = a.id"))
+    subscription_repo.add_all(gen)
+
+
+def parse(
+        activity_repo: ActivityRepo,
+        client_repo: ClientRepo,
+        subscription_repo: SubscriptionRepo,
+        backup_path: str
+):
     conn = sqlite3.connect(':memory:')
 
     tables = _create_temp_tables(conn)  # The tables aren't created from the backup file to avoid any problems.
@@ -168,7 +182,7 @@ def parse(activity_repo: ActivityRepo, client_repo: ClientRepo, backup_path: str
 
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo)
+    _insert_subscriptions(conn, subscription_repo)
+    # register payments of subscriptions = select from pago, insert into SubChargeTable.
 
     conn.close()
-
-
