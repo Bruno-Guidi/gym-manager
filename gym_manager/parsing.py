@@ -78,5 +78,9 @@ def parse(filepath: str):
             script = adjusted_backup.read()
             conn.executescript(script)
 
+    print("actividad", conn.execute("SELECT count(*) FROM actividad").fetchone()[0])
+    print("cliente", conn.execute("SELECT count(*) FROM cliente").fetchone()[0])
+    print("cliente_actividad", conn.execute("SELECT count(*) FROM cliente_actividad").fetchone()[0])
+
     conn.close()
 
