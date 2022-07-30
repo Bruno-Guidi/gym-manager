@@ -6,7 +6,7 @@ from typing import Generator, Iterable
 
 from peewee import (
     SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-    CompositeKey, prefetch, Proxy, JOIN, DateTimeField)
+    CompositeKey, prefetch, Proxy, JOIN, DateTimeField, chunked)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core.base import (
@@ -310,6 +310,15 @@ class SqliteActivityRepo(ActivityRepo):
             for filter_, value in filters:
                 activities_q = activities_q.where(filter_.passes_in_repo(ActivityTable, value))
         return activities_q.count()
+
+    def add_all(self, raw_activities: Iterable[tuple]):
+        """Adds the activities in the iterable directly into the repository, without creating Activity objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_activities, 50):
+                ActivityTable.insert_many(batch, fields=[ActivityTable.act_name, ActivityTable.price,
+                                                         ActivityTable.charge_once, ActivityTable.description,
+                                                         ActivityTable.locked]).execute()
 
 
 class BalanceTable(Model):
