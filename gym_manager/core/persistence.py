@@ -208,6 +208,12 @@ class ActivityRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def add_all(self, raw_activities: Iterable[tuple]):
+        """Adds the activities in the iterable directly into the repository, without creating Activity objects.
+        """
+        raise NotImplementedError
+
 
 class SubscriptionRepo(abc.ABC):
     """Repository interface for client's activities subscriptions.
