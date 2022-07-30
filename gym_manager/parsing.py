@@ -1,6 +1,8 @@
 import sqlite3
 from sqlite3 import Connection
 
+from gym_manager.core.persistence import ActivityRepo
+
 
 def _create_temp_tables(db: Connection):
     """Creates the required tables.
@@ -140,18 +142,21 @@ def transfer_backup(backup_path: str, conn: Connection, tables: set[str]):
         script = adjusted_backup.read()
         conn.executescript(script)
 
-    for table in tables:
-        print(table, conn.execute(f"SELECT count(*) from {table}").fetchone()[0])
+
+def _insert_activities(conn: Connection, activity_repo: ActivityRepo):
+    # (name, price, charge_once, description, locked)
+    gen = ((raw[1], "0", False, raw[2], False) for raw in conn.execute("SELECT * FROM actividad"))
+    activity_repo.add_all(gen)
 
 
-def parse(backup_path: str):
+def parse(activity_repo: ActivityRepo, backup_path: str):
     conn = sqlite3.connect(':memory:')
 
     tables = _create_temp_tables(conn)  # The tables aren't created from the backup file to avoid any problems.
-
-    backup_path = clean_up(backup_path, tables)
-
+    backup_path = clean_up(backup_path, {'actividad'})
     transfer_backup(backup_path, conn, tables)
+
+    _insert_activities(conn, activity_repo)
 
     conn.close()
 
