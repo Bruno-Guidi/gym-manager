@@ -68,7 +68,30 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_caja'}
+    db.execute(  # Stock
+        """CREATE TABLE articulo (
+          id int(10) NOT NULL,
+          descripcion varchar(60) NOT NULL,
+          precio float(6,2) NOT NULL,
+          PRIMARY KEY (id)
+        )"""
+    )
+
+    db.execute(  # Transactions that involve activities
+        """CREATE TABLE pago (
+          fecha date NOT NULL,
+          id_cliente int(10) NOT NULL,
+          id_actividad int(10) NOT NULL,
+          importe float(6,2) NOT NULL,
+          fecha_cobro date NOT NULL,
+          id_usuario int(10) NOT NULL,
+          PRIMARY KEY (fecha,id_cliente,id_actividad),
+          CONSTRAINT FK_pago_1 FOREIGN KEY (id_cliente, id_actividad) REFERENCES cliente_actividad (id_cliente, id_actividad),
+          CONSTRAINT FK_pago_2 FOREIGN KEY (id_usuario) REFERENCES usuario (id)
+        )"""
+    )
+
+    return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_caja', 'articulo', 'pago'}
 
 
 def clean_up(backup: TextIO, tables: set) -> str:
