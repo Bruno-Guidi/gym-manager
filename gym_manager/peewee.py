@@ -503,7 +503,8 @@ class SqliteTransactionRepo(TransactionRepo):
         record.save()
 
     def add_raw(self, raw: tuple) -> int:
-        """Adds the transaction directly into the repository, without creating Transaction objects.
+        """Adds the transaction directly into the repository, without creating Transaction objects. This method should
+        be used when the id of the raw transaction to insert is needed.
 
         Returns:
             Returns the id of the created transaction.
