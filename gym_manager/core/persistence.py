@@ -305,6 +305,12 @@ class TransactionRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def add_all(self, raw_transactions: Iterable[tuple]):
+        """Adds the transactions in the iterable directly into the repository, without creating Transaction objects.
+        """
+        raise NotImplementedError
+
 
 class BalanceRepo(abc.ABC):
     def balance_done(self, when: date) -> bool:
