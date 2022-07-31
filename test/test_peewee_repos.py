@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Generator
+from typing import Generator, Iterable
 
 import pytest
 
@@ -13,6 +13,9 @@ from test.test_core_api import MockSecurityHandler
 
 
 class MockActivityRepo(ActivityRepo):
+
+    def add_all(self, raw_activities: Iterable[tuple]):
+        pass
 
     def add(self, activity: Activity):
         pass
@@ -42,6 +45,12 @@ class MockActivityRepo(ActivityRepo):
 
 
 class MockTransactionRepo(TransactionRepo):
+
+    def add_all(self, raw_transactions: Iterable[tuple]):
+        pass
+
+    def add_raw(self, raw: tuple) -> int:
+        pass
 
     def from_data(
             self, id_: int, type_: str | None = None, when: date | None = None, raw_amount: str | None = None,
