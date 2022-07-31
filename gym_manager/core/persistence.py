@@ -249,6 +249,12 @@ class SubscriptionRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def register_raw_charges(self, raw_charges: Iterable[tuple]):
+        """Links transactions with pairs (client, activity).
+        """
+        raise NotImplementedError
+
 
 class TransactionRepo(abc.ABC):
     """Transaction repository interface.
