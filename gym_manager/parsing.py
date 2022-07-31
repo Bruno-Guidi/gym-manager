@@ -2,7 +2,7 @@ import sqlite3
 from datetime import date, timedelta
 from sqlite3 import Connection
 
-from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo
+from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, TransactionRepo
 
 
 def _create_temp_tables(db: Connection):
@@ -170,10 +170,26 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo)
     subscription_repo.add_all(gen)
 
 
+def _register_charging(
+        conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date
+):
+    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha_cobro, p.importe, p.id_usuario, a.descripcion "
+                                           "from pago p inner join actividad a on p.id_actividad = a.id "
+                                           "where p.fecha_cobro >= (?)", (since, )))
+
+    sub_charges = ((raw[0], raw[4], raw[2], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo",
+                                                                      raw[3], "Desc")))
+                   for raw in charges)
+
+    subscription_repo.register_raw_charges(sub_charges)
+
+
 def parse(
         activity_repo: ActivityRepo,
         client_repo: ClientRepo,
         subscription_repo: SubscriptionRepo,
+        transaction_repo: TransactionRepo,
+        since: date,
         backup_path: str
 ):
     conn = sqlite3.connect(':memory:')
@@ -184,7 +200,8 @@ def parse(
 
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo)
+    # ToDo register subs after registering its charging. If there is no charging for that sub, remove it.
     _insert_subscriptions(conn, subscription_repo)
-    # register payments of subscriptions = select from pago, insert into SubChargeTable.
+    _register_charging(conn, subscription_repo, transaction_repo, since)
 
     conn.close()
