@@ -185,18 +185,6 @@ def _register_subscription_charging(
 
 
 def _register_stock_charging(conn: Connection, transaction_repo: TransactionRepo, since: date):
-    """type=raw[0], client=raw[1], when=raw[2], amount=raw[3], method=raw[4],
-                                       responsible=raw[5], description=raw[6]
-                                       id int(10) NOT NULL,
-          fecha date NOT NULL,
-          codigo int(10) NOT NULL,
-          cantidad smallint(5) NOT NULL,
-          descripcion varchar(60) NOT NULL,
-          precio float(6,2) NOT NULL,
-          entrada float(6,2) NOT NULL,
-          salida float(6,2) NOT NULL,
-          responsable int(10) NOT NULL,
-    """
     query = conn.execute("select ic.fecha, ic.entrada, ic.responsable, ic.cantidad, ic.descripcion, ic.precio "
                          "from item_caja ic where ic.fecha >= (?)", (since,))
     # (type, client, when, amount, method, responsible, description)
