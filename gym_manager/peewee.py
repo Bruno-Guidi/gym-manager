@@ -559,6 +559,13 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
                 SubscriptionTable.insert_many(batch, fields=[SubscriptionTable.when, SubscriptionTable.client,
                                                              SubscriptionTable.activity_id]).execute()
 
+    def register_raw_charges(self, raw_charges: Iterable[tuple]):
+        """Links transactions with pairs (client, activity).
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_charges, 1024):
+                pass  # Insert into SubscriptionCharge(client_id, activity_id, when, transaction_id)
+
 
 class ResponsibleTable(Model):
     resp_code = CharField(primary_key=True)
