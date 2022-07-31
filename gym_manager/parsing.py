@@ -184,15 +184,6 @@ def _register_subscription_charging(
     subscription_repo.register_raw_charges(sub_charges)
 
 
-def _register_stock_charging(conn: Connection, transaction_repo: TransactionRepo, since: date):
-    query = conn.execute("select ic.fecha, ic.entrada, ic.responsable, ic.cantidad, ic.descripcion, ic.precio "
-                         "from item_caja ic where ic.fecha >= (?)", (since,))
-    # (type, client, when, amount, method, responsible, description)
-    gen = (("Cobro", None, raw[0], raw[1], "Efectivo", raw[2], f"Cobro {raw[3]} '{raw[4]}' a ${raw[5]}")
-           for raw in query)
-    transaction_repo.add_all(gen)
-
-
 def parse(
         activity_repo: ActivityRepo,
         client_repo: ClientRepo,
@@ -212,9 +203,5 @@ def parse(
     # ToDo register subs after registering its charging. If there is no charging for that sub, remove it.
     _insert_subscriptions(conn, subscription_repo)
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
-    _register_stock_charging(conn, transaction_repo, since)
-    # Load booking info.
-    # Generate daily balances.
-
 
     conn.close()
