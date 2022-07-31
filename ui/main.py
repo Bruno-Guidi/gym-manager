@@ -7,11 +7,13 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
-    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget)
+    QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
+    QDialog)
 
+from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
 from gym_manager.core import api
-from gym_manager.core.base import Client, String, Number, Activity, Currency
+from gym_manager.core.base import String, Activity, Currency, Number
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler
 from ui import utils
@@ -19,8 +21,33 @@ from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
-from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table
+from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table, config_line
 from ui.widgets import PageIndex
+
+
+class LoadBackupFromOld(QDialog):
+    def __init__(self):
+        super().__init__()
+
+        self.confirmed = False
+        self.path = ""
+
+        self.layout = QVBoxLayout(self)
+
+        self.line_edit = QLineEdit(self)
+        self.layout.addWidget(self.line_edit)
+        config_line(self.line_edit, place_holder="Path")
+
+        self.ok_btn = QPushButton(self)
+        self.layout.addWidget(self.ok_btn)
+        config_btn(self.ok_btn, "Ok")
+        # noinspection PyUnresolvedReferences
+        self.ok_btn.clicked.connect(self.ok_clicked)
+
+    def ok_clicked(self):
+        self.confirmed = True
+        self.path = self.line_edit.text()
+        self.line_edit.window().close()
 
 
 class Controller:
@@ -65,8 +92,8 @@ class Controller:
             activity = Activity(String("TestAct"), Currency("2000"), String("descr"))
             self.activity_repo.add(activity)
             for i in range(0, 50):
-                client = Client(Number(i), String(str(i)), today, today, String(str(i)), String(str(i)))
-                self.client_repo.add(client)
+                client = self.client_repo.create(String(str(i)), today, today, String(str(i)), String(str(i)),
+                                                 Number(i))
                 sub = api.subscribe(self.subscription_repo, today, client, activity)
                 create_t = functools.partial(self.transaction_repo.create, "Cobro", today, activity.price, "Efectivo",
                                              String("Admin"), "descr", client)
@@ -100,9 +127,17 @@ class Controller:
         def raise_exception():
             raise ValueError("This is a test exception to see if the error is logged.")
 
+        def load_backup_from_old():
+            self._backup_ui = LoadBackupFromOld()
+            self._backup_ui.setWindowModality(Qt.ApplicationModal)
+            self._backup_ui.exec_()
+            if self._backup_ui.confirmed:
+                parsing.parse(self.activity_repo, self.client_repo, self.subscription_repo, self.transaction_repo,
+                              since=date(2022, 7, 1), backup_path=self._backup_ui.path)
+
         # noinspection PyAttributeOutsideInit
         self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance),
-                                   ("raise exception", raise_exception))
+                                   ("raise exception", raise_exception), ("load backup from old", load_backup_from_old))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 

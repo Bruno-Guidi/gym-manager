@@ -75,7 +75,8 @@ class ClientView(Client):
 
     repository: ClassVar[ClientRepo] = None
 
-    def __init__(self, dni: Number, name: String, created_by: str):
+    def __init__(self, id_: int, name: String, created_by: str, dni: Number):
+        self.id = id_
         self.dni = dni
         self.name = name
         self.created_by = created_by
@@ -89,7 +90,8 @@ class ClientView(Client):
                                   f"implementation of '{attr_name}'.")
 
     def __repr__(self) -> str:
-        return f"ClientView(dni={self.dni}, name={self.name}, created_by={self.created_by})"
+        return f"ClientView(id={self.id}, dni={self.dni.as_primitive()}, name={self.name}, created_by=" \
+               f"{self.created_by})"
 
     def __str__(self) -> str:
         return repr(self)
@@ -106,7 +108,10 @@ class ClientRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add(self, client: Client):
+    def create(
+            self, name: String, admission: date, birthday: date, telephone: String, direction: String,
+            dni: Number
+    ) -> Client:
         """Adds the *client* to the repository.
         """
         raise NotImplementedError
@@ -144,6 +149,12 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def register_view(self, view: ClientView):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def add_all(self, raw_clients: Iterable[tuple]):
+        """Adds the clients in the iterable directly into the repository, without creating Client objects.
+        """
         raise NotImplementedError
 
 
@@ -203,6 +214,12 @@ class ActivityRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def add_all(self, raw_activities: Iterable[tuple]):
+        """Adds the activities in the iterable directly into the repository, without creating Activity objects.
+        """
+        raise NotImplementedError
+
 
 class SubscriptionRepo(abc.ABC):
     """Repository interface for client's activities subscriptions.
@@ -223,6 +240,18 @@ class SubscriptionRepo(abc.ABC):
     @abc.abstractmethod
     def update(self, subscription: Subscription):
         """Updates the subscription.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def add_all(self, raw_subscriptions: Iterable[tuple]):
+        """Adds the subscriptions in the iterable directly into the repository, without creating Subscription objects.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def register_raw_charges(self, raw_charges: Iterable[tuple]):
+        """Links transactions with pairs (client, activity).
         """
         raise NotImplementedError
 
@@ -264,6 +293,22 @@ class TransactionRepo(abc.ABC):
 
     @abc.abstractmethod
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def add_raw(self, raw: tuple) -> int:
+        """Adds the transaction directly into the repository, without creating Transaction objects. This method should
+        be used when the id of the raw transaction to insert is needed.
+
+        Returns:
+            Returns the id of the created transaction.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def add_all(self, raw_transactions: Iterable[tuple]):
+        """Adds the transactions in the iterable directly into the repository, without creating Transaction objects.
+        """
         raise NotImplementedError
 
 

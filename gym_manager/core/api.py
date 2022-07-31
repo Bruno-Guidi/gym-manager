@@ -47,8 +47,8 @@ def subscribe(
         raise InvalidDate(f"[subscription_date={when}] cannot be lesser than [admission_date={client.admission}] of "
                           f"the client")
     if transaction is not None and transaction.client != client:
-        raise OperationalError(f"The subscribed [client={client.dni}] is not the charged [client="
-                               f"{transaction.client.dni}].")
+        raise OperationalError(f"The subscribed [client.id={client.id}] is not the charged [client.id="
+                               f"{transaction.client.id}].")
 
     subscription = Subscription(when, client, activity, transaction)
     subscription_repo.add(subscription)
@@ -56,7 +56,7 @@ def subscribe(
 
     # noinspection PyUnresolvedReferences
     logger.getChild(__name__).info(
-        f"Client [dni={client.dni}] subscribed to activity [activity_name={activity.name}], with [payment="
+        f"Client [client.id={client.id}] subscribed to activity [activity_name={activity.name}], with [payment="
         f"{'None' if transaction is None else transaction.id}]."
     )
 

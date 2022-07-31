@@ -25,8 +25,12 @@ from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, Dialog
 
 
 @log_responsible(action_tag="update_client", to_str=lambda client: f"Actualizar cliente {client.name}")
-def update_client(client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String):
+def update_client(
+        client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String,
+        dni: Number
+):
     client.name = name
+    client.dni = dni
     client.telephone = telephone
     client.direction = direction
     client_repo.update(client)
@@ -50,7 +54,7 @@ class MainController:
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
         self.activities_fn = activities_fn
-        self._clients: dict[int, Client] = {}  # Dict that maps raw client dni to the associated client.
+        self._clients: dict[int, Client] = {}  # Dict that maps row numbers to the displayed client.
         self._subscriptions: dict[str, Subscription] = {}  # Maps raw activity name to subs of the selected client.
 
         # Configure the filtering widget.
@@ -90,10 +94,11 @@ class MainController:
         if check_filters and not self.main_ui.filter_header.passes_filters(client):
             return
 
-        self._clients[client.dni.as_primitive()] = client
         row = self.main_ui.client_table.rowCount()
+        self._clients[row] = client
         fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str)
-        fill_cell(self.main_ui.client_table, row, 1, client.dni, data_type=int)
+        dni = "" if client.dni.as_primitive() is None else client.dni.as_primitive()
+        fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int)
         fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool)
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int)
         fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str)
@@ -101,20 +106,22 @@ class MainController:
 
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
+        self._clients.clear()
 
         self.main_ui.page_index.total_len = self.client_repo.count(filters)
         for client in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-            self._clients[client.dni.as_primitive()] = client
             self._add_client(client, check_filters=False)  # Clients are filtered in the repo.
 
     def update_client_info(self):
-        if self.main_ui.client_table.currentRow() != -1:
-            client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
+        row = self.main_ui.client_table.currentRow()
+        if row != -1:
             # Fills the form.
-            self.main_ui.name_field.setText(str(self._clients[client_dni].name))
-            self.main_ui.dni_field.setText(str(self._clients[client_dni].dni))
-            self.main_ui.tel_field.setText(str(self._clients[client_dni].telephone))
-            self.main_ui.dir_field.setText(str(self._clients[client_dni].direction))
+            self.main_ui.name_field.setText(str(self._clients[row].name))
+            dni = "" if self._clients[row].dni.as_primitive() is None else str(self._clients[row].dni.as_primitive())
+            self.main_ui.dni_field.setText(dni)
+            self.main_ui.dni_field.setEnabled(len(dni) == 0)
+            self.main_ui.tel_field.setText(str(self._clients[row].telephone))
+            self.main_ui.dir_field.setText(str(self._clients[row].direction))
 
             self.fill_subscription_table()
 
@@ -134,41 +141,46 @@ class MainController:
             self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
+        # noinspection PyTypeChecker
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel_field.valid_value(),
-                    self.main_ui.dir_field.valid_value()]):
+                    self.main_ui.dir_field.valid_value(), self.main_ui.dni_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
+        elif self.client_repo.is_active(self.main_ui.dni_field.value()):
+            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.main_ui.dni_field.value()}'.")
         else:
-            client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-            update_fn = functools.partial(update_client, self.client_repo, self._clients[client_dni],
+            update_fn = functools.partial(update_client, self.client_repo, self._clients[row],
                                           self.main_ui.name_field.value(), self.main_ui.tel_field.value(),
-                                          self.main_ui.dir_field.value())
+                                          self.main_ui.dir_field.value(), self.main_ui.dni_field.value())
 
             if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
                 # Updates the ui.
-                row = self.main_ui.client_table.currentRow()
-                client = self._clients[client_dni]
+                client = self._clients[row]
                 fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+                dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
+                fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
                 fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
+
+                self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
 
                 Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
     def remove(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-        client = self._clients[client_dni]
+        client = self._clients[row]
 
         remove_fn = functools.partial(self.client_repo.remove, client)
-        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{self._clients[client_dni].name}'?",
-                                  self.security_handler, remove_fn):
-            self._clients.pop(client.dni.as_primitive())
+        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{client.name}'?", self.security_handler, remove_fn):
+            self._clients.pop(row)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             # Clears the form.
@@ -177,10 +189,14 @@ class MainController:
             self.main_ui.tel_field.clear()
             self.main_ui.dir_field.clear()
 
+            # Clears the subscriptions table.
+            self.main_ui.subscription_table.setRowCount(0)
+
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
     def fill_subscription_table(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             self.main_ui.overdue_subs_checkbox.setChecked(not self.main_ui.overdue_subs_checkbox.isChecked())
             Dialog.info("Error", "Seleccione un cliente.")
             return
@@ -188,9 +204,7 @@ class MainController:
         self._subscriptions = {}  # Clears the dict.
         self.main_ui.subscription_table.setRowCount(0)  # Clears the table.
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
-
-        for i, sub in enumerate(self._clients[client_dni].subscriptions()):
+        for i, sub in enumerate(self._clients[row].subscriptions()):
             self._subscriptions[sub.activity.name.as_primitive()] = sub
             if not discard_subscription(self.main_ui.overdue_subs_checkbox.isChecked(), sub.up_to_date(date.today())):
                 fill_cell(self.main_ui.subscription_table, i, 0, sub.activity.name, data_type=str)
@@ -199,7 +213,8 @@ class MainController:
                           data_type=bool)
 
     def charge_sub(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
@@ -207,14 +222,13 @@ class MainController:
             Dialog.info("Error", "Seleccione una actividad.")
             return
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
 
         register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo,
                                                 self._subscriptions[activity_name])
         # noinspection PyAttributeOutsideInit
         self._charge_ui = ChargeUI(
-            self.transaction_repo, self.security_handler, self._clients[client_dni],
+            self.transaction_repo, self.security_handler, self._clients[row],
             amount=self._subscriptions[activity_name].activity.price,
             description=String(f"Cobro de actividad {activity_name}."),
             post_charge_fn=register_sub_charge
@@ -230,14 +244,14 @@ class MainController:
                 self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
 
     def add_sub(self):
-        if self.main_ui.client_table.currentRow() == -1:
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        client_dni = int(self.main_ui.client_table.item(self.main_ui.client_table.currentRow(), 1).text())
         # noinspection PyAttributeOutsideInit
         self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
-                                    (activity for activity in self.activities_fn()), self._clients[client_dni])
+                                    (activity for activity in self.activities_fn()), self._clients[row])
         self._add_sub_ui.exec_()
 
         subscription = self._add_sub_ui.controller.subscription
@@ -356,11 +370,12 @@ class ClientMainUI(QMainWindow):
         # DNI.
         self.dni_lbl = QLabel(self.widget)
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
-        config_lbl(self.dni_lbl, "DNI*")
+        config_lbl(self.dni_lbl, "DNI")
 
-        self.dni_field = Field(Number, self.widget, min_value=utils.CLIENT_MIN_DNI, max_value=utils.CLIENT_MAX_DNI)
+        self.dni_field = Field(Number, self.widget, optional=True, min_value=utils.CLIENT_MIN_DNI,
+                               max_value=utils.CLIENT_MAX_DNI)
         self.form_layout.addWidget(self.dni_field, 1, 1)
-        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False, enabled=False)
+        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
         # Telephone.
         self.tel_lbl = QLabel(self.widget)
@@ -440,10 +455,10 @@ class CreateController:
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
         else:
-            self.client = Client(self.create_ui.dni_field.value(), self.create_ui.name_field.value(), date.today(),
-                                 self.create_ui.birth_date_edit.date().toPyDate(), self.create_ui.tel_field.value(),
-                                 self.create_ui.dir_field.value())
-            self.client_repo.add(self.client)
+            self.client = self.client_repo.create(
+                self.create_ui.name_field.value(), date.today(), self.create_ui.birth_date_edit.date().toPyDate(),
+                self.create_ui.tel_field.value(), self.create_ui.dir_field.value(), self.create_ui.dni_field.value()
+            )
             Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
@@ -475,9 +490,10 @@ class CreateUI(QDialog):
         # DNI.
         self.dni_lbl = QLabel(self)
         self.form_layout.addWidget(self.dni_lbl, 1, 0)
-        config_lbl(self.dni_lbl, "DNI*")
+        config_lbl(self.dni_lbl, "DNI")
 
-        self.dni_field = Field(Number, self, min_value=utils.CLIENT_MIN_DNI, max_value=utils.CLIENT_MAX_DNI)
+        self.dni_field = Field(Number, self, optional=True, min_value=utils.CLIENT_MIN_DNI,
+                               max_value=utils.CLIENT_MAX_DNI)
         self.form_layout.addWidget(self.dni_field, 1, 1)
         config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
