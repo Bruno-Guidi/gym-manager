@@ -289,6 +289,15 @@ class TransactionRepo(abc.ABC):
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def add_raw(self, raw: tuple) -> int:
+        """Adds the transaction directly into the repository, without creating Transaction objects.
+
+        Returns:
+            Returns the id of the created transaction.
+        """
+        raise NotImplementedError
+
 
 class BalanceRepo(abc.ABC):
     def balance_done(self, when: date) -> bool:
