@@ -512,6 +512,17 @@ class SqliteTransactionRepo(TransactionRepo):
         return TransactionTable.create(type=raw[0], client=raw[1], when=raw[2], amount=raw[3], method=raw[4],
                                        responsible=raw[5], description=raw[6])
 
+    def add_all(self, raw_transactions: Iterable[tuple]):
+        """Adds the transactions in the iterable directly into the repository, without creating Transaction objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_transactions, 1024):
+                TransactionTable.insert_many(
+                    batch, fields=[TransactionTable.type, TransactionTable.client_id, TransactionTable.when,
+                                   TransactionTable.amount, TransactionTable.method, TransactionTable.responsible,
+                                   TransactionTable.description]
+                ).execute()
+
 
 class SubscriptionTable(Model):
     when = DateField()
