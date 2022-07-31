@@ -176,7 +176,7 @@ class String(Validatable):
             ValidationError if the validation failed.
         """
         optional = True if 'optional' not in kwargs else kwargs['optional']
-        max_len = 100 if 'max_len' not in kwargs else kwargs['max_len']
+        max_len = 1024 if 'max_len' not in kwargs else kwargs['max_len']
 
         if not optional and len(value) == 0:
             raise ValidationError(f"The argument 'value' cannot be empty. [value={value}, optional={optional}]")

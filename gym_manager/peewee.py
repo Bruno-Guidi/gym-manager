@@ -6,7 +6,7 @@ from typing import Generator, Iterable
 
 from peewee import (
     SqliteDatabase, Model, IntegerField, CharField, DateField, BooleanField, TextField, ForeignKeyField,
-    CompositeKey, prefetch, Proxy, JOIN, DateTimeField)
+    CompositeKey, prefetch, Proxy, JOIN, DateTimeField, chunked)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager.core.base import (
@@ -192,6 +192,15 @@ class SqliteClientRepo(ClientRepo):
     def register_view(self, view: ClientView):
         self._views[view.id] = view
 
+    def add_all(self, raw_clients: Iterable[tuple]):
+        """Adds the clients in the iterable directly into the repository, without creating Client objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_clients, 256):
+                ClientTable.insert_many(batch, fields=[ClientTable.id, ClientTable.cli_name, ClientTable.admission,
+                                                       ClientTable.birth_day, ClientTable.telephone,
+                                                       ClientTable.direction, ClientTable.is_active]).execute()
+
 
 class ActivityTable(Model):
     act_name = CharField(primary_key=True)
@@ -310,6 +319,15 @@ class SqliteActivityRepo(ActivityRepo):
             for filter_, value in filters:
                 activities_q = activities_q.where(filter_.passes_in_repo(ActivityTable, value))
         return activities_q.count()
+
+    def add_all(self, raw_activities: Iterable[tuple]):
+        """Adds the activities in the iterable directly into the repository, without creating Activity objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_activities, 50):
+                ActivityTable.insert_many(batch, fields=[ActivityTable.act_name, ActivityTable.price,
+                                                         ActivityTable.charge_once, ActivityTable.description,
+                                                         ActivityTable.locked]).execute()
 
 
 class BalanceTable(Model):
@@ -484,6 +502,27 @@ class SqliteTransactionRepo(TransactionRepo):
         record.balance_id = balance_date
         record.save()
 
+    def add_raw(self, raw: tuple) -> int:
+        """Adds the transaction directly into the repository, without creating Transaction objects. This method should
+        be used when the id of the raw transaction to insert is needed.
+
+        Returns:
+            Returns the id of the created transaction.
+        """
+        return TransactionTable.create(type=raw[0], client=raw[1], when=raw[2], amount=raw[3], method=raw[4],
+                                       responsible=raw[5], description=raw[6])
+
+    def add_all(self, raw_transactions: Iterable[tuple]):
+        """Adds the transactions in the iterable directly into the repository, without creating Transaction objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_transactions, 1024):
+                TransactionTable.insert_many(
+                    batch, fields=[TransactionTable.type, TransactionTable.client_id, TransactionTable.when,
+                                   TransactionTable.amount, TransactionTable.method, TransactionTable.responsible,
+                                   TransactionTable.description]
+                ).execute()
+
 
 class SubscriptionTable(Model):
     when = DateField()
@@ -522,6 +561,22 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         if subscription.transaction is not None:
             sub_record.transaction_id = subscription.transaction.id
         sub_record.save()
+
+    def add_all(self, raw_subscriptions: Iterable[tuple]):
+        """Adds the subscriptions in the iterable directly into the repository, without creating Subscription
+        objects.
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_subscriptions, 1024):
+                SubscriptionTable.insert_many(batch, fields=[SubscriptionTable.when, SubscriptionTable.client,
+                                                             SubscriptionTable.activity_id]).execute()
+
+    def register_raw_charges(self, raw_charges: Iterable[tuple]):
+        """Links transactions with pairs (client, activity).
+        """
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_charges, 1024):
+                pass  # Insert into SubscriptionCharge(client_id, activity_id, when, transaction_id)
 
 
 class ResponsibleTable(Model):
