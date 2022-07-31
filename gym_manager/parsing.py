@@ -170,7 +170,7 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo)
     subscription_repo.add_all(gen)
 
 
-def _register_charging(
+def _register_subscription_charging(
         conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date
 ):
     charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha_cobro, p.importe, p.id_usuario, a.descripcion "
@@ -202,6 +202,6 @@ def parse(
     _insert_clients(conn, client_repo)
     # ToDo register subs after registering its charging. If there is no charging for that sub, remove it.
     _insert_subscriptions(conn, subscription_repo)
-    _register_charging(conn, subscription_repo, transaction_repo, since)
+    _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
 
     conn.close()
