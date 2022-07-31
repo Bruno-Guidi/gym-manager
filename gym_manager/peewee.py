@@ -502,6 +502,15 @@ class SqliteTransactionRepo(TransactionRepo):
         record.balance_id = balance_date
         record.save()
 
+    def add_raw(self, raw: tuple) -> int:
+        """Adds the transaction directly into the repository, without creating Transaction objects.
+
+        Returns:
+            Returns the id of the created transaction.
+        """
+        return TransactionTable.create(type=raw[0], client=raw[1], when=raw[2], amount=raw[3], method=raw[4],
+                                       responsible=raw[5], description=raw[6])
+
 
 class SubscriptionTable(Model):
     when = DateField()
