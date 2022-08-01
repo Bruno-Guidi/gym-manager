@@ -91,13 +91,16 @@ def _charge_sub_description(subscription: Subscription) -> str:
 
 @log_responsible(action_tag="register_subscription_charge", to_str=_charge_sub_description)
 def register_subscription_charge(
-        subscription_repo: SubscriptionRepo, subscription: Subscription, create_transaction_fn: CreateTransactionFn
+        subscription_repo: SubscriptionRepo, subscription: Subscription, year: int, month: int,
+        create_transaction_fn: CreateTransactionFn
 ) -> Subscription:
     """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
         subscription_repo: repository implementation that registers subscriptions.
         subscription: subscription being charged.
+        year: year that was charged.
+        month: month of the year that was charged.
         create_transaction_fn: function used to create the associated transaction.
     """
     transaction = create_transaction_fn()
@@ -108,7 +111,7 @@ def register_subscription_charge(
         raise OperationalError(f"The [client={transaction.client.name}] is being charged for the [activity="
                                f"{subscription.activity.name}] done by the [client={subscription.client.name}].")
 
-    subscription.add_transaction(transaction)  # Links the transaction with the subscription.
+    subscription.add_transaction(year, month, transaction)  # Links the transaction with the subscription.
     subscription_repo.register_transaction(subscription, transaction)
 
     logger.getChild(__name__).info(

@@ -27,13 +27,10 @@ def discard_subscription(only_overdue: bool, up_to_date: bool) -> bool:
     return only_overdue and up_to_date
 
 
-def month_range(from_year: int, from_month: int, n_months: int):
-    for _ in range(n_months):
-        yield from_year, from_month
-        from_month -= 1
-        if from_month == 0:
-            from_month = 12
-            from_year -= 1
+def month_range(from_: date, to: date):
+    while from_ < to:
+        yield from_.month, from_.year
+        from_ += ONE_MONTH_TD
 
 
 class OperationalError(Exception):
@@ -374,8 +371,8 @@ class Subscription:
                                    f"[subscription_charge_date={subscription_charge_date}]")
         self._transaction = transaction
 
-    def add_transaction(self, transaction: Transaction):
-        self._transactions[(transaction.when.year, transaction.when.month)] = transaction
+    def add_transaction(self, year: int, month: int, transaction: Transaction):
+        self._transactions[(year, month)] = transaction
 
     def is_charged(self, year: int, month: int):
         """Checks if the subscription has a registered charge in the *month* and *year*.

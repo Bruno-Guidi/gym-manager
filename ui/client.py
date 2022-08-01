@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
-from datetime import date
+from datetime import date, timedelta
 from typing import Iterable, Callable
 
 from PyQt5.QtCore import Qt
@@ -12,7 +12,9 @@ from PyQt5.QtWidgets import (
     QDateEdit, QDesktopWidget)
 
 from gym_manager.core import api
-from gym_manager.core.base import String, TextLike, Client, Number, Activity, Subscription, discard_subscription
+from gym_manager.core.base import (
+    String, TextLike, Client, Number, Activity, Subscription, discard_subscription,
+    month_range)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError, log_responsible
 from ui import utils
@@ -216,30 +218,27 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        if self.main_ui.subscription_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+        if self._clients[row].n_subscriptions() == 0:
+            Dialog.info("Error", "El cliente no esta inscripto a ninguna actividad.")
             return
 
-        activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
-
-        register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo,
-                                                self._subscriptions[activity_name])
         # noinspection PyAttributeOutsideInit
-        self._charge_ui = ChargeUI(
-            self.transaction_repo, self.security_handler, self._clients[row],
-            amount=self._subscriptions[activity_name].activity.price,
-            description=String(f"Cobro de actividad {activity_name}."),
-            post_charge_fn=register_sub_charge
-        )
-        self._charge_ui.exec_()
-        if self._charge_ui.controller.success:
-            # Updates the last charged date of the subscription.
-            fill_cell(self.main_ui.subscription_table, self.main_ui.subscription_table.currentRow(), 1,
-                      self._subscriptions[activity_name].transaction.when, data_type=bool)
-            # If 'only overdue' filtering is active, then remove the activity from the table, because it is no longer
-            # overdue.
-            if self.main_ui.overdue_subs_checkbox.isChecked():
-                self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
+        self._pre_charge_ui = PreChargeUI(self._clients[row])
+        self._pre_charge_ui.exec_()
+
+        sub = self._pre_charge_ui.controller.sub
+        if sub is not None:
+            register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo, sub,
+                                                    self._pre_charge_ui.controller.year,
+                                                    self._pre_charge_ui.controller.month)
+            # noinspection PyAttributeOutsideInit
+            self._charge_ui = ChargeUI(
+                self.transaction_repo, self.security_handler, self._clients[row],
+                amount=sub.activity.price,
+                description=String(f"Cobro de actividad {sub.activity.name}."),
+                post_charge_fn=register_sub_charge
+            )
+            self._charge_ui.exec_()
 
     def add_sub(self):
         row = self.main_ui.client_table.currentRow()
@@ -631,3 +630,128 @@ class AddSubUI(QDialog):
 
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class PreChargeController:
+    def __init__(self, pre_charge_ui: PreChargeUI, client: Client):
+        self.pre_charge_ui = pre_charge_ui
+        self._subs = {sub.activity.name.as_primitive(): sub for sub in client.subscriptions()}
+        self.sub: Subscription | None = None
+        self.year: int | None = None
+        self.month: int | None = None
+
+        fill_combobox(self.pre_charge_ui.activity_combobox, self._subs.keys(), display=lambda sub_name: sub_name)
+        self.update_month_combobox()
+
+        # noinspection PyUnresolvedReferences
+        self.pre_charge_ui.confirm_btn.clicked.connect(self.save_state)
+        # noinspection PyUnresolvedReferences
+        self.pre_charge_ui.cancel_btn.clicked.connect(self.pre_charge_ui.reject)
+        # noinspection PyUnresolvedReferences
+        self.pre_charge_ui.activity_combobox.currentTextChanged.connect(self.update_month_combobox)
+
+    def save_state(self):
+        self.sub = self._subs[self.pre_charge_ui.activity_combobox.currentText()]
+        year, month = self.pre_charge_ui.month_combobox.currentText().split("/")
+        self.year, self.month = int(year), int(month)
+        self.pre_charge_ui.activity_combobox.window().close()
+
+    def update_month_combobox(self):
+        _from = self._subs[self.pre_charge_ui.activity_combobox.currentText()].when
+        not_charged_months = ((y, m) for y, m in month_range(_from, date.today() + timedelta(days=1))
+                              if not self._subs[self.pre_charge_ui.activity_combobox.currentText()].is_charged(y, m))
+        fill_combobox(self.pre_charge_ui.month_combobox, not_charged_months,
+                      display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
+
+
+class PreChargeUI(QDialog):
+    def __init__(
+            self, client: Client
+    ) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = PreChargeController(self, client)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Cobrar actividad")
+
+        self.layout = QVBoxLayout(self)
+
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+
+        # Activity.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Actividad")
+
+        self.activity_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.activity_combobox, 0, 1)
+        config_combobox(self.activity_combobox)
+
+        # Month being paid.
+        self.month_lbl = QLabel(self)
+        self.form_layout.addWidget(self.month_lbl, 1, 0)
+        config_lbl(self.month_lbl, "Cuota")
+
+        self.month_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.month_combobox, 1, 1)
+        config_combobox(self.month_combobox, fixed_width=self.activity_combobox.width())
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+
+class SubsUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self._setup_ui()
+        # noinspection PyUnresolvedReferences
+        # self.main_ui.overdue_subs_checkbox.stateChanged.connect(self.fill_subscription_table)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Actividades")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QGridLayout()
+
+        # Checkbox that enables showing only subscriptions that aren't up-to-date.
+        self.overdue_subs_checkbox = QCheckBox(self.widget)
+        self.layout.addWidget(self.overdue_subs_checkbox, 0, 1)
+        config_checkbox(self.overdue_subs_checkbox, "Solo actividades inpagas", checked=False)
+
+        self.charge_sub_btn = QPushButton(self.widget)
+        self.layout.addWidget(self.charge_sub_btn, 1, 0)
+        config_btn(self.charge_sub_btn, icon_path="ui/resources/charge.png", icon_size=32)
+
+        self.add_sub_btn = QPushButton(self.widget)
+        self.layout.addWidget(self.add_sub_btn, 2, 0)
+        config_btn(self.add_sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
+
+        self.cancel_sub_btn = QPushButton(self.widget)
+        self.layout.addWidget(self.cancel_sub_btn, 3, 0)
+        config_btn(self.cancel_sub_btn, icon_path="ui/resources/minus.png", icon_size=32)
+
+        # Subscription table.
+        self.subscription_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.subscription_table, 1, 1, 4, 1)
+        config_table(self.subscription_table, allow_resizing=False,
+                     columns={"Actividad": (10, str), "Último pago": (10, bool)})
+
