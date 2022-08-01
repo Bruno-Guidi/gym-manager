@@ -762,7 +762,7 @@ class SubsChargesUI(QMainWindow):
         for sub in self.client.subscriptions():
             for month, year in month_range(from_=sub.when, to=today + timedelta(days=1)):
                 if not self.overdue_subs_checkbox.isChecked() or not sub.is_charged(year, month):
-                    row = self.subscription_table.currentRow() + 1
+                    row = self.subscription_table.rowCount()
                     fill_cell(self.subscription_table, row, 0, sub.activity.name, str)
                     fill_cell(self.subscription_table, row, 1, f"{year}/{month}", str, increase_row_count=False)
                     transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
