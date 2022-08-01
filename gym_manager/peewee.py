@@ -528,7 +528,6 @@ class SubscriptionTable(Model):
     when = DateField()
     client = ForeignKeyField(ClientTable, backref="subscriptions", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="subscriptions", on_delete="CASCADE")
-    transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions", null=True)
 
     class Meta:
         database = DATABASE_PROXY
@@ -555,11 +554,8 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         DATABASE_PROXY.create_tables([SubscriptionTable, SubscriptionCharge])
 
     def add(self, subscription: Subscription):
-        SubscriptionTable.create(
-            when=subscription.when, client_id=subscription.client.id,
-            activity_id=subscription.activity.name.as_primitive(),
-            transaction_id=None if subscription.transaction is None else subscription.transaction.id
-        )
+        SubscriptionTable.create(when=subscription.when, client_id=subscription.client.id,
+                                 activity_id=subscription.activity.name.as_primitive())
 
     def remove(self, subscription: Subscription):
         SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.id)
