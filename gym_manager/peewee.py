@@ -161,23 +161,33 @@ class SqliteClientRepo(ClientRepo):
         if page_len is not None:
             clients_q = clients_q.order_by(ClientTable.cli_name).paginate(page, page_len)
 
-        for record in prefetch(clients_q, SubscriptionTable.select(), TransactionTable.select()):
+        # Query that contains subs that don't have a charge associated and subs that do.
+        predicate = (SubscriptionTable.client_id == SubscriptionCharge.client_id) & (SubscriptionTable.activity_id ==
+                                                                                     SubscriptionCharge.activity_id)
+        subscriptions_q = SubscriptionTable.select().join(SubscriptionCharge, JOIN.LEFT_OUTER, on=predicate)
+        for record in prefetch(clients_q, subscriptions_q, TransactionTable.select()):
             if record.id not in self.cache:
                 logger.getChild(type(self).__name__).info(f"Creating Client [client.id={record.id}] from queried data.")
                 client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
                                 String(record.telephone), String(record.direction),
                                 Number(record.dni if record.dni is not None else ""))
                 self.cache[record.id] = client
+                subs = {}
                 for sub_record in record.subscriptions:
-                    activity = self.activity_repo.get(String(sub_record.activity_id))
-                    trans_record, transaction = sub_record.transaction, None
-                    if trans_record is not None:
-                        transaction = self.transaction_repo.from_data(
+                    subs[sub_record.activity_id] = Subscription(sub_record.when, client,
+                                                                self.activity_repo.get(String(sub_record.activity_id)))
+                for sub_charge in record.subscriptions_charges:
+                    year, month = sub_charge.when.year, sub_charge.when.month
+                    trans_record = sub_charge.transaction
+                    subs[sub_charge.activity_id].add_transaction(
+                        year, month, self.transaction_repo.from_data(
                             trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
-                            trans_record.method,
-                            trans_record.responsible, trans_record.description, client, trans_record.balance_id
+                            trans_record.method, trans_record.responsible, trans_record.description, client,
+                            trans_record.balance_id
                         )
-                    client.add(Subscription(sub_record.when, client, activity, transaction))
+                    )
+                for subscription in subs.values():
+                    client.add(subscription)
             yield self.cache[record.id]
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
@@ -218,7 +228,7 @@ class SqliteActivityRepo(ActivityRepo):
     """
 
     def __init__(self, cache_len: int = 50) -> None:
-        DATABASE_PROXY.create_tables([ActivityTable, SubscriptionTable])
+        DATABASE_PROXY.create_tables([ActivityTable, SubscriptionTable, SubscriptionCharge])
 
         self.cache = LRUCache(String, Activity, max_len=cache_len)
 
