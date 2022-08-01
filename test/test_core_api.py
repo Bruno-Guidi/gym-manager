@@ -161,7 +161,7 @@ def test_charge_notChargeOnceActivity():
     subscription_repo.add(subscription)
 
     # This ensures that the activity is overdue.
-    assert not subscription.up_to_date(date(2022, 4, 1))
+    assert not subscription.is_charged(2022, 4)
     create_transaction_fn = functools.partial(
         transaction_repo.create, "Cobro", date(2022, 4, 1), Currency(0.0), "dummy_method",
         String("dummy_resp"), "dummy_descr", client
@@ -170,7 +170,7 @@ def test_charge_notChargeOnceActivity():
     # Feature being tested.
     api.register_subscription_charge(subscription_repo, subscription, create_transaction_fn)
     # Check that the activity is up-to-date, because a charge was registered.
-    assert subscription.up_to_date(date(2022, 4, 1))
+    assert subscription.is_charged(2022, 4)
 
 
 def test_ClientViewRefreshedAfterClientUpdate():
