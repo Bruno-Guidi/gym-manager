@@ -374,6 +374,7 @@ class Subscription:
         """
         return (year, month) in self._transactions
 
+
 @dataclass
 class Transaction:
     """Stores information about a transaction.
