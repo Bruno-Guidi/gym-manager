@@ -244,6 +244,12 @@ class SubscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def register_transaction(self, subscription: Subscription, transaction: Transaction):
+        """Registers the charge for the subscription.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def add_all(self, raw_subscriptions: Iterable[tuple]):
         """Adds the subscriptions in the iterable directly into the repository, without creating Subscription objects.
         """
