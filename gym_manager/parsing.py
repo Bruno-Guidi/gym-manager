@@ -171,9 +171,6 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo,
                                        "    from cliente_actividad"
                                        ") and p.fecha >= (?) "
                                        "group by p.id_cliente, p.id_actividad", (since, )))
-    # gen = ((today, *raw) for raw in conn.execute("select ca.id_cliente, a.descripcion "
-    #                                              "from cliente_actividad ca "
-    #                                              "inner join actividad a on ca.id_actividad = a.id"))
     subscription_repo.add_all(gen)
 
 
