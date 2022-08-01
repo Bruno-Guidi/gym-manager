@@ -351,6 +351,7 @@ class Subscription:
     client: Client
     activity: Activity
     _transaction: Transaction | None = None
+    _transactions: dict[date, Transaction] = field(default_factory=dict, compare=False, init=False)
 
     @property
     def transaction(self) -> Transaction:
@@ -363,6 +364,9 @@ class Subscription:
             raise OperationalError(f"The [transaction_date={transaction.when}] should be lesser than "
                                    f"[subscription_charge_date={subscription_charge_date}]")
         self._transaction = transaction
+
+    def add_transaction(self, transaction: Transaction):
+        self._transactions[transaction.when] = transaction
 
     def up_to_date(self, reference_date: date) -> bool:
         """Checks if the subscription is up-to-date, meaning the client paid for it in the last 30 days.
