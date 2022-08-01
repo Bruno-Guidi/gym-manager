@@ -563,10 +563,10 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         SubscriptionCharge.delete().where((SubscriptionCharge.client_id == subscription.client.id)
                                           & (SubscriptionCharge.activity_id == subscription.activity.name)).execute()
 
-    def register_transaction(self, subscription: Subscription, transaction: Transaction):
+    def register_transaction(self, subscription: Subscription, year: int, month: int, transaction: Transaction):
         """Registers the charge for the subscription.
         """
-        SubscriptionCharge.create(when=transaction.when, client_id=subscription.client.id,
+        SubscriptionCharge.create(when=date(year, month, 1), client_id=subscription.client.id,
                                   activity_id=subscription.activity.name.as_primitive(), transaction_id=transaction.id)
 
     def add_all(self, raw_subscriptions: Iterable[tuple]):
