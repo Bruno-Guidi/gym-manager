@@ -86,6 +86,8 @@ class MainController:
         self.main_ui.sub_btn.clicked.connect(self.add_sub)
         # noinspection PyUnresolvedReferences
         self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.see_charges_btn.clicked.connect(self.see_charges)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
@@ -194,7 +196,7 @@ class MainController:
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
-    def fill_subscription_table(self):
+    def fill_subscription_list(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
             self.main_ui.overdue_subs_checkbox.setChecked(not self.main_ui.overdue_subs_checkbox.isChecked())
