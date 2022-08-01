@@ -203,6 +203,7 @@ class MainController:
 
         for sub in self._clients[row].subscriptions():
             self.main_ui.sub_list.addItem(QListWidgetItem(sub.activity.name.as_primitive()))
+            self._subscriptions[sub.activity.name.as_primitive()] = sub
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
@@ -245,23 +246,19 @@ class MainController:
 
         subscription = self._add_sub_ui.controller.subscription
         if subscription is not None:
-            row = self.main_ui.subscription_table.rowCount()
+            self.main_ui.sub_list.addItem(QListWidgetItem(subscription.activity.name.as_primitive()))
             self._subscriptions[subscription.activity.name.as_primitive()] = subscription
-            fill_cell(self.main_ui.subscription_table, row, 0, subscription.activity.name, data_type=str)
-            last_paid_date = None if subscription.transaction is None else subscription.transaction.when
-            fill_cell(self.main_ui.subscription_table, row, 1, "-" if last_paid_date is None else last_paid_date,
-                      data_type=bool)
 
     def cancel_sub(self):
         if self.main_ui.client_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        if self.main_ui.subscription_table.currentRow() == -1:
+        if self.main_ui.sub_list.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad.")
             return
 
-        activity_name = self.main_ui.subscription_table.item(self.main_ui.subscription_table.currentRow(), 0).text()
+        activity_name = self.main_ui.sub_list.selectedItems()[0].text()
         client_name = self._subscriptions[activity_name].client.name
 
         cancel_fn = functools.partial(api.cancel, self.subscription_repo, self._subscriptions[activity_name])
@@ -270,7 +267,7 @@ class MainController:
 
         if remove:
             subscription = self._subscriptions.pop(activity_name)
-            self.main_ui.subscription_table.removeRow(self.main_ui.subscription_table.currentRow())
+            self.main_ui.sub_list.takeItem(self.main_ui.sub_list.currentRow())
             Dialog.info("Éxito", f"La inscripción del cliente '{subscription.client.name}' a la actividad "
                                  f"'{subscription.activity.name}' fue cancelada.")
 
