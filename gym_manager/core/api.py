@@ -108,8 +108,8 @@ def register_subscription_charge(
         raise OperationalError(f"The [client={transaction.client.name}] is being charged for the [activity="
                                f"{subscription.activity.name}] done by the [client={subscription.client.name}].")
 
-    subscription.transaction = transaction  # Links the transaction with the subscription.
-    subscription_repo.update(subscription)
+    subscription.add_transaction(transaction)  # Links the transaction with the subscription.
+    subscription_repo.register_transaction(subscription, transaction)
 
     logger.getChild(__name__).info(
         f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
