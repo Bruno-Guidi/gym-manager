@@ -162,11 +162,18 @@ def _insert_clients(conn: Connection, client_repo: ClientRepo):
     client_repo.add_all(gen)
 
 
-def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo):
-    today = date.today()
-    gen = ((today, *raw) for raw in conn.execute("select ca.id_cliente, a.descripcion "
-                                                 "from cliente_actividad ca "
-                                                 "inner join actividad a on ca.id_actividad = a.id"))
+def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo, since: date):
+    gen = (raw for raw in conn.execute("select min(p.fecha), p.id_cliente, a.descripcion "
+                                       "from pago p "
+                                       "inner join actividad a on a.id = p.id_actividad "
+                                       "where (p.id_cliente, p.id_actividad) in ("
+                                       "    select id_cliente, id_actividad "
+                                       "    from cliente_actividad"
+                                       ") and p.fecha >= (?) "
+                                       "group by p.id_cliente, p.id_actividad", (since, )))
+    # gen = ((today, *raw) for raw in conn.execute("select ca.id_cliente, a.descripcion "
+    #                                              "from cliente_actividad ca "
+    #                                              "inner join actividad a on ca.id_actividad = a.id"))
     subscription_repo.add_all(gen)
 
 
@@ -201,7 +208,7 @@ def parse(
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo)
     # ToDo register subs after registering its charging. If there is no charging for that sub, remove it.
-    _insert_subscriptions(conn, subscription_repo)
+    _insert_subscriptions(conn, subscription_repo, since)
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
 
     conn.close()
