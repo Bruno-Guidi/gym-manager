@@ -536,8 +536,8 @@ class SubscriptionTable(Model):
 
 class SubscriptionCharge(Model):
     when = DateField()
-    client = ForeignKeyField(ClientTable, backref="subscriptions", on_delete="CASCADE")
-    activity = ForeignKeyField(ActivityTable, backref="subscriptions", on_delete="CASCADE")
+    client = ForeignKeyField(ClientTable, backref="subscriptions_charges", on_delete="CASCADE")
+    activity = ForeignKeyField(ActivityTable, backref="subscriptions_charges", on_delete="CASCADE")
     transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions")
 
     class Meta:
