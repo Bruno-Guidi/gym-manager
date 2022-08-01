@@ -569,6 +569,12 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
             sub_record.transaction_id = subscription.transaction.id
         sub_record.save()
 
+    def register_transaction(self, subscription: Subscription, transaction: Transaction):
+        """Registers the charge for the subscription.
+        """
+        SubscriptionCharge.create(when=transaction.when, client_id=subscription.client.id,
+                                  activity_id=subscription.activity.name.as_primitive(), transaction_id=transaction.id)
+
     def add_all(self, raw_subscriptions: Iterable[tuple]):
         """Adds the subscriptions in the iterable directly into the repository, without creating Subscription
         objects.
