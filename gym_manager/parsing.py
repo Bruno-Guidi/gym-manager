@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from datetime import date, timedelta
 from sqlite3 import Connection
@@ -209,3 +210,5 @@ def parse(
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
 
     conn.close()
+
+    os.remove("../adjusted_backup.sql")
