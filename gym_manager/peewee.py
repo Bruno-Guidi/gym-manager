@@ -535,13 +535,24 @@ class SubscriptionTable(Model):
         primary_key = CompositeKey("client", "activity")
 
 
+class SubscriptionCharge(Model):
+    when = DateField()
+    client = ForeignKeyField(ClientTable, backref="subscriptions", on_delete="CASCADE")
+    activity = ForeignKeyField(ActivityTable, backref="subscriptions", on_delete="CASCADE")
+    transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions")
+
+    class Meta:
+        database = DATABASE_PROXY
+        primary_key = CompositeKey("when", "client", "activity")
+
+
 class SqliteSubscriptionRepo(SubscriptionRepo):
     """Subscriptions repository implementation based on Sqlite and peewee ORM.
     """
 
     # noinspection PyProtectedMember
     def __init__(self) -> None:
-        DATABASE_PROXY.create_tables([SubscriptionTable])
+        DATABASE_PROXY.create_tables([SubscriptionTable, SubscriptionCharge])
 
     def add(self, subscription: Subscription):
         SubscriptionTable.create(
