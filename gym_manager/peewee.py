@@ -560,6 +560,8 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
     def remove(self, subscription: Subscription):
         SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.id)
                                          & (SubscriptionTable.activity_id == subscription.activity.name)).execute()
+        SubscriptionCharge.delete().where((SubscriptionCharge.client_id == subscription.client.id)
+                                          & (SubscriptionCharge.activity_id == subscription.activity.name)).execute()
 
     def register_transaction(self, subscription: Subscription, transaction: Transaction):
         """Registers the charge for the subscription.
