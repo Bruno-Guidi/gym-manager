@@ -593,6 +593,9 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         """
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_charges, 1024):
+                SubscriptionCharge.insert_many(batch, fields=[SubscriptionCharge.when, SubscriptionCharge.client_id,
+                                                              SubscriptionCharge.activity_id,
+                                                              SubscriptionCharge.transaction_id]).execute()
                 pass  # Insert into SubscriptionCharge(client_id, activity_id, when, transaction_id)
 
 
