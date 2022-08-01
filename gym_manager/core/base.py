@@ -27,6 +27,15 @@ def discard_subscription(only_overdue: bool, up_to_date: bool) -> bool:
     return only_overdue and up_to_date
 
 
+def month_range(from_year: int, from_month: int, n_months: int):
+    for _ in range(n_months):
+        yield from_year, from_month
+        from_month -= 1
+        if from_month == 0:
+            from_month = 12
+            from_year -= 1
+
+
 class OperationalError(Exception):
     """Exception raised when there is an error while doing a system operation.
     """
