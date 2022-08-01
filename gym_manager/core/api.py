@@ -112,7 +112,7 @@ def register_subscription_charge(
                                f"{subscription.activity.name}] done by the [client={subscription.client.name}].")
 
     subscription.add_transaction(year, month, transaction)  # Links the transaction with the subscription.
-    subscription_repo.register_transaction(subscription, transaction)
+    subscription_repo.register_transaction(subscription, year, month, transaction)
 
     logger.getChild(__name__).info(
         f"Responsible [responsible={transaction.responsible}] charged the client [dni={transaction.client.dni}]"
