@@ -79,13 +79,11 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
-        self.main_ui.overdue_subs_checkbox.stateChanged.connect(self.fill_subscription_table)
+        self.main_ui.charge_btn.clicked.connect(self.charge_sub)
         # noinspection PyUnresolvedReferences
-        self.main_ui.charge_sub_btn.clicked.connect(self.charge_sub)
+        self.main_ui.sub_btn.clicked.connect(self.add_sub)
         # noinspection PyUnresolvedReferences
-        self.main_ui.add_sub_btn.clicked.connect(self.add_sub)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.cancel_sub_btn.clicked.connect(self.cancel_sub)
+        self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
@@ -316,6 +314,7 @@ class ClientMainUI(QMainWindow):
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
         self.right_layout.setContentsMargins(10, 0, 10, 0)
+        self.right_layout.setAlignment(Qt.AlignCenter)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
@@ -398,32 +397,30 @@ class ClientMainUI(QMainWindow):
         # Subscriptions data.
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
-        # Subscription layout.
-        self.sub_layout = QGridLayout()
-        self.right_layout.addLayout(self.sub_layout)
+        self.subs_lbl = QLabel(self.widget)
+        self.right_layout.addWidget(self.subs_lbl, alignment=Qt.AlignCenter)
+        config_lbl(self.subs_lbl, "Actividades")
 
-        # Checkbox that enables showing only subscriptions that aren't up-to-date.
-        self.overdue_subs_checkbox = QCheckBox(self.widget)
-        self.sub_layout.addWidget(self.overdue_subs_checkbox, 0, 1)
-        config_checkbox(self.overdue_subs_checkbox, "Solo actividades inpagas", checked=False)
+        self.sub_buttons_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.sub_buttons_layout)
+        self.sub_buttons_layout.setSpacing(3)
+        self.sub_buttons_layout.setAlignment(Qt.AlignCenter)
 
-        self.charge_sub_btn = QPushButton(self.widget)
-        self.sub_layout.addWidget(self.charge_sub_btn, 1, 0)
-        config_btn(self.charge_sub_btn, icon_path="ui/resources/charge.png", icon_size=32)
+        self.sub_btn = QPushButton(self.widget)
+        self.sub_buttons_layout.addWidget(self.sub_btn)
+        config_btn(self.sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
 
-        self.add_sub_btn = QPushButton(self.widget)
-        self.sub_layout.addWidget(self.add_sub_btn, 2, 0)
-        config_btn(self.add_sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
+        self.unsub_btn = QPushButton(self.widget)
+        self.sub_buttons_layout.addWidget(self.unsub_btn)
+        config_btn(self.unsub_btn, icon_path="ui/resources/minus.png", icon_size=32)
 
-        self.cancel_sub_btn = QPushButton(self.widget)
-        self.sub_layout.addWidget(self.cancel_sub_btn, 3, 0)
-        config_btn(self.cancel_sub_btn, icon_path="ui/resources/minus.png", icon_size=32)
+        self.charge_btn = QPushButton(self.widget)
+        self.sub_buttons_layout.addWidget(self.charge_btn)
+        config_btn(self.charge_btn, icon_path="ui/resources/charge.png", icon_size=32)
 
-        # Subscription table.
-        self.subscription_table = QTableWidget(self.widget)
-        self.sub_layout.addWidget(self.subscription_table, 1, 1, 4, 1)
-        config_table(self.subscription_table, allow_resizing=False,
-                     columns={"Actividad": (10, str), "Último pago": (10, bool)})
+        self.see_charges_btn = QPushButton(self.widget)
+        self.sub_buttons_layout.addWidget(self.see_charges_btn)
+        config_btn(self.see_charges_btn, icon_path="ui/resources/actions.png", icon_size=32)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
