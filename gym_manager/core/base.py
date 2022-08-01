@@ -359,17 +359,12 @@ class Subscription:
     _transaction: Transaction | None = None
     _transactions: dict[tuple[int, int], Transaction] = field(default_factory=dict, compare=False, init=False)
 
-    @property
-    def transaction(self) -> Transaction:
-        return self._transaction
+    def transactions(self):
+        for year_month, transaction in self._transactions:
+            yield *year_month, transaction
 
-    @transaction.setter
-    def transaction(self, transaction: Transaction):
-        if self.invalid_charge_date(transaction.when):
-            subscription_charge_date = self.when if transaction is None else transaction.when
-            raise OperationalError(f"The [transaction_date={transaction.when}] should be lesser than "
-                                   f"[subscription_charge_date={subscription_charge_date}]")
-        self._transaction = transaction
+    def transaction(self, year: int, month: int) -> Transaction:
+        return self._transactions.get((year, month), None)
 
     def add_transaction(self, year: int, month: int, transaction: Transaction):
         self._transactions[(year, month)] = transaction
@@ -378,25 +373,6 @@ class Subscription:
         """Checks if the subscription has a registered charge in the *month* and *year*.
         """
         return (year, month) in self._transactions
-
-    def up_to_date(self, reference_date: date) -> bool:
-        """Checks if the subscription is up-to-date, meaning the client paid for it in the last 30 days.
-
-        If *reference_date* is 31 days after *self.transaction.when* (or *self.when*, if the client hasn't been charged
-        for the activity after the subscription was made) then the subscription IS NOT up-to-date.
-        """
-        if self.transaction is None:
-            return reference_date - ONE_MONTH_TD < self.when
-        return reference_date - ONE_MONTH_TD < self.transaction.when
-
-    def invalid_charge_date(self, charge_date: date):
-        """Checks if *charge_date* is valid or not.
-        """
-        previous_charge = self.transaction
-        # The charging is being made before the subscription was made, or the charging is being made before the previous
-        # charge was made.
-        return charge_date < self.when or (previous_charge is not None and charge_date < previous_charge.when)
-
 
 @dataclass
 class Transaction:
