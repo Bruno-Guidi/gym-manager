@@ -273,6 +273,16 @@ class MainController:
             Dialog.info("Éxito", f"La inscripción del cliente '{subscription.client.name}' a la actividad "
                                  f"'{subscription.activity.name}' fue cancelada.")
 
+    def see_charges(self):
+        if self.main_ui.client_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un cliente.")
+            return
+
+        # noinspection PyAttributeOutsideInit
+        self._subs_ui = SubsChargesUI(self._clients[self.main_ui.client_table.currentRow()])
+        self._subs_ui.setWindowModality(Qt.ApplicationModal)
+        self._subs_ui.show()
+
 
 class ClientMainUI(QMainWindow):
 
@@ -712,40 +722,43 @@ class PreChargeUI(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
-
-class SubsUI(QMainWindow):
-    def __init__(self):
+class SubsChargesUI(QMainWindow):
+    def __init__(self, client: Client):
         super().__init__()
         self._setup_ui()
+        self.client = client
+
+        self.fill_table()
+
         # noinspection PyUnresolvedReferences
-        # self.main_ui.overdue_subs_checkbox.stateChanged.connect(self.fill_subscription_table)
+        self.overdue_subs_checkbox.stateChanged.connect(self.fill_table)
 
     def _setup_ui(self):
-        self.setWindowTitle("Actividades")
+        self.setWindowTitle("Pagos")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
-        self.layout = QGridLayout()
+        self.layout = QVBoxLayout(self.widget)
 
         # Checkbox that enables showing only subscriptions that aren't up-to-date.
         self.overdue_subs_checkbox = QCheckBox(self.widget)
-        self.layout.addWidget(self.overdue_subs_checkbox, 0, 1)
-        config_checkbox(self.overdue_subs_checkbox, "Solo actividades inpagas", checked=False)
-
-        self.charge_sub_btn = QPushButton(self.widget)
-        self.layout.addWidget(self.charge_sub_btn, 1, 0)
-        config_btn(self.charge_sub_btn, icon_path="ui/resources/charge.png", icon_size=32)
-
-        self.add_sub_btn = QPushButton(self.widget)
-        self.layout.addWidget(self.add_sub_btn, 2, 0)
-        config_btn(self.add_sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
-
-        self.cancel_sub_btn = QPushButton(self.widget)
-        self.layout.addWidget(self.cancel_sub_btn, 3, 0)
-        config_btn(self.cancel_sub_btn, icon_path="ui/resources/minus.png", icon_size=32)
+        self.layout.addWidget(self.overdue_subs_checkbox)
+        config_checkbox(self.overdue_subs_checkbox, "Solo cuotas inpagas", checked=False)
 
         # Subscription table.
         self.subscription_table = QTableWidget(self.widget)
-        self.layout.addWidget(self.subscription_table, 1, 1, 4, 1)
-        config_table(self.subscription_table, allow_resizing=False,
-                     columns={"Actividad": (10, str), "Último pago": (10, bool)})
+        self.layout.addWidget(self.subscription_table)
+        new_config_table(self.subscription_table, width=500, allow_resizing=False,
+                         columns={"Actividad": (.45, str), "Cuota": (.2, bool), "Fecha pago": (.35, bool)})
 
+    def fill_table(self):
+        self.subscription_table.setRowCount(0)
+
+        today = date.today()
+        for sub in self.client.subscriptions():
+            for month, year in month_range(from_=sub.when, to=today + timedelta(days=1)):
+                if not self.overdue_subs_checkbox.isChecked() or not sub.is_charged(year, month):
+                    row = self.subscription_table.currentRow() + 1
+                    fill_cell(self.subscription_table, row, 0, sub.activity.name, str)
+                    fill_cell(self.subscription_table, row, 1, f"{year}/{month}", str, increase_row_count=False)
+                    transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
+                    fill_cell(self.subscription_table, row, 2, transaction_when, bool, increase_row_count=False)
