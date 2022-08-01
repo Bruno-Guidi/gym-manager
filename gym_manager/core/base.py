@@ -360,7 +360,7 @@ class Subscription:
     client: Client
     activity: Activity
     _transaction: Transaction | None = None
-    _transactions: dict[date, Transaction] = field(default_factory=dict, compare=False, init=False)
+    _transactions: dict[tuple[int, int], Transaction] = field(default_factory=dict, compare=False, init=False)
 
     @property
     def transaction(self) -> Transaction:
@@ -375,7 +375,10 @@ class Subscription:
         self._transaction = transaction
 
     def add_transaction(self, transaction: Transaction):
-        self._transactions[transaction.when] = transaction
+        self._transactions[(transaction.when.year, transaction.when.month)] = transaction
+
+    def is_charged(self, year: int, month: int):
+        return (year, month) in self._transactions
 
     def up_to_date(self, reference_date: date) -> bool:
         """Checks if the subscription is up-to-date, meaning the client paid for it in the last 30 days.
