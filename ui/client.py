@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget)
+    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem)
 
 from gym_manager.core import api
 from gym_manager.core.base import (
@@ -201,16 +201,8 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        self._subscriptions = {}  # Clears the dict.
-        self.main_ui.subscription_table.setRowCount(0)  # Clears the table.
-
-        for i, sub in enumerate(self._clients[row].subscriptions()):
-            self._subscriptions[sub.activity.name.as_primitive()] = sub
-            if not discard_subscription(self.main_ui.overdue_subs_checkbox.isChecked(), sub.up_to_date(date.today())):
-                fill_cell(self.main_ui.subscription_table, i, 0, sub.activity.name, data_type=str)
-                last_paid_date = None if sub.transaction is None else sub.transaction.when
-                fill_cell(self.main_ui.subscription_table, i, 1, "-" if last_paid_date is None else last_paid_date,
-                          data_type=bool)
+        for sub in self._clients[row].subscriptions():
+            self.main_ui.sub_list.addItem(QListWidgetItem(sub.activity.name.as_primitive()))
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
@@ -420,6 +412,9 @@ class ClientMainUI(QMainWindow):
         self.see_charges_btn = QPushButton(self.widget)
         self.sub_buttons_layout.addWidget(self.see_charges_btn)
         config_btn(self.see_charges_btn, icon_path="ui/resources/actions.png", icon_size=32)
+
+        self.sub_list = QListWidget(self.widget)
+        self.right_layout.addWidget(self.sub_list)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
