@@ -125,7 +125,7 @@ class MainController:
             self.main_ui.tel_field.setText(str(self._clients[row].telephone))
             self.main_ui.dir_field.setText(str(self._clients[row].direction))
 
-            self.fill_subscription_table()
+            self.fill_subscription_list()
 
         else:
             # Clears the form.
