@@ -238,12 +238,6 @@ class SubscriptionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def update(self, subscription: Subscription):
-        """Updates the subscription.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def register_transaction(self, subscription: Subscription, transaction: Transaction):
         """Registers the charge for the subscription.
         """
