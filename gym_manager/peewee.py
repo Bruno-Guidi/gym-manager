@@ -596,7 +596,6 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
                 SubscriptionCharge.insert_many(batch, fields=[SubscriptionCharge.when, SubscriptionCharge.client_id,
                                                               SubscriptionCharge.activity_id,
                                                               SubscriptionCharge.transaction_id]).execute()
-                pass  # Insert into SubscriptionCharge(client_id, activity_id, when, transaction_id)
 
 
 class ResponsibleTable(Model):
