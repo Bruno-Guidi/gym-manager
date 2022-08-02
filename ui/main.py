@@ -176,7 +176,7 @@ class Controller:
 
     def show_contact_main_ui(self):
         # noinspection PyAttributeOutsideInit
-        self.contact_main_ui = ContactMainUI(self.contact_repo)
+        self.contact_main_ui = ContactMainUI(self.contact_repo, self.client_repo)
         self.contact_main_ui.setWindowModality(Qt.ApplicationModal)
         self.contact_main_ui.show()
 
