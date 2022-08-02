@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import (
     QDesktopWidget, QTextEdit)
 
 from gym_manager.contact.core import ContactRepo, Contact, create_contact
-from gym_manager.contact.peewee import contains_name
 from gym_manager.core.base import (
     String, TextLike, Client, Number)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo
