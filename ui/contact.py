@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
     QDesktopWidget, QTextEdit)
 
-from gym_manager.contact.core import ContactRepo, Contact, create_contact
+from gym_manager.contact.core import ContactRepo, Contact, create_contact, update_contact
 from gym_manager.core.base import (
     String, TextLike, Client, Number)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo
@@ -19,20 +19,6 @@ from ui.widget_config import (
     config_combobox, fill_combobox, new_config_table)
 from ui.widgets import (
     Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, valid_text_value)
-
-
-@log_responsible(action_tag="update_client", to_str=lambda client: f"Actualizar cliente {client.name}")
-def update_client(
-        client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String,
-        dni: Number
-):
-    client.name = name
-    client.dni = dni
-    client.telephone = telephone
-    client.direction = direction
-    client_repo.update(client)
-
-    return client
 
 
 class MainController:
@@ -95,12 +81,11 @@ class MainController:
         if row != -1:
             # Fills the form.
             self.main_ui.name_field.setText(str(self._contacts[row].name))
-            # dni = "" if self._contacts[row].dni.as_primitive() is None else str(self._contacts[row].dni.as_primitive())
-            # self.main_ui.tel1_field.setText(dni)
-            # self.main_ui.tel1_field.setEnabled(len(dni) == 0)
-            # self.main_ui.tel2_field.setText(str(self._contacts[row].telephone))
-            # self.main_ui.dir_field.setText(str(self._contacts[row].direction))
-
+            self.main_ui.name_field.setEnabled(self._contacts[row].client is None)
+            self.main_ui.tel1_field.setText(str(self._contacts[row].tel1))
+            self.main_ui.tel2_field.setText(str(self._contacts[row].tel2))
+            self.main_ui.dir_field.setText(str(self._contacts[row].direction))
+            self.main_ui.description_text.setText(str(self._contacts[row].description))
         else:
             # Clears the form.
             self.main_ui.name_field.clear()
@@ -123,28 +108,27 @@ class MainController:
             return
 
         # noinspection PyTypeChecker
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel2_field.valid_value(),
-                    self.main_ui.dir_field.valid_value(), self.main_ui.tel1_field.valid_value()]):
+        valid_descr, descr = valid_text_value(self.main_ui.description_text, utils.ACTIVITY_DESCR_CHARS,
+                                              optional=True)
+        if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel1_field.valid_value(),
+                    self.main_ui.tel2_field.valid_value(), self.main_ui.dir_field.valid_value(), valid_descr]):
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.contact_repo.is_active(self.main_ui.tel1_field.value()):
-            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.main_ui.tel1_field.value()}'.")
         else:
-            update_fn = functools.partial(update_client, self.contact_repo, self._contacts[row],
-                                          self.main_ui.name_field.value(), self.main_ui.tel2_field.value(),
-                                          self.main_ui.dir_field.value(), self.main_ui.tel1_field.value())
+            if Dialog.confirm("¿Desea modificar la información del contacto?"):
+                contact = self._contacts[row]
+                # noinspection PyTypeChecker
+                update_contact(self.contact_repo, contact, self.main_ui.name_field.value(),
+                               self.main_ui.tel1_field.value(), self.main_ui.tel2_field.value(),
+                               self.main_ui.dir_field.value(), descr)
 
-            if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
                 # Updates the ui.
-                client = self._contacts[row]
-                fill_cell(self.main_ui.contact_table, row, 0, client.name, data_type=str, increase_row_count=False)
-                dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
-                fill_cell(self.main_ui.contact_table, row, 1, dni, data_type=int, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 5, client.direction, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.contact_table, row, 0, contact.name, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.contact_table, row, 1, contact.tel1, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.contact_table, row, 2, contact.tel2, data_type=str, increase_row_count=False)
+                fill_cell(self.main_ui.contact_table, row, 3, contact.direction, data_type=str,
+                          increase_row_count=False)
 
-                self.main_ui.tel1_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
-
-                Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
+                Dialog.info("Éxito", f"El contacto '{contact.name}' fue actualizado correctamente.")
 
     def remove(self):
         row = self.main_ui.contact_table.currentRow()
@@ -245,7 +229,8 @@ class ContactMainUI(QMainWindow):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre")
 
-        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"))
+        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
@@ -275,6 +260,15 @@ class ContactMainUI(QMainWindow):
         self.dir_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 3, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
+
+        # Description.
+        self.description_lbl = QLabel(self)
+        self.form_layout.addWidget(self.description_lbl, 4, 0, alignment=Qt.AlignTop)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 4, 1)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
