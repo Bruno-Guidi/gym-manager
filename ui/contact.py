@@ -45,10 +45,12 @@ class MainController:
     def __init__(
             self,
             main_ui: ContactMainUI,
-            contact_repo: ContactRepo
+            contact_repo: ContactRepo,
+            client_repo: ClientRepo
     ):
         self.main_ui = main_ui
         self.contact_repo = contact_repo
+        self.client_repo = client_repo
         self._contacts: dict[int, Contact] = {}  # Dict that maps row numbers to the displayed contact.
 
         # Configure the filtering widget.
@@ -117,7 +119,7 @@ class MainController:
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
-        self._create_ui = CreateUI(self.contact_repo)
+        self._create_ui = CreateUI(self.contact_repo, self.client_repo)
         self._create_ui.exec_()
         if self._create_ui.controller.contact is not None:
             self._add_contact(self._create_ui.controller.contact, check_filters=True, check_limit=True)
@@ -182,11 +184,12 @@ class ContactMainUI(QMainWindow):
 
     def __init__(
             self,
-            contact_repo: ContactRepo
+            contact_repo: ContactRepo,
+            client_repo: ClientRepo
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, contact_repo)
+        self.controller = MainController(self, contact_repo, client_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Agenda")
@@ -293,13 +296,19 @@ class ContactMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, contact_repo: ContactRepo) -> None:
+    def __init__(self, create_ui: CreateUI, contact_repo: ContactRepo, client_repo: ClientRepo) -> None:
         self.create_ui = create_ui
 
         self.contact: Contact | None = None
         self.contact_repo = contact_repo
+        self.client_repo = client_repo
 
         self.enable_client_search()
+
+        # Configure the filtering widget.
+        filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
+                            translate_fun=lambda client, value: client.cli_name.contains(value)),)
+        self.create_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
 
         # noinspection PyUnresolvedReferences
         self.create_ui.name_checkbox.stateChanged.connect(self.enable_client_search)
@@ -310,7 +319,13 @@ class CreateController:
 
     def enable_client_search(self):
         self.create_ui.filter_header.setEnabled(not self.create_ui.name_checkbox.isChecked())
+        self.create_ui.client_combobox.setEnabled(not self.create_ui.name_checkbox.isChecked())
         self.create_ui.name_field.setEnabled(self.create_ui.name_checkbox.isChecked())
+
+    def fill_client_combobox(self, filters: list[FilterValuePair]):
+        fill_combobox(self.create_ui.client_combobox,
+                      self.client_repo.all(page=1, filters=filters),
+                      lambda client: client.name.as_primitive())
 
     # noinspection PyTypeChecker
     def create_contact(self):
@@ -331,10 +346,10 @@ class CreateController:
 
 
 class CreateUI(QDialog):
-    def __init__(self, contact_repo: ContactRepo) -> None:
+    def __init__(self, contact_repo: ContactRepo, client_repo: ClientRepo) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, contact_repo)
+        self.controller = CreateController(self, contact_repo, client_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Nuevo contacto")
@@ -351,48 +366,57 @@ class CreateUI(QDialog):
 
         # Name.
         self.name_checkbox = QCheckBox(self)
-        self.form_layout.addWidget(self.name_checkbox, 0, 0)
-        config_checkbox(self.name_checkbox, "Nombre", layout_dir=Qt.LayoutDirection.RightToLeft)
+        self.form_layout.addWidget(self.name_checkbox, 1, 0)
+        config_checkbox(self.name_checkbox, "Nombre", checked=True, layout_dir=Qt.LayoutDirection.RightToLeft)
 
         self.name_field = Field(String, self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"))
-        self.form_layout.addWidget(self.name_field, 0, 1)
+        self.form_layout.addWidget(self.name_field, 1, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # Client
+        self.client_lbl = QLabel(self)
+        self.form_layout.addWidget(self.client_lbl, 0, 0)
+        config_lbl(self.client_lbl, "Cliente")
+
+        self.client_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.client_combobox, 0, 1)
+        config_combobox(self.client_combobox, fixed_width=self.name_field.width(), adjust_to_hint=False)
 
         # Telephone 1.
         self.tel1_lbl = QLabel(self)
-        self.form_layout.addWidget(self.tel1_lbl, 1, 0)
+        self.form_layout.addWidget(self.tel1_lbl, 2, 0)
         config_lbl(self.tel1_lbl, "Teléfono 1")
 
         self.tel1_field = Field(String, self, optional=True, min_value=utils.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel1_field, 1, 1)
+        self.form_layout.addWidget(self.tel1_field, 2, 1)
         config_line(self.tel1_field, place_holder="Teléfono 1", adjust_to_hint=False)
 
         # Telephone 2.
         self.tel2_lbl = QLabel(self)
-        self.form_layout.addWidget(self.tel2_lbl, 2, 0)
+        self.form_layout.addWidget(self.tel2_lbl, 3, 0)
         config_lbl(self.tel2_lbl, "Teléfono 2")
 
         self.tel2_field = Field(String, self, optional=True, max_len=utils.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel2_field, 2, 1)
+        self.form_layout.addWidget(self.tel2_field, 3, 1)
         config_line(self.tel2_field, place_holder="Teléfono 2", adjust_to_hint=False)
 
         # Direction.
         self.dir_lbl = QLabel(self)
-        self.form_layout.addWidget(self.dir_lbl, 3, 0)
+        self.form_layout.addWidget(self.dir_lbl, 4, 0)
         config_lbl(self.dir_lbl, "Dirección")
 
         self.dir_field = Field(String, self, optional=True, max_len=utils.CLIENT_DIR_CHARS)
-        self.form_layout.addWidget(self.dir_field, 3, 1)
+        self.form_layout.addWidget(self.dir_field, 4, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
 
         # Description.
         self.description_lbl = QLabel(self)
-        self.form_layout.addWidget(self.description_lbl, 4, 0, alignment=Qt.AlignTop)
+        self.form_layout.addWidget(self.description_lbl, 5, 0, alignment=Qt.AlignTop)
         config_lbl(self.description_lbl, "Descripción")
 
         self.description_text = QTextEdit(self)
-        self.form_layout.addWidget(self.description_text, 4, 1)
-        config_line(self.description_text, place_holder="Descripción")
+        self.form_layout.addWidget(self.description_text, 5, 1)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
