@@ -28,9 +28,15 @@ def discard_subscription(only_overdue: bool, up_to_date: bool) -> bool:
 
 
 def month_range(from_: date, to: date):
+    from_m, from_y = from_.month, from_.year
     while from_ < to:
         yield from_.month, from_.year
-        from_ += ONE_MONTH_TD
+
+        if from_m == 12:
+            from_m, from_y = 0, from_y + 1
+        from_m += 1
+
+        from_ = date(from_y, from_m, from_.day)
 
 
 class OperationalError(Exception):

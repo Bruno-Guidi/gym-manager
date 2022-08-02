@@ -113,16 +113,13 @@ def test_base_Client_age():
 
 
 def test_base_monthRange():
-    expected = [(2022, 12), (2022, 11), (2022, 10), (2022, 9), (2022, 8), (2022, 7), (2022, 6), (2022, 5), (2022, 4),
-                (2022, 3), (2022, 2), (2022, 1), ]
-    assert expected == [month_year for month_year in month_range(2022, 12, n_months=12)]
+    expected = [(12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022), (8, 2022),
+                (9, 2022), (10, 2022), (11, 2022), ]
+    assert expected == [month_year for month_year in month_range(date(2021, 12, 1), date(2022, 12, 1))]
 
-    expected = [(2022, 11), (2022, 10), (2022, 9), (2022, 8), (2022, 7), (2022, 6), (2022, 5), (2022, 4),
-                (2022, 3), (2022, 2), (2022, 1), (2021, 12), ]
-    assert expected == [month_year for month_year in month_range(2022, 11, n_months=12)]
+    expected = [(11, 2021), (12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022),
+                (8, 2022), (9, 2022), (10, 2022)]
+    assert expected == [month_year for month_year in month_range(date(2021, 11, 1), date(2022, 11, 1))]
 
-    expected = [(2022, 6), (2022, 5), (2022, 4), (2022, 3), (2022, 2), (2022, 1), (2021, 12), (2021, 11), (2021, 10),
-                (2021, 9), (2021, 8), (2021, 7), (2021, 6), (2021, 5), (2021, 4), (2021, 3), (2021, 2), (2021, 1),
-                (2020, 12), (2020, 11), (2020, 10), (2020, 9), (2020, 8), (2020, 7), ]
-    assert expected == [month_year for month_year in month_range(2022, 6, n_months=24)]
+    assert [] == [month_year for month_year in month_range(date(2021, 11, 1), date(2021, 11, 1))]
 
