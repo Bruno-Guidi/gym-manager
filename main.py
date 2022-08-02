@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QApplication
 from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
 from gym_manager.booking.core import BookingSystem, Duration
+from gym_manager.contact.peewee import SqliteContactRepo
 from gym_manager.core.base import Currency, String, Activity
 from gym_manager.core.security import log_responsible, SimpleSecurityHandler, Responsible
 from ui.main import MainUI
@@ -58,6 +59,9 @@ def main():
         courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=30
     )
 
+    # Contact initialization.
+    contact_repo = SqliteContactRepo()
+
     # Security initialization.
     security_handler = SimpleSecurityHandler(
         peewee.SqliteSecurityRepo(),
@@ -79,7 +83,7 @@ def main():
 
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
-                    security_handler, enable_tools=config_dict["enable_utility_functions"])
+                    contact_repo, security_handler, enable_tools=config_dict["enable_utility_functions"])
     window.show()
     app.exec()
 
