@@ -191,7 +191,7 @@ class MainController:
             self.main_ui.dir_field.clear()
 
             # Clears the subscriptions table.
-            self.main_ui.subscription_table.setRowCount(0)
+            self.main_ui.sub_list.clear()
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
