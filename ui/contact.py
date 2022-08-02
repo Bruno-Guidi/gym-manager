@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem)
+    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QTextEdit)
 
 from gym_manager.contact.core import ContactRepo, Contact
 from gym_manager.contact.peewee import contains_name
@@ -299,10 +299,18 @@ class CreateController:
         self.contact: Contact | None = None
         self.contact_repo = contact_repo
 
+        self.enable_client_search()
+
+        # noinspection PyUnresolvedReferences
+        self.create_ui.name_checkbox.stateChanged.connect(self.enable_client_search)
         # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_contact)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+
+    def enable_client_search(self):
+        self.create_ui.filter_header.setEnabled(not self.create_ui.name_checkbox.isChecked())
+        self.create_ui.name_field.setEnabled(self.create_ui.name_checkbox.isChecked())
 
     # noinspection PyTypeChecker
     def create_contact(self):
@@ -315,7 +323,7 @@ class CreateController:
             Dialog.info("Error", f"El cliente '{client.name}' ya tiene un contacto asociado.")
         else:
             self.contact = self.contact_repo.create(
-                self.create_ui.name_field.value(), self.create_ui.tel1_field.value(), self.create_ui.tel2_lbl.value(),
+                self.create_ui.name_field.value(), self.create_ui.tel1_field.value(), self.create_ui.tel2_field.value(),
                 self.create_ui.dir_field.value(), String("")
             )
             Dialog.info("Éxito", f"El contacto '{self.create_ui.name_field.value()}' fue creado correctamente.")
@@ -332,46 +340,59 @@ class CreateUI(QDialog):
         self.setWindowTitle("Nuevo contacto")
         self.layout = QVBoxLayout(self)
 
+        # Filtering.
+        self.filter_header = FilterHeader(show_clear_button=False)
+        self.layout.addWidget(self.filter_header)
+
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
         self.form_layout.setContentsMargins(40, 0, 40, 0)
 
         # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre")
+        self.name_checkbox = QCheckBox(self)
+        self.form_layout.addWidget(self.name_checkbox, 0, 0)
+        config_checkbox(self.name_checkbox, "Nombre", layout_dir=Qt.LayoutDirection.RightToLeft)
 
-        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"))
+        self.name_field = Field(String, self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"))
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
         # Telephone 1.
-        self.tel1_lbl = QLabel(self.widget)
+        self.tel1_lbl = QLabel(self)
         self.form_layout.addWidget(self.tel1_lbl, 1, 0)
         config_lbl(self.tel1_lbl, "Teléfono 1")
 
-        self.tel1_field = Field(String, self.widget, optional=True, min_value=utils.CLIENT_TEL_CHARS)
+        self.tel1_field = Field(String, self, optional=True, min_value=utils.CLIENT_TEL_CHARS)
         self.form_layout.addWidget(self.tel1_field, 1, 1)
         config_line(self.tel1_field, place_holder="Teléfono 1", adjust_to_hint=False)
 
         # Telephone 2.
-        self.tel2_lbl = QLabel(self.widget)
+        self.tel2_lbl = QLabel(self)
         self.form_layout.addWidget(self.tel2_lbl, 2, 0)
         config_lbl(self.tel2_lbl, "Teléfono 2")
 
-        self.tel2_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_TEL_CHARS)
+        self.tel2_field = Field(String, self, optional=True, max_len=utils.CLIENT_TEL_CHARS)
         self.form_layout.addWidget(self.tel2_field, 2, 1)
         config_line(self.tel2_field, place_holder="Teléfono 2", adjust_to_hint=False)
 
         # Direction.
-        self.dir_lbl = QLabel(self.widget)
+        self.dir_lbl = QLabel(self)
         self.form_layout.addWidget(self.dir_lbl, 3, 0)
         config_lbl(self.dir_lbl, "Dirección")
 
-        self.dir_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_DIR_CHARS)
+        self.dir_field = Field(String, self, optional=True, max_len=utils.CLIENT_DIR_CHARS)
         self.form_layout.addWidget(self.dir_field, 3, 1)
         config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
+
+        # Description.
+        self.description_lbl = QLabel(self)
+        self.form_layout.addWidget(self.description_lbl, 4, 0, alignment=Qt.AlignTop)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 4, 1)
+        config_line(self.description_text, place_holder="Descripción")
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
