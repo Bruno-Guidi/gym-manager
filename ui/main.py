@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog)
+    QDialog, QDateEdit)
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
@@ -21,7 +21,7 @@ from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
-from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table, config_line
+from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit
 from ui.widgets import PageIndex
 
 
@@ -31,12 +31,24 @@ class LoadBackupFromOld(QDialog):
 
         self.confirmed = False
         self.path = ""
+        self.since = date.today()
 
         self.layout = QVBoxLayout(self)
 
         self.line_edit = QLineEdit(self)
         self.layout.addWidget(self.line_edit)
         config_line(self.line_edit, place_holder="Path")
+
+        self.since_layout = QHBoxLayout()
+        self.layout.addLayout(self.since_layout)
+
+        self.since_lbl = QLabel(self)
+        self.since_layout.addWidget(self.since_lbl)
+        config_lbl(self.since_lbl, "Start point")
+
+        self.since_date_edit = QDateEdit(self)
+        self.since_layout.addWidget(self.since_date_edit)
+        config_date_edit(self.since_date_edit, date.today(), calendar=True)
 
         self.ok_btn = QPushButton(self)
         self.layout.addWidget(self.ok_btn)
@@ -47,6 +59,7 @@ class LoadBackupFromOld(QDialog):
     def ok_clicked(self):
         self.confirmed = True
         self.path = self.line_edit.text()
+        self.since = self.since_date_edit.date().toPyDate()
         self.line_edit.window().close()
 
 
@@ -133,7 +146,7 @@ class Controller:
             self._backup_ui.exec_()
             if self._backup_ui.confirmed:
                 parsing.parse(self.activity_repo, self.client_repo, self.subscription_repo, self.transaction_repo,
-                              since=date(2022, 7, 1), backup_path=self._backup_ui.path)
+                              since=self._backup_ui.since, backup_path=self._backup_ui.path)
 
         # noinspection PyAttributeOutsideInit
         self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance),

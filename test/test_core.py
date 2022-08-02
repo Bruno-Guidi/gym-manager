@@ -6,7 +6,7 @@ import pytest
 from gym_manager.core import api
 from gym_manager.core.base import (
     String, Currency, Client, Number, Transaction,
-    Subscription, discard_subscription, ValidationError)
+    Subscription, discard_subscription, ValidationError, month_range)
 
 
 def test_base_Number():
@@ -27,37 +27,19 @@ def test_base_Number():
 
 
 # noinspection PyTypeChecker
-def test_base_Subscription_upToDate():
+def test_base_Subscription_isCharged():
     subscription = Subscription(date(2022, 8, 8), client=None, activity=None)
 
-    # The client wasn't charged for the activity after he signed up. 06/09/2022 is the 30th day after the subscription
-    # date, so the subscription is up-to-date.
-    assert subscription.up_to_date(date(2022, 9, 6))
+    assert (not subscription.is_charged(2022, 4) and not subscription.is_charged(2022, 5)
+            and not subscription.is_charged(2022, 6))
 
-    # The client wasn't charged for the activity after he signed up. 07/09/2022 is the 31st day after the subscription
-    # date, so the subscription isn't up-to-date.
-    assert not subscription.up_to_date(date(2022, 9, 7))
+    subscription.add_transaction(2022, 4, Transaction(1, None, date(2022, 4, 8), None, None, None, None))
+    assert (subscription.is_charged(2022, 4) and not subscription.is_charged(2022, 5)
+            and not subscription.is_charged(2022, 6))
 
-    # The client is charged for the subscription.
-    subscription.transaction = Transaction(1, type=None, client=None, when=date(2022, 9, 7), amount=None, method=None,
-                                           responsible=None, description=None)
-
-    assert subscription.up_to_date(date(2022, 9, 7))
-    assert subscription.up_to_date(date(2022, 10, 6))  # Only 30 days have passed since the charge.
-    assert not subscription.up_to_date(date(2022, 10, 7))  # 31 days have passed since the charge.
-
-
-# noinspection PyTypeChecker
-def test_base_Subscription_invalidChargeDate():
-    subscription = Subscription(date(2022, 8, 8), client=None, activity=None)
-    # The subscription wasn't paid yet.
-    assert subscription.invalid_charge_date(date(2022, 8, 7))
-    assert not subscription.invalid_charge_date(date(2022, 8, 8))
-
-    # The subscription was already paid.
-    subscription.transaction = Transaction(1, None, date(2022, 8, 10), None, None, None, None)
-    assert subscription.invalid_charge_date(date(2022, 8, 9))
-    assert not subscription.invalid_charge_date(date(2022, 8, 10))
+    subscription.add_transaction(2022, 6, Transaction(1, None, date(2022, 6, 30), None, None, None, None))
+    assert (subscription.is_charged(2022, 4) and not subscription.is_charged(2022, 5)
+            and subscription.is_charged(2022, 6))
 
 
 def test_generateBalance():
@@ -101,18 +83,30 @@ def test_base_filterOverdue():
 
 
 def test_base_Client_age():
-    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 12, 15),
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 12, 15),
                     String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 7, 12),
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 12),
                     String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11),
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11),
                     String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 24
+
+
+def test_base_monthRange():
+    expected = [(12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022), (8, 2022),
+                (9, 2022), (10, 2022), (11, 2022), ]
+    assert expected == [month_year for month_year in month_range(date(2021, 12, 1), date(2022, 12, 1))]
+
+    expected = [(11, 2021), (12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022),
+                (8, 2022), (9, 2022), (10, 2022)]
+    assert expected == [month_year for month_year in month_range(date(2021, 11, 1), date(2022, 11, 1))]
+
+    assert [] == [month_year for month_year in month_range(date(2021, 11, 1), date(2021, 11, 1))]
 

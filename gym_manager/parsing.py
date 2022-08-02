@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from datetime import date, timedelta
 from sqlite3 import Connection
@@ -162,23 +163,27 @@ def _insert_clients(conn: Connection, client_repo: ClientRepo):
     client_repo.add_all(gen)
 
 
-def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo):
-    today = date.today()
-    gen = ((today, *raw) for raw in conn.execute("select ca.id_cliente, a.descripcion "
-                                                 "from cliente_actividad ca "
-                                                 "inner join actividad a on ca.id_actividad = a.id"))
+def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo, since: date):
+    gen = (raw for raw in conn.execute("select min(p.fecha), p.id_cliente, a.descripcion "
+                                       "from pago p "
+                                       "inner join actividad a on a.id = p.id_actividad "
+                                       "where (p.id_cliente, p.id_actividad) in ("
+                                       "    select id_cliente, id_actividad "
+                                       "    from cliente_actividad"
+                                       ") and p.fecha >= (?) "
+                                       "group by p.id_cliente, p.id_actividad", (since, )))
     subscription_repo.add_all(gen)
 
 
 def _register_subscription_charging(
         conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date
 ):
-    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha_cobro, p.importe, p.id_usuario, a.descripcion "
+    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_usuario, a.descripcion "
                                            "from pago p inner join actividad a on p.id_actividad = a.id "
                                            "where p.fecha_cobro >= (?)", (since,)))
 
-    sub_charges = ((raw[0], raw[4], raw[2], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo",
-                                                                      raw[3], "Desc")))
+    sub_charges = ((raw[1], raw[0], raw[4], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2],
+                                                                      "Efectivo", raw[3], "Desc")))
                    for raw in charges)
 
     subscription_repo.register_raw_charges(sub_charges)
@@ -201,7 +206,9 @@ def parse(
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo)
     # ToDo register subs after registering its charging. If there is no charging for that sub, remove it.
-    _insert_subscriptions(conn, subscription_repo)
+    _insert_subscriptions(conn, subscription_repo, since)
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
 
     conn.close()
+
+    os.remove("../adjusted_backup.sql")
