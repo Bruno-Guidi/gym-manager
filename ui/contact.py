@@ -302,11 +302,17 @@ class CreateController:
         self.create_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
 
         # noinspection PyUnresolvedReferences
+        self.create_ui.client_combobox.currentTextChanged.connect(self.fill_name_field)
+        # noinspection PyUnresolvedReferences
         self.create_ui.name_checkbox.stateChanged.connect(self.enable_client_search)
         # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_contact)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+
+    def fill_name_field(self):
+        if self.create_ui.client_combobox.currentIndex() != -1:
+            self.create_ui.name_field.setText(self.create_ui.client_combobox.currentText())
 
     def enable_client_search(self):
         self.create_ui.filter_header.setEnabled(not self.create_ui.name_checkbox.isChecked())
@@ -362,7 +368,8 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.name_checkbox, 1, 0)
         config_checkbox(self.name_checkbox, "Nombre", checked=True, layout_dir=Qt.LayoutDirection.RightToLeft)
 
-        self.name_field = Field(String, self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"))
+        self.name_field = Field(String, self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
         self.form_layout.addWidget(self.name_field, 1, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
