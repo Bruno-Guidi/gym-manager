@@ -63,7 +63,7 @@ class MainController:
                                        show_info=False)
 
         # Fills the table.
-        self.main_ui.filter_header.on_search_click()
+        self.fill_contact_table([])
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
@@ -84,19 +84,17 @@ class MainController:
 
         row = self.main_ui.contact_table.rowCount()
         self._contacts[row] = contact
-        # fill_cell(self.main_ui.contact_table, row, 0, contact.name, data_type=str)
-        # dni = "" if contact.dni.as_primitive() is None else contact.dni.as_primitive()
-        # fill_cell(self.main_ui.contact_table, row, 1, dni, data_type=int)
-        # fill_cell(self.main_ui.contact_table, row, 2, contact.admission, data_type=bool)
-        # fill_cell(self.main_ui.contact_table, row, 3, contact.age(), data_type=int)
-        # fill_cell(self.main_ui.contact_table, row, 4, contact.telephone, data_type=str)
-        # fill_cell(self.main_ui.contact_table, row, 5, contact.direction, data_type=str)
+        fill_cell(self.main_ui.contact_table, row, 0, contact.name, data_type=str)
+        fill_cell(self.main_ui.contact_table, row, 1, contact.tel1, data_type=str)
+        fill_cell(self.main_ui.contact_table, row, 2, contact.tel2, data_type=str)
+        fill_cell(self.main_ui.contact_table, row, 3, contact.direction, data_type=str)
 
     def fill_contact_table(self, filters: list[FilterValuePair]):
         self.main_ui.contact_table.setRowCount(0)
         self._contacts.clear()
 
-        for contact in self.contact_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len):
+        name = String(self.main_ui.filter_header.filter_line_edit.text())
+        for contact in self.contact_repo.all(self.main_ui.page_index.page, name=name):
             self._add_contact(contact, check_filters=False)  # Contacts are filtered in the repo.
 
     def update_contact_info(self):
@@ -216,7 +214,7 @@ class ContactMainUI(QMainWindow):
         self.contact_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.contact_table)
         new_config_table(self.contact_table, width=860, allow_resizing=False, min_rows_to_show=10,
-                         columns={"Nombre": (.25, str), "Teléfono 1": (.25, int), "Teléfono 2": (.25, str),
+                         columns={"Nombre": (.25, str), "Teléfono 1": (.25, str), "Teléfono 2": (.25, str),
                                   "Dirección": (.25, str)})
 
         # Index.
