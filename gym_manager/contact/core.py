@@ -52,7 +52,7 @@ class ContactRepo(abc.ABC):
 
     @abc.abstractmethod
     def all(
-            self, page: int = 1, page_len: int | None = None, name: str | None = None
+            self, page: int = 1, page_len: int | None = None, name: String | None = None
     ) -> Generator[Contact, None, None]:
         raise NotImplementedError
 
