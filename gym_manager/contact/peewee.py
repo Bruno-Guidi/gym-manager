@@ -51,7 +51,7 @@ class SqliteContactRepo(ContactRepo):
         record.save()
 
     def remove(self, contact: Contact):
-        pass
+        ContactModel.delete_by_id(contact.id)
 
     def all(
             self, page: int = 1, page_len: int | None = None, name: String | None = None
