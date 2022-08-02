@@ -329,19 +329,21 @@ class CreateController:
 
     # noinspection PyTypeChecker
     def create_contact(self):
+        valid_descr, descr = valid_text_value(self.create_ui.description_text, utils.ACTIVITY_DESCR_CHARS,
+                                              optional=True)
         if not all([self.create_ui.name_field.valid_value(), self.create_ui.tel1_field.valid_value(),
-                    self.create_ui.tel2_field.valid_value(), self.create_ui.dir_field.valid_value()]):
+                    self.create_ui.tel2_field.valid_value(), self.create_ui.dir_field.valid_value(), valid_descr]):
             Dialog.info("Error", "Hay datos que no son válidos.")
             return
-        client = None
-        if client is not None and self.contact_repo.has_contact_info(self.create_ui.tel1_field.value()):
+        client = None if self.create_ui.name_checkbox.isChecked() else self.create_ui.client_combobox.currentData(Qt.UserRole)
+        if client is not None and self.contact_repo.has_contact_info(client):
             Dialog.info("Error", f"El cliente '{client.name}' ya tiene un contacto asociado.")
         else:
-            self.contact = self.contact_repo.create(
-                self.create_ui.name_field.value(), self.create_ui.tel1_field.value(), self.create_ui.tel2_field.value(),
-                self.create_ui.dir_field.value(), String("")
+            self.contact = create_contact(
+                self.contact_repo, self.create_ui.name_field.value(), self.create_ui.tel1_field.value(),
+                self.create_ui.tel2_field.value(), self.create_ui.dir_field.value(), descr, client
             )
-            Dialog.info("Éxito", f"El contacto '{self.create_ui.name_field.value()}' fue creado correctamente.")
+            Dialog.info("Éxito", f"El contacto '{self.contact.name}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
 
