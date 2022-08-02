@@ -61,7 +61,7 @@ class ContactRepo(abc.ABC):
         raise NotImplementedError
 
 
-def add_contact(
+def create_contact(
         contact_repo: ContactRepo, name: String, tel1: String, tel2: String, direction: String, description: String,
         client: Client | None = None
 ) -> Contact:
