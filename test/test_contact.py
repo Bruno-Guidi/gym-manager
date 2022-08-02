@@ -1,6 +1,6 @@
 from datetime import date
 
-from gym_manager.contact.core import create_contact, Contact
+from gym_manager.contact.core import create_contact
 from gym_manager.contact.peewee import SqliteContactRepo
 from gym_manager.core.base import String, Number
 from gym_manager.peewee import SqliteClientRepo, create_database
@@ -19,5 +19,16 @@ def test_create_clientContact():
                             client)
 
     assert (result.id == 1 and result.name == client.name and result.tel1 == String("tel1")
+            and result.tel2 == String("tel2") and result.direction == String("dir")
+            and result.description == String("descr"))
+
+
+def test_create_unlinkedContact():
+    create_database(":memory:")
+    contact_repo = SqliteContactRepo()
+
+    result = create_contact(contact_repo, String("n"), String("tel1"), String("tel2"), String("dir"), String("descr"),)
+
+    assert (result.id == 1 and result.name == String("n") and result.tel1 == String("tel1")
             and result.tel2 == String("tel2") and result.direction == String("dir")
             and result.description == String("descr"))
