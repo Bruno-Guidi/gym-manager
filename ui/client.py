@@ -13,15 +13,14 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core import api
 from gym_manager.core.base import (
-    String, TextLike, Client, Number, Activity, Subscription, discard_subscription,
-    month_range)
+    String, TextLike, Client, Number, Activity, Subscription, month_range)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError, log_responsible
 from ui import utils
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
-    config_lbl, config_line, config_btn, config_table, fill_cell, config_checkbox,
+    config_lbl, config_line, config_btn, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit, new_config_table)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
 
