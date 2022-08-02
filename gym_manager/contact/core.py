@@ -6,14 +6,15 @@ from gym_manager.core.base import String, Client, OperationalError
 
 class Contact:
     def __init__(
-            self, id_: int, tel1: String, tel2: String, direction: String, name: String | None = None,
-            client: Client | None = None
+            self, id_: int, tel1: String, tel2: String, direction: String, description: String,
+            name: String | None = None, client: Client | None = None
     ):
         self.id = id_
         self._name = name
         self.tel1 = tel1
         self.tel2 = tel2
         self.direction = direction
+        self.description = description
         self.client = client
 
     @property
@@ -40,7 +41,8 @@ class ContactRepo(abc.ABC):
 
     @abc.abstractmethod
     def create(
-            self, name: String, tel1: String, tel2: String, direction: String, client: Client | None = None
+            self, name: String, tel1: String, tel2: String, direction: String, description: String,
+            client: Client | None = None
     ) -> Contact:
         raise NotImplementedError
 
@@ -60,22 +62,24 @@ class ContactRepo(abc.ABC):
 
 
 def add_contact(
-        contact_repo: ContactRepo, name: String, tel1: String, tel2: String, direction: String,
+        contact_repo: ContactRepo, name: String, tel1: String, tel2: String, direction: String, description: String,
         client: Client | None = None
 ) -> Contact:
     if client is not None and contact_repo.has_contact_info(client):
         raise OperationalError(f"The [client.id={client.id}] already has contact information.")
 
-    return contact_repo.create(name, tel1, tel2, direction, client)
+    return contact_repo.create(name, tel1, tel2, direction, description, client)
 
 
 def update_contact(
-        contact_repo: ContactRepo, contact: Contact, name: String, tel1: String, tel2: String, direction: String
+        contact_repo: ContactRepo, contact: Contact, name: String, tel1: String, tel2: String, direction: String,
+        description: String
 ):
     contact.name = name
     contact.tel1 = tel1
     contact.tel2 = tel2
     contact.direction = direction
+    contact.description = description
     contact_repo.update(contact)
 
 
