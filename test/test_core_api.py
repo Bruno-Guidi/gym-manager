@@ -168,7 +168,7 @@ def test_charge_notChargeOnceActivity():
     )
 
     # Feature being tested.
-    api.register_subscription_charge(subscription_repo, subscription, create_transaction_fn)
+    api.register_subscription_charge(subscription_repo, subscription, 2022, 4, create_transaction_fn)
     # Check that the activity is up-to-date, because a charge was registered.
     assert subscription.is_charged(2022, 4)
 
