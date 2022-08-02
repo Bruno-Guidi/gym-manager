@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
     QDesktopWidget, QTextEdit)
 
-from gym_manager.contact.core import ContactRepo, Contact, create_contact, update_contact
+from gym_manager.contact.core import ContactRepo, Contact, create_contact, update_contact, remove_contact
 from gym_manager.core.base import (
     String, TextLike, Client, Number)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo
@@ -133,13 +133,13 @@ class MainController:
     def remove(self):
         row = self.main_ui.contact_table.currentRow()
         if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un contacto.")
             return
 
-        client = self._contacts[row]
+        contact = self._contacts[row]
 
-        remove_fn = functools.partial(self.contact_repo.remove, client)
-        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{client.name}'?", self.security_handler, remove_fn):
+        if Dialog.confirm(f"¿Desea eliminar el contacto '{contact.name}'?"):
+            remove_contact(self.contact_repo, contact)
             self._contacts.pop(row)
             self.fill_contact_table([])  # Refreshes the table.
 
@@ -148,11 +148,9 @@ class MainController:
             self.main_ui.tel1_field.clear()
             self.main_ui.tel2_field.clear()
             self.main_ui.dir_field.clear()
+            self.main_ui.description_text.clear()
 
-            # Clears the subscriptions table.
-            self.main_ui.subscription_table.setRowCount(0)
-
-            Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
+            Dialog.info("Éxito", f"El contacto '{contact.name}' fue eliminado correctamente.")
 
 
 class ContactMainUI(QMainWindow):
