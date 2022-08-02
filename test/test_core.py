@@ -33,26 +33,13 @@ def test_base_Subscription_isCharged():
     assert (not subscription.is_charged(2022, 4) and not subscription.is_charged(2022, 5)
             and not subscription.is_charged(2022, 6))
 
-    subscription.add_transaction(Transaction(1, None, date(2022, 4, 8), None, None, None, None))
+    subscription.add_transaction(2022, 4, Transaction(1, None, date(2022, 4, 8), None, None, None, None))
     assert (subscription.is_charged(2022, 4) and not subscription.is_charged(2022, 5)
             and not subscription.is_charged(2022, 6))
 
-    subscription.add_transaction(Transaction(1, None, date(2022, 6, 30), None, None, None, None))
+    subscription.add_transaction(2022, 6, Transaction(1, None, date(2022, 6, 30), None, None, None, None))
     assert (subscription.is_charged(2022, 4) and not subscription.is_charged(2022, 5)
             and subscription.is_charged(2022, 6))
-
-
-# noinspection PyTypeChecker
-def test_base_Subscription_invalidChargeDate():
-    subscription = Subscription(date(2022, 8, 8), client=None, activity=None)
-    # The subscription wasn't paid yet.
-    assert subscription.invalid_charge_date(date(2022, 8, 7))
-    assert not subscription.invalid_charge_date(date(2022, 8, 8))
-
-    # The subscription was already paid.
-    subscription.transaction = Transaction(1, None, date(2022, 8, 10), None, None, None, None)
-    assert subscription.invalid_charge_date(date(2022, 8, 9))
-    assert not subscription.invalid_charge_date(date(2022, 8, 10))
 
 
 def test_generateBalance():
@@ -96,17 +83,17 @@ def test_base_filterOverdue():
 
 
 def test_base_Client_age():
-    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 12, 15),
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 12, 15),
                     String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 7, 12),
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 12),
                     String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(Number(1), String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11),
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11),
                     String("dummy_tel"), String("dummy_descr"), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 24
