@@ -172,6 +172,11 @@ class FilterHeader(QWidget):
         # Horizontal spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
 
+    def setEnabled(self, enabled: bool) -> None:
+        self.filter_combobox.setEnabled(enabled)
+        self.filter_line_edit.setEnabled(enabled)
+        self.search_btn.setEnabled(enabled)
+
     def config(
             self,
             filters: tuple[Filter, ...],
