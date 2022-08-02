@@ -6,8 +6,8 @@ from gym_manager.core.base import String, Client, OperationalError
 
 class Contact:
     def __init__(
-            self, id_: int, tel1: String, tel2: String, direction: String, description: String,
-            name: String | None = None, client: Client | None = None
+            self, id_: int, name: String, tel1: String, tel2: String, direction: String, description: String,
+            client: Client | None = None
     ):
         self.id = id_
         self._name = name
@@ -67,6 +67,9 @@ def add_contact(
 ) -> Contact:
     if client is not None and contact_repo.has_contact_info(client):
         raise OperationalError(f"The [client.id={client.id}] already has contact information.")
+
+    if client is not None and len(name) != 0:
+        name = String("")  # Avoids problems when the contact belongs to a client.
 
     return contact_repo.create(name, tel1, tel2, direction, description, client)
 
