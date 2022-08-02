@@ -49,8 +49,7 @@ class MainController:
         self._contacts: dict[int, Contact] = {}  # Dict that maps row numbers to the displayed contact.
 
         # Configure the filtering widget.
-        filters = (TextLike("name", display_name="Nombre", attr="name",
-                            translate_fun=contains_name),)
+        filters = (TextLike("name", display_name="Nombre", attr="name"),)
         self.main_ui.filter_header.config(filters, on_search_click=self.fill_contact_table)
 
         # Configures the page index.
@@ -74,7 +73,7 @@ class MainController:
         if check_limit and self.main_ui.contact_table.rowCount() == self.main_ui.page_index.page_len:
             return
 
-        if check_filters and not self.main_ui.filter_header.passes_filters(contact):
+        if check_filters and not contact.name.contains(self.main_ui.filter_header.filter_line_edit.text()):
             return
 
         row = self.main_ui.contact_table.rowCount()
@@ -159,7 +158,7 @@ class MainController:
         remove_fn = functools.partial(self.contact_repo.remove, client)
         if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{client.name}'?", self.security_handler, remove_fn):
             self._contacts.pop(row)
-            self.main_ui.filter_header.on_search_click()  # Refreshes the table.
+            self.fill_contact_table([])  # Refreshes the table.
 
             # Clears the form.
             self.main_ui.name_field.clear()
