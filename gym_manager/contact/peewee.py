@@ -15,7 +15,7 @@ class ContactModel(Model):
     tel2 = CharField()
     direction = CharField()
     description = CharField()
-    client = ForeignKeyField(ClientTable, backref="info")
+    client = ForeignKeyField(ClientTable, backref="info", null=True)
 
     class Meta:
         database = DATABASE_PROXY
