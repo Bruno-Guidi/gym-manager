@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
@@ -10,15 +8,14 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.contact.core import ContactRepo, Contact, create_contact, update_contact, remove_contact
 from gym_manager.core.base import (
-    String, TextLike, Client, Number)
+    String, TextLike)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo
-from gym_manager.core.security import log_responsible
 from ui import utils
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, config_checkbox,
     config_combobox, fill_combobox, new_config_table)
 from ui.widgets import (
-    Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, valid_text_value)
+    Field, Dialog, FilterHeader, PageIndex, Separator, valid_text_value)
 
 
 class MainController:
