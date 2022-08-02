@@ -1,30 +1,25 @@
 from __future__ import annotations
 
 import functools
-import itertools
-from datetime import date, timedelta
-from typing import Iterable, Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QTextEdit)
+    QDesktopWidget, QTextEdit)
 
-from gym_manager.contact.core import ContactRepo, Contact
+from gym_manager.contact.core import ContactRepo, Contact, create_contact
 from gym_manager.contact.peewee import contains_name
-from gym_manager.core import api
 from gym_manager.core.base import (
-    String, TextLike, Client, Number, Activity, Subscription, month_range)
-from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
-from gym_manager.core.security import SecurityHandler, SecurityError, log_responsible
+    String, TextLike, Client, Number)
+from gym_manager.core.persistence import FilterValuePair, ClientRepo
+from gym_manager.core.security import log_responsible
 from ui import utils
-from ui.accounting import ChargeUI
-from ui.utils import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, config_checkbox,
-    config_combobox, fill_combobox, config_date_edit, new_config_table)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
+    config_combobox, fill_combobox, new_config_table)
+from ui.widgets import (
+    Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, valid_text_value)
 
 
 @log_responsible(action_tag="update_client", to_str=lambda client: f"Actualizar cliente {client.name}")
