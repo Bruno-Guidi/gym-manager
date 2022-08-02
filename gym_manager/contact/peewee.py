@@ -28,7 +28,7 @@ class SqliteContactRepo(ContactRepo):
         self.cache = LRUCache(int, value_type=Contact, max_len=cache_len)
 
     def has_contact_info(self, client: Client) -> bool:
-        pass
+        return ContactModel.get_or_none(client_id=client.id) is not None
 
     def create(
             self, name: String, tel1: String, tel2: String, direction: String, description: String,

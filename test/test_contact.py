@@ -99,3 +99,20 @@ def test_contactRemoved_afterClientRemove():
     client_repo.remove(client)
 
     assert len([c for c in all_contacts(contact_repo)]) == 0
+
+
+def test_hasContactInfo():
+    log_responsible.config(MockSecurityHandler())
+    create_database(":memory:")
+    client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
+    contact_repo = SqliteContactRepo()
+
+    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("tel"), String("dir"),
+                                Number(1))
+
+    assert not contact_repo.has_contact_info(client)
+
+    contact = create_contact(contact_repo, String(""), String("tel1"), String("tel2"), String("dir"), String("descr"),
+                             client)
+    assert contact_repo.has_contact_info(client)
+
