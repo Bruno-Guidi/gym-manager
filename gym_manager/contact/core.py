@@ -21,16 +21,12 @@ class Contact:
     def name(self):
         if self.client is not None:
             return self.client.name
+        return self._name
 
     @name.setter
     def name(self, name: String):
         if self.client is None:
             self._name = name
-
-    def owner(self) -> String:
-        if self.client is not None:
-            return self.client.name
-        return self.name
 
 
 class ContactRepo(abc.ABC):
