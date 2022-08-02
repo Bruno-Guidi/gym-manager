@@ -56,7 +56,7 @@ class SqliteContactRepo(ContactRepo):
     def all(
             self, page: int = 1, page_len: int | None = None, name: String | None = None
     ) -> Generator[Contact, None, None]:
-        query = ContactModel.select().join(ClientTable, JOIN.LEFT_OUTER)
+        query = ContactModel.select().join(ClientTable, JOIN.LEFT_OUTER).where(ClientTable.is_active)
 
         if name is not None:
             query = query.where((ContactModel.name == name.as_primitive())
