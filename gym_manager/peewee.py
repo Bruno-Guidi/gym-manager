@@ -50,7 +50,7 @@ class SqliteClientRepo(ClientRepo):
     """
 
     def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
-        DATABASE_PROXY.create_tables([ClientTable])
+        DATABASE_PROXY.create_tables([ClientTable, ActivityTable, TransactionTable])
 
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
