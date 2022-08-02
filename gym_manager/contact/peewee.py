@@ -56,11 +56,12 @@ class SqliteContactRepo(ContactRepo):
     def all(
             self, page: int = 1, page_len: int | None = None, name: String | None = None
     ) -> Generator[Contact, None, None]:
-        query = ContactModel.select().join(ClientTable, JOIN.LEFT_OUTER).where(ClientTable.is_active)
+        query = ContactModel.select().join(ClientTable, JOIN.LEFT_OUTER).where((ClientTable.is_active) |
+                                                                               (ClientTable.is_active.is_null()))
 
         if name is not None:
-            query = query.where((ContactModel.name == name.as_primitive())
-                                | (ClientTable.cli_name == name.as_primitive()))
+            query = query.where((ContactModel.c_name.contains(name.as_primitive()))
+                                | (ClientTable.cli_name.contains(name.as_primitive())))
 
         if page_len is not None:
             query = query.paginate(page, page_len)
