@@ -1,10 +1,10 @@
 import abc
 
-from gym_manager.core.base import Currency, String
+from gym_manager.core.base import Currency, String, Number
 
 
 class Item:
-    def __init__(self, code: int, name: String, amount: int, price: Currency, is_fixed: bool = False):
+    def __init__(self, code: int, name: String, amount: Number, price: Currency, is_fixed: bool = False):
         self.code = code
         self.name = name
         self.amount = amount
@@ -17,7 +17,7 @@ class Item:
 
 class ItemRepo(abc.ABC):
     @abc.abstractmethod
-    def create(self, name: String, amount: int, price: Currency, is_fixed: bool = False) -> Item:
+    def create(self, name: String, amount: Number, price: Currency, is_fixed: bool = False) -> Item:
         raise NotImplementedError
 
     @abc.abstractmethod
