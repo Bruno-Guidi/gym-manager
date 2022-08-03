@@ -14,8 +14,7 @@ def test_create_clientContact():
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
     contact_repo = SqliteContactRepo()
 
-    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("tel"), String("dir"),
-                                Number(1))
+    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("dir"), Number(1))
 
     result = create_contact(contact_repo, String(""), String("tel1"), String("tel2"), String("dir"), String("descr"),
                             client)
@@ -41,8 +40,7 @@ def test_update_clientContact():
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
     contact_repo = SqliteContactRepo()
 
-    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("tel"), String("dir"),
-                                Number(1))
+    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("dir"), Number(1))
 
     contact = create_contact(contact_repo, String(""), String("tel1"), String("tel2"), String("dir"), String("descr"),
                              client)
@@ -90,8 +88,7 @@ def test_contactRemoved_afterClientRemove():
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
     contact_repo = SqliteContactRepo()
 
-    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("tel"), String("dir"),
-                                Number(1))
+    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("dir"), Number(1))
 
     contact = create_contact(contact_repo, String(""), String("tel1"), String("tel2"), String("dir"), String("descr"),
                              client)
@@ -107,8 +104,7 @@ def test_hasContactInfo():
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
     contact_repo = SqliteContactRepo()
 
-    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("tel"), String("dir"),
-                                Number(1))
+    client = client_repo.create(String("name"), date(2022, 2, 2), date(2000, 2, 2), String("dir"), Number(1))
 
     assert not contact_repo.has_contact_info(client)
 
