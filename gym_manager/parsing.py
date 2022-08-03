@@ -154,10 +154,19 @@ def _insert_activities(conn: Connection, activity_repo: ActivityRepo):
     activity_repo.add_all(gen)
 
 
+def _parse_date(today: date, age_str: str | None):
+    if age_str is None:
+        return today
+    try:
+        return date(today.year - int(age_str), today.month, today.day)
+    except ValueError:
+        return today
+
+
 def _insert_clients(conn: Connection, client_repo: ClientRepo, contact_repo: ContactRepo | None = None):
     today = date.today()
     # (id, name, admission, birthday, tel, dir, is_active)
-    gen = ((raw[0], raw[1], raw[2], today if raw[3] == 0 or raw[3] is None else today - timedelta(raw[3]), True)
+    gen = ((raw[0], raw[1], raw[2], _parse_date(today, raw[3]), True)
            for raw in conn.execute("select c.id, c.nombre, c.fecha_ingreso, c.edad from cliente c"))
     client_repo.add_all(gen)
 
