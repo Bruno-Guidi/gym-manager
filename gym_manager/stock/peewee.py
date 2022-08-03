@@ -1,6 +1,6 @@
 from typing import Generator
 
-from peewee import Model, IntegerField, CharField
+from peewee import Model, IntegerField, CharField, BooleanField
 
 from gym_manager.core.base import String, Number, Currency
 from gym_manager.core.persistence import FilterValuePair
@@ -13,6 +13,7 @@ class ItemModel(Model):
     item_name = CharField()
     amount = IntegerField()
     price = CharField()
+    fixed = BooleanField()
 
     class Meta:
         database = DATABASE_PROXY
@@ -24,8 +25,8 @@ class SqliteItemRepo(ItemRepo):
 
     def create(self, name: String, amount: Number, price: Currency, is_fixed: bool = False) -> Item:
         record = ItemModel.create(item_name=name.as_primitive(), amount=amount.as_primitive(),
-                                  price=price.as_primitive())
-        return Item(record.code, name, amount, price)
+                                  price=price.as_primitive(), fixed=is_fixed)
+        return Item(record.code, name, amount, price, is_fixed)
 
     def remove(self, item: Item):
         ItemModel.delete_by_id(item.code)
@@ -33,7 +34,7 @@ class SqliteItemRepo(ItemRepo):
     def update(self, item: Item):
         # Replace can be used because there is no other model that references ItemModel.
         ItemModel.replace(code=item.code, item_name=item.name.as_primitive(), amount=item.amount.as_primitive(),
-                          price=item.price.as_primitive()).execute()
+                          price=item.price.as_primitive(), fixed=item.is_fixed).execute()
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
@@ -47,4 +48,5 @@ class SqliteItemRepo(ItemRepo):
             query = query.order_by(ItemModel.item_name).paginate(page, page_len)
 
         for record in query:
-            yield Item(record.code, String(record.item_name), Number(record.amount), Currency(record.price))
+            yield Item(record.code, String(record.item_name), Number(record.amount), Currency(record.price),
+                       record.fixed)
