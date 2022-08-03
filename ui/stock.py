@@ -8,10 +8,13 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QComboBox)
 
 from gym_manager.core.base import String, Activity, Currency, TextLike, Number
-from gym_manager.core.persistence import ActivityRepo, FilterValuePair
+from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, log_responsible
-from gym_manager.stock.core import ItemRepo, Item, create_item, update_item, remove_item, update_item_amount
+from gym_manager.stock.core import (
+    ItemRepo, Item, create_item, update_item, remove_item, update_item_amount,
+    register_item_charge)
 from ui import utils
+from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
@@ -19,10 +22,12 @@ from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex,
 
 class MainController:
     def __init__(
-            self, main_ui: StockMainUI, item_repo: ItemRepo, security_handler: SecurityHandler
+            self, main_ui: StockMainUI, item_repo: ItemRepo, transaction_repo: TransactionRepo,
+            security_handler: SecurityHandler
     ):
         self.main_ui = main_ui
         self.item_repo = item_repo
+        self.transaction_repo = transaction_repo
         self.security_handler = security_handler
         self.items: dict[str, Item] = {}  # Dict that maps raw items name to the associated activity.
 
@@ -39,7 +44,8 @@ class MainController:
 
         decrease_stock = ("Reducir stock", functools.partial(self._update_item_amount, True))
         increase_stock = ("Agregar stock", functools.partial(self._update_item_amount, False))
-        fill_combobox(self.main_ui.action_combobox, (decrease_stock, increase_stock),
+        charge_item = ("Cobrar item", self._charge_item)
+        fill_combobox(self.main_ui.action_combobox, (decrease_stock, increase_stock, charge_item),
                       display=lambda pair: pair[0])
 
         # Sets callbacks.
@@ -157,16 +163,42 @@ class MainController:
                                self._update_amount_ui.description, decrease)
             fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
 
+    def _charge_item(self):
+        if self.main_ui.item_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un item.")
+            return
+
+        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        # noinspection PyTypeChecker
+        if not self.main_ui.amount_field.valid_value() or self.main_ui.amount_field.value() > item.amount:
+            Dialog.info("Error", "La cantidad no es válida.")
+            return
+
+        register_charge = functools.partial(register_item_charge, self.item_repo, item,
+                                            self.main_ui.amount_field.value())
+        total = item.total_price(self.main_ui.amount_field.value().as_primitive())
+        # noinspection PyAttributeOutsideInit
+        self._charge_ui = ChargeUI(
+            self.transaction_repo, self.security_handler, client=None, amount=item.price,
+            description=String(f"Cobro de {self.main_ui.amount_field.value()} '{item.name}' por un total de "
+                               f"{Currency.fmt(total)}"), post_charge_fn=register_charge)
+        self._charge_ui.exec_()
+
+        if self._charge_ui.controller.success:
+            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
+
     def execute_action(self):
         self.main_ui.action_combobox.currentData(Qt.UserRole)[1]()
 
 
 class StockMainUI(QMainWindow):
 
-    def __init__(self, item_repo: ItemRepo, security_handler: SecurityHandler) -> None:
+    def __init__(
+            self, item_repo: ItemRepo, transaction_repo: TransactionRepo, security_handler: SecurityHandler
+    ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, item_repo, security_handler)
+        self.controller = MainController(self, item_repo, transaction_repo, security_handler)
 
     def _setup_ui(self):
         self.setWindowTitle("Stock")
