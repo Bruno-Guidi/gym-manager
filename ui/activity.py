@@ -140,8 +140,9 @@ class MainController:
             Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
             return
 
-        remove_fn = functools.partial(self.activity_repo.remove, activity)
-        if DialogWithResp.confirm(f"¿Desea eliminar la actividad '{activity.name}'?", self.security_handler, remove_fn):
+        if Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?"):
+            self.activity_repo.remove(activity)
+
             self._activities.pop(activity.name.as_primitive())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
