@@ -76,7 +76,7 @@ def update_item_amount(
     return item, amount, update_cause  # This is returned, so it can be logged by log_responsible decorator.
 
 
-def register_charge(
+def register_item_charge(
         item_repo: ItemRepo, item: Item, amount: Number, create_transaction_fn: CreateTransactionFn
 ) -> tuple[Item, Number]:
     if amount > item.amount:
