@@ -5,7 +5,7 @@ import functools
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QComboBox)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox)
 
 from gym_manager.core.base import String, Activity, Currency, TextLike, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo
@@ -16,7 +16,7 @@ from gym_manager.stock.core import (
 from ui import utils
 from ui.accounting import ChargeUI
 from ui.widget_config import (
-    config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox)
+    config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox, config_checkbox)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 
@@ -96,7 +96,6 @@ class MainController:
         self._create_ui.exec_()
         if self._create_ui.controller.item is not None:
             self._add_item(self._create_ui.controller.item, check_filters=True, check_limit=True)
-            self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
         if self.main_ui.item_table.currentRow() == -1:
@@ -328,7 +327,8 @@ class CreateController:
             Dialog.info("Error", "Hay datos que no son válidos.")
         else:
             self.item = create_item(self.item_repo, self.create_ui.name_field.value(),
-                                    self.create_ui.amount_field.value(), self.create_ui.price_field.value())
+                                    self.create_ui.amount_field.value(), self.create_ui.price_field.value(),
+                                    is_fixed=self.create_ui.fixed_checkbox.isChecked())
             Dialog.info("Éxito", f"El ítem '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
@@ -374,6 +374,15 @@ class CreateUI(QDialog):
         self.amount_field = Field(Number, parent=self, min_value=1, optional=False)
         self.form_layout.addWidget(self.amount_field, 2, 1)
         config_line(self.amount_field, adjust_to_hint=False)
+
+        # Fixed.
+        self.fixed_lbl = QLabel(self)
+        self.form_layout.addWidget(self.fixed_lbl, 3, 0)
+        config_lbl(self.fixed_lbl, "Ítem fijo")
+
+        self.fixed_checkbox = QCheckBox(self)
+        self.form_layout.addWidget(self.fixed_checkbox, 3, 1)
+        config_checkbox(self.fixed_checkbox, checked=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
