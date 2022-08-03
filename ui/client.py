@@ -663,14 +663,14 @@ class PreChargeController:
             return
 
         self.sub = self._subs[self.pre_charge_ui.activity_combobox.currentText()]
-        year, month = self.pre_charge_ui.month_combobox.currentText().split("/")
+        month, year = self.pre_charge_ui.month_combobox.currentText().split("/")
         self.year, self.month = int(year), int(month)
         self.pre_charge_ui.activity_combobox.window().close()
 
     def update_month_combobox(self):
         _from = self._subs[self.pre_charge_ui.activity_combobox.currentText()].when
-        not_charged_months = ((y, m) for y, m in month_range(_from, date.today() + timedelta(days=1))
-                              if self._subs[self.pre_charge_ui.activity_combobox.currentText()].is_charged(y, m))
+        not_charged_months = ((y, m) for m, y in month_range(_from, date.today() + timedelta(days=1))
+                              if not self._subs[self.pre_charge_ui.activity_combobox.currentText()].is_charged(y, m))
         fill_combobox(self.pre_charge_ui.month_combobox, not_charged_months,
                       display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
 
