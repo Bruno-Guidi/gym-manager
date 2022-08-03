@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core.base import String, Activity, Currency, TextLike, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from gym_manager.core.security import SecurityHandler, log_responsible
-from gym_manager.stock.core import ItemRepo, Item
+from gym_manager.stock.core import ItemRepo, Item, create_item
 from ui import utils
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox)
@@ -87,12 +87,11 @@ class MainController:
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
-        pass
-        # self._create_ui = CreateUI(self.item_repo)
-        # self._create_ui.exec_()
-        # if self._create_ui.controller.activity is not None:
-        #     self._add_item(self._create_ui.controller.activity, check_filters=True, check_limit=True)
-        #     self.main_ui.page_index.total_len += 1
+        self._create_ui = CreateUI(self.item_repo)
+        self._create_ui.exec_()
+        if self._create_ui.controller.item is not None:
+            self._add_item(self._create_ui.controller.item, check_filters=True, check_limit=True)
+            self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
         pass
@@ -265,41 +264,38 @@ class StockMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, activity_repo: ActivityRepo) -> None:
+    def __init__(self, create_ui: CreateUI, item_repo: ItemRepo) -> None:
         self.create_ui = create_ui
 
-        self.activity: Activity | None = None
-        self.activity_repo = activity_repo
+        self.item: Item | None = None
+        self.item_repo = item_repo
 
         # noinspection PyUnresolvedReferences
-        self.create_ui.confirm_btn.clicked.connect(self.create_activity)
+        self.create_ui.confirm_btn.clicked.connect(self.create_item)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
 
     # noinspection PyTypeChecker
-    def create_activity(self):
-        valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
-                                              max_len=utils.ACTIVITY_DESCR_CHARS)
-        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value()])
-        if not valid_fields:
+    def create_item(self):
+        if not all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
+                    self.create_ui.amount_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.activity_repo.exists(self.create_ui.name_field.value()):
-            Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
         else:
-            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(), descr)
-            self.activity_repo.add(self.activity)
-            Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
+            self.item = create_item(self.item_repo, self.create_ui.name_field.value(),
+                                    self.create_ui.amount_field.value(), self.create_ui.price_field.value())
+            print(self.item)
+            Dialog.info("Éxito", f"El ítem '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
 
 class CreateUI(QDialog):
-    def __init__(self, activity_repo: ActivityRepo) -> None:
+    def __init__(self, item_repo: ItemRepo) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, activity_repo)
+        self.controller = CreateController(self, item_repo)
 
     def _setup_ui(self):
-        self.setWindowTitle("Nueva actividad")
+        self.setWindowTitle("Nuevo ítem")
         self.layout = QVBoxLayout(self)
 
         # Form.
@@ -312,7 +308,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS)
+        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
@@ -321,18 +317,18 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.price_lbl, 1, 0)
         config_lbl(self.price_lbl, "Precio*")
 
-        self.price_field = Field(Currency, self)
+        self.price_field = Field(Currency, parent=self, positive=True)
         self.form_layout.addWidget(self.price_field, 1, 1)
         config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
 
-        # Description.
-        self.description_lbl = QLabel(self)
-        self.form_layout.addWidget(self.description_lbl, 2, 0, alignment=Qt.AlignTop)
-        config_lbl(self.description_lbl, "Descripción")
+        # Price.
+        self.amount_lbl = QLabel(self)
+        self.form_layout.addWidget(self.amount_lbl, 2, 0)
+        config_lbl(self.amount_lbl, "Cantidad*")
 
-        self.description_text = QTextEdit(self)
-        self.form_layout.addWidget(self.description_text, 2, 1)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+        self.amount_field = Field(Number, parent=self, min_value=1, optional=False)
+        self.form_layout.addWidget(self.amount_field, 2, 1)
+        config_line(self.amount_field, adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
