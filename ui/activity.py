@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
@@ -9,20 +7,11 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
-from gym_manager.core.security import SecurityHandler, log_responsible
+from gym_manager.core.security import SecurityHandler
 from ui import utils
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table)
-from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
-
-
-@log_responsible(action_tag="update_activity", to_str=lambda activity: f"Actualizar actividad {activity.name}")
-def update_activity(activity_repo: ActivityRepo, activity: Activity, price: Currency, description: String):
-    activity.price = price
-    activity.description = description
-    activity_repo.update(activity)
-
-    return activity
+from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator
 
 
 class MainController:
@@ -110,24 +99,21 @@ class MainController:
         else:
             activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
             activity = self._activities[activity_name]
-            update_fn = functools.partial(update_activity, self.activity_repo, self._activities[activity_name],
-                                          self.main_ui.price_field.value(), descr)
 
-            if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
-                # Updates the activity.
-                activity.price, activity.description = self.main_ui.price_field.value(), descr
-                self.activity_repo.update(activity)
+            # Updates the activity.
+            activity.price, activity.description = self.main_ui.price_field.value(), descr
+            self.activity_repo.update(activity)
 
-                # Updates the ui.
-                row = self.main_ui.activity_table.currentRow()
-                fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
-                # noinspection PyTypeChecker
-                fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int,
-                          increase_row_count=False)
-                fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
-                          data_type=int, increase_row_count=False)
+            # Updates the ui.
+            row = self.main_ui.activity_table.currentRow()
+            fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
+            # noinspection PyTypeChecker
+            fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int,
+                      increase_row_count=False)
+            fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
+                      data_type=int, increase_row_count=False)
 
-                Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
+            Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
 
     def remove(self):
         if self.main_ui.activity_table.currentRow() == -1:
@@ -140,8 +126,9 @@ class MainController:
             Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
             return
 
-        remove_fn = functools.partial(self.activity_repo.remove, activity)
-        if DialogWithResp.confirm(f"¿Desea eliminar la actividad '{activity.name}'?", self.security_handler, remove_fn):
+        if Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?"):
+            self.activity_repo.remove(activity)
+
             self._activities.pop(activity.name.as_primitive())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 

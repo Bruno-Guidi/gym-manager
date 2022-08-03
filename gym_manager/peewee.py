@@ -101,7 +101,6 @@ class SqliteClientRepo(ClientRepo):
 
         return client
 
-    @log_responsible(action_tag="remove_client", to_str=lambda client: f"Eliminar cliente {client.name}")
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
@@ -258,7 +257,6 @@ class SqliteActivityRepo(ActivityRepo):
         logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={name}] from queried data.")
         return self.cache[name]
 
-    @log_responsible(action_tag="remove_activity", to_str=lambda activity: f"Eliminar actividad {activity.name}")
     def remove(self, activity: Activity):
         """Removes the given *activity*.
 
