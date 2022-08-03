@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import functools
 from datetime import date, time, timedelta
-from typing import Callable
+from typing import Callable, Iterable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog, QDateEdit)
+    QDialog, QDateEdit, QTextEdit)
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
@@ -16,7 +16,7 @@ from gym_manager.contact.core import ContactRepo
 from gym_manager.core import api
 from gym_manager.core.base import String, Activity, Currency, Number
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
-from gym_manager.core.security import SecurityHandler
+from gym_manager.core.security import SecurityHandler, Responsible
 from gym_manager.stock.core import ItemRepo
 from ui import utils
 from ui.accounting import AccountingMainUI
@@ -161,9 +161,16 @@ class Controller:
                               since=self._backup_ui.since, backup_path=self._backup_ui.path,
                               contact_repo=self.contact_repo)
 
+        def add_responsible():
+            self._responsible_ui = ResponsibleUI()
+            self._responsible_ui.exec_()
+            for responsible in self._responsible_ui.responsible_list:
+                self.security_handler.add_responsible(responsible)
+
         # noinspection PyAttributeOutsideInit
         self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance),
-                                   ("raise exception", raise_exception), ("load backup from old", load_backup_from_old))
+                                   ("raise exception", raise_exception), ("load backup from old", load_backup_from_old),
+                                   ("add responsible", add_responsible))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
@@ -420,3 +427,45 @@ class ActionUI(QMainWindow):
 
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+
+
+class ResponsibleUI(QDialog):
+    def __init__(self):
+        super().__init__()
+        self._setup_ui()
+
+        self.responsible_list: list[Responsible] = []
+
+        # noinspection PyUnresolvedReferences
+        self.confirm_btn.clicked.connect(self.parse_responsible)
+        # noinspection PyUnresolvedReferences
+        self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self):
+        self.layout = QVBoxLayout(self)
+
+        self.responsible_text = QTextEdit(self)
+        config_line(self.responsible_text, place_holder="RespName:code\nRespName:code")
+        self.layout.addWidget(self.responsible_text)
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+    def parse_responsible(self):
+        for name_code in self.responsible_text.toPlainText().split("\n"):
+            name, code = name_code.split(":")
+            self.responsible_list.append(Responsible(String(name), String(code)))
+        self.confirm_btn.window().close()
