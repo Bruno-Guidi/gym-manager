@@ -5,15 +5,15 @@ import functools
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QComboBox)
 
-from gym_manager.core.base import String, Activity, Currency, TextLike
+from gym_manager.core.base import String, Activity, Currency, TextLike, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from gym_manager.core.security import SecurityHandler, log_responsible
 from gym_manager.stock.core import ItemRepo, Item
 from ui import utils
 from ui.widget_config import (
-    config_lbl, config_line, config_btn, fill_cell, new_config_table)
+    config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 
@@ -220,7 +220,7 @@ class StockMainUI(QMainWindow):
 
         self.name_field = Field(String, self.widget, max_len=utils.ACTIVITY_NAME_CHARS)
         self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False, enabled=False)
+        config_line(self.name_field, place_holder="Nombre")
 
         # Price.
         self.price_lbl = QLabel(self.widget)
@@ -229,7 +229,33 @@ class StockMainUI(QMainWindow):
 
         self.price_field = Field(Currency, self.widget)
         self.form_layout.addWidget(self.price_field, 1, 1)
-        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
+        config_line(self.price_field, place_holder="000000,00")
+
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+
+        # Layout with actions to execute related to stock.
+        self.action_layout = QGridLayout()
+        self.right_layout.addLayout(self.action_layout)
+
+        self.action_lbl = QLabel(self.widget)
+        self.action_layout.addWidget(self.action_lbl, 0, 0)
+        config_lbl(self.action_lbl, "Acción")
+
+        self.action_combobox = QComboBox(self.widget)
+        self.action_layout.addWidget(self.action_combobox, 0, 1)
+        config_combobox(self.action_combobox)
+
+        self.amount_lbl = QLabel(self.widget)
+        self.action_layout.addWidget(self.amount_lbl, 1, 0)
+        config_lbl(self.amount_lbl, "Cantidad*")
+
+        self.amount_field = Field(Number, parent=self.widget, optional=False)
+        self.action_layout.addWidget(self.amount_field, 1, 1)
+        config_line(self.amount_field)
+
+        self.confirm_btn = QPushButton(self.widget)
+        self.right_layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
+        config_btn(self.confirm_btn, "Confirmar")
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
