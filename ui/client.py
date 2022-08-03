@@ -102,8 +102,6 @@ class MainController:
         fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int)
         fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool)
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int)
-        fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str)
-        fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str)
 
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
@@ -121,8 +119,6 @@ class MainController:
             dni = "" if self._clients[row].dni.as_primitive() is None else str(self._clients[row].dni.as_primitive())
             self.main_ui.dni_field.setText(dni)
             self.main_ui.dni_field.setEnabled(len(dni) == 0)
-            self.main_ui.tel_field.setText(str(self._clients[row].telephone))
-            self.main_ui.dir_field.setText(str(self._clients[row].direction))
 
             self.fill_subscription_list()
 
@@ -164,8 +160,6 @@ class MainController:
                 fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
                 dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
                 fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
-                fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
 
                 self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
 
@@ -323,9 +317,9 @@ class ClientMainUI(QMainWindow):
         # Clients.
         self.client_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.client_table)
-        new_config_table(self.client_table, width=860, allow_resizing=False,
-                         columns={"Nombre": (.25, str), "DNI": (.145, int), "Ingreso": (.155, bool), "Edad": (.08, int),
-                                  "Teléfono": (.18, str), "Dirección": (.18, str)}, min_rows_to_show=10)
+        new_config_table(self.client_table, width=600, allow_resizing=False, min_rows_to_show=10,
+                         columns={"Nombre": (.4, str), "DNI": (.2, int), "Ingreso": (.2, bool), "Edad": (.2, int)}
+                         )
 
         # Index.
         self.page_index = PageIndex(self.widget)
@@ -455,10 +449,9 @@ class CreateController:
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
         else:
-            self.client = self.client_repo.create(
-                self.create_ui.name_field.value(), date.today(), self.create_ui.birth_date_edit.date().toPyDate(),
-                self.create_ui.tel_field.value(), self.create_ui.dir_field.value(), self.create_ui.dni_field.value()
-            )
+            self.client = self.client_repo.create(self.create_ui.name_field.value(), date.today(),
+                                                  self.create_ui.birth_date_edit.date().toPyDate(),
+                                                  self.create_ui.dni_field.value())
             Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
