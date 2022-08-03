@@ -42,7 +42,7 @@ class SqliteItemRepo(ItemRepo):
                 query = query.where(filter_.passes_in_repo(ItemModel, value))
 
         if page_len is not None:
-            query = query.order_by(ItemModel.act_name).paginate(page, page_len)
+            query = query.order_by(ItemModel.item_name).paginate(page, page_len)
 
         for record in query:
             yield Item(record.code, String(record.item_name), Number(record.amount), Currency(record.price))
