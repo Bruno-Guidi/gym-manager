@@ -283,7 +283,6 @@ class CreateController:
         else:
             self.item = create_item(self.item_repo, self.create_ui.name_field.value(),
                                     self.create_ui.amount_field.value(), self.create_ui.price_field.value())
-            print(self.item)
             Dialog.info("Éxito", f"El ítem '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
