@@ -28,7 +28,7 @@ class SqliteItemRepo(ItemRepo):
         return Item(record.code, name, amount, price)
 
     def remove(self, item: Item):
-        pass
+        ItemModel.delete_by_id(item.code)
 
     def update(self, item: Item):
         # Replace can be used because there is no other model that references ItemModel.
