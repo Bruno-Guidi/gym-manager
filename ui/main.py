@@ -189,7 +189,7 @@ class Controller:
 
     def show_stock_main_ui(self):
         # noinspection PyAttributeOutsideInit
-        self.stock_main_ui = StockMainUI(self.item_repo, self.security_handler)
+        self.stock_main_ui = StockMainUI(self.item_repo, self.transaction_repo, self.security_handler)
         self.stock_main_ui.setWindowModality(Qt.ApplicationModal)
         self.stock_main_ui.show()
 
