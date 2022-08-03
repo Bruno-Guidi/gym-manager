@@ -145,6 +145,7 @@ class MainController:
             # Updates the client
             client.name = self.main_ui.name_field.value()
             client.dni = self.main_ui.dni_field.value()
+            client.birth_day = self.main_ui.birthday_date_edit.date().toPyDate()
             self.client_repo.update(client)
 
             # Updates the ui.
