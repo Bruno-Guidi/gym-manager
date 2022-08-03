@@ -153,14 +153,11 @@ class MainController:
             Dialog.info("Error", "La cantidad no es válida.")
             return
 
-        self._update_amount_ui = UpdateAmountUI()
-        self._update_amount_ui.exec_()
-
-        if self._update_amount_ui.description is not None:
-            # noinspection PyTypeChecker
-            update_item_amount(self.item_repo, item, self.main_ui.amount_field.value(),
-                               self._update_amount_ui.description, decrease)
-            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
+        fn = functools.partial(update_item_amount, self.item_repo, item, self.main_ui.amount_field.value(),
+                               String(""), decrease)
+        if DialogWithResp.confirm(f"Ingrese el responsable", self.security_handler, fn):
+            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int,
+                      increase_row_count=False)
 
     def _charge_item(self):
         if self.main_ui.item_table.currentRow() == -1:
@@ -402,61 +399,3 @@ class CreateUI(QDialog):
 
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
-
-
-class UpdateAmountUI(QDialog):
-    def __init__(self):
-        super().__init__()
-        self._setup_ui()
-
-        self.description: String | None = None
-
-        # noinspection PyUnresolvedReferences
-        self.confirm_btn.clicked.connect(self.save_description)
-        # noinspection PyUnresolvedReferences
-        self.cancel_btn.clicked.connect(self.reject)
-
-    def _setup_ui(self):
-        self.setWindowTitle("Descripción")
-        self.layout = QVBoxLayout(self)
-
-        # Form.
-        self.form_layout = QGridLayout()
-        self.layout.addLayout(self.form_layout)
-        self.form_layout.setContentsMargins(40, 0, 40, 0)
-
-        # Description.
-        self.description_lbl = QLabel(self)
-        self.form_layout.addWidget(self.description_lbl, 0, 0, alignment=Qt.AlignTop)
-        config_lbl(self.description_lbl, "Descripción")
-
-        self.description_text = QTextEdit(self)
-        self.form_layout.addWidget(self.description_text, 0, 1)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
-
-        # Vertical spacer.
-        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
-
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
-
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
-
-        # Adjusts size.
-        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
-
-    def save_description(self):
-        valid_descr, descr = valid_text_value(self.description_text, utils.ACTIVITY_DESCR_CHARS)
-        if not valid_descr:
-            Dialog.info("Error", "La descripción no es válida.")
-
-        self.description = descr
-        self.confirm_btn.window().close()
