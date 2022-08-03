@@ -40,7 +40,8 @@ class MainController:
         self.main_ui.filter_header.config(filters, on_search_click=self.fill_item_table)
 
         # Configures the page index.
-        self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click, page_len=40)
+        self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click, page_len=40,
+                                       show_info=False)
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
