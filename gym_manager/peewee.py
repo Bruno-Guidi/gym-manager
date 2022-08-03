@@ -37,8 +37,6 @@ class ClientTable(Model):
     cli_name = CharField()
     admission = DateField()
     birth_day = DateField()
-    telephone = CharField()
-    direction = CharField()
     is_active = BooleanField()
 
     class Meta:
@@ -50,7 +48,7 @@ class SqliteClientRepo(ClientRepo):
     """
 
     def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo, cache_len: int = 50) -> None:
-        DATABASE_PROXY.create_tables([ClientTable])
+        DATABASE_PROXY.create_tables([ClientTable, ActivityTable, SubscriptionTable, TransactionTable])
 
         self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
@@ -74,30 +72,23 @@ class SqliteClientRepo(ClientRepo):
         record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive())
         return record is not None and record.is_active
 
-    def create(
-            self, name: String, admission: date, birthday: date, telephone: String, direction: String,
-            dni: Number
-    ) -> Client:
+    def create(self, name: String, admission: date, birthday: date, dni: Number) -> Client:
         if dni.as_primitive() is not None and self.is_active(dni):
             raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
 
-        record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) if dni is not None else None
+        record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) if dni.as_primitive() is not None else None
         if record is None:
             # record will be None if *dni* is None or if there is no client in the table whose dni matches it.
             logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
-            record = ClientTable.create(dni=dni.as_primitive(),
-                                        cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
-                                        telephone=telephone.as_primitive(), direction=direction.as_primitive(),
-                                        is_active=True)
+            record = ClientTable.create(dni=dni.as_primitive(), cli_name=name.as_primitive(), admission=admission,
+                                        birth_day=birthday, is_active=True)
         else:
             # There is an inactive client whose dni matches with the received one.
             logger.getChild(type(self).__name__).info(f"Reactivating client [client.dni={dni}].")
-            ClientTable.replace(id=record.id, dni=dni.as_primitive(),
-                                cli_name=name.as_primitive(), admission=admission, birth_day=birthday,
-                                telephone=telephone.as_primitive(), direction=direction.as_primitive(),
-                                is_active=True).execute()
+            ClientTable.replace(id=record.id, dni=dni.as_primitive(), cli_name=name.as_primitive(), admission=admission,
+                                birth_day=birthday, is_active=True).execute()
 
-        client = Client(record.id, name, admission, birthday, telephone, direction, dni)
+        client = Client(record.id, name, admission, birthday, dni)
         self.cache[client.id] = client
 
         if client.dni.as_primitive() is not None:
@@ -133,8 +124,6 @@ class SqliteClientRepo(ClientRepo):
         # changed.
         record.dni = client.dni.as_primitive()
         record.cli_name = client.name.as_primitive()
-        record.telephone = client.telephone.as_primitive()
-        record.direction = client.direction.as_primitive()
         record.save()
 
         if client.id in self._views:  # Refreshes the view of the updated client, if there is one.
@@ -169,7 +158,6 @@ class SqliteClientRepo(ClientRepo):
             if record.id not in self.cache:
                 logger.getChild(type(self).__name__).info(f"Creating Client [client.id={record.id}] from queried data.")
                 client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
-                                String(record.telephone), String(record.direction),
                                 Number(record.dni if record.dni is not None else ""))
                 self.cache[record.id] = client
                 subs = {}
@@ -208,8 +196,7 @@ class SqliteClientRepo(ClientRepo):
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_clients, 256):
                 ClientTable.insert_many(batch, fields=[ClientTable.id, ClientTable.cli_name, ClientTable.admission,
-                                                       ClientTable.birth_day, ClientTable.telephone,
-                                                       ClientTable.direction, ClientTable.is_active]).execute()
+                                                       ClientTable.birth_day, ClientTable.is_active]).execute()
 
 
 class ActivityTable(Model):

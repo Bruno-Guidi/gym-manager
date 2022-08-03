@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
+from gym_manager.contact.core import ContactRepo
 from gym_manager.core import api
 from gym_manager.core.base import String, Activity, Currency, Number
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
@@ -21,6 +22,7 @@ from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
+from ui.contact import ContactMainUI
 from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit
 from ui.widgets import PageIndex
 
@@ -73,6 +75,7 @@ class Controller:
             transaction_repo: TransactionRepo,
             balance_repo: BalanceRepo,
             booking_system: BookingSystem,
+            contact_repo: ContactRepo,
             security_handler: SecurityHandler
     ):
         self.main_ui = main_ui
@@ -82,6 +85,7 @@ class Controller:
         self.transaction_repo = transaction_repo
         self.balance_repo = balance_repo
         self.booking_system = booking_system
+        self.contact_repo = contact_repo
         self.security_handler = security_handler
 
         # Sets callbacks
@@ -91,6 +95,8 @@ class Controller:
         self.main_ui.clients_btn.clicked.connect(self.show_client_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.contact_btn.clicked.connect(self.show_contact_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
@@ -146,7 +152,8 @@ class Controller:
             self._backup_ui.exec_()
             if self._backup_ui.confirmed:
                 parsing.parse(self.activity_repo, self.client_repo, self.subscription_repo, self.transaction_repo,
-                              since=self._backup_ui.since, backup_path=self._backup_ui.path)
+                              since=self._backup_ui.since, backup_path=self._backup_ui.path,
+                              contact_repo=self.contact_repo)
 
         # noinspection PyAttributeOutsideInit
         self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance),
@@ -158,7 +165,7 @@ class Controller:
     def show_client_main_ui(self):
         activities_fn = functools.partial(self.activity_repo.all, 1)
         self.client_main_ui = ClientMainUI(self.client_repo, self.subscription_repo, self.transaction_repo,
-                                           self.security_handler, activities_fn)
+                                           self.security_handler, activities_fn, self.contact_repo)
         self.client_main_ui.setWindowModality(Qt.ApplicationModal)
         self.client_main_ui.show()
 
@@ -167,6 +174,12 @@ class Controller:
         self.activity_main_ui = ActivityMainUI(self.activity_repo, self.security_handler)
         self.activity_main_ui.setWindowModality(Qt.ApplicationModal)
         self.activity_main_ui.show()
+
+    def show_contact_main_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self.contact_main_ui = ContactMainUI(self.contact_repo, self.client_repo)
+        self.contact_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.contact_main_ui.show()
 
     # noinspection PyAttributeOutsideInit
     def show_accounting_main_ui(self):
@@ -197,13 +210,14 @@ class MainUI(QMainWindow):
             transaction_repo: TransactionRepo,
             balance_repo: BalanceRepo,
             booking_system: BookingSystem,
+            contact_repo: ContactRepo,
             security_handler: SecurityHandler,
             enable_tools: bool = False
     ):
         super().__init__()
         self._setup_ui(enable_tools)
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
-                                     balance_repo, booking_system, security_handler)
+                                     balance_repo, booking_system, contact_repo, security_handler)
 
     def _setup_ui(self, enable_tools: bool):
         self.setWindowTitle("Gestor La Cascada")
@@ -247,6 +261,14 @@ class MainUI(QMainWindow):
         self.activities_lbl = QLabel(self.widget)
         self.top_grid_layout.addWidget(self.activities_lbl, 1, 1, alignment=Qt.AlignCenter)
         config_lbl(self.activities_lbl, "Actividades", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
+        self.contact_btn = QPushButton(self.widget)
+        self.top_grid_layout.addWidget(self.contact_btn, 0, 2, alignment=Qt.AlignCenter)
+        config_btn(self.contact_btn, icon_path="ui/resources/detail.png", icon_size=96)
+
+        self.contact_lbl = QLabel(self.widget)
+        self.top_grid_layout.addWidget(self.contact_lbl, 1, 2, alignment=Qt.AlignCenter)
+        config_lbl(self.contact_lbl, "Agenda", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))

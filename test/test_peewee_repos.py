@@ -80,8 +80,7 @@ def test_ClientRepo_remove():
     log_responsible.config(MockSecurityHandler())
     client_repo = SqliteClientRepo(SqliteActivityRepo(), SqliteTransactionRepo())
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(""))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(""))
 
     client_repo.remove(client)
     assert not ClientTable.get_by_id(1).is_active
@@ -94,8 +93,7 @@ def test_ClientRepo_remove_withSubs():
     client_repo = SqliteClientRepo(activity_repo, SqliteTransactionRepo())
     subscription_repo = SqliteSubscriptionRepo()
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(""))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(""))
 
     activity = Activity(String("Act"), Currency(100), String("Descr"))
     activity_repo.add(activity)
@@ -111,9 +109,8 @@ def test_ClientRepo_create_withNonExistingClient_withNoDni():
     create_database(":memory:")
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
 
-    expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"))
-    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(""))
+    expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5))
+    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(""))
 
     assert expected == result and ClientTable.get_by_id(1).is_active and result.dni.as_primitive() is None
 
@@ -123,9 +120,8 @@ def test_ClientRepo_create_withNonExistingClient_withDni():
     log_responsible.config(MockSecurityHandler())
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
 
-    expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"), Number(1))
-    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
+    expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
+    result = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
 
     assert expected == result and expected.dni == result.dni and ClientTable.get_by_id(1).is_active
 
@@ -138,8 +134,7 @@ def test_ClientRepo_create_withInactiveClient_withDni():
     SqliteSubscriptionRepo()  # Required to create the SubscriptionTable.
     client_repo = SqliteClientRepo(SqliteActivityRepo(), transaction_repo)
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
     # Creates some transactions, to see if they are preserved after removing and creating again the client.
     transaction_repo.create("type", date(2022, 2, 2), Currency(1), "method", String("Resp"), "descr", client)
     transaction_repo.create("type", date(2022, 2, 2), Currency(1), "method", String("Resp"), "descr", client)
@@ -150,9 +145,8 @@ def test_ClientRepo_create_withInactiveClient_withDni():
             and TransactionTable.select().count() == 2)  # Test that the transactions are preserved in the table.
 
     # Creates again the client. It should be activated.
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
-    expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"), Number(1))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
+    expected = Client(1, String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
 
     assert (expected == client and expected.dni == client.dni and ClientTable.get_by_id(1).is_active
             and TransactionTable.select().where(TransactionTable.client_id == client.id).count() == 2)
@@ -162,18 +156,14 @@ def test_ClientRepo_update():
     create_database(":memory:")
     client_repo = SqliteClientRepo(MockActivityRepo(), MockTransactionRepo())
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
 
     client.name = String("OtherName")
-    client.telephone = String("OtherTel")
-    client.direction = String("OtherDir")
 
     client_repo.update(client)
 
     record = ClientTable.get_by_id(1)
-    assert (record.cli_name == client.name.as_primitive() and record.telephone == client.telephone.as_primitive()
-            and record.direction == client.direction.as_primitive())
+    assert record.cli_name == client.name.as_primitive()
 
 
 def test_ClientRepo_update_withSubs():
@@ -183,11 +173,8 @@ def test_ClientRepo_update_withSubs():
     client_repo = SqliteClientRepo(activity_repo, transaction_repo)
     subscription_repo = SqliteSubscriptionRepo()
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
     client.name = String("OtherName")
-    client.telephone = String("OtherTel")
-    client.direction = String("OtherDir")
 
     activity = Activity(String("Act"), Currency(1), String("Descr"))
     activity_repo.add(activity)
@@ -197,8 +184,7 @@ def test_ClientRepo_update_withSubs():
     client_repo.update(client)
 
     record = ClientTable.get_by_id(1)
-    assert (record.cli_name == client.name.as_primitive() and record.telephone == client.telephone.as_primitive()
-            and record.direction == client.direction.as_primitive())  # Asserts that the client was updated.
+    assert record.cli_name == client.name.as_primitive()
     assert activity_repo.n_subscribers(activity) == 1  # Asserts that the subscription wasn't deleted.
 
 
@@ -209,12 +195,9 @@ def test_ClientRepo_all():
     # used.
     client_repo = SqliteClientRepo(SqliteActivityRepo(), SqliteTransactionRepo())
 
-    cli1 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                              Number(1))
-    cli2 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                              Number(2))
-    cli3 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                              Number(3))
+    cli1 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
+    cli2 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(2))
+    cli3 = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(3))
 
     # All clients are active.
     assert [cli1, cli2, cli3] == [client for client in client_repo.all()]
@@ -247,14 +230,12 @@ def test_ClientView_Transaction_updatedAfterReactivatingClient():
     SqliteBalanceRepo(transaction_repo)
     client_repo = SqliteClientRepo(SqliteActivityRepo(), transaction_repo)
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
     transaction = transaction_repo.create("type", date(2022, 2, 2), Currency(1), "method", String("Resp"),
                                           "desc", ClientView(client.id, client.name, "created_by", client.dni))
 
     client_repo.remove(client)
-    client = client_repo.create(String("OtherName"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
+    client = client_repo.create(String("OtherName"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
 
     assert transaction.client.name == client.name
 
@@ -268,8 +249,7 @@ def test_ActivityRepo_update_subsAreNotRemoved():
     client_repo = SqliteClientRepo(activity_repo, SqliteTransactionRepo())
     subscription_repo = SqliteSubscriptionRepo()
 
-    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), String("Tel"), String("Dir"),
-                                Number(1))
+    client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
 
     activity = Activity(String("Act"), Currency(1), String("Desc"))
     activity_repo.add(activity)

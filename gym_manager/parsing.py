@@ -3,6 +3,7 @@ import sqlite3
 from datetime import date, timedelta
 from sqlite3 import Connection
 
+from gym_manager.contact.core import ContactRepo
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, TransactionRepo
 
 
@@ -153,14 +154,18 @@ def _insert_activities(conn: Connection, activity_repo: ActivityRepo):
     activity_repo.add_all(gen)
 
 
-def _insert_clients(conn: Connection, client_repo: ClientRepo):
+def _insert_clients(conn: Connection, client_repo: ClientRepo, contact_repo: ContactRepo | None = None):
     today = date.today()
     # (id, name, admission, birthday, tel, dir, is_active)
-    gen = ((raw[0], raw[1], raw[2], today if raw[3] == 0 or raw[3] is None else today - timedelta(raw[3]),
-            raw[4] if raw[4] is not None else "", raw[5] if raw[5] is not None else "", True)
-           for raw in conn.execute("select c.id, c.nombre, c.fecha_ingreso, c.edad, c.telefono, c.direccion "
-                                   "from cliente c"))
+    gen = ((raw[0], raw[1], raw[2], today if raw[3] == 0 or raw[3] is None else today - timedelta(raw[3]), True)
+           for raw in conn.execute("select c.id, c.nombre, c.fecha_ingreso, c.edad from cliente c"))
     client_repo.add_all(gen)
+
+    if contact_repo is not None:
+        # (name, tel1, tel2, dir, desc, client_id)
+        gen = (("", raw[1] if raw[1] is not None else "", "", raw[2] if raw[2] is not None else "", "", raw[0])
+               for raw in conn.execute("select c.id, c.telefono, c.direccion from cliente c"))
+        contact_repo.add_all(gen)
 
 
 def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo, since: date):
@@ -195,7 +200,8 @@ def parse(
         subscription_repo: SubscriptionRepo,
         transaction_repo: TransactionRepo,
         since: date,
-        backup_path: str
+        backup_path: str,
+        contact_repo: ContactRepo | None = None
 ):
     conn = sqlite3.connect(':memory:')
 
@@ -204,7 +210,7 @@ def parse(
     transfer_backup(backup_path, conn, tables)
 
     _insert_activities(conn, activity_repo)
-    _insert_clients(conn, client_repo)
+    _insert_clients(conn, client_repo, contact_repo)
     # ToDo register subs after registering its charging. If there is no charging for that sub, remove it.
     _insert_subscriptions(conn, subscription_repo, since)
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since)

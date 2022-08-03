@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
     QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem)
 
+from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
 from gym_manager.core.base import (
     String, TextLike, Client, Number, Activity, Subscription, month_range)
@@ -47,10 +48,12 @@ class MainController:
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            activities_fn: Callable[[], Iterable[Activity]]
+            activities_fn: Callable[[], Iterable[Activity]],
+            contact_repo: ContactRepo | None = None
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
+        self.contact_repo = contact_repo
         self.subscription_repo = subscription_repo
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
@@ -102,8 +105,6 @@ class MainController:
         fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int)
         fill_cell(self.main_ui.client_table, row, 2, client.admission, data_type=bool)
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int)
-        fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str)
-        fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str)
 
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
@@ -121,8 +122,6 @@ class MainController:
             dni = "" if self._clients[row].dni.as_primitive() is None else str(self._clients[row].dni.as_primitive())
             self.main_ui.dni_field.setText(dni)
             self.main_ui.dni_field.setEnabled(len(dni) == 0)
-            self.main_ui.tel_field.setText(str(self._clients[row].telephone))
-            self.main_ui.dir_field.setText(str(self._clients[row].direction))
 
             self.fill_subscription_list()
 
@@ -135,7 +134,7 @@ class MainController:
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
-        self._create_ui = CreateUI(self.client_repo)
+        self._create_ui = CreateUI(self.client_repo, self.contact_repo)
         self._create_ui.exec_()
         if self._create_ui.controller.client is not None:
             self._add_client(self._create_ui.controller.client, check_filters=True, check_limit=True)
@@ -164,8 +163,6 @@ class MainController:
                 fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
                 dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
                 fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
-                fill_cell(self.main_ui.client_table, row, 4, client.telephone, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.client_table, row, 5, client.direction, data_type=str, increase_row_count=False)
 
                 self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
 
@@ -181,6 +178,8 @@ class MainController:
 
         remove_fn = functools.partial(self.client_repo.remove, client)
         if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{client.name}'?", self.security_handler, remove_fn):
+            remove_contact_by_client(self.contact_repo, client)
+
             self._clients.pop(row)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
@@ -191,7 +190,7 @@ class MainController:
             self.main_ui.dir_field.clear()
 
             # Clears the subscriptions table.
-            self.main_ui.subscription_table.setRowCount(0)
+            self.main_ui.sub_list.clear()
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
@@ -292,12 +291,13 @@ class ClientMainUI(QMainWindow):
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            activities_fn: Callable[[], Iterable[Activity]]
+            activities_fn: Callable[[], Iterable[Activity]],
+            contact_repo: ContactRepo | None = None
     ) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, security_handler,
-                                         activities_fn)
+                                         activities_fn, contact_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Clientes")
@@ -323,9 +323,9 @@ class ClientMainUI(QMainWindow):
         # Clients.
         self.client_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.client_table)
-        new_config_table(self.client_table, width=860, allow_resizing=False,
-                         columns={"Nombre": (.25, str), "DNI": (.145, int), "Ingreso": (.155, bool), "Edad": (.08, int),
-                                  "Teléfono": (.18, str), "Dirección": (.18, str)}, min_rows_to_show=10)
+        new_config_table(self.client_table, width=600, allow_resizing=False, min_rows_to_show=10,
+                         columns={"Nombre": (.4, str), "DNI": (.2, int), "Ingreso": (.2, bool), "Edad": (.2, int)}
+                         )
 
         # Index.
         self.page_index = PageIndex(self.widget)
@@ -436,11 +436,12 @@ class ClientMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo) -> None:
+    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo, contact_repo: ContactRepo | None = None) -> None:
         self.create_ui = create_ui
 
         self.client: Client | None = None
         self.client_repo = client_repo
+        self.contact_repo = contact_repo
 
         # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_client)
@@ -455,19 +456,23 @@ class CreateController:
         elif self.client_repo.is_active(self.create_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.create_ui.dni_field.value()}'.")
         else:
-            self.client = self.client_repo.create(
-                self.create_ui.name_field.value(), date.today(), self.create_ui.birth_date_edit.date().toPyDate(),
-                self.create_ui.tel_field.value(), self.create_ui.dir_field.value(), self.create_ui.dni_field.value()
-            )
+            self.client = self.client_repo.create(self.create_ui.name_field.value(), date.today(),
+                                                  self.create_ui.birth_date_edit.date().toPyDate(),
+                                                  self.create_ui.dni_field.value())
+            if self.contact_repo is not None:
+                # Creates a contact for the client, with basic info.
+                create_contact(self.contact_repo, name=String(""), tel1=self.create_ui.tel_field.value(),
+                               tel2=String(""), direction=self.create_ui.dir_field.value(), description=String(""),
+                               client=self.client)
             Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
 
 class CreateUI(QDialog):
-    def __init__(self, client_repo: ClientRepo) -> None:
+    def __init__(self, client_repo: ClientRepo, contact_repo: ContactRepo | None = None) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, client_repo)
+        self.controller = CreateController(self, client_repo, contact_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Nuevo cliente")
