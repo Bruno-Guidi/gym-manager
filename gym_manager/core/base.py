@@ -292,6 +292,9 @@ class Currency(Validatable):
     def __sub__(self, other: Currency) -> Currency:
         return Currency(self._value - other.as_primitive(), positive=False)
 
+    def multiply_by_scalar(self, n: int) -> Currency:
+        return Currency(self._value * n)
+
 
 Balance: TypeAlias = dict[str, dict[str, Currency]]
 
