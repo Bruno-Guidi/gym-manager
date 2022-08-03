@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import decimal
+import functools
 import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -97,6 +98,7 @@ class Validatable(abc.ABC):
         raise NotImplementedError
 
 
+@functools.total_ordering
 class Number(Validatable):
     """int wrapper.
     """
@@ -113,6 +115,9 @@ class Number(Validatable):
 
     def __hash__(self) -> int:
         return hash(self._value)
+
+    def __lt__(self, other: Number) -> bool:
+        return self._value < other.as_primitive()
 
     def validate(self, value: str | int, **kwargs) -> int:
         """Validates the given *value*. If the validation succeeds, returns the given *value* as int, regardless of its
