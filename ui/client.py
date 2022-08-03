@@ -132,15 +132,16 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
+        client = self._clients[row]
+
         # noinspection PyTypeChecker
         if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel_field.valid_value(),
                     self.main_ui.dir_field.valid_value(), self.main_ui.dni_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.client_repo.is_active(self.main_ui.dni_field.value()):
+        elif (client.dni != self.main_ui.dni_field.value()
+              and self.client_repo.is_active(self.main_ui.dni_field.value())):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.main_ui.dni_field.value()}'.")
         else:
-            client = self._clients[row]
-
             # Updates the client
             client.name = self.main_ui.name_field.value()
             client.dni = self.main_ui.dni_field.value()
@@ -346,7 +347,8 @@ class ClientMainUI(QMainWindow):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"))
+        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
@@ -472,7 +474,8 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, parent=self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"))
+        self.name_field = Field(String, parent=self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
