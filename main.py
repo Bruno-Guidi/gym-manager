@@ -74,13 +74,7 @@ def main():
         needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "cancel_booking",
                            "charge_booking", "create_booking", "update_item_amount", "register_item_charge"}
     )
-    security_handler.add_responsible(Responsible(String("Admin"), String("python")),
-                                     Responsible(String("Stella Palladini"), String("1")),
-                                     Responsible(String("Mariana Irazabal"), String("2")),
-                                     Responsible(String("Camila Palladini"), String("3")),
-                                     Responsible(String("Hornella Palladini"), String("4")),
-                                     Responsible(String("Pablo"), String("5")),
-                                     Responsible(String("Fernanda"), String("6")))
+    security_handler.add_responsible(Responsible(String("Admin"), String("python")))
     log_responsible.config(security_handler)
 
     # Main window launch.

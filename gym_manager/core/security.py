@@ -95,7 +95,7 @@ class SecurityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def add_responsible(self, *responsible):
+    def add_responsible(self, responsible: Responsible):
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -109,7 +109,7 @@ class SecurityRepo(abc.ABC):
 
 class SecurityHandler(abc.ABC):
     @abc.abstractmethod
-    def add_responsible(self, *responsible):
+    def add_responsible(self, responsible: Responsible):
         raise NotImplementedError
 
     @property
@@ -176,11 +176,10 @@ class SimpleSecurityHandler(SecurityHandler):
         self.action_tags = action_tags
         self._needs_responsible = needs_responsible
 
-    def add_responsible(self, *responsible):
-        self.security_repo.add_responsible(*responsible)
-        for resp in responsible:
-            self._responsible_dict[resp.code] = resp
-            self._responsible_dict[resp.name] = resp
+    def add_responsible(self, responsible: Responsible):
+        self.security_repo.add_responsible(responsible)
+        self._responsible_dict[responsible.code] = responsible
+        self._responsible_dict[responsible.name] = responsible
 
     @property
     def current_responsible(self) -> Responsible:

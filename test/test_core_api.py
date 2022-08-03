@@ -17,7 +17,7 @@ from gym_manager.core.security import (
 
 class MockSecurityHandler(SecurityHandler):
 
-    def add_responsible(self, *responsible):
+    def add_responsible(self, responsible: Responsible):
         pass
 
     @property
