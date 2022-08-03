@@ -123,6 +123,7 @@ class SqliteClientRepo(ClientRepo):
         # changed.
         record.dni = client.dni.as_primitive()
         record.cli_name = client.name.as_primitive()
+        record.birth_day = client.birth_day
         record.save()
 
         if client.id in self._views:  # Refreshes the view of the updated client, if there is one.
