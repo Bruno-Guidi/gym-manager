@@ -10,20 +10,11 @@ from PyQt5.QtWidgets import (
 from gym_manager.core.base import String, Activity, Currency, TextLike, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from gym_manager.core.security import SecurityHandler, log_responsible
-from gym_manager.stock.core import ItemRepo, Item, create_item, update_item, remove_item
+from gym_manager.stock.core import ItemRepo, Item, create_item, update_item, remove_item, update_item_amount
 from ui import utils
 from ui.widget_config import (
-    config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox)
+    config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox)
 from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
-
-
-@log_responsible(action_tag="update_activity", to_str=lambda activity: f"Actualizar actividad {activity.name}")
-def update_activity(activity_repo: ActivityRepo, activity: Activity, price: Currency, description: String):
-    activity.price = price
-    activity.description = description
-    activity_repo.update(activity)
-
-    return activity
 
 
 class MainController:
@@ -46,6 +37,10 @@ class MainController:
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
+        decrease_stock = (functools.partial(self._update_item_amount, True))
+        fill_combobox(self.main_ui.action_combobox, (("Reducir stock", decrease_stock),),
+                      display=lambda pair: pair[0])
+
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_btn.clicked.connect(self.create_ui)
@@ -55,6 +50,8 @@ class MainController:
         self.main_ui.remove_btn.clicked.connect(self.remove)
         # noinspection PyUnresolvedReferences
         self.main_ui.item_table.itemSelectionChanged.connect(self.refresh_form)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.confirm_btn.clicked.connect(self.execute_action)
 
     def _add_item(self, item: Item, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.item_table.rowCount() == self.main_ui.page_index.page_len:
@@ -137,6 +134,30 @@ class MainController:
             self.main_ui.price_field.clear()
 
             Dialog.info("Éxito", f"El ítem '{item.name}' fue eliminado correctamente.")
+
+    def _update_item_amount(self, decrease: bool):
+        if self.main_ui.item_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un item.")
+            return
+
+        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        # noinspection PyTypeChecker
+        if (not self.main_ui.amount_field.valid_value()
+                or (decrease and self.main_ui.amount_field.value() > item.amount)):
+            Dialog.info("Error", "La cantidad no es válida.")
+            return
+
+        self._update_amount_ui = UpdateAmountUI()
+        self._update_amount_ui.exec_()
+
+        if self._update_amount_ui.description is not None:
+            # noinspection PyTypeChecker
+            update_item_amount(self.item_repo, item, self.main_ui.amount_field.value(),
+                               self._update_amount_ui.description, decrease)
+            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
+
+    def execute_action(self):
+        self.main_ui.action_combobox.currentData(Qt.UserRole)[1]()
 
 
 class StockMainUI(QMainWindow):
@@ -239,7 +260,7 @@ class StockMainUI(QMainWindow):
         self.action_layout.addWidget(self.amount_lbl, 1, 0)
         config_lbl(self.amount_lbl, "Cantidad*")
 
-        self.amount_field = Field(Number, parent=self.widget, optional=False)
+        self.amount_field = Field(Number, parent=self.widget, optional=False, min_value=1)
         self.action_layout.addWidget(self.amount_field, 1, 1)
         config_line(self.amount_field)
 
@@ -338,3 +359,61 @@ class CreateUI(QDialog):
 
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class UpdateAmountUI(QDialog):
+    def __init__(self):
+        super().__init__()
+        self._setup_ui()
+
+        self.description: String | None = None
+
+        # noinspection PyUnresolvedReferences
+        self.confirm_btn.clicked.connect(self.save_description)
+        # noinspection PyUnresolvedReferences
+        self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Nuevo contacto")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Description.
+        self.description_lbl = QLabel(self)
+        self.form_layout.addWidget(self.description_lbl, 0, 0, alignment=Qt.AlignTop)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 0, 1)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+    def save_description(self):
+        valid_descr, descr = valid_text_value(self.description_text, utils.ACTIVITY_DESCR_CHARS)
+        if not valid_descr:
+            Dialog.info("Error", "La descripción no es válida.")
+
+        self.description = descr
+        self.confirm_btn.window().close()
