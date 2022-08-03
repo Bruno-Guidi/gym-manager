@@ -1,7 +1,9 @@
 import abc
+from typing import Generator
 
 from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import Currency, String, Number, OperationalError
+from gym_manager.core.persistence import FilterValuePair
 
 
 class Item:
@@ -36,6 +38,12 @@ class ItemRepo(abc.ABC):
 
     @abc.abstractmethod
     def update(self, item: Item):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def all(
+            self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
+    ) -> Generator[Item, None, None]:
         raise NotImplementedError
 
 
