@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core.base import String, Activity, Currency, TextLike, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from gym_manager.core.security import SecurityHandler, log_responsible
-from gym_manager.stock.core import ItemRepo, Item, create_item, update_item
+from gym_manager.stock.core import ItemRepo, Item, create_item, update_item, remove_item
 from ui import utils
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox)
@@ -119,28 +119,23 @@ class MainController:
             Dialog.info("Éxito", f"El ítem '{item.name}' fue actualizado correctamente.")
 
     def remove(self):
-        pass
-        # if self.main_ui.item_table.currentRow() == -1:
-        #     Dialog.info("Error", "Seleccione una actividad.")
-        #     return
-        #
-        # activity_name = self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()
-        # activity = self.items[activity_name]
-        # if activity.locked:
-        #     Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
-        #     return
-        #
-        # remove_fn = functools.partial(self.item_repo.remove, activity)
-        # if DialogWithResp.confirm(f"¿Desea eliminar la actividad '{activity.name}'?", self.security_handler, remove_fn):
-        #     self.items.pop(activity.name.as_primitive())
-        #     self.main_ui.filter_header.on_search_click()  # Refreshes the table.
-        #
-        #     # Clears the form.
-        #     self.main_ui.name_field.clear()
-        #     self.main_ui.price_field.clear()
-        #     self.main_ui.description_text.clear()
-        #
-        #     Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
+        if self.main_ui.item_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un ítem.")
+            return
+
+        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+
+        if Dialog.confirm(f"¿Desea eliminar el ítem '{item.name}'?"):
+            remove_item(self.item_repo, item)
+
+            self.items.pop(item.name.as_primitive())
+            self.main_ui.filter_header.on_search_click()  # Refreshes the table.
+
+            # Clears the form.
+            self.main_ui.name_field.clear()
+            self.main_ui.price_field.clear()
+
+            Dialog.info("Éxito", f"El ítem '{item.name}' fue eliminado correctamente.")
 
 
 class StockMainUI(QMainWindow):
