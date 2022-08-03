@@ -17,7 +17,9 @@ from ui import utils
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox, config_checkbox)
-from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
+from ui.widgets import (
+    Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp,
+    responsible_field)
 
 
 class MainController:
@@ -296,6 +298,14 @@ class StockMainUI(QMainWindow):
         self.action_combobox = QComboBox(self.widget)
         self.action_layout.addWidget(self.action_combobox, 0, 1)
         config_combobox(self.action_combobox, fixed_width=self.amount_field.width())
+
+        self.responsible_lbl = QLabel(self.widget)
+        self.action_layout.addWidget(self.responsible_lbl, 2, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self)
+        self.action_layout.addWidget(self.responsible_field, 2, 1)
+        config_line(self.responsible_field)
 
         self.confirm_btn = QPushButton(self.widget)
         self.right_layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
