@@ -605,9 +605,11 @@ class SqliteSecurityRepo(SecurityRepo):
         for record in ResponsibleTable.select():
             yield Responsible(String(record.resp_name), String(record.resp_code))
 
-    def add_responsible(self, *responsible):
-        for resp in responsible:
-            ResponsibleTable.replace(resp_code=resp.code, resp_name=resp.name).execute()
+    def add_responsible(self, responsible: Responsible):
+        record = ResponsibleTable.get_or_none(resp_code=responsible.code)
+        if record is None:
+            logger.getChild(type(self).__name__).info(f"Added responsible '{responsible.name}':{responsible.code}.")
+            ResponsibleTable.create(resp_code=responsible.code, resp_name=responsible.name)
 
     def log_action(self, when: datetime, responsible: Responsible, action_tag: str, action_name: str):
         ActionTable.create(when=when, responsible_id=responsible.code.as_primitive(), action_tag=action_tag,
