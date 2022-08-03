@@ -122,6 +122,9 @@ class Number(Validatable):
     def __sub__(self, other: Number) -> Number:
         return Number(self._value - other.as_primitive())
 
+    def __add__(self, other: Number) -> Number:
+        return Number(self._value + other.as_primitive())
+
     def validate(self, value: str | int, **kwargs) -> int:
         """Validates the given *value*. If the validation succeeds, returns the given *value* as int, regardless of its
         type.
