@@ -5,6 +5,15 @@ from gym_manager.core.base import Currency, String, Number
 
 class Item:
     def __init__(self, code: int, name: String, amount: Number, price: Currency, is_fixed: bool = False):
+        """Init.
+
+        Args:
+            code: code of the item.
+            name: name of the item.
+            amount: item's amount.
+            price: price to charge for the item.
+            is_fixed: if True, the amount isn't reduced after charging for the item.
+        """
         self.code = code
         self.name = name
         self.amount = amount
