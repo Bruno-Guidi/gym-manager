@@ -17,12 +17,14 @@ from gym_manager.core import api
 from gym_manager.core.base import String, Activity, Currency, Number
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler
+from gym_manager.stock.core import ItemRepo
 from ui import utils
 from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
 from ui.contact import ContactMainUI
+from ui.stock import StockMainUI
 from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit
 from ui.widgets import PageIndex
 
@@ -76,6 +78,7 @@ class Controller:
             balance_repo: BalanceRepo,
             booking_system: BookingSystem,
             contact_repo: ContactRepo,
+            item_repo: ItemRepo,
             security_handler: SecurityHandler
     ):
         self.main_ui = main_ui
@@ -86,6 +89,7 @@ class Controller:
         self.balance_repo = balance_repo
         self.booking_system = booking_system
         self.contact_repo = contact_repo
+        self.item_repo = item_repo
         self.security_handler = security_handler
 
         # Sets callbacks
@@ -97,6 +101,8 @@ class Controller:
         self.main_ui.activities_btn.clicked.connect(self.show_activity_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.contact_btn.clicked.connect(self.show_contact_main_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.stock_btn.clicked.connect(self.show_stock_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.bookings_btn.clicked.connect(self.show_booking_main_ui)
         # noinspection PyUnresolvedReferences
@@ -181,6 +187,12 @@ class Controller:
         self.contact_main_ui.setWindowModality(Qt.ApplicationModal)
         self.contact_main_ui.show()
 
+    def show_stock_main_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self.stock_main_ui = StockMainUI(self.item_repo, self.transaction_repo, self.security_handler)
+        self.stock_main_ui.setWindowModality(Qt.ApplicationModal)
+        self.stock_main_ui.show()
+
     # noinspection PyAttributeOutsideInit
     def show_accounting_main_ui(self):
         self.accounting_main_ui = AccountingMainUI(self.transaction_repo, self.balance_repo, self.security_handler)
@@ -211,13 +223,14 @@ class MainUI(QMainWindow):
             balance_repo: BalanceRepo,
             booking_system: BookingSystem,
             contact_repo: ContactRepo,
+            item_repo: ItemRepo,
             security_handler: SecurityHandler,
             enable_tools: bool = False
     ):
         super().__init__()
         self._setup_ui(enable_tools)
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
-                                     balance_repo, booking_system, contact_repo, security_handler)
+                                     balance_repo, booking_system, contact_repo, item_repo, security_handler)
 
     def _setup_ui(self, enable_tools: bool):
         self.setWindowTitle("Gestor La Cascada")
@@ -269,6 +282,14 @@ class MainUI(QMainWindow):
         self.contact_lbl = QLabel(self.widget)
         self.top_grid_layout.addWidget(self.contact_lbl, 1, 2, alignment=Qt.AlignCenter)
         config_lbl(self.contact_lbl, "Agenda", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
+        self.stock_btn = QPushButton(self.widget)
+        self.top_grid_layout.addWidget(self.stock_btn, 0, 3, alignment=Qt.AlignCenter)
+        config_btn(self.stock_btn, icon_path="ui/resources/stock.png", icon_size=96)
+
+        self.stock_lbl = QLabel(self.widget)
+        self.top_grid_layout.addWidget(self.stock_lbl, 1, 3, alignment=Qt.AlignCenter)
+        config_lbl(self.stock_lbl, "Stock", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))

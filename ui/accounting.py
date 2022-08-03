@@ -521,10 +521,10 @@ class ChargeController:
             charge_ui: ChargeUI,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            client: Client,
             amount: Currency,
             description: String,
-            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction],
+            client: Client | None = None
     ) -> None:
         self.charge_ui = charge_ui
         self.transaction_repo = transaction_repo
@@ -539,7 +539,8 @@ class ChargeController:
         self.post_charge_fn = post_charge_fn
 
         # Sets ui fields.
-        self.charge_ui.client_line.setText(str(client.name))
+        self.charge_ui.client_line.setText(str(client.name) if client is not None else "")
+        self.charge_ui.client_line.setEnabled(client is not None)
         self.charge_ui.amount_line.setText(Currency.fmt(amount))
         fill_combobox(self.charge_ui.method_combobox, transaction_repo.methods,
                       display=lambda method: method)
@@ -573,15 +574,15 @@ class ChargeUI(QDialog):
             self,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            client: Client,
             amount: Currency,
             description: String,
-            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction],
+            client: Client | None = None
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = ChargeController(self, transaction_repo, security_handler, client, amount, description,
-                                           post_charge_fn)
+        self.controller = ChargeController(self, transaction_repo, security_handler, amount, description,
+                                           post_charge_fn, client)
 
     def _setup_ui(self):
         self.setWindowTitle("Registrar cobro")

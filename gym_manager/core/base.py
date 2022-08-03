@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import decimal
+import functools
 import logging
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -97,6 +98,7 @@ class Validatable(abc.ABC):
         raise NotImplementedError
 
 
+@functools.total_ordering
 class Number(Validatable):
     """int wrapper.
     """
@@ -113,6 +115,15 @@ class Number(Validatable):
 
     def __hash__(self) -> int:
         return hash(self._value)
+
+    def __lt__(self, other: Number) -> bool:
+        return self._value < other.as_primitive()
+
+    def __sub__(self, other: Number) -> Number:
+        return Number(self._value - other.as_primitive())
+
+    def __add__(self, other: Number) -> Number:
+        return Number(self._value + other.as_primitive())
 
     def validate(self, value: str | int, **kwargs) -> int:
         """Validates the given *value*. If the validation succeeds, returns the given *value* as int, regardless of its
@@ -291,6 +302,9 @@ class Currency(Validatable):
 
     def __sub__(self, other: Currency) -> Currency:
         return Currency(self._value - other.as_primitive(), positive=False)
+
+    def multiply_by_scalar(self, n: int) -> Currency:
+        return Currency(self._value * n)
 
 
 Balance: TypeAlias = dict[str, dict[str, Currency]]

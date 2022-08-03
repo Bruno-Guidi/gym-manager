@@ -14,6 +14,7 @@ from gym_manager.booking.core import BookingSystem, Duration
 from gym_manager.contact.peewee import SqliteContactRepo
 from gym_manager.core.base import Currency, String, Activity
 from gym_manager.core.security import log_responsible, SimpleSecurityHandler, Responsible
+from gym_manager.stock.peewee import SqliteItemRepo
 from ui.main import MainUI
 
 stylesheet = """
@@ -62,15 +63,18 @@ def main():
     # Contact initialization.
     contact_repo = SqliteContactRepo()
 
+    # Stock initialization.
+    item_repo = SqliteItemRepo()
+
     # Security initialization.
     security_handler = SimpleSecurityHandler(
         peewee.SqliteSecurityRepo(),
         action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
                      "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
-                     "create_booking"},
+                     "create_booking", "update_item_amount", "register_item_charge"},
         needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
                            "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
-                           "create_booking"}
+                           "create_booking", "update_item_amount", "register_item_charge"}
     )
     security_handler.add_responsible(Responsible(String("Admin"), String("python")),
                                      Responsible(String("Stella Palladini"), String("1")),
@@ -83,7 +87,7 @@ def main():
 
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
-                    contact_repo, security_handler, enable_tools=config_dict["enable_utility_functions"])
+                    contact_repo, item_repo, security_handler, enable_tools=config_dict["enable_utility_functions"])
     window.show()
     app.exec()
 
