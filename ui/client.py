@@ -16,7 +16,7 @@ from gym_manager.core import api
 from gym_manager.core.base import (
     String, TextLike, Client, Number, Activity, Subscription, month_range)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
-from gym_manager.core.security import SecurityHandler, SecurityError, log_responsible
+from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
@@ -24,20 +24,6 @@ from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, config_checkbox,
     config_combobox, fill_combobox, config_date_edit, new_config_table)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
-
-
-@log_responsible(action_tag="update_client", to_str=lambda client: f"Actualizar cliente {client.name}")
-def update_client(
-        client_repo: ClientRepo, client: Client, name: String, telephone: String, direction: String,
-        dni: Number
-):
-    client.name = name
-    client.dni = dni
-    client.telephone = telephone
-    client.direction = direction
-    client_repo.update(client)
-
-    return client
 
 
 class MainController:
@@ -153,20 +139,20 @@ class MainController:
         elif self.client_repo.is_active(self.main_ui.dni_field.value()):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.main_ui.dni_field.value()}'.")
         else:
-            update_fn = functools.partial(update_client, self.client_repo, self._clients[row],
-                                          self.main_ui.name_field.value(), self.main_ui.tel_field.value(),
-                                          self.main_ui.dir_field.value(), self.main_ui.dni_field.value())
+            client = self._clients[row]
 
-            if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
-                # Updates the ui.
-                client = self._clients[row]
-                fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
-                dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
-                fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
+            # Updates the client
+            client.name = self.main_ui.name_field.value()
+            client.dni = self.main_ui.dni_field.value()
+            self.client_repo.update(client)
 
-                self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
+            # Updates the ui.
+            fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+            dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
+            fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
+            self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
 
-                Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
+            Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
     def remove(self):
         row = self.main_ui.client_table.currentRow()
