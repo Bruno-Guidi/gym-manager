@@ -539,7 +539,8 @@ class ChargeController:
         self.post_charge_fn = post_charge_fn
 
         # Sets ui fields.
-        self.charge_ui.client_line.setText(str(client.name))
+        self.charge_ui.client_line.setText(str(client.name) if client is not None else "")
+        self.charge_ui.client_line.setEnabled(client is not None)
         self.charge_ui.amount_line.setText(Currency.fmt(amount))
         fill_combobox(self.charge_ui.method_combobox, transaction_repo.methods,
                       display=lambda method: method)
