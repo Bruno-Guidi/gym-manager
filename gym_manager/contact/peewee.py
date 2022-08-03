@@ -1,6 +1,6 @@
-from typing import Generator
+from typing import Generator, Iterable
 
-from peewee import Model, ForeignKeyField, CharField, IntegerField, JOIN
+from peewee import Model, ForeignKeyField, CharField, IntegerField, JOIN, chunked
 
 from gym_manager.contact.core import ContactRepo, Contact
 from gym_manager.core.base import String, Client, Number
@@ -76,3 +76,10 @@ class SqliteContactRepo(ContactRepo):
                                     Number(client_record.dni if client_record.dni is not None else ""))
             yield Contact(record.id, String(record.c_name), String(record.tel1), String(record.tel2),
                           String(record.direction), String(record.description), client)
+
+    def add_all(self, raw_contacts: Iterable[tuple]):
+        with DATABASE_PROXY.atomic():
+            for batch in chunked(raw_contacts, 256):
+                ContactModel.insert_many(batch, fields=[ContactModel.c_name, ContactModel.tel1, ContactModel.tel2,
+                                         ContactModel.direction, ContactModel.description, ContactModel.client_id]
+                                         ).execute()

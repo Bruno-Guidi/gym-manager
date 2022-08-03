@@ -60,6 +60,10 @@ class ContactRepo(abc.ABC):
     ) -> Generator[Contact, None, None]:
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def add_all(self, raw_contacts: Iterable[tuple]):
+        raise NotImplementedError
+
 
 def create_contact(
         contact_repo: ContactRepo, name: String, tel1: String, tel2: String, direction: String, description: String,
