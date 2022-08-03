@@ -62,11 +62,15 @@ def update_item(item_repo: ItemRepo, item: Item, name: String, price: Currency):
 
 
 def update_item_amount(
-        item_repo: ItemRepo, item: Item, amount: Number, update_cause: String) -> tuple[Item, Number, String]:
-    if amount > item.amount:
+        item_repo: ItemRepo, item: Item, amount: Number, update_cause: String, decrease: bool
+) -> tuple[Item, Number, String]:
+    if decrease and amount > item.amount:
         raise OperationalError(f"The [{item.code=}] does not have [{amount=}] units. It has [{item.amount=}]")
 
-    item.amount += amount
+    if decrease:
+        item.amount -= amount
+    else:
+        item.amount += amount
     item_repo.update(item)
 
     return item, amount, update_cause  # This is returned, so it can be logged by log_responsible decorator.
