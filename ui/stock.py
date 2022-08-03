@@ -37,8 +37,9 @@ class MainController:
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
-        decrease_stock = (functools.partial(self._update_item_amount, True))
-        fill_combobox(self.main_ui.action_combobox, (("Reducir stock", decrease_stock),),
+        decrease_stock = ("Reducir stock", functools.partial(self._update_item_amount, True))
+        increase_stock = ("Agregar stock", functools.partial(self._update_item_amount, False))
+        fill_combobox(self.main_ui.action_combobox, (decrease_stock, increase_stock),
                       display=lambda pair: pair[0])
 
         # Sets callbacks.
