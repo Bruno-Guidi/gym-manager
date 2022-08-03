@@ -176,8 +176,8 @@ class MainController:
 
         client = self._clients[row]
 
-        remove_fn = functools.partial(self.client_repo.remove, client)
-        if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{client.name}'?", self.security_handler, remove_fn):
+        if Dialog.confirm(f"¿Desea eliminar el cliente '{client.name}'?"):
+            self.client_repo.remove(client)
             remove_contact_by_client(self.contact_repo, client)
 
             self._clients.pop(row)

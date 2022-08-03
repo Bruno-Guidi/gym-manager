@@ -101,7 +101,6 @@ class SqliteClientRepo(ClientRepo):
 
         return client
 
-    @log_responsible(action_tag="remove_client", to_str=lambda client: f"Eliminar cliente {client.name}")
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
