@@ -254,7 +254,8 @@ class CreateController:
     def create_activity(self):
         valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
                                               max_len=utils.ACTIVITY_DESCR_CHARS)
-        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(), descr])
+        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
+                            valid_descr])
         if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
         elif self.activity_repo.exists(self.create_ui.name_field.value()):
