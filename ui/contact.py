@@ -65,12 +65,12 @@ class MainController:
         fill_cell(self.main_ui.contact_table, row, 2, contact.tel2, data_type=str)
         fill_cell(self.main_ui.contact_table, row, 3, contact.direction, data_type=str)
 
-    def fill_contact_table(self, filters: list[FilterValuePair]):
+    def fill_contact_table(self, dummy: list[FilterValuePair]):
         self.main_ui.contact_table.setRowCount(0)
         self._contacts.clear()
 
         name = String(self.main_ui.filter_header.filter_line_edit.text())
-        for contact in self.contact_repo.all(self.main_ui.page_index.page, name=name):
+        for contact in self.contact_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, name=name):
             self._add_contact(contact, check_filters=False)  # Contacts are filtered in the repo.
 
     def update_contact_info(self):
