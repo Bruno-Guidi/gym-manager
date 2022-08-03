@@ -179,7 +179,7 @@ class MainController:
         total = item.total_price(self.main_ui.amount_field.value().as_primitive())
         # noinspection PyAttributeOutsideInit
         self._charge_ui = ChargeUI(
-            self.transaction_repo, self.security_handler, item.price,
+            self.transaction_repo, self.security_handler, total,
             String(f"Cobro de {self.main_ui.amount_field.value()} '{item.name}' por un total de {Currency.fmt(total)}"),
             post_charge_fn=register_charge
         )
