@@ -227,10 +227,8 @@ class MainController:
                                                     self._pre_charge_ui.controller.month)
             # noinspection PyAttributeOutsideInit
             self._charge_ui = ChargeUI(
-                self.transaction_repo, self.security_handler, self._clients[row],
-                amount=sub.activity.price,
-                description=String(f"Cobro de actividad {sub.activity.name}."),
-                post_charge_fn=register_sub_charge
+                self.transaction_repo, self.security_handler, sub.activity.price,
+                String(f"Cobro de actividad {sub.activity.name}."), register_sub_charge, self._clients[row]
             )
             self._charge_ui.exec_()
 

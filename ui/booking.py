@@ -132,10 +132,9 @@ class MainController:
 
         register_booking_charge = functools.partial(self.booking_system.register_charge, booking, when)
         # noinspection PyAttributeOutsideInit
-        self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler, booking.client,
-                                   self.booking_system.activity.price,
+        self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler, self.booking_system.activity.price,
                                    String(f"Cobro de turno de {self.booking_system.activity.name}."),
-                                   register_booking_charge)
+                                   register_booking_charge, booking.client)
         self._charge_ui.exec_()
         if self._charge_ui.controller.success:
             text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"

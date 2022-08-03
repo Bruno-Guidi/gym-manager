@@ -521,10 +521,10 @@ class ChargeController:
             charge_ui: ChargeUI,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            client: Client,
             amount: Currency,
             description: String,
-            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction],
+            client: Client | None = None
     ) -> None:
         self.charge_ui = charge_ui
         self.transaction_repo = transaction_repo
@@ -574,15 +574,15 @@ class ChargeUI(QDialog):
             self,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            client: Client,
             amount: Currency,
             description: String,
-            post_charge_fn: Callable[[CreateTransactionFn], Transaction]
+            post_charge_fn: Callable[[CreateTransactionFn], Transaction],
+            client: Client | None = None
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = ChargeController(self, transaction_repo, security_handler, client, amount, description,
-                                           post_charge_fn)
+        self.controller = ChargeController(self, transaction_repo, security_handler, amount, description,
+                                           post_charge_fn, client)
 
     def _setup_ui(self):
         self.setWindowTitle("Registrar cobro")
