@@ -108,6 +108,7 @@ class MainController:
             dni = "" if self._clients[row].dni.as_primitive() is None else str(self._clients[row].dni.as_primitive())
             self.main_ui.dni_field.setText(dni)
             self.main_ui.dni_field.setEnabled(len(dni) == 0)
+            self.main_ui.birthday_date_edit.setDate(self._clients[row].birth_day)
 
             self.fill_subscription_list()
 
@@ -115,8 +116,7 @@ class MainController:
             # Clears the form.
             self.main_ui.name_field.clear()
             self.main_ui.dni_field.clear()
-            self.main_ui.tel_field.clear()
-            self.main_ui.dir_field.clear()
+            self.main_ui.birthday_date_edit.clear()
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -134,9 +134,9 @@ class MainController:
 
         client = self._clients[row]
 
-        # noinspection PyTypeChecker
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel_field.valid_value(),
-                    self.main_ui.dir_field.valid_value(), self.main_ui.dni_field.valid_value()]):
+        if self.main_ui.birthday_date_edit.date().toPyDate() > date.today():
+            Dialog.info("Error", "La fecha de nacimiento no puede ser posterior al día de hoy.")
+        elif not all([self.main_ui.name_field.valid_value(), self.main_ui.dni_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
         elif (client.dni != self.main_ui.dni_field.value()
               and self.client_repo.is_active(self.main_ui.dni_field.value())):
@@ -151,8 +151,9 @@ class MainController:
             # Updates the ui.
             fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
             dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
-            fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
             self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
+            fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
+            fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
 
@@ -363,23 +364,14 @@ class ClientMainUI(QMainWindow):
         self.form_layout.addWidget(self.dni_field, 1, 1)
         config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
 
-        # Telephone.
-        self.tel_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.tel_lbl, 2, 0)
-        config_lbl(self.tel_lbl, "Teléfono")
+        # Birthday
+        self.birthday_lbl = QLabel(self.widget)
+        self.form_layout.addWidget(self.birthday_lbl, 2, 0)
+        config_lbl(self.birthday_lbl, "Nacimiento")
 
-        self.tel_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel_field, 2, 1)
-        config_line(self.tel_field, place_holder="Teléfono", adjust_to_hint=False)
-
-        # Direction.
-        self.dir_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.dir_lbl, 3, 0)
-        config_lbl(self.dir_lbl, "Dirección")
-
-        self.dir_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_DIR_CHARS)
-        self.form_layout.addWidget(self.dir_field, 3, 1)
-        config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
+        self.birthday_date_edit = QDateEdit(self.widget)
+        self.form_layout.addWidget(self.birthday_date_edit, 2, 1)
+        config_date_edit(self.birthday_date_edit, date.today(), calendar=True)
 
         # Subscriptions data.
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
