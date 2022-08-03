@@ -53,6 +53,9 @@ class SqliteContactRepo(ContactRepo):
     def remove(self, contact: Contact):
         ContactModel.delete_by_id(contact.id)
 
+    def remove_by_client(self, client: Client):
+        ContactModel.delete().where(ContactModel.client_id == client.id).execute()
+
     def all(
             self, page: int = 1, page_len: int | None = None, name: String | None = None
     ) -> Generator[Contact, None, None]:

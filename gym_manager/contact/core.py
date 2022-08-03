@@ -51,6 +51,10 @@ class ContactRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def remove_by_client(self, client: Client):
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def all(
             self, page: int = 1, page_len: int | None = None, name: String | None = None
     ) -> Generator[Contact, None, None]:
@@ -84,6 +88,10 @@ def update_contact(
 
 def remove_contact(contact_repo: ContactRepo, contact: Contact):
     contact_repo.remove(contact)
+
+
+def remove_contact_by_client(contact_repo: ContactRepo, client: Client):
+    contact_repo.remove_by_client(client)
 
 
 def all_contacts(
