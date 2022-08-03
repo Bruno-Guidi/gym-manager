@@ -71,10 +71,10 @@ def main():
         peewee.SqliteSecurityRepo(),
         action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
                      "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
-                     "create_booking"},
+                     "create_booking", "update_item_amount"},
         needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "remove_client",
                            "update_client", "remove_activity", "update_activity", "cancel_booking", "charge_booking",
-                           "create_booking"}
+                           "create_booking", "update_item_amount"}
     )
     security_handler.add_responsible(Responsible(String("Admin"), String("python")),
                                      Responsible(String("Stella Palladini"), String("1")),

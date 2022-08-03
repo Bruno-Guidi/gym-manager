@@ -4,6 +4,7 @@ from typing import Generator
 from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import Currency, String, Number, OperationalError
 from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.security import log_responsible
 
 
 class Item:
@@ -61,9 +62,16 @@ def update_item(item_repo: ItemRepo, item: Item, name: String, price: Currency):
     item_repo.update(item)
 
 
+def _update_item_amount_description(data: tuple[Item, Number, bool]) -> str:
+    item, amount, decrease = data[0], data[1], data[2]
+    aux = "Quito" if decrease else "Agrego"
+    return f"{aux} {amount} '{item.name}'."
+
+
+@log_responsible(action_tag="update_item_amount", to_str=_update_item_amount_description)
 def update_item_amount(
         item_repo: ItemRepo, item: Item, amount: Number, update_cause: String, decrease: bool
-) -> tuple[Item, Number, String]:
+) -> tuple[Item, Number, bool]:
     if decrease and amount > item.amount:
         raise OperationalError(f"The [{item.code=}] does not have [{amount=}] units. It has [{item.amount=}]")
 
@@ -73,7 +81,7 @@ def update_item_amount(
         item.amount += amount
     item_repo.update(item)
 
-    return item, amount, update_cause  # This is returned, so it can be logged by log_responsible decorator.
+    return item, amount, decrease  # This is returned, so it can be logged by log_responsible decorator.
 
 
 def register_item_charge(
