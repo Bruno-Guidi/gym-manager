@@ -82,6 +82,12 @@ def update_item_amount(item_repo: ItemRepo, item: Item, amount: Number, decrease
     return item, amount, decrease  # This is returned, so it can be logged by log_responsible decorator.
 
 
+def _register_item_charge_description(data: tuple[Item, Number]) -> str:
+    item, amount = data[0], data[1]
+    return f"Cobro de {amount} '{item.name}' por un total de {item.total_price(amount.as_primitive())}."
+
+
+@log_responsible(action_tag="register_item_charge", to_str=_register_item_charge_description)
 def register_item_charge(
         item_repo: ItemRepo, item: Item, amount: Number, create_transaction_fn: CreateTransactionFn
 ) -> tuple[Item, Number]:
