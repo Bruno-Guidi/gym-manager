@@ -285,7 +285,7 @@ class MainUI(QMainWindow):
 
         self.stock_btn = QPushButton(self.widget)
         self.top_grid_layout.addWidget(self.stock_btn, 0, 3, alignment=Qt.AlignCenter)
-        config_btn(self.stock_btn, icon_path="ui/resources/detail.png", icon_size=96)
+        config_btn(self.stock_btn, icon_path="ui/resources/stock.png", icon_size=96)
 
         self.stock_lbl = QLabel(self.widget)
         self.top_grid_layout.addWidget(self.stock_lbl, 1, 3, alignment=Qt.AlignCenter)
