@@ -435,12 +435,6 @@ class SqliteTransactionRepo(TransactionRepo):
         if id_ in self.cache:
             return self.cache[id_]
 
-        if not all((type_, when, raw_amount, method, raw_responsible, description)):  # Client and balance_date are opt.
-            none_args = {(arg.__name__, arg) for arg in (type_, when, raw_amount, method, raw_responsible, description)
-                         if arg is None}
-            raise PersistenceError(f"Failed to create a 'Transaction' from data because one of the arguments is None."
-                                   f"[none_args={none_args}]")
-
         self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method, String(raw_responsible),
                                       description, client, balance_date)
         logger.getChild(type(self).__name__).info(f"Creating Transaction [transaction.id={id_}] from queried data.")
