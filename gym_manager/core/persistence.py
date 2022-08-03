@@ -109,8 +109,7 @@ class ClientRepo(abc.ABC):
 
     @abc.abstractmethod
     def create(
-            self, name: String, admission: date, birthday: date, telephone: String, direction: String,
-            dni: Number
+            self, name: String, admission: date, birthday: date, direction: String, dni: Number
     ) -> Client:
         """Adds the *client* to the repository.
         """
