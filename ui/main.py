@@ -17,6 +17,7 @@ from gym_manager.core import api
 from gym_manager.core.base import String, Activity, Currency, Number
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler
+from gym_manager.stock.core import ItemRepo
 from ui import utils
 from ui.accounting import AccountingMainUI
 from ui.activity import ActivityMainUI
@@ -76,6 +77,7 @@ class Controller:
             balance_repo: BalanceRepo,
             booking_system: BookingSystem,
             contact_repo: ContactRepo,
+            item_repo: ItemRepo,
             security_handler: SecurityHandler
     ):
         self.main_ui = main_ui
@@ -86,6 +88,7 @@ class Controller:
         self.balance_repo = balance_repo
         self.booking_system = booking_system
         self.contact_repo = contact_repo
+        self.item_repo = item_repo
         self.security_handler = security_handler
 
         # Sets callbacks
@@ -211,13 +214,14 @@ class MainUI(QMainWindow):
             balance_repo: BalanceRepo,
             booking_system: BookingSystem,
             contact_repo: ContactRepo,
+            item_repo: ItemRepo,
             security_handler: SecurityHandler,
             enable_tools: bool = False
     ):
         super().__init__()
         self._setup_ui(enable_tools)
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
-                                     balance_repo, booking_system, contact_repo, security_handler)
+                                     balance_repo, booking_system, contact_repo, item_repo, security_handler)
 
     def _setup_ui(self, enable_tools: bool):
         self.setWindowTitle("Gestor La Cascada")

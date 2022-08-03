@@ -14,6 +14,7 @@ from gym_manager.booking.core import BookingSystem, Duration
 from gym_manager.contact.peewee import SqliteContactRepo
 from gym_manager.core.base import Currency, String, Activity
 from gym_manager.core.security import log_responsible, SimpleSecurityHandler, Responsible
+from gym_manager.stock.peewee import SqliteItemRepo
 from ui.main import MainUI
 
 stylesheet = """
@@ -62,6 +63,9 @@ def main():
     # Contact initialization.
     contact_repo = SqliteContactRepo()
 
+    # Stock initialization.
+    item_repo = SqliteItemRepo()
+
     # Security initialization.
     security_handler = SimpleSecurityHandler(
         peewee.SqliteSecurityRepo(),
@@ -83,7 +87,7 @@ def main():
 
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
-                    contact_repo, security_handler, enable_tools=config_dict["enable_utility_functions"])
+                    contact_repo, item_repo, security_handler, enable_tools=config_dict["enable_utility_functions"])
     window.show()
     app.exec()
 
