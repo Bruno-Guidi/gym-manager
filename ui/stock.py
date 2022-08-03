@@ -153,8 +153,7 @@ class MainController:
             Dialog.info("Error", "La cantidad no es válida.")
             return
 
-        fn = functools.partial(update_item_amount, self.item_repo, item, self.main_ui.amount_field.value(),
-                               String(""), decrease)
+        fn = functools.partial(update_item_amount, self.item_repo, item, self.main_ui.amount_field.value(), decrease)
         if DialogWithResp.confirm(f"Ingrese el responsable", self.security_handler, fn):
             fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int,
                       increase_row_count=False)

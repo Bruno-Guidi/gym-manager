@@ -69,9 +69,7 @@ def _update_item_amount_description(data: tuple[Item, Number, bool]) -> str:
 
 
 @log_responsible(action_tag="update_item_amount", to_str=_update_item_amount_description)
-def update_item_amount(
-        item_repo: ItemRepo, item: Item, amount: Number, update_cause: String, decrease: bool
-) -> tuple[Item, Number, bool]:
+def update_item_amount(item_repo: ItemRepo, item: Item, amount: Number, decrease: bool) -> tuple[Item, Number, bool]:
     if decrease and amount > item.amount:
         raise OperationalError(f"The [{item.code=}] does not have [{amount=}] units. It has [{item.amount=}]")
 
