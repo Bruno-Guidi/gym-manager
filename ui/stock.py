@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.core.base import String, Activity, Currency, TextLike, Number
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
 from gym_manager.core.security import SecurityHandler, log_responsible
-from gym_manager.stock.core import ItemRepo, Item, create_item
+from gym_manager.stock.core import ItemRepo, Item, create_item, update_item
 from ui import utils
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox)
@@ -94,34 +94,29 @@ class MainController:
             self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
-        pass
-        # if self.main_ui.item_table.currentRow() == -1:
-        #     Dialog.info("Error", "Seleccione un item.")
-        #     return
-        #
-        # if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value()]):
-        #     Dialog.info("Error", "Hay datos que no son válidos.")
-        # else:
-        #     activity_name = self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()
-        #     activity = self.items[activity_name]
-        #     update_fn = functools.partial(update_activity, self.item_repo, self.items[activity_name],
-        #                                   self.main_ui.price_field.value(), descr)
-        #
-        #     if DialogWithResp.confirm(f"Ingrese el responsable.", self.security_handler, update_fn):
-        #         # Updates the activity.
-        #         activity.price, activity.description = self.main_ui.price_field.value(), descr
-        #         self.item_repo.update(activity)
-        #
-        #         # Updates the ui.
-        #         row = self.main_ui.item_table.currentRow()
-        #         fill_cell(self.main_ui.item_table, row, 0, activity.name, data_type=str, increase_row_count=False)
-        #         # noinspection PyTypeChecker
-        #         fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(activity.price), data_type=int,
-        #                   increase_row_count=False)
-        #         fill_cell(self.main_ui.item_table, row, 2, self.item_repo.n_subscribers(activity),
-        #                   data_type=int, increase_row_count=False)
-        #
-        #         Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
+        if self.main_ui.item_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un item.")
+            return
+
+        if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value()]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            old_name = self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()
+            item = self.items[old_name]
+            # noinspection PyTypeChecker
+            update_item(self.item_repo, item, self.main_ui.name_field.value(), self.main_ui.price_field.value())
+
+            if old_name != item.name.as_primitive():
+                self.items.pop(old_name)
+                self.items[item.name.as_primitive()] = item
+
+            # Updates the ui.
+            row = self.main_ui.item_table.currentRow()
+            fill_cell(self.main_ui.item_table, row, 0, item.name, data_type=str, increase_row_count=False)
+            fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int,
+                      increase_row_count=False)
+
+            Dialog.info("Éxito", f"El ítem '{item.name}' fue actualizado correctamente.")
 
     def remove(self):
         pass
@@ -226,7 +221,7 @@ class StockMainUI(QMainWindow):
         self.form_layout.addWidget(self.price_lbl, 1, 0)
         config_lbl(self.price_lbl, "Precio*")
 
-        self.price_field = Field(Currency, self.widget)
+        self.price_field = Field(Currency, self.widget, positive=True)
         self.form_layout.addWidget(self.price_field, 1, 1)
         config_line(self.price_field, place_holder="000000,00")
 
