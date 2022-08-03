@@ -445,7 +445,7 @@ class PageIndex(QWidget):
 
         self.info_lbl = QLabel(self)
         self.layout.addWidget(self.info_lbl, alignment=Qt.AlignRight)
-        config_lbl(self.info_lbl, f"xxx - yyy, de zzz", font_size=16, alignment=Qt.AlignCenter)
+        config_lbl(self.info_lbl, f"xxxxx - yyyyy, de zzzzz", font_size=13, alignment=Qt.AlignCenter)
 
         self.prev_btn = QPushButton(self)
         self.layout.addWidget(self.prev_btn)
