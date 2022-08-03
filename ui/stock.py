@@ -408,7 +408,7 @@ class UpdateAmountUI(QDialog):
         self.cancel_btn.clicked.connect(self.reject)
 
     def _setup_ui(self):
-        self.setWindowTitle("Nuevo contacto")
+        self.setWindowTitle("Descripción")
         self.layout = QVBoxLayout(self)
 
         # Form.
