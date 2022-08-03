@@ -285,10 +285,6 @@ class StockMainUI(QMainWindow):
         self.action_layout.addWidget(self.action_lbl, 0, 0)
         config_lbl(self.action_lbl, "Acción")
 
-        self.action_combobox = QComboBox(self.widget)
-        self.action_layout.addWidget(self.action_combobox, 0, 1)
-        config_combobox(self.action_combobox)
-
         self.amount_lbl = QLabel(self.widget)
         self.action_layout.addWidget(self.amount_lbl, 1, 0)
         config_lbl(self.amount_lbl, "Cantidad*")
@@ -296,6 +292,10 @@ class StockMainUI(QMainWindow):
         self.amount_field = Field(Number, parent=self.widget, optional=False, min_value=1)
         self.action_layout.addWidget(self.amount_field, 1, 1)
         config_line(self.amount_field)
+
+        self.action_combobox = QComboBox(self.widget)
+        self.action_layout.addWidget(self.action_combobox, 0, 1)
+        config_combobox(self.action_combobox, fixed_width=self.amount_field.width())
 
         self.confirm_btn = QPushButton(self.widget)
         self.right_layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
