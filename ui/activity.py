@@ -209,7 +209,7 @@ class ActivityMainUI(QMainWindow):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre")
 
-        self.name_field = Field(String, self.widget, max_len=utils.ACTIVITY_NAME_CHARS)
+        self.name_field = Field(String, self.widget, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False, enabled=False)
 
@@ -254,7 +254,8 @@ class CreateController:
     def create_activity(self):
         valid_descr, descr = valid_text_value(self.create_ui.description_text, optional=True,
                                               max_len=utils.ACTIVITY_DESCR_CHARS)
-        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(), descr])
+        valid_fields = all([self.create_ui.name_field.valid_value(), self.create_ui.price_field.valid_value(),
+                            valid_descr])
         if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
         elif self.activity_repo.exists(self.create_ui.name_field.value()):
@@ -286,7 +287,7 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre*")
 
-        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS)
+        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
         self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
