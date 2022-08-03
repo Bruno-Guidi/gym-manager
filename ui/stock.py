@@ -157,6 +157,7 @@ class MainController:
         if DialogWithResp.confirm(f"Ingrese el responsable", self.security_handler, fn):
             fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int,
                       increase_row_count=False)
+            self.main_ui.amount_field.clear()
 
     def _charge_item(self):
         if self.main_ui.item_table.currentRow() == -1:
@@ -182,6 +183,7 @@ class MainController:
 
         if self._charge_ui.controller.success:
             fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
+            self.main_ui.amount_field.clear()
 
     def execute_action(self):
         self.main_ui.action_combobox.currentData(Qt.UserRole)[1]()
