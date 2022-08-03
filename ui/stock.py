@@ -71,9 +71,9 @@ class MainController:
     def fill_item_table(self, filters: list[FilterValuePair]):
         self.main_ui.item_table.setRowCount(0)
 
-        # for activity in self.item_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-        #     self.items[activity.name.as_primitive()] = activity
-        #     self._add_item(activity, check_filters=False)  # Activities are filtered in the repo.
+        for item in self.item_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
+            self.items[item.name.as_primitive()] = item
+            self._add_item(item, check_filters=False)  # Activities are filtered in the repo.
 
     def refresh_form(self):
         if self.main_ui.item_table.currentRow() != -1:
