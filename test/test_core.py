@@ -83,18 +83,15 @@ def test_base_filterOverdue():
 
 
 def test_base_Client_age():
-    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 12, 15),
-                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 12, 15), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 12),
-                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 12), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 23
 
-    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11),
-                    String("dummy_tel"), String("dummy_descr"), is_active=True)
+    client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 24
 
