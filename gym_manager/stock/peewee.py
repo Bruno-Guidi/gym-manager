@@ -31,7 +31,9 @@ class SqliteItemRepo(ItemRepo):
         pass
 
     def update(self, item: Item):
-        pass
+        # Replace can be used because there is no other model that references ItemModel.
+        ItemModel.replace(code=item.code, item_name=item.name.as_primitive(), amount=item.amount.as_primitive(),
+                          price=item.price.as_primitive()).execute()
 
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
