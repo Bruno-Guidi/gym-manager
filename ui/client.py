@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
     QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem)
 
+from gym_manager.contact.core import ContactRepo, create_contact, remove_contact
 from gym_manager.core import api
 from gym_manager.core.base import (
     String, TextLike, Client, Number, Activity, Subscription, month_range)
@@ -47,10 +48,12 @@ class MainController:
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            activities_fn: Callable[[], Iterable[Activity]]
+            activities_fn: Callable[[], Iterable[Activity]],
+            contact_repo: ContactRepo | None = None
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
+        self.contact_repo = contact_repo
         self.subscription_repo = subscription_repo
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
@@ -131,7 +134,7 @@ class MainController:
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
-        self._create_ui = CreateUI(self.client_repo)
+        self._create_ui = CreateUI(self.client_repo, self.contact_repo)
         self._create_ui.exec_()
         if self._create_ui.controller.client is not None:
             self._add_client(self._create_ui.controller.client, check_filters=True, check_limit=True)
@@ -286,12 +289,13 @@ class ClientMainUI(QMainWindow):
             subscription_repo: SubscriptionRepo,
             transaction_repo: TransactionRepo,
             security_handler: SecurityHandler,
-            activities_fn: Callable[[], Iterable[Activity]]
+            activities_fn: Callable[[], Iterable[Activity]],
+            contact_repo: ContactRepo | None = None
     ) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, security_handler,
-                                         activities_fn)
+                                         activities_fn, contact_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Clientes")
@@ -430,11 +434,12 @@ class ClientMainUI(QMainWindow):
 
 class CreateController:
 
-    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo) -> None:
+    def __init__(self, create_ui: CreateUI, client_repo: ClientRepo, contact_repo: ContactRepo | None = None) -> None:
         self.create_ui = create_ui
 
         self.client: Client | None = None
         self.client_repo = client_repo
+        self.contact_repo = contact_repo
 
         # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_client)
@@ -452,15 +457,20 @@ class CreateController:
             self.client = self.client_repo.create(self.create_ui.name_field.value(), date.today(),
                                                   self.create_ui.birth_date_edit.date().toPyDate(),
                                                   self.create_ui.dni_field.value())
+            if self.contact_repo is not None:
+                # Creates a contact for the client, with basic info.
+                create_contact(self.contact_repo, name=String(""), tel1=self.create_ui.tel_field.value(),
+                               tel2=String(""), direction=self.create_ui.dir_field.value(), description=String(""),
+                               client=self.client)
             Dialog.info("Éxito", f"El cliente '{self.create_ui.name_field.value()}' fue creado correctamente.")
             self.create_ui.name_field.window().close()
 
 
 class CreateUI(QDialog):
-    def __init__(self, client_repo: ClientRepo) -> None:
+    def __init__(self, client_repo: ClientRepo, contact_repo: ContactRepo | None = None) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, client_repo)
+        self.controller = CreateController(self, client_repo, contact_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Nuevo cliente")

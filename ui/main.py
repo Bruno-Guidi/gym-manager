@@ -164,7 +164,7 @@ class Controller:
     def show_client_main_ui(self):
         activities_fn = functools.partial(self.activity_repo.all, 1)
         self.client_main_ui = ClientMainUI(self.client_repo, self.subscription_repo, self.transaction_repo,
-                                           self.security_handler, activities_fn)
+                                           self.security_handler, activities_fn, self.contact_repo)
         self.client_main_ui.setWindowModality(Qt.ApplicationModal)
         self.client_main_ui.show()
 
