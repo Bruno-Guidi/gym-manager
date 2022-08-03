@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
     QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem)
 
-from gym_manager.contact.core import ContactRepo, create_contact, remove_contact
+from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
 from gym_manager.core.base import (
     String, TextLike, Client, Number, Activity, Subscription, month_range)
@@ -178,6 +178,8 @@ class MainController:
 
         remove_fn = functools.partial(self.client_repo.remove, client)
         if DialogWithResp.confirm(f"¿Desea eliminar el cliente '{client.name}'?", self.security_handler, remove_fn):
+            remove_contact_by_client(self.contact_repo, client)
+
             self._clients.pop(row)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
