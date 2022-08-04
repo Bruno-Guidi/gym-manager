@@ -1,6 +1,6 @@
 import functools
 from datetime import date
-from typing import Generator
+from typing import Generator, Iterable
 
 import pytest
 
@@ -16,6 +16,10 @@ from gym_manager.core.security import (
 
 
 class MockSecurityHandler(SecurityHandler):
+
+    @property
+    def action_tags(self) -> Iterable[str]:
+        yield from []
 
     def add_responsible(self, responsible: Responsible):
         pass
@@ -33,7 +37,7 @@ class MockSecurityHandler(SecurityHandler):
     def handle_action(self, action_level: str, action_description: str):
         print(f"Ignoring {action_description}")
 
-    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
+    def actions(self, page: int = 1, page_len: int = 20, tag: str | None = None) -> Iterable[Action]:
         pass
 
 
