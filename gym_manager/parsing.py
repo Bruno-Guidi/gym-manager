@@ -5,7 +5,7 @@ from sqlite3 import Connection
 
 from gym_manager.contact.core import ContactRepo
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, TransactionRepo
-from gym_manager.old_app_info import OldChargesRepo
+from gym_manager.old_app_info import OldChargesRepo, OldExtractionRepo
 
 
 def _create_temp_tables(db: Connection):
@@ -191,6 +191,14 @@ def _extract_charges(conn: Connection, since: date):
     OldChargesRepo.add_all(charges)
 
 
+def _extract_extractions(conn: Connection, since: date):
+    extractions = (raw for raw in conn.execute("select ic.fecha, u.usuario, ic.salida, ic.descripcion "
+                                               "from item_texto_caja ic "
+                                               "inner join usuario u on u.id = ic.responsable "
+                                               "where ic.salida != 0.0 and ic.fecha > (?)", (since, )))
+    OldExtractionRepo.add_all(extractions)
+
+
 def minus_n_months(date_: date, n: int) -> date:
     """Subtracts *n* months to *date_*.
     """
@@ -226,6 +234,9 @@ def parse(
     # The following line will extract charges made in the current month and in the previous one.
     OldChargesRepo.create_model()
     _extract_charges(conn, since=to)
+
+    OldExtractionRepo.create_model()
+    _extract_extractions(conn, since=to)
 
     conn.close()
 
