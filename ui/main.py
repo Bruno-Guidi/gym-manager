@@ -421,7 +421,7 @@ class ActionUI(QMainWindow):
         self.controller = ActionController(self, security_handler)
 
     def _setup_ui(self):
-        self.setWindowTitle("Turnos cancelados")
+        self.setWindowTitle("Registro de acciones")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
