@@ -3,7 +3,7 @@ from datetime import date
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QTableWidget, QPushButton, QDesktopWidget,
-    QLabel, QDateEdit)
+    QLabel, QDateEdit, QHBoxLayout)
 
 from gym_manager.core.base import TextLike
 from gym_manager.core.persistence import FilterValuePair
@@ -110,7 +110,7 @@ class OldExtractionsUI(QMainWindow):
         OldExtractionRepo.create_model()
 
         # Configures the page index.
-        self.page_index.config(refresh_table=self.filter_header.on_search_click, page_len=20, show_info=False)
+        self.page_index.config(refresh_table=self.fill_extraction_table, page_len=20, show_info=False)
 
         self.fill_extraction_table()
 
@@ -126,8 +126,16 @@ class OldExtractionsUI(QMainWindow):
                                   "anterior.")
 
         # Filtering.
+        self.filter_layout = QHBoxLayout()
+        self.layout.addLayout(self.filter_layout)
+        self.filter_layout.setContentsMargins(250, 0, 250, 0)
+
+        self.date_lbl = QLabel(self.widget)
+        self.filter_layout.addWidget(self.date_lbl, alignment=Qt.AlignCenter)
+        config_lbl(self.date_lbl, "Fecha")
+
         self.date_edit = QDateEdit(self.widget)
-        self.layout.addWidget(self.date_edit)
+        self.filter_layout.addWidget(self.date_edit, alignment=Qt.AlignCenter)
         config_date_edit(self.date_edit, date.today(), calendar=True)
 
         # Old extractions.
@@ -135,7 +143,7 @@ class OldExtractionsUI(QMainWindow):
         self.layout.addWidget(self.extraction_table)
         new_config_table(self.extraction_table, width=600, allow_resizing=False, min_rows_to_show=10,
                          columns={"Día": (.2, bool), "Responsable": (.4, str), "Monto": (.2, bool),
-                                  "Descripción": (.4, int)})
+                                  "Descripción": (.4, str)})
 
         # Index.
         self.page_index = PageIndex(self.widget)
@@ -155,7 +163,6 @@ class OldExtractionsUI(QMainWindow):
 
     def fill_extraction_table(self):
         self.extraction_table.setRowCount(0)
-        self._charges.clear()
 
         for old_extraction in OldExtractionRepo.all(self.page_index.page, self.page_index.page_len,
                                                     self.date_edit.date().toPyDate()):
