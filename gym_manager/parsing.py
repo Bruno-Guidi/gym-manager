@@ -191,14 +191,14 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo,
 
 
 def _register_subscription_charging(
-        conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date
+        conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date, to: date
 ):
     """This function extracts charges from the old database. If there is at least one charge in a given (month, year),
     then the given monthly subscription is considered charged, no matter the total amount that was charged.
     """
     charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_usuario, a.descripcion "
                                            "from pago p inner join actividad a on p.id_actividad = a.id "
-                                           "where p.fecha >= (?)", (since,)))
+                                           "where p.fecha >= (?) and p.fecha < (?)", (since, to)))
 
     sub_charges = ((raw[1], raw[0], raw[4], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2],
                                                                       "Efectivo", raw[3], "Desc")))
@@ -251,11 +251,12 @@ def parse(
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo, contact_repo)
     _insert_subscriptions(conn, subscription_repo, since)
-    _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
+    to = minus_n_months(date.today(), n=1)
+    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, to)
 
     # The following line will extract charges made in the current month and in the previous one.
     OldChargesRepo.create_model()
-    _extract_charges(conn, since=minus_n_months(date.today(), n=1))
+    _extract_charges(conn, since=to)
 
     conn.close()
 
