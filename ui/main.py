@@ -26,6 +26,7 @@ from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
 from ui.contact import ContactMainUI
+from ui.old_app import OldChargesUI
 from ui.stock import StockMainUI
 from ui.widget_config import (
     config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
@@ -115,6 +116,8 @@ class Controller:
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.actions_btn.clicked.connect(self.show_action_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.old_charges_btn.clicked.connect(self.show_old_charges_ui)
 
     def show_config_ui(self):
         def setup():
@@ -224,6 +227,11 @@ class Controller:
         self.action_ui.setWindowModality(Qt.ApplicationModal)
         self.action_ui.show()
 
+    def show_old_charges_ui(self):
+        self.old_charges_ui = OldChargesUI()
+        self.old_charges_ui.setWindowModality(Qt.ApplicationModal)
+        self.old_charges_ui.show()
+
     def close(self):
         if self.backup_fn is not None:
             self.backup_fn()
@@ -258,17 +266,15 @@ class MainUI(QMainWindow):
 
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
-
-        self.name_lbl = QLabel(self.widget)
-        self.header_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "La cascada", font_size=28)
-
-        # Horizontal spacer.
-        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+        self.header_layout.setContentsMargins(45, 30, 0, 0)
 
         self.config_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.config_btn)
         config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32, enabled=enable_tools)
+
+        self.name_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.name_lbl, alignment=Qt.AlignLeft)
+        config_lbl(self.name_lbl, "Gestor La Cascada", font_size=28)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -337,6 +343,14 @@ class MainUI(QMainWindow):
         self.actions_lbl = QLabel(self.widget)
         self.bottom_grid_layout.addWidget(self.actions_lbl, 1, 2, alignment=Qt.AlignCenter)
         config_lbl(self.actions_lbl, "Registro", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
+        self.old_charges_btn = QPushButton(self.widget)
+        self.bottom_grid_layout.addWidget(self.old_charges_btn, 0, 3, alignment=Qt.AlignCenter)
+        config_btn(self.old_charges_btn, icon_path="ui/resources/charge.png", icon_size=96)
+
+        self.old_charges_lbl = QLabel(self.widget)
+        self.bottom_grid_layout.addWidget(self.old_charges_lbl, 1, 3, alignment=Qt.AlignCenter)
+        config_lbl(self.old_charges_lbl, "Cobros anteriores", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
         # Adjusts size.
         self.setFixedSize(self.sizeHint())

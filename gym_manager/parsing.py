@@ -5,6 +5,7 @@ from sqlite3 import Connection
 
 from gym_manager.contact.core import ContactRepo
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, TransactionRepo
+from gym_manager.old_app_info import OldChargesRepo
 
 
 def _create_temp_tables(db: Connection):
@@ -190,17 +191,46 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo,
 
 
 def _register_subscription_charging(
-        conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date
+        conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date, to: date
 ):
+    """This function extracts charges from the old database. If there is at least one charge in a given (month, year),
+    then the given monthly subscription is considered charged, no matter the total amount that was charged.
+    """
     charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_usuario, a.descripcion "
                                            "from pago p inner join actividad a on p.id_actividad = a.id "
-                                           "where p.fecha_cobro >= (?)", (since,)))
+                                           "where p.fecha >= (?) and p.fecha < (?)", (since, to)))
 
     sub_charges = ((raw[1], raw[0], raw[4], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2],
                                                                       "Efectivo", raw[3], "Desc")))
                    for raw in charges)
 
     subscription_repo.register_raw_charges(sub_charges)
+
+
+def _extract_charges(conn: Connection, since: date):
+    """Sums charges made after *since* for a given (month, year, activity, client). This is used to visualize if a
+    client owes money of a monthly subscription.
+    """
+    charges = (raw for raw in conn.execute(
+        "select c.nombre, a.descripcion, strftime('%m', p.fecha), strftime('%Y', p.fecha), sum(p.importe) "
+        "from pago p "
+        "inner join actividad a on p.id_actividad = a.id "
+        "inner join cliente c on p.id_cliente = c.id "
+        "where p.fecha >= (?) "
+        "group by strftime('%m', p.fecha), strftime('%Y', p.fecha), p.id_cliente, a.descripcion", (since,)))
+
+    OldChargesRepo.add_all(charges)
+
+
+def minus_n_months(date_: date, n: int) -> date:
+    """Subtracts *n* months to *date_*.
+    """
+    month = date_.month - n
+    year = date_.year
+    if month < 1:
+        year -= 1
+        month = 12 + month
+    return date(year, month, 1)
 
 
 def parse(
@@ -221,7 +251,12 @@ def parse(
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo, contact_repo)
     _insert_subscriptions(conn, subscription_repo, since)
-    _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
+    to = minus_n_months(date.today(), n=1)
+    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, to)
+
+    # The following line will extract charges made in the current month and in the previous one.
+    OldChargesRepo.create_model()
+    _extract_charges(conn, since=to)
 
     conn.close()
 
