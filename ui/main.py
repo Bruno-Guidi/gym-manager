@@ -266,17 +266,15 @@ class MainUI(QMainWindow):
 
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
-
-        self.name_lbl = QLabel(self.widget)
-        self.header_layout.addWidget(self.name_lbl)
-        config_lbl(self.name_lbl, "La cascada", font_size=28)
-
-        # Horizontal spacer.
-        self.layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.MinimumExpanding, QSizePolicy.Minimum))
+        self.header_layout.setContentsMargins(45, 30, 0, 0)
 
         self.config_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.config_btn)
         config_btn(self.config_btn, icon_path="ui/resources/config.png", icon_size=32, enabled=enable_tools)
+
+        self.name_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.name_lbl, alignment=Qt.AlignLeft)
+        config_lbl(self.name_lbl, "Gestor La Cascada", font_size=28)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(30, 40, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -348,7 +346,7 @@ class MainUI(QMainWindow):
 
         self.old_charges_btn = QPushButton(self.widget)
         self.bottom_grid_layout.addWidget(self.old_charges_btn, 0, 3, alignment=Qt.AlignCenter)
-        config_btn(self.old_charges_btn, icon_path="ui/resources/actions.png", icon_size=96)
+        config_btn(self.old_charges_btn, icon_path="ui/resources/charge.png", icon_size=96)
 
         self.old_charges_lbl = QLabel(self.widget)
         self.bottom_grid_layout.addWidget(self.old_charges_lbl, 1, 3, alignment=Qt.AlignCenter)
