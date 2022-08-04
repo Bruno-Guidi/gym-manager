@@ -16,7 +16,7 @@ from gym_manager.booking.core import (
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
-from ui import utils
+from ui import utils, client
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
@@ -271,11 +271,13 @@ class CreateController:
 
         # Configure the filtering widget.
         filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
-                            translate_fun=lambda client, value: client.cli_name.contains(value)),
+                            translate_fun=lambda cli, value: cli.cli_name.contains(value)),
                    NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-                               translate_fun=lambda client, value: client.dni == value))
+                               translate_fun=lambda cli, value: cli.dni == value))
         self.create_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
 
+        # noinspection PyUnresolvedReferences
+        self.create_ui.add_client_btn.clicked.connect(self.create_client)
         # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
@@ -284,15 +286,23 @@ class CreateController:
     def fill_client_combobox(self, filters: list[FilterValuePair]):
         fill_combobox(self.create_ui.client_combobox,
                       self.client_repo.all(page=1, filters=filters),
-                      lambda client: client.name.as_primitive())
+                      lambda cli: cli.name.as_primitive())
+
+    def create_client(self):
+        # noinspection PyAttributeOutsideInit
+        self._create_client_ui = client.CreateUI(self.client_repo)
+        self._create_client_ui.exec_()
+        if self._create_client_ui.controller.client is not None:
+            fill_combobox(self.create_ui.client_combobox, (self._create_client_ui.controller.client, ),
+                          lambda cli: cli.name.as_primitive())
 
     def create_booking(self):
-        client = self.create_ui.client_combobox.currentData(Qt.UserRole)
+        cli = self.create_ui.client_combobox.currentData(Qt.UserRole)
         court = self.create_ui.court_combobox.currentData(Qt.UserRole)
         start_block = self.create_ui.block_combobox.currentData(Qt.UserRole)
         duration = self.create_ui.duration_combobox.currentData(Qt.UserRole)
 
-        if client is None:
+        if cli is None:
             Dialog.info("Error", "Seleccione un cliente.")
         elif self.booking_system.out_of_range(start_block.start, duration):
             Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
@@ -303,7 +313,7 @@ class CreateController:
         else:
             try:
                 self.security_handler.current_responsible = self.create_ui.responsible_field.value()
-                self.booking = self.booking_system.book(court, client, self.create_ui.fixed_checkbox.isChecked(),
+                self.booking = self.booking_system.book(court, cli, self.create_ui.fixed_checkbox.isChecked(),
                                                         self.when, start_block.start, duration)
                 Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
                 self.create_ui.client_combobox.window().close()
@@ -340,6 +350,10 @@ class CreateUI(QDialog):
         self.client_combobox = QComboBox(self)
         self.form_layout.addWidget(self.client_combobox, 0, 1)
         config_combobox(self.client_combobox, fixed_width=200)
+
+        self.add_client_btn = QPushButton(self)
+        self.form_layout.addWidget(self.add_client_btn, 0, 2)
+        config_btn(self.add_client_btn, icon_path="ui/resources/plus.png", icon_size=32)
 
         self.date_lbl = QLabel(self)
         self.form_layout.addWidget(self.date_lbl, 1, 0)
