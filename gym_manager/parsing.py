@@ -57,27 +57,14 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    db.execute(  # Transaction
-        """CREATE TABLE item_caja (
+    db.execute(
+        """CREATE TABLE item_texto_caja (
           id int(10) NOT NULL,
           fecha date NOT NULL,
-          codigo int(10) NOT NULL,
-          cantidad smallint(5) NOT NULL,
-          descripcion varchar(60) NOT NULL,
-          precio float(6,2) NOT NULL,
-          entrada float(6,2) NOT NULL,
-          salida float(6,2) NOT NULL,
+          descripcion varchar(200) NOT NULL,
+          entrada float(6,2) DEFAULT '0.00',
+          salida float(6,2) DEFAULT '0.00',
           responsable int(10) NOT NULL,
-          PRIMARY KEY (id),
-          CONSTRAINT FK_item_caja_1 FOREIGN KEY (responsable) REFERENCES usuario (id)
-        )"""
-    )
-
-    db.execute(  # Stock
-        """CREATE TABLE articulo (
-          id int(10) NOT NULL,
-          descripcion varchar(60) NOT NULL,
-          precio float(6,2) NOT NULL,
           PRIMARY KEY (id)
         )"""
     )
@@ -97,25 +84,7 @@ def _create_temp_tables(db: Connection):
         )"""
     )
 
-    db.execute(  # Bookings
-        """CREATE TABLE turno (
-          id int(10) NOT NULL,
-          fecha date NOT NULL,
-          nombre varchar(60) NOT NULL,
-          horario_inicio tinyint(3) NOT NULL,
-          medias_horas tinyint(3) NOT NULL,
-          cancha tinyint(3) NOT NULL,
-          responsable int(10) DEFAULT NULL,
-          importe float(6,2) DEFAULT '0.00',
-          fijo tinyint(1) NOT NULL DEFAULT '0',
-          borrado tinyint(1) NOT NULL DEFAULT '0',
-          fecha_borrado date DEFAULT NULL,
-          PRIMARY KEY (id),
-          CONSTRAINT FK_turno_1 FOREIGN KEY (responsable) REFERENCES usuario (id)
-        )"""
-    )
-
-    return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_caja', 'articulo', 'pago', 'turno'}
+    return {'usuario', 'actividad', 'cliente', 'cliente_actividad', 'item_texto_caja', 'pago'}
 
 
 def clean_up(backup_path: str, tables: set) -> str:
