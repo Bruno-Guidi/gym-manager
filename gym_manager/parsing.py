@@ -197,7 +197,7 @@ def _register_subscription_charging(
     """
     charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_usuario, a.descripcion "
                                            "from pago p inner join actividad a on p.id_actividad = a.id "
-                                           "where p.fecha_cobro >= (?)", (since,)))
+                                           "where p.fecha >= (?)", (since,)))
 
     sub_charges = ((raw[1], raw[0], raw[4], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2],
                                                                       "Efectivo", raw[3], "Desc")))
