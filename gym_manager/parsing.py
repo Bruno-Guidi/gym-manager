@@ -1,6 +1,6 @@
 import os
 import sqlite3
-from datetime import date, timedelta
+from datetime import date
 from sqlite3 import Connection
 
 from gym_manager.contact.core import ContactRepo
@@ -136,7 +136,7 @@ def clean_up(backup_path: str, tables: set) -> str:
     return dst
 
 
-def transfer_backup(backup_path: str, conn: Connection, tables: set[str]):
+def transfer_backup(backup_path: str, conn: Connection):
     """Parses the .sql file in *filepath* so the old database backup can be "loaded" into the current database.
 
     This parsing is made by creating a temporary in memory database. The old tables are created and populated, and then
@@ -216,11 +216,10 @@ def parse(
 
     tables = _create_temp_tables(conn)  # The tables aren't created from the backup file to avoid any problems.
     backup_path = clean_up(backup_path, tables)
-    transfer_backup(backup_path, conn, tables)
+    transfer_backup(backup_path, conn)
 
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo, contact_repo)
-    # ToDo register subs after registering its charging. If there is no charging for that sub, remove it.
     _insert_subscriptions(conn, subscription_repo, since)
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since)
 

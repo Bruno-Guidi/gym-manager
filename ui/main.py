@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from datetime import date, time, timedelta
-from typing import Callable, Iterable
+from typing import Callable
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -117,8 +117,7 @@ class Controller:
             activity = Activity(String("TestAct"), Currency("2000"), String("descr"))
             self.activity_repo.add(activity)
             for i in range(0, 50):
-                client = self.client_repo.create(String(str(i)), today, today, String(str(i)), String(str(i)),
-                                                 Number(i))
+                client = self.client_repo.create(String(str(i)), today, today, Number(i))
                 sub = api.subscribe(self.subscription_repo, today, client, activity)
                 create_t = functools.partial(self.transaction_repo.create, "Cobro", today, activity.price, "Efectivo",
                                              String("Admin"), "descr", client)

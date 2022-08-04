@@ -15,7 +15,7 @@ from gym_manager.core.base import (
 from gym_manager.core.persistence import (
     ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
     BalanceRepo, FilterValuePair, PersistenceError, ClientView)
-from gym_manager.core.security import log_responsible, SecurityRepo, Responsible, Action
+from gym_manager.core.security import SecurityRepo, Responsible, Action
 
 logger = logging.getLogger(__name__)
 

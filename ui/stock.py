@@ -5,11 +5,11 @@ import functools
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox)
 
-from gym_manager.core.base import String, Activity, Currency, TextLike, Number
-from gym_manager.core.persistence import ActivityRepo, FilterValuePair, TransactionRepo
-from gym_manager.core.security import SecurityHandler, log_responsible
+from gym_manager.core.base import String, Currency, TextLike, Number
+from gym_manager.core.persistence import FilterValuePair, TransactionRepo
+from gym_manager.core.security import SecurityHandler
 from gym_manager.stock.core import (
     ItemRepo, Item, create_item, update_item, remove_item, update_item_amount,
     register_item_charge)
@@ -17,7 +17,7 @@ from ui import utils
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox, config_checkbox)
-from ui.widgets import Field, valid_text_value, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
 
 
 class MainController:

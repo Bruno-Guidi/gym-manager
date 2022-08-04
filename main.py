@@ -1,10 +1,10 @@
 import json
 import logging
-import traceback
-from os import path, makedirs
 import sys
+import traceback
 from datetime import time
 from logging import config
+from os import path
 
 from PyQt5.QtWidgets import QApplication
 
