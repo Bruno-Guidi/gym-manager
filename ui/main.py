@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog, QDateEdit, QTextEdit, QComboBox)
+    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox)
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
@@ -29,7 +29,7 @@ from ui.contact import ContactMainUI
 from ui.stock import StockMainUI
 from ui.widget_config import (
     config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
-    config_combobox, fill_combobox)
+    config_combobox, fill_combobox, config_checkbox)
 from ui.widgets import PageIndex
 
 
@@ -408,13 +408,26 @@ class ActionController:
         # Configures the page index.
         self.action_ui.page_index.config(refresh_table=self.fill_action_table, page_len=20, show_info=False)
 
+        self.enable_filtering()
+
         # Fills the table.
+        self.fill_action_table()
+
+        # noinspection PyUnresolvedReferences
+        self.action_ui.action_combobox.currentIndexChanged.connect(self.fill_action_table)
+        # noinspection PyUnresolvedReferences
+        self.action_ui.filter_checkbox.stateChanged.connect(self.enable_filtering)
+
+    def enable_filtering(self):
+        self.action_ui.action_combobox.setEnabled(self.action_ui.filter_checkbox.isChecked())
         self.fill_action_table()
 
     def fill_action_table(self):
         self.action_ui.action_table.setRowCount(0)
 
-        actions_it = self.security_handler.actions(self.action_ui.page_index.page, self.action_ui.page_index.page_len)
+        tag = self.action_ui.action_combobox.currentData(Qt.UserRole)[1]
+        actions_it = self.security_handler.actions(self.action_ui.page_index.page, self.action_ui.page_index.page_len,
+                                                   tag=tag if self.action_ui.filter_checkbox.isChecked() else None)
         for row, (when, resp, _, action_name) in enumerate(actions_it):
             fill_cell(self.action_ui.action_table, row, 0, when.strftime(utils.DATE_TIME_FORMAT), bool)
             fill_cell(self.action_ui.action_table, row, 1, resp.name, str)
@@ -438,9 +451,9 @@ class ActionUI(QMainWindow):
         self.layout.addLayout(self.filter_layout)
         self.filter_layout.setContentsMargins(240, 0, 240, 0)
 
-        self.action_lbl = QLabel(self.widget)
-        self.filter_layout.addWidget(self.action_lbl)
-        config_lbl(self.action_lbl, "Acción")
+        self.filter_checkbox = QCheckBox(self.widget)
+        self.filter_layout.addWidget(self.filter_checkbox)
+        config_checkbox(self.filter_checkbox, "Acción")
 
         self.action_combobox = QComboBox(self.widget)  # The configuration is done in the controller.
         self.filter_layout.addWidget(self.action_combobox)
