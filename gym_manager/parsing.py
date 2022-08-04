@@ -4,7 +4,8 @@ from datetime import date
 from sqlite3 import Connection
 
 from gym_manager.contact.core import ContactRepo
-from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, TransactionRepo
+from gym_manager.core.base import String
+from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, TransactionRepo, BalanceRepo
 from gym_manager.old_app_info import OldChargesRepo, OldExtractionRepo
 
 
@@ -165,12 +166,14 @@ def _register_subscription_charging(
     """This function extracts charges from the old database. If there is at least one charge in a given (month, year),
     then the given monthly subscription is considered charged, no matter the total amount that was charged.
     """
-    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_usuario, a.descripcion "
+    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, a.descripcion "
                                            "from pago p inner join actividad a on p.id_actividad = a.id "
                                            "where p.fecha >= (?) and p.fecha < (?)", (since, to)))
 
-    sub_charges = ((raw[1], raw[0], raw[4], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2],
-                                                                      "Efectivo", raw[3], "Desc")))
+    # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
+    # parsing is done.
+    sub_charges = ((raw[1], raw[0], raw[3], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2],
+                                                                      "Efectivo", "Admin", "Desc", date.min)))
                    for raw in charges)
 
     subscription_repo.register_raw_charges(sub_charges)
@@ -215,6 +218,7 @@ def parse(
         client_repo: ClientRepo,
         subscription_repo: SubscriptionRepo,
         transaction_repo: TransactionRepo,
+        balance_repo: BalanceRepo,
         since: date,
         backup_path: str,
         contact_repo: ContactRepo | None = None
@@ -228,7 +232,11 @@ def parse(
     _insert_activities(conn, activity_repo)
     _insert_clients(conn, client_repo, contact_repo)
     _insert_subscriptions(conn, subscription_repo, since)
+
     to = minus_n_months(date.today(), n=1)
+    # This balance is created so the transactions parsed are not included in the daily balance of the day when the
+    # parsing is done.
+    balance_repo.add(date.min, String("Admin"), {})
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since, to)
 
     # The following line will extract charges made in the current month and in the previous one.

@@ -25,7 +25,7 @@ def test_parse():
     subscription_repo = peewee.SqliteSubscriptionRepo()
     contact_repo = SqliteContactRepo()
 
-    parse(activity_repo, client_repo, subscription_repo, transaction_repo,
+    parse(activity_repo, client_repo, subscription_repo, transaction_repo, balance_repo,
           since=date(2022, 1, 1), backup_path=r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql",
           contact_repo=contact_repo)
 

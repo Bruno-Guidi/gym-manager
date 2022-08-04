@@ -168,7 +168,7 @@ class Controller:
             self._backup_ui.exec_()
             if self._backup_ui.confirmed:
                 parsing.parse(self.activity_repo, self.client_repo, self.subscription_repo, self.transaction_repo,
-                              since=self._backup_ui.since, backup_path=self._backup_ui.path,
+                              self.balance_repo, since=self._backup_ui.since, backup_path=self._backup_ui.path,
                               contact_repo=self.contact_repo)
 
         def add_responsible():

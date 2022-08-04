@@ -500,7 +500,7 @@ class SqliteTransactionRepo(TransactionRepo):
             Returns the id of the created transaction.
         """
         return TransactionTable.create(type=raw[0], client=raw[1], when=raw[2], amount=raw[3], method=raw[4],
-                                       responsible=raw[5], description=raw[6])
+                                       responsible=raw[5], description=raw[6], balance_id=raw[7]).id
 
     def add_all(self, raw_transactions: Iterable[tuple]):
         """Adds the transactions in the iterable directly into the repository, without creating Transaction objects.
