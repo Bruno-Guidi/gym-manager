@@ -53,7 +53,7 @@ class OldChargesRepo:
                 query = query.where(filter_.passes_in_repo(OldChargesModel, value))
 
         if page_len is not None:
-            query = query.order_by(OldChargesModel.cli_name).paginate(page, page_len)
+            query = query.order_by(OldChargesModel.client_name).paginate(page, page_len)
 
         for record in query:
             yield record.client_name, record.activity_name, record.month, record.year, Currency(record.amount)
