@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import sys
@@ -13,6 +14,7 @@ from gym_manager.booking import peewee as booking_peewee
 from gym_manager.booking.core import BookingSystem, Duration
 from gym_manager.contact.peewee import SqliteContactRepo
 from gym_manager.core.base import Currency, String, Activity
+from gym_manager.core.persistence import create_backup
 from gym_manager.core.security import log_responsible, SimpleSecurityHandler, Responsible
 from gym_manager.stock.peewee import SqliteItemRepo
 from ui.main import MainUI
@@ -77,9 +79,12 @@ def main():
     security_handler.add_responsible(Responsible(String("Admin"), String("python")))
     log_responsible.config(security_handler)
 
+    backup_fn = functools.partial(create_backup, "gym_manager.db", config_dict["backups_dir"])
+
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
-                    contact_repo, item_repo, security_handler, enable_tools=config_dict["enable_utility_functions"])
+                    contact_repo, item_repo, security_handler, enable_tools=config_dict["enable_utility_functions"],
+                    backup_fn=backup_fn)
     window.show()
     app.exec()
 
