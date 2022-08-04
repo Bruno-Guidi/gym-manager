@@ -616,8 +616,10 @@ class SqliteSecurityRepo(SecurityRepo):
         ActionTable.create(when=when, responsible_id=responsible.code.as_primitive(), action_tag=action_tag,
                            action_name=action_name)
 
-    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
+    def actions(self, page: int = 1, page_len: int = 20, tag: str | None = None) -> Generator[Action, None, None]:
         actions_q = ActionTable.select().order_by(ActionTable.when.desc())
+        if tag is not None:
+            actions_q = actions_q.where(ActionTable.action_tag == tag)
         actions_q = actions_q.paginate(page, page_len)
 
         for record in prefetch(actions_q, ResponsibleTable.select()):

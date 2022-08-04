@@ -103,7 +103,7 @@ class SecurityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
+    def actions(self, page: int = 1, page_len: int = 20, tag: str | None = None) -> Generator[Action, None, None]:
         raise NotImplementedError
 
 
@@ -146,7 +146,7 @@ class SecurityHandler(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def actions(self, page: int = 1, page_len: int = 20) -> Generator[Action, None, None]:
+    def actions(self, page: int = 1, page_len: int = 20, tag: str | None = None) -> Iterable[Action]:
         raise NotImplementedError
 
 
@@ -225,5 +225,5 @@ class SimpleSecurityHandler(SecurityHandler):
         )
         self.security_repo.log_action(datetime.now(), self.current_responsible, action_level, action_description)
 
-    def actions(self, page: int = 1, page_len: int = 20) -> Iterable[Action]:
-        yield from self.security_repo.actions(page, page_len)
+    def actions(self, page: int = 1, page_len: int = 20, tag: str | None = None) -> Iterable[Action]:
+        yield from self.security_repo.actions(page, page_len, tag)
