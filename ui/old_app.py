@@ -114,6 +114,9 @@ class OldExtractionsUI(QMainWindow):
 
         self.fill_extraction_table()
 
+        # noinspection PyUnresolvedReferences
+        self.date_edit.dateChanged.connect(self.fill_extraction_table)
+
     def _setup_ui(self):
         self.setWindowTitle("Extracciones en aplicación vieja")
         self.widget = QWidget()
