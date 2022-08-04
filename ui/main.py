@@ -26,7 +26,7 @@ from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
 from ui.contact import ContactMainUI
-from ui.old_app import OldChargesUI
+from ui.old_app import OldChargesUI, OldExtractionsUI
 from ui.stock import StockMainUI
 from ui.widget_config import (
     config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
@@ -118,6 +118,8 @@ class Controller:
         self.main_ui.actions_btn.clicked.connect(self.show_action_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.old_charges_btn.clicked.connect(self.show_old_charges_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.old_extractions_btn.clicked.connect(self.show_old_extractions_ui)
 
     def show_config_ui(self):
         def setup():
@@ -231,6 +233,11 @@ class Controller:
         self.old_charges_ui = OldChargesUI()
         self.old_charges_ui.setWindowModality(Qt.ApplicationModal)
         self.old_charges_ui.show()
+
+    def show_old_extractions_ui(self):
+        self.old_extractions_ui = OldExtractionsUI()
+        self.old_extractions_ui.setWindowModality(Qt.ApplicationModal)
+        self.old_extractions_ui.show()
 
     def close(self):
         if self.backup_fn is not None:
@@ -351,6 +358,15 @@ class MainUI(QMainWindow):
         self.old_charges_lbl = QLabel(self.widget)
         self.bottom_grid_layout.addWidget(self.old_charges_lbl, 1, 3, alignment=Qt.AlignCenter)
         config_lbl(self.old_charges_lbl, "Cobros anteriores", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+
+        self.old_extractions_btn = QPushButton(self.widget)
+        self.bottom_grid_layout.addWidget(self.old_extractions_btn, 0, 4, alignment=Qt.AlignCenter)
+        config_btn(self.old_extractions_btn, icon_path="ui/resources/charge.png", icon_size=96)
+
+        self.old_extractions_lbl = QLabel(self.widget)
+        self.bottom_grid_layout.addWidget(self.old_extractions_lbl, 1, 4, alignment=Qt.AlignCenter)
+        config_lbl(self.old_extractions_lbl, "Extracciones anteriores", font_size=18, fixed_width=200,
+                   alignment=Qt.AlignCenter)
 
         # Adjusts size.
         self.setFixedSize(self.sizeHint())
