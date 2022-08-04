@@ -4,6 +4,7 @@ import functools
 from datetime import date, time, timedelta
 from typing import Callable
 
+from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
@@ -15,7 +16,8 @@ from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Dura
 from gym_manager.contact.core import ContactRepo
 from gym_manager.core import api
 from gym_manager.core.base import String, Activity, Currency, Number
-from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo
+from gym_manager.core.persistence import (
+    ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo)
 from gym_manager.core.security import SecurityHandler, Responsible
 from gym_manager.stock.core import ItemRepo
 from ui import utils
@@ -79,7 +81,8 @@ class Controller:
             booking_system: BookingSystem,
             contact_repo: ContactRepo,
             item_repo: ItemRepo,
-            security_handler: SecurityHandler
+            security_handler: SecurityHandler,
+            backup_fn: Callable = None
     ):
         self.main_ui = main_ui
         self.client_repo = client_repo
@@ -91,6 +94,7 @@ class Controller:
         self.contact_repo = contact_repo
         self.item_repo = item_repo
         self.security_handler = security_handler
+        self.backup_fn = backup_fn
 
         # Sets callbacks
         # noinspection PyUnresolvedReferences
@@ -218,6 +222,10 @@ class Controller:
         self.action_ui.setWindowModality(Qt.ApplicationModal)
         self.action_ui.show()
 
+    def close(self):
+        if self.backup_fn is not None:
+            self.backup_fn()
+
 
 class MainUI(QMainWindow):
     def __init__(
@@ -231,12 +239,13 @@ class MainUI(QMainWindow):
             contact_repo: ContactRepo,
             item_repo: ItemRepo,
             security_handler: SecurityHandler,
-            enable_tools: bool = False
+            enable_tools: bool = False,
+            backup_fn: Callable = None
     ):
         super().__init__()
         self._setup_ui(enable_tools)
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
-                                     balance_repo, booking_system, contact_repo, item_repo, security_handler)
+                                     balance_repo, booking_system, contact_repo, item_repo, security_handler, backup_fn)
 
     def _setup_ui(self, enable_tools: bool):
         self.setWindowTitle("Gestor La Cascada")
@@ -329,6 +338,10 @@ class MainUI(QMainWindow):
 
         # Adjusts size.
         self.setFixedSize(self.sizeHint())
+
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        self.controller.close()
+        super().closeEvent(a0)
 
 
 class ConfigButtonItem(QWidget):
