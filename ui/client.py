@@ -116,7 +116,7 @@ class MainController:
             # Clears the form.
             self.main_ui.name_field.clear()
             self.main_ui.dni_field.clear()
-            self.main_ui.birthday_date_edit.clear()
+            self.main_ui.birthday_date_edit.setDate(date.today())
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
