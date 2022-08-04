@@ -17,3 +17,16 @@ CLIENT_TEL_CHARS = 15
 CLIENT_DIR_CHARS = 20
 
 RESP_CHARS = 30
+
+ACTION_NAMES = {
+    "Inscribir cliente en actividad": "subscribe",
+    "Eliminar cliente de actividad": "cancel",
+    "Cobrar actividad": "register_subscription_charge",
+    "Cerrar caja diaria": "close_balance",
+    "Cancelar turno": "cancel_booking",
+    "Cobrar turno": "charge_booking",
+    "Crear turno": "create_booking",
+    "Actualizar stock ítem": "update_item_amount",
+    "Cobrar ítem": "register_item_charge",
+    "Extraer de caja": "extract"
+}

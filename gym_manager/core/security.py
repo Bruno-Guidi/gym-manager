@@ -108,6 +108,11 @@ class SecurityRepo(abc.ABC):
 
 
 class SecurityHandler(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def action_tags(self) -> Iterable[str]:
+        raise NotImplementedError
+
     @abc.abstractmethod
     def add_responsible(self, responsible: Responsible):
         raise NotImplementedError
@@ -173,8 +178,12 @@ class SimpleSecurityHandler(SecurityHandler):
 
         self._responsible = NO_RESPONSIBLE
 
-        self.action_tags = action_tags
+        self._action_tags = action_tags
         self._needs_responsible = needs_responsible
+
+    @property
+    def action_tags(self) -> Iterable[str]:
+        yield from self._action_tags
 
     def add_responsible(self, responsible: Responsible):
         self.security_repo.add_responsible(responsible)
@@ -201,7 +210,7 @@ class SimpleSecurityHandler(SecurityHandler):
     def unregistered_action(self, action_tag: str) -> bool:
         """Returns true if the action with *action_tag* isn't registered in the security handler-
         """
-        return action_tag not in self.action_tags
+        return action_tag not in self._action_tags
 
     def cant_perform_action(self, action_tag: str) -> bool:
         """Returns True if *action_tag* needs a responsible to be executed and there is no responsible specified.

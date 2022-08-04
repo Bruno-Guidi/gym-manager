@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog, QDateEdit, QTextEdit)
+    QDialog, QDateEdit, QTextEdit, QComboBox)
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
@@ -27,7 +27,9 @@ from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
 from ui.contact import ContactMainUI
 from ui.stock import StockMainUI
-from ui.widget_config import config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit
+from ui.widget_config import (
+    config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
+    config_combobox, fill_combobox)
 from ui.widgets import PageIndex
 
 
@@ -398,6 +400,11 @@ class ActionController:
         self.security_handler = security_handler
         self.action_ui = action_ui
 
+        fill_combobox(self.action_ui.action_combobox,
+                      ((display, action) for display, action in utils.ACTION_NAMES.items()),
+                      display=lambda action_name: action_name[0])
+        config_combobox(self.action_ui.action_combobox)
+
         # Configures the page index.
         self.action_ui.page_index.config(refresh_table=self.fill_action_table, page_len=20, show_info=False)
 
@@ -425,6 +432,18 @@ class ActionUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
+
+        # Pseudo-filter.
+        self.filter_layout = QHBoxLayout()
+        self.layout.addLayout(self.filter_layout)
+        self.filter_layout.setContentsMargins(240, 0, 240, 0)
+
+        self.action_lbl = QLabel(self.widget)
+        self.filter_layout.addWidget(self.action_lbl)
+        config_lbl(self.action_lbl, "Acción")
+
+        self.action_combobox = QComboBox(self.widget)  # The configuration is done in the controller.
+        self.filter_layout.addWidget(self.action_combobox)
 
         # Actions.
         self.action_table = QTableWidget(self.widget)
