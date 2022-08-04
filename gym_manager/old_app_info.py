@@ -7,7 +7,7 @@ from gym_manager.core.persistence import FilterValuePair
 from gym_manager.peewee import DATABASE_PROXY
 
 
-OldCharge: TypeAlias = tuple[int, str, str, int, int, Currency]
+OldCharge: TypeAlias = tuple[int, str, str, int, int, str]
 
 
 class OldChargesModel(Model):
@@ -56,4 +56,5 @@ class OldChargesRepo:
             query = query.order_by(OldChargesModel.client_name).paginate(page, page_len)
 
         for record in query:
-            yield record.id, record.client_name, record.activity_name, record.month, record.year, Currency(record.amount)
+            yield (record.id, record.client_name, record.activity_name, record.month, record.year,
+                   Currency.fmt(Currency(record.amount)))

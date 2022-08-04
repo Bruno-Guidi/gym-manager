@@ -67,7 +67,7 @@ class OldChargesUI(QMainWindow):
         self._charges[row] = charge
         fill_cell(self.charges_table, row, 0, charge[0], data_type=str)
         fill_cell(self.charges_table, row, 1, charge[1], data_type=str)
-        fill_cell(self.charges_table, row, 2, f"{charge[2]/charge[3]}", data_type=bool)
+        fill_cell(self.charges_table, row, 2, f"{charge[2]}/{charge[3]}", data_type=bool)
         fill_cell(self.charges_table, row, 3, charge[4], data_type=int)
 
     def fill_charges_table(self, filters: list[FilterValuePair]):
