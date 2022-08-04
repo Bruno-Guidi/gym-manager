@@ -1,3 +1,4 @@
 {
-  "enable_utility_functions": false
+  "enable_utility_functions": false,
+  "backups_dir": "E:\\bruno\\projects\\gym_manager\\backups"
 }
