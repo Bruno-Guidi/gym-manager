@@ -1,6 +1,7 @@
+from datetime import date
 from typing import Iterable, Generator, TypeAlias
 
-from peewee import Model, IntegerField, CharField, chunked
+from peewee import Model, IntegerField, CharField, chunked, DateField
 
 from gym_manager.core.base import Currency
 from gym_manager.core.persistence import FilterValuePair
@@ -8,6 +9,7 @@ from gym_manager.peewee import DATABASE_PROXY
 
 
 OldCharge: TypeAlias = tuple[int, str, str, int, int, str]
+OldExtraction: TypeAlias = tuple[int, date, str, str]
 
 
 class OldChargesModel(Model):
@@ -55,3 +57,31 @@ class OldChargesRepo:
     @staticmethod
     def remove(id_: int):
         OldChargesModel.delete_by_id(id_)
+
+
+class OldExtractionModel(Model):
+    id = IntegerField(primary_key=True)
+    when = DateField()
+    responsible = CharField()
+    amount = CharField()
+
+    class Meta:
+        database = DATABASE_PROXY
+
+
+class OldExtractionRepo:
+    @staticmethod
+    def all(
+            page: int = 1, page_len: int | None = None, when: date | None = None
+    ) -> Generator[OldExtraction, None, None]:
+        query = OldExtractionModel.select()
+
+        if when is not None:
+            query = query.where(OldExtractionModel.when == when)
+
+        if page_len is not None:
+            query = query.order_by(OldExtractionModel.client_name).paginate(page, page_len)
+
+        for record in query:
+            yield record.id, record.when, record.responsible, Currency.fmt(Currency(record.amount))
+
