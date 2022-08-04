@@ -175,8 +175,6 @@ class MainController:
             # Clears the form.
             self.main_ui.name_field.clear()
             self.main_ui.dni_field.clear()
-            self.main_ui.tel_field.clear()
-            self.main_ui.dir_field.clear()
 
             # Clears the subscriptions table.
             self.main_ui.sub_list.clear()
