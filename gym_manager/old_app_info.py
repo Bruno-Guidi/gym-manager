@@ -58,3 +58,7 @@ class OldChargesRepo:
         for record in query:
             yield (record.id, record.client_name, record.activity_name, record.month, record.year,
                    Currency.fmt(Currency(record.amount)))
+
+    @staticmethod
+    def remove(id_: int):
+        OldChargesModel.delete_by_id(id_)

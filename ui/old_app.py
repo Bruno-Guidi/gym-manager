@@ -7,7 +7,7 @@ from gym_manager.core.base import TextLike
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.old_app_info import OldChargesRepo, OldCharge
 from ui.widget_config import new_config_table, config_btn, config_lbl, fill_cell
-from ui.widgets import FilterHeader, PageIndex
+from ui.widgets import FilterHeader, PageIndex, Dialog
 
 
 class OldChargesUI(QMainWindow):
@@ -28,6 +28,9 @@ class OldChargesUI(QMainWindow):
         self.page_index.config(refresh_table=self.filter_header.on_search_click, page_len=20, show_info=False)
 
         self.filter_header.on_search_click()
+
+        # noinspection PyUnresolvedReferences
+        self.remove_btn.clicked.connect(self.remove_charge)
 
     def _setup_ui(self):
         self.setWindowTitle("Cobros en aplicación vieja")
@@ -78,3 +81,19 @@ class OldChargesUI(QMainWindow):
 
         for old_charge in OldChargesRepo.all(self.page_index.page, self.page_index.page_len, filters):
             self._add_charge(old_charge)
+
+    def remove_charge(self):
+        row = self.charges_table.currentRow()
+        if row == -1:
+            Dialog.info("Error", "Seleccione un cobro.")
+            return
+
+        charge = self._charges[row]
+
+        if Dialog.confirm(f"¿Desea eliminar el cobro de la cuota '{charge[3]}/{charge[4]}' a '{charge[1]}'?"):
+            OldChargesRepo.remove(charge[0])
+
+            self._charges.pop(row)
+            self.filter_header.on_search_click()  # Refreshes the table.
+
+            Dialog.info("Éxito", f"Entrada '{charge[1]}':{charge[3]}/{charge[4]} eliminada correctamente.")
