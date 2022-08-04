@@ -192,6 +192,9 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo,
 def _register_subscription_charging(
         conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date
 ):
+    """This function extracts charges from the old database. If there is at least one charge in a given (month, year),
+    then the given monthly subscription is considered charged, no matter the total amount that was charged.
+    """
     charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_usuario, a.descripcion "
                                            "from pago p inner join actividad a on p.id_actividad = a.id "
                                            "where p.fecha_cobro >= (?)", (since,)))
