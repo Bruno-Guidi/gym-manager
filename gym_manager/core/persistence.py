@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import abc
+import logging
+import os
+import shutil
 from collections import OrderedDict
 from datetime import date
 from typing import Generator, Type, Any, Iterable, TypeAlias, ClassVar
@@ -8,6 +11,12 @@ from typing import Generator, Type, Any, Iterable, TypeAlias, ClassVar
 from gym_manager.core.base import Client, Activity, Currency, String, Number, Subscription, Transaction, Filter, Balance
 
 FilterValuePair: TypeAlias = tuple[Filter, str]
+
+
+def create_backup(database_path: str, backup_dir: str):
+    os.makedirs(backup_dir, exist_ok=True)
+    dst = shutil.copy(database_path, os.path.join(backup_dir, f"backup_{date.today().strftime('%Y_%m_%d')}.db"))
+    logging.getLogger(__name__).getChild(__name__).info(f"Created backup on {dst}")
 
 
 class PersistenceError(Exception):
