@@ -39,13 +39,6 @@ class OldChargesRepo:
     def all(
             page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[OldCharge, None, None]:
-        """Retrieve all the clients in the repository.
-
-        Args:
-            page: page to retrieve.
-            page_len: clients per page. If None, retrieve all clients.
-            filters: filters to apply.
-        """
         query = OldChargesModel.select()
 
         if filters is not None:  # Apply given filters.
