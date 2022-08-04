@@ -1,12 +1,12 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QTableWidget, QPushButton, QDesktopWidget,
+    QMainWindow, QWidget, QVBoxLayout, QTableWidget, QPushButton, QDesktopWidget,
     QLabel)
 
 from gym_manager.core.base import TextLike
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.old_app_info import OldChargesRepo, OldCharge
-from ui.widget_config import new_config_table, config_btn, config_lbl, fill_combobox, fill_cell
+from ui.widget_config import new_config_table, config_btn, config_lbl, fill_cell
 from ui.widgets import FilterHeader, PageIndex
 
 
@@ -26,6 +26,8 @@ class OldChargesUI(QMainWindow):
 
         # Configures the page index.
         self.page_index.config(refresh_table=self.filter_header.on_search_click, page_len=20, show_info=False)
+
+        self.filter_header.on_search_click()
 
     def _setup_ui(self):
         self.setWindowTitle("Cobros en aplicación vieja")
@@ -65,10 +67,10 @@ class OldChargesUI(QMainWindow):
     def _add_charge(self, charge: OldCharge):
         row = self.charges_table.rowCount()
         self._charges[row] = charge
-        fill_cell(self.charges_table, row, 0, charge[0], data_type=str)
-        fill_cell(self.charges_table, row, 1, charge[1], data_type=str)
-        fill_cell(self.charges_table, row, 2, f"{charge[2]}/{charge[3]}", data_type=bool)
-        fill_cell(self.charges_table, row, 3, charge[4], data_type=int)
+        fill_cell(self.charges_table, row, 0, charge[1], data_type=str)
+        fill_cell(self.charges_table, row, 1, charge[2], data_type=str)
+        fill_cell(self.charges_table, row, 2, f"{charge[3]}/{charge[4]}", data_type=bool)
+        fill_cell(self.charges_table, row, 3, charge[5], data_type=int)
 
     def fill_charges_table(self, filters: list[FilterValuePair]):
         self.charges_table.setRowCount(0)
