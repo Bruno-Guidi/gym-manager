@@ -26,6 +26,6 @@ def test_parse():
     contact_repo = SqliteContactRepo()
 
     parse(activity_repo, client_repo, subscription_repo, transaction_repo,
-          since=date(2022, 7, 25), backup_path=r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql",
+          since=date(2022, 1, 1), backup_path=r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql",
           contact_repo=contact_repo)
 
