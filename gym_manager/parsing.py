@@ -155,7 +155,7 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo,
                                        "    select id_cliente, id_actividad "
                                        "    from cliente_actividad"
                                        ") and p.fecha >= (?) "
-                                       "group by p.id_cliente, p.id_actividad", (since, )))
+                                       "group by p.id_cliente, p.id_actividad", (since,)))
     subscription_repo.add_all(gen)
 
 
@@ -195,7 +195,7 @@ def _extract_extractions(conn: Connection, since: date):
     extractions = (raw for raw in conn.execute("select ic.fecha, u.usuario, ic.salida, ic.descripcion "
                                                "from item_texto_caja ic "
                                                "inner join usuario u on u.id = ic.responsable "
-                                               "where ic.salida != 0.0 and ic.fecha > (?)", (since, )))
+                                               "where ic.salida != 0.0 and ic.fecha > (?)", (since,)))
     OldExtractionRepo.add_all(extractions)
 
 
