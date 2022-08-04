@@ -123,6 +123,11 @@ def register_subscription_charge(
     return subscription
 
 
+def _extract_description(transaction: Transaction) -> str:
+    return f"Extracción de {Currency.fmt(transaction.amount)} para '{transaction.description}'."
+
+
+@log_responsible(action_tag="extract", to_str=_extract_description)
 def extract(
         transaction_repo: TransactionRepo, when: date, amount: Currency, method: str, responsible: String,
         description: String
@@ -142,7 +147,7 @@ def extract(
     """
     transaction = transaction_repo.create("Extracción", when, amount, method, responsible, description.as_primitive())
 
-    logger.getChild(__name__).info(f"Responsible [responsible={responsible}] extracted an amount [amount={amount}].")
+    logger.getChild(__name__).info(f"Extracted [amount={amount}].")
 
     return transaction
 

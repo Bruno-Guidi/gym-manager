@@ -19,7 +19,7 @@ from ui.utils import MESSAGE
 from ui.widget_config import (
     config_lbl, config_btn, config_line, fill_cell, config_combobox,
     fill_combobox, config_checkbox, config_date_edit, new_config_table)
-from ui.widgets import Separator, Field, Dialog, responsible_field
+from ui.widgets import Separator, Field, Dialog, responsible_field, valid_text_value
 
 
 class MainController:
@@ -50,6 +50,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.acc_main_ui.close_balance_btn.clicked.connect(self.close_balance)
         # noinspection PyUnresolvedReferences
+        self.acc_main_ui.extract_btn.clicked.connect(self.extract)
+        # noinspection PyUnresolvedReferences
         self.acc_main_ui.history_btn.clicked.connect(self.balance_history)
 
     def close_balance(self):
@@ -60,6 +62,13 @@ class MainController:
         if self._daily_balance_ui.controller.closed:
             self.acc_main_ui.transaction_table.setRowCount(0)
             self.acc_main_ui.today_charges_line.setText(Currency.fmt(Currency(0)))
+
+    def extract(self):
+        # noinspection PyAttributeOutsideInit
+        self._extract_ui = ExtractUI(self.transaction_repo, self.security_handler)
+        self._extract_ui.exec_()
+        if self._extract_ui.controller.success:
+            print("t")
 
     def balance_history(self):
         # noinspection PyAttributeOutsideInit
@@ -104,6 +113,10 @@ class AccountingMainUI(QMainWindow):
         self.close_balance_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.close_balance_btn)
         config_btn(self.close_balance_btn, "Cerrar caja", font_size=16, extra_width=30)
+
+        self.extract_btn = QPushButton(self.widget)
+        self.header_layout.addWidget(self.extract_btn)
+        config_btn(self.extract_btn, "Extraer", font_size=16, extra_width=30)
 
         self.history_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.history_btn)
@@ -636,6 +649,112 @@ class ChargeUI(QDialog):
         self.descr_text = QTextEdit(self)
         self.form_layout.addWidget(self.descr_text, 5, 1)
         config_line(self.descr_text, enabled=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setFixedSize(self.sizeHint())
+
+
+class ExtractController:
+    def __init__(self, extract_ui: ExtractUI, transaction_repo: TransactionRepo, security_handler: SecurityHandler):
+        self.extract_ui = extract_ui
+        self.transaction_repo = transaction_repo
+        self.security_handler = security_handler
+        self.success = False
+
+        # Sets ui fields.
+        fill_combobox(self.extract_ui.method_combobox, transaction_repo.methods, display=lambda method: method)
+
+        # Sets callbacks
+        # noinspection PyUnresolvedReferences
+        self.extract_ui.confirm_btn.clicked.connect(self.extract)
+        # noinspection PyUnresolvedReferences
+        self.extract_ui.cancel_btn.clicked.connect(self.extract_ui.reject)
+
+    def extract(self):
+        valid_descr, descr = valid_text_value(self.extract_ui.descr_text, utils.ACTIVITY_DESCR_CHARS)
+        if not all([self.extract_ui.amount_line.valid_value(), descr]):
+            Dialog.info("Error", "El monto ingresado no es válido")
+            return
+
+        try:
+            self.security_handler.current_responsible = self.extract_ui.responsible_field.value()
+            # noinspection PyTypeChecker
+            api.extract(self.transaction_repo, date.today(), self.extract_ui.amount_line.value(),
+                        self.extract_ui.method_combobox.currentData(Qt.UserRole),
+                        self.security_handler.current_responsible.name, descr)
+
+            self.success = True
+            Dialog.confirm(f"Extracción registrada correctamente.")
+            self.extract_ui.descr_text.window().close()
+        except SecurityError as sec_err:
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
+
+
+class ExtractUI(QDialog):
+    def __init__(self, transaction_repo: TransactionRepo, security_handler: SecurityHandler) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = ExtractController(self, transaction_repo, security_handler)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Registrar extracción")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+
+        # Method.
+        self.method_lbl = QLabel(self)
+        self.form_layout.addWidget(self.method_lbl, 1, 0)
+        config_lbl(self.method_lbl, "Método")
+
+        self.method_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.method_combobox, 1, 1)
+        config_combobox(self.method_combobox)
+
+        # Amount.
+        self.amount_lbl = QLabel(self)
+        self.form_layout.addWidget(self.amount_lbl, 2, 0)
+        config_lbl(self.amount_lbl, "Monto*")
+
+        self.amount_line = Field(Currency, parent=self, positive=True)
+        self.form_layout.addWidget(self.amount_line, 2, 1)
+        config_line(self.amount_line, place_holder="00000,00", adjust_to_hint=False)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 3, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self)
+        self.form_layout.addWidget(self.responsible_field, 3, 1)
+        config_line(self.responsible_field, adjust_to_hint=False)
+
+        # Description.
+        self.descr_lbl = QLabel(self)
+        self.form_layout.addWidget(self.descr_lbl, 5, 0, alignment=Qt.AlignTop)
+        config_lbl(self.descr_lbl, "Descripción*")
+
+        self.descr_text = QTextEdit(self)
+        self.form_layout.addWidget(self.descr_text, 5, 1)
+        config_line(self.descr_text, place_holder="Descripción")
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))

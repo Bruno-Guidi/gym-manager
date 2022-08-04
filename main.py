@@ -72,9 +72,9 @@ def main():
     security_handler = SimpleSecurityHandler(
         peewee.SqliteSecurityRepo(),
         action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "cancel_booking",
-                     "charge_booking", "create_booking", "update_item_amount", "register_item_charge"},
+                     "charge_booking", "create_booking", "update_item_amount", "register_item_charge", "extract"},
         needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "cancel_booking",
-                           "charge_booking", "create_booking", "update_item_amount", "register_item_charge"}
+                           "charge_booking", "create_booking", "update_item_amount", "register_item_charge", "extract"}
     )
     security_handler.add_responsible(Responsible(String("Admin"), String("python")))
     log_responsible.config(security_handler)
