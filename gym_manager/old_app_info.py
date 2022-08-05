@@ -5,7 +5,7 @@ from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKe
 
 from gym_manager.core.base import Currency
 from gym_manager.core.persistence import FilterValuePair
-from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable
+from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable, TransactionTable
 
 OldCharge: TypeAlias = tuple[int, str, str, int, int, str]
 OldExtraction: TypeAlias = tuple[int, date, str, str, str]
@@ -17,7 +17,7 @@ class OldChargesModel(Model):
     activity = ForeignKeyField(ActivityTable, backref="old_charges")
     month = IntegerField()
     year = IntegerField()
-    amount = CharField()
+    transaction = ForeignKeyField(TransactionTable, backref="old_charge")
 
     class Meta:
         database = DATABASE_PROXY
@@ -30,12 +30,11 @@ class OldChargesRepo:
 
     @staticmethod
     def add_all(raw_charges: Iterable[tuple]):
-        # c.id, ca.descripcion, strftime('%m', p.fecha), strftime('%Y', p.fecha), sum(p.importe)
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_charges, 256):
                 OldChargesModel.insert_many(batch, fields=[OldChargesModel.client_id, OldChargesModel.activity_id,
                                                            OldChargesModel.month, OldChargesModel.year,
-                                                           OldChargesModel.amount]).execute()
+                                                           OldChargesModel.transaction_id]).execute()
 
     @staticmethod
     def all(
@@ -53,7 +52,7 @@ class OldChargesRepo:
         clients_q = ClientTable.select(ClientTable.id, ClientTable.cli_name)
         for record in prefetch(old_charges_q, clients_q):
             yield (record.id, record.client.cli_name, record.activity_id, record.month, record.year,
-                   Currency.fmt(Currency(record.amount)))
+                   record.transaction_id)
 
     @staticmethod
     def remove(id_: int):

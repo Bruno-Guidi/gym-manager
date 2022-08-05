@@ -180,19 +180,31 @@ def _register_subscription_charging(
     subscription_repo.register_raw_charges(sub_charges)
 
 
-def _extract_charges(conn: Connection, since: date):
+def _extract_charges(conn: Connection, transaction_repo: TransactionRepo, since: date):
     """Sums charges made after *since* for a given (month, year, activity, client). This is used to visualize if a
     client owes money of a monthly subscription.
     """
-    charges = (raw for raw in conn.execute(
-        "select c.nombre, a.descripcion, strftime('%m', p.fecha), strftime('%Y', p.fecha), sum(p.importe) "
+    query = conn.execute(
+        "select c.id, a.descripcion, strftime('%m', p.fecha), strftime('%Y', p.fecha), sum(p.importe) "
         "from pago p "
         "inner join actividad a on p.id_actividad = a.id "
         "inner join cliente c on p.id_cliente = c.id "
         "where p.fecha >= (?) "
-        "group by strftime('%m', p.fecha), strftime('%Y', p.fecha), p.id_cliente, a.descripcion", (since,)))
+        "group by strftime('%m', p.fecha), strftime('%Y', p.fecha), p.id_cliente, a.descripcion", (since,)
+    )
 
-    OldChargesRepo.add_all(charges)
+    # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
+    # parsing is done.
+    old_charges = ((raw[0], raw[1], raw[2], raw[3],
+                   transaction_repo.add_raw(("Cobro", raw[0], date(int(raw[3]), int(raw[2]), 1), raw[4], "Efectivo",
+                                             "Admin", f"Cobro por '{raw[3]}' a cliente '{raw[0]}' en app vieja",
+                                             date.min)))
+                   for raw in query)
+
+    OldChargesRepo.add_all(old_charges)
+
+    for x in OldChargesRepo.all():
+        print(x)
 
 
 def _extract_extractions(conn: Connection, since: date):
@@ -242,7 +254,7 @@ def parse(
 
     # The following line will extract charges made in the current month and in the previous one.
     OldChargesRepo.create_model()
-    _extract_charges(conn, since=to)
+    _extract_charges(conn, transaction_repo, since=to)
 
     OldExtractionRepo.create_model()
     _extract_extractions(conn, since=to)
