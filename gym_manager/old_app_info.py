@@ -2,10 +2,10 @@ from collections import namedtuple
 from datetime import date
 from typing import Iterable, Generator, TypeAlias
 
-from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField, prefetch, JOIN
+from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField
 
 from gym_manager.core.base import Currency
-from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable, TransactionTable
 
 OldCharge = namedtuple("OldCharge",
@@ -103,3 +103,14 @@ class OldExtractionRepo:
 
         for record in query:
             yield record.id, record.when, record.responsible, Currency.fmt(Currency(record.amount)), record.description
+
+
+def confirm_old_charge(
+        client_repo: ClientRepo, transaction_repo: TransactionRepo, subscription_repo: SubscriptionRepo,
+        old_charge: OldCharge
+):
+    client = client_repo.get(old_charge.client_id)
+    # transaction = transaction_repo.get(old_charge.transaction_id)
+    # subscription = client.mark_as_charged(old_charge.activity_name, old_charge.year, old_charge.month, transaction)
+    # subscription_repo.register_transaction(subscription, old_charge.year, old_charge.month, transaction)
+
