@@ -110,7 +110,7 @@ def confirm_old_charge(
         old_charge: OldCharge
 ):
     client = client_repo.get(old_charge.client_id)
-    # transaction = transaction_repo.get(old_charge.transaction_id)
+    transaction = transaction_repo.from_data(old_charge.transaction_id, client=client)
     # subscription = client.mark_as_charged(old_charge.activity_name, old_charge.year, old_charge.month, transaction)
     # subscription_repo.register_transaction(subscription, old_charge.year, old_charge.month, transaction)
 
