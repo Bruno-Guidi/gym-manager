@@ -68,7 +68,13 @@ class MainController:
         self._extract_ui = ExtractUI(self.transaction_repo, self.security_handler)
         self._extract_ui.exec_()
         if self._extract_ui.controller.success:
-            print("t")
+            extraction = self._extract_ui.controller.extraction
+            row = self.acc_main_ui.transaction_table.rowCount()
+            fill_cell(self.acc_main_ui.transaction_table, row, 0, extraction.responsible, data_type=str)
+            name = extraction.client.name if extraction.client is not None else "-"
+            fill_cell(self.acc_main_ui.transaction_table, row, 1, name, data_type=str)
+            fill_cell(self.acc_main_ui.transaction_table, row, 2, Currency.fmt(extraction.amount), data_type=int)
+            fill_cell(self.acc_main_ui.transaction_table, row, 3, extraction.description, data_type=str)
 
     def balance_history(self):
         # noinspection PyAttributeOutsideInit
@@ -675,6 +681,7 @@ class ExtractController:
         self.extract_ui = extract_ui
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
+        self.extraction: Transaction | None = None
         self.success = False
 
         # Sets ui fields.
@@ -695,9 +702,9 @@ class ExtractController:
         try:
             self.security_handler.current_responsible = self.extract_ui.responsible_field.value()
             # noinspection PyTypeChecker
-            api.extract(self.transaction_repo, date.today(), self.extract_ui.amount_line.value(),
-                        self.extract_ui.method_combobox.currentData(Qt.UserRole),
-                        self.security_handler.current_responsible.name, descr)
+            self.extraction = api.extract(self.transaction_repo, date.today(), self.extract_ui.amount_line.value(),
+                                          self.extract_ui.method_combobox.currentData(Qt.UserRole),
+                                          self.security_handler.current_responsible.name, descr)
 
             self.success = True
             Dialog.confirm(f"Extracción registrada correctamente.")
