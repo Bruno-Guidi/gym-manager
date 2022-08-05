@@ -122,8 +122,8 @@ class MainController:
             return
 
         booking = self._bookings[row][col]
-        if when > date.today() or (when == datetime.now().date() and booking.end > datetime.now().time()):
-            Dialog.info("Error", "No se puede cobrar un turno que todavía no terminó.")
+        if when > date.today() or (when == datetime.now().date() and booking.start > datetime.now().time()):
+            Dialog.info("Error", "No se puede cobrar un turno que todavía no comenzó.")
             return
         if booking.was_paid(when):
             Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
