@@ -5,8 +5,9 @@ from typing import Iterable, Generator, TypeAlias
 
 from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField
 
-from gym_manager.core.base import Currency, String
+from gym_manager.core.base import Currency, String, Subscription
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
+from gym_manager.core.security import log_responsible
 from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable, TransactionTable
 
 OldCharge = namedtuple("OldCharge",
@@ -106,6 +107,12 @@ class OldExtractionRepo:
             yield record.id, record.when, record.responsible, Currency.fmt(Currency(record.amount)), record.description
 
 
+def _confirm_subscription_charge(old_charge: OldCharge):
+    return (f"Confirmó cobro por la actividad '{old_charge.activity_name}' al cliente '{old_charge.client_name}',"
+            f" cuota '{old_charge.month}/{old_charge.year}'")
+
+
+@log_responsible(action_tag="confirm_subscription_charge", to_str=_confirm_subscription_charge)
 def confirm_old_charge(
         client_repo: ClientRepo, transaction_repo: TransactionRepo, subscription_repo: SubscriptionRepo,
         old_charge: OldCharge
@@ -122,5 +129,5 @@ def confirm_old_charge(
         f"Confirmed charge of [activity_name={subscription.activity.name}] to [client_name={client.name}] for the "
         f"[month={old_charge.month}] and [year={old_charge.year}]."
     )
-    return subscription
+    return old_charge
 
