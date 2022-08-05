@@ -2,14 +2,15 @@ from collections import namedtuple
 from datetime import date
 from typing import Iterable, Generator, TypeAlias
 
-from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField, prefetch
+from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField, prefetch, JOIN
 
 from gym_manager.core.base import Currency
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable, TransactionTable
 
 OldCharge = namedtuple("OldCharge",
-                       ["id", "client_id", "client_name", "activity_name", "month", "year", "transaction_id"])
+                       ["id", "client_id", "client_name", "activity_name", "month", "year", "transaction_id",
+                        "transaction_amount"])
 OldExtraction: TypeAlias = tuple[int, date, str, str, str]
 
 
@@ -52,9 +53,9 @@ class OldChargesRepo:
             old_charges_q = old_charges_q.order_by(OldChargesModel.client_name).paginate(page, page_len)
 
         clients_q = ClientTable.select(ClientTable.id, ClientTable.cli_name)
-        for record in prefetch(old_charges_q, clients_q):
+        for record in prefetch(old_charges_q, clients_q, TransactionTable):
             yield (record.id, record.client_id, record.client.cli_name, record.activity_id, record.month, record.year,
-                   record.transaction_id)
+                   record.transaction_id, Currency.fmt(Currency(record.transaction.amount)))
 
     @staticmethod
     def remove(id_: int):
