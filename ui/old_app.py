@@ -1,3 +1,4 @@
+import functools
 from datetime import date
 
 from PyQt5.QtCore import Qt
@@ -6,17 +7,29 @@ from PyQt5.QtWidgets import (
     QLabel, QDateEdit, QHBoxLayout)
 
 from gym_manager.core.base import TextLike
-from gym_manager.core.persistence import FilterValuePair
-from gym_manager.old_app_info import OldChargesRepo, OldCharge, OldExtraction, OldExtractionRepo
+from gym_manager.core.persistence import FilterValuePair, ClientRepo, TransactionRepo, SubscriptionRepo
+from gym_manager.core.security import SecurityHandler
+from gym_manager.old_app_info import OldChargesRepo, OldCharge, OldExtraction, OldExtractionRepo, confirm_old_charge
 from ui.widget_config import new_config_table, config_btn, config_lbl, fill_cell, config_date_edit
-from ui.widgets import FilterHeader, PageIndex, Dialog
+from ui.widgets import FilterHeader, PageIndex, Dialog, DialogWithResp
 
 
 class OldChargesUI(QMainWindow):
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            client_repo: ClientRepo,
+            transaction_repo: TransactionRepo,
+            subscription_repo: SubscriptionRepo,
+            security_handler: SecurityHandler
+    ) -> None:
         super().__init__()
         self._setup_ui()
+
+        self.client_repo = client_repo
+        self.transaction_repo = transaction_repo
+        self.subscription_repo = subscription_repo
+        self.security_handler = security_handler
 
         self._charges: dict[int, OldCharge] = {}
         OldChargesRepo.create_model()
@@ -92,13 +105,17 @@ class OldChargesUI(QMainWindow):
 
         charge = self._charges[row]
 
-        if Dialog.confirm(f"¿Desea eliminar el cobro de la cuota '{charge[3]}/{charge[4]}' a '{charge[1]}'?"):
-            OldChargesRepo.remove(charge[0])
-
+        fn = functools.partial(confirm_old_charge, self.client_repo, self.transaction_repo, self.subscription_repo,
+                               charge)
+        if DialogWithResp.confirm(
+                f"¿Desea confirmar el cobro de la cuota '{charge.month}/{charge.year}' por la actividad "
+                f"'{charge.activity_name}' a '{charge.client_name}'?", self.security_handler, fn
+        ):
             self._charges.pop(row)
             self.filter_header.on_search_click()  # Refreshes the table.
 
-            Dialog.info("Éxito", f"Entrada '{charge[1]}':{charge[3]}/{charge[4]} eliminada correctamente.")
+            Dialog.info("Éxito", f"Cobro de '{charge.activity_name}' a '{charge.client_name}', cuota "
+                                 f"{charge.month}/{charge.year} confirmado.")
 
 
 class OldExtractionsUI(QMainWindow):
