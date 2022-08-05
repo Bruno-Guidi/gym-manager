@@ -353,6 +353,12 @@ class Client:
         """
         return self._subscriptions.values()
 
+    def mark_as_charged(
+            self, activity_name: String, year: int, month: int, transaction: Transaction
+    ) -> Subscription:
+        self._subscriptions[activity_name].add_transaction(year, month, transaction)
+        return self._subscriptions[activity_name]
+
 
 @dataclass
 class Activity:
