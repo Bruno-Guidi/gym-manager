@@ -471,8 +471,15 @@ class SqliteTransactionRepo(TransactionRepo):
         if id_ in self.cache:
             return self.cache[id_]
 
-        self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method, String(raw_responsible),
-                                      description, client, balance_date)
+        if (type_ is None and when is None and raw_amount is None and method is None and raw_responsible is None
+                and description is None):
+            record = TransactionTable.get_by_id(id_)
+            self.cache[id_] = Transaction(id_, record.type, record.when, Currency(record.amount), record.method,
+                                          String(record.responsible), record.description, client, record.balance_id)
+        else:
+            self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method, String(raw_responsible),
+                                          description, client, balance_date)
+
         logger.getChild(type(self).__name__).info(f"Creating Transaction [transaction.id={id_}] from queried data.")
         return self.cache[id_]
 
