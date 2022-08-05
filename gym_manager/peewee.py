@@ -93,7 +93,6 @@ class SqliteClientRepo(ClientRepo):
         for subscription in subs.values():
             client.add(subscription)
 
-        print(client)
         return client
 
     def is_active(self, dni: Number) -> bool:
