@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Iterable, Generator, TypeAlias
 
-from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField
+from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField, prefetch
 
 from gym_manager.core.base import Currency
 from gym_manager.core.persistence import FilterValuePair
@@ -41,17 +41,18 @@ class OldChargesRepo:
     def all(
             page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[OldCharge, None, None]:
-        query = OldChargesModel.select()
+        old_charges_q = OldChargesModel.select()
 
         if filters is not None:  # Apply given filters.
             for filter_, value in filters:
-                query = query.where(filter_.passes_in_repo(OldChargesModel, value))
+                old_charges_q = old_charges_q.where(filter_.passes_in_repo(OldChargesModel, value))
 
         if page_len is not None:
-            query = query.order_by(OldChargesModel.client_name).paginate(page, page_len)
+            old_charges_q = old_charges_q.order_by(OldChargesModel.client_name).paginate(page, page_len)
 
-        for record in query:
-            yield (record.id, record.client_id, record.activity_id, record.month, record.year,
+        clients_q = ClientTable.select(ClientTable.id, ClientTable.cli_name)
+        for record in prefetch(old_charges_q, clients_q):
+            yield (record.id, record.client.cli_name, record.activity_id, record.month, record.year,
                    Currency.fmt(Currency(record.amount)))
 
     @staticmethod
