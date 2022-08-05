@@ -1,12 +1,11 @@
 from datetime import date
 from typing import Iterable, Generator, TypeAlias
 
-from peewee import Model, IntegerField, CharField, chunked, DateField
+from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField
 
 from gym_manager.core.base import Currency
 from gym_manager.core.persistence import FilterValuePair
-from gym_manager.peewee import DATABASE_PROXY
-
+from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable
 
 OldCharge: TypeAlias = tuple[int, str, str, int, int, str]
 OldExtraction: TypeAlias = tuple[int, date, str, str, str]
@@ -14,8 +13,8 @@ OldExtraction: TypeAlias = tuple[int, date, str, str, str]
 
 class OldChargesModel(Model):
     id = IntegerField(primary_key=True)
-    client_name = CharField()
-    activity_name = CharField()
+    client = ForeignKeyField(ClientTable, backref="old_charges")
+    activity = ForeignKeyField(ActivityTable, backref="old_charges")
     month = IntegerField()
     year = IntegerField()
     amount = CharField()
@@ -31,9 +30,10 @@ class OldChargesRepo:
 
     @staticmethod
     def add_all(raw_charges: Iterable[tuple]):
+        # c.id, ca.descripcion, strftime('%m', p.fecha), strftime('%Y', p.fecha), sum(p.importe)
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_charges, 256):
-                OldChargesModel.insert_many(batch, fields=[OldChargesModel.client_name, OldChargesModel.activity_name,
+                OldChargesModel.insert_many(batch, fields=[OldChargesModel.client_id, OldChargesModel.activity_id,
                                                            OldChargesModel.month, OldChargesModel.year,
                                                            OldChargesModel.amount]).execute()
 
@@ -51,7 +51,7 @@ class OldChargesRepo:
             query = query.order_by(OldChargesModel.client_name).paginate(page, page_len)
 
         for record in query:
-            yield (record.id, record.client_name, record.activity_name, record.month, record.year,
+            yield (record.id, record.client_id, record.activity_id, record.month, record.year,
                    Currency.fmt(Currency(record.amount)))
 
     @staticmethod
