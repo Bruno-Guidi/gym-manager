@@ -116,6 +116,8 @@ def confirm_old_charge(
                                           transaction)
     subscription_repo.register_transaction(subscription, old_charge.year, old_charge.month, transaction)
 
+    OldChargesRepo.remove(old_charge.id)
+
     logging.getLogger().getChild(__name__).info(
         f"Confirmed charge of [activity_name={subscription.activity.name}] to [client_name={client.name}] for the "
         f"[month={old_charge.month}] and [year={old_charge.year}]."
