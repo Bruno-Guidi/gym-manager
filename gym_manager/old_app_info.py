@@ -45,7 +45,8 @@ class OldChargesRepo:
     def all(
             page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[OldCharge, None, None]:
-        old_charges_q = OldChargesModel.select(OldChargesModel).join(ClientTable)
+        old_charges_q = OldChargesModel.select(OldChargesModel, ClientTable.id, ClientTable.cli_name
+                                               ).join(ClientTable).order_by(ClientTable.cli_name)
 
         if filters is not None:  # Apply given filters.
             for filter_, value in filters:
