@@ -408,7 +408,7 @@ class SqliteBalanceRepo(BalanceRepo):
             self, from_date: date, to_date: date
     ) -> Generator[tuple[date, String, Balance, list[Transaction]], None, None]:
         balance_q = BalanceTable.select().where(BalanceTable.when >= from_date, BalanceTable.when <= to_date)
-        client_q = ClientTable.select(ClientTable.dni, ClientTable.cli_name)
+        client_q = ClientTable.select(ClientTable.id, ClientTable.dni, ClientTable.cli_name)
 
         for record in prefetch(balance_q.order_by(BalanceTable.when.desc()), TransactionTable.select(), client_q):
             transactions = []
