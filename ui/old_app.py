@@ -23,7 +23,7 @@ class OldChargesUI(QMainWindow):
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
-                            translate_fun=lambda old_charge, value: old_charge.client_name.contains(value)),)
+                            translate_fun=lambda old_charge, value: old_charge.client.cli_name.contains(value)),)
         self.filter_header.config(filters, on_search_click=self.fill_charges_table)
 
         # Configures the page index.
@@ -72,10 +72,10 @@ class OldChargesUI(QMainWindow):
     def _add_charge(self, charge: OldCharge):
         row = self.charges_table.rowCount()
         self._charges[row] = charge
-        fill_cell(self.charges_table, row, 0, charge[1], data_type=str)
-        fill_cell(self.charges_table, row, 1, charge[2], data_type=str)
-        fill_cell(self.charges_table, row, 2, f"{charge[3]}/{charge[4]}", data_type=bool)
-        fill_cell(self.charges_table, row, 3, charge[5], data_type=int)
+        fill_cell(self.charges_table, row, 0, charge.client_name, data_type=str)
+        fill_cell(self.charges_table, row, 1, charge.activity_name, data_type=str)
+        fill_cell(self.charges_table, row, 2, f"{charge.month}/{charge.year}", data_type=bool)
+        fill_cell(self.charges_table, row, 3, charge.transaction_amount, data_type=int)
 
     def fill_charges_table(self, filters: list[FilterValuePair]):
         self.charges_table.setRowCount(0)
