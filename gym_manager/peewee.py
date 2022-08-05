@@ -59,6 +59,42 @@ class SqliteClientRepo(ClientRepo):
         ClientView.repository = self
         self._views: dict[int, ClientView] = {}
 
+    def get(self, id_: int) -> Client:
+        if id_ in self.cache:
+            return self.cache[id_]
+
+        client_q = ClientTable.select().where(ClientTable.id == id_)
+
+        # Query that contains subs that don't have a charge associated and subs that do.
+        predicate = (SubscriptionTable.client_id == SubscriptionCharge.client_id) & (SubscriptionTable.activity_id ==
+                                                                                     SubscriptionCharge.activity_id)
+        subscriptions_q = SubscriptionTable.select().join(SubscriptionCharge, JOIN.LEFT_OUTER, on=predicate)
+
+        record = [record for record in prefetch(client_q, subscriptions_q)][0]
+
+        logger.getChild(type(self).__name__).info(f"Creating Client [client.id={record.id}] from queried data.")
+        client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
+                        Number(record.dni if record.dni is not None else ""))
+        self.cache[record.id] = client
+        subs = {}
+        for sub_record in record.subscriptions:
+            subs[sub_record.activity_id] = Subscription(sub_record.when, client,
+                                                        self.activity_repo.get(String(sub_record.activity_id)))
+        for sub_charge in record.subscriptions_charges:
+            year, month = sub_charge.when.year, sub_charge.when.month
+            trans_record = sub_charge.transaction
+            subs[sub_charge.activity_id].add_transaction(
+                year, month, self.transaction_repo.from_data(
+                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
+                    trans_record.method, trans_record.responsible, trans_record.description, client,
+                    trans_record.balance_id
+                )
+            )
+        for subscription in subs.values():
+            client.add(subscription)
+
+        return client
+
     def is_active(self, dni: Number) -> bool:
         """Checks if there is an active client with the given *dni*.
         """
@@ -76,7 +112,8 @@ class SqliteClientRepo(ClientRepo):
         if dni.as_primitive() is not None and self.is_active(dni):
             raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
 
-        record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) if dni.as_primitive() is not None else None
+        record = ClientTable.get_or_none(
+            ClientTable.dni == dni.as_primitive()) if dni.as_primitive() is not None else None
         if record is None:
             # record will be None if *dni* is None or if there is no client in the table whose dni matches it.
             logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
@@ -434,8 +471,15 @@ class SqliteTransactionRepo(TransactionRepo):
         if id_ in self.cache:
             return self.cache[id_]
 
-        self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method, String(raw_responsible),
-                                      description, client, balance_date)
+        if (type_ is None and when is None and raw_amount is None and method is None and raw_responsible is None
+                and description is None):
+            record = TransactionTable.get_by_id(id_)
+            self.cache[id_] = Transaction(id_, record.type, record.when, Currency(record.amount), record.method,
+                                          String(record.responsible), record.description, client, record.balance_id)
+        else:
+            self.cache[id_] = Transaction(id_, type_, when, Currency(raw_amount), method, String(raw_responsible),
+                                          description, client, balance_date)
+
         logger.getChild(type(self).__name__).info(f"Creating Transaction [transaction.id={id_}] from queried data.")
         return self.cache[id_]
 

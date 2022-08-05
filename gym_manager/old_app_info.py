@@ -1,23 +1,28 @@
+import logging
+from collections import namedtuple
 from datetime import date
 from typing import Iterable, Generator, TypeAlias
 
-from peewee import Model, IntegerField, CharField, chunked, DateField
+from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField
 
-from gym_manager.core.base import Currency
-from gym_manager.core.persistence import FilterValuePair
-from gym_manager.peewee import DATABASE_PROXY
+from gym_manager.core.base import Currency, String, Subscription
+from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
+from gym_manager.core.security import log_responsible
+from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable, TransactionTable
 
-
-OldCharge: TypeAlias = tuple[int, str, str, int, int, str]
+OldCharge = namedtuple("OldCharge",
+                       ["id", "client_id", "client_name", "activity_name", "month", "year", "transaction_id",
+                        "transaction_amount"])
 OldExtraction: TypeAlias = tuple[int, date, str, str, str]
 
 
 class OldChargesModel(Model):
     id = IntegerField(primary_key=True)
-    client_name = CharField()
-    activity_name = CharField()
+    client = ForeignKeyField(ClientTable, backref="old_charges")
+    activity = ForeignKeyField(ActivityTable, backref="old_charges")
     month = IntegerField()
     year = IntegerField()
+    transaction = ForeignKeyField(TransactionTable, backref="old_charge")
     amount = CharField()
 
     class Meta:
@@ -33,26 +38,28 @@ class OldChargesRepo:
     def add_all(raw_charges: Iterable[tuple]):
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_charges, 256):
-                OldChargesModel.insert_many(batch, fields=[OldChargesModel.client_name, OldChargesModel.activity_name,
+                OldChargesModel.insert_many(batch, fields=[OldChargesModel.client_id, OldChargesModel.activity_id,
                                                            OldChargesModel.month, OldChargesModel.year,
-                                                           OldChargesModel.amount]).execute()
+                                                           OldChargesModel.transaction_id, OldChargesModel.amount]
+                                            ).execute()
 
     @staticmethod
     def all(
             page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[OldCharge, None, None]:
-        query = OldChargesModel.select()
+        old_charges_q = OldChargesModel.select(OldChargesModel, ClientTable.id, ClientTable.cli_name
+                                               ).join(ClientTable).order_by(ClientTable.cli_name)
 
         if filters is not None:  # Apply given filters.
             for filter_, value in filters:
-                query = query.where(filter_.passes_in_repo(OldChargesModel, value))
+                old_charges_q = old_charges_q.where(filter_.passes_in_repo(OldChargesModel, value))
 
         if page_len is not None:
-            query = query.order_by(OldChargesModel.client_name).paginate(page, page_len)
+            old_charges_q = old_charges_q.paginate(page, page_len)
 
-        for record in query:
-            yield (record.id, record.client_name, record.activity_name, record.month, record.year,
-                   Currency.fmt(Currency(record.amount)))
+        for record in old_charges_q:
+            yield OldCharge(record.id, record.client_id, record.client.cli_name, record.activity_id, record.month,
+                            record.year, record.transaction_id, Currency.fmt(Currency(record.amount)))
 
     @staticmethod
     def remove(id_: int):
@@ -98,4 +105,29 @@ class OldExtractionRepo:
 
         for record in query:
             yield record.id, record.when, record.responsible, Currency.fmt(Currency(record.amount)), record.description
+
+
+def _confirm_subscription_charge(old_charge: OldCharge):
+    return (f"Confirmó cobro por la actividad '{old_charge.activity_name}' al cliente '{old_charge.client_name}',"
+            f" cuota '{old_charge.month}/{old_charge.year}'")
+
+
+@log_responsible(action_tag="confirm_subscription_charge", to_str=_confirm_subscription_charge)
+def confirm_old_charge(
+        client_repo: ClientRepo, transaction_repo: TransactionRepo, subscription_repo: SubscriptionRepo,
+        old_charge: OldCharge
+):
+    client = client_repo.get(old_charge.client_id)
+    transaction = transaction_repo.from_data(old_charge.transaction_id, client=client)
+    subscription = client.mark_as_charged(String(old_charge.activity_name), old_charge.year, old_charge.month,
+                                          transaction)
+    subscription_repo.register_transaction(subscription, old_charge.year, old_charge.month, transaction)
+
+    OldChargesRepo.remove(old_charge.id)
+
+    logging.getLogger().getChild(__name__).info(
+        f"Confirmed charge of [activity_name={subscription.activity.name}] to [client_name={client.name}] for the "
+        f"[month={old_charge.month}] and [year={old_charge.year}]."
+    )
+    return old_charge
 

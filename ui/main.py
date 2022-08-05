@@ -230,7 +230,8 @@ class Controller:
         self.action_ui.show()
 
     def show_old_charges_ui(self):
-        self.old_charges_ui = OldChargesUI()
+        self.old_charges_ui = OldChargesUI(self.client_repo, self.transaction_repo, self.subscription_repo,
+                                           self.security_handler)
         self.old_charges_ui.setWindowModality(Qt.ApplicationModal)
         self.old_charges_ui.show()
 

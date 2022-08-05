@@ -1,3 +1,4 @@
+import functools
 from datetime import date
 
 from PyQt5.QtCore import Qt
@@ -6,24 +7,36 @@ from PyQt5.QtWidgets import (
     QLabel, QDateEdit, QHBoxLayout)
 
 from gym_manager.core.base import TextLike
-from gym_manager.core.persistence import FilterValuePair
-from gym_manager.old_app_info import OldChargesRepo, OldCharge, OldExtraction, OldExtractionRepo
+from gym_manager.core.persistence import FilterValuePair, ClientRepo, TransactionRepo, SubscriptionRepo
+from gym_manager.core.security import SecurityHandler
+from gym_manager.old_app_info import OldChargesRepo, OldCharge, OldExtraction, OldExtractionRepo, confirm_old_charge
 from ui.widget_config import new_config_table, config_btn, config_lbl, fill_cell, config_date_edit
-from ui.widgets import FilterHeader, PageIndex, Dialog
+from ui.widgets import FilterHeader, PageIndex, Dialog, DialogWithResp
 
 
 class OldChargesUI(QMainWindow):
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            client_repo: ClientRepo,
+            transaction_repo: TransactionRepo,
+            subscription_repo: SubscriptionRepo,
+            security_handler: SecurityHandler
+    ) -> None:
         super().__init__()
         self._setup_ui()
+
+        self.client_repo = client_repo
+        self.transaction_repo = transaction_repo
+        self.subscription_repo = subscription_repo
+        self.security_handler = security_handler
 
         self._charges: dict[int, OldCharge] = {}
         OldChargesRepo.create_model()
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
-                            translate_fun=lambda old_charge, value: old_charge.client_name.contains(value)),)
+                            translate_fun=lambda old_charge, value: old_charge.client.cli_name.contains(value)),)
         self.filter_header.config(filters, on_search_click=self.fill_charges_table)
 
         # Configures the page index.
@@ -72,10 +85,10 @@ class OldChargesUI(QMainWindow):
     def _add_charge(self, charge: OldCharge):
         row = self.charges_table.rowCount()
         self._charges[row] = charge
-        fill_cell(self.charges_table, row, 0, charge[1], data_type=str)
-        fill_cell(self.charges_table, row, 1, charge[2], data_type=str)
-        fill_cell(self.charges_table, row, 2, f"{charge[3]}/{charge[4]}", data_type=bool)
-        fill_cell(self.charges_table, row, 3, charge[5], data_type=int)
+        fill_cell(self.charges_table, row, 0, charge.client_name, data_type=str)
+        fill_cell(self.charges_table, row, 1, charge.activity_name, data_type=str)
+        fill_cell(self.charges_table, row, 2, f"{charge.month}/{charge.year}", data_type=bool)
+        fill_cell(self.charges_table, row, 3, charge.transaction_amount, data_type=int)
 
     def fill_charges_table(self, filters: list[FilterValuePair]):
         self.charges_table.setRowCount(0)
@@ -92,13 +105,17 @@ class OldChargesUI(QMainWindow):
 
         charge = self._charges[row]
 
-        if Dialog.confirm(f"¿Desea eliminar el cobro de la cuota '{charge[3]}/{charge[4]}' a '{charge[1]}'?"):
-            OldChargesRepo.remove(charge[0])
-
+        fn = functools.partial(confirm_old_charge, self.client_repo, self.transaction_repo, self.subscription_repo,
+                               charge)
+        if DialogWithResp.confirm(
+                f"¿Desea confirmar el cobro de la cuota '{charge.month}/{charge.year}' por la actividad "
+                f"'{charge.activity_name}' a '{charge.client_name}'?", self.security_handler, fn
+        ):
             self._charges.pop(row)
             self.filter_header.on_search_click()  # Refreshes the table.
 
-            Dialog.info("Éxito", f"Entrada '{charge[1]}':{charge[3]}/{charge[4]} eliminada correctamente.")
+            Dialog.info("Éxito", f"Cobro de '{charge.activity_name}' a '{charge.client_name}', cuota "
+                                 f"{charge.month}/{charge.year} confirmado.")
 
 
 class OldExtractionsUI(QMainWindow):

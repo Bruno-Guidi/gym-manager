@@ -28,5 +28,6 @@ ACTION_NAMES = {
     "Crear turno": "create_booking",
     "Actualizar stock ítem": "update_item_amount",
     "Cobrar ítem": "register_item_charge",
-    "Extraer de caja": "extract"
+    "Extraer de caja": "extract",
+    "Confirmar cobro actividad": "confirm_subscription_charge"
 }
