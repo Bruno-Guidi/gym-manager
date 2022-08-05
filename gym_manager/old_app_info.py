@@ -1,10 +1,11 @@
+import logging
 from collections import namedtuple
 from datetime import date
 from typing import Iterable, Generator, TypeAlias
 
 from peewee import Model, IntegerField, CharField, chunked, DateField, ForeignKeyField
 
-from gym_manager.core.base import Currency
+from gym_manager.core.base import Currency, String
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.peewee import DATABASE_PROXY, ClientTable, ActivityTable, TransactionTable
 
@@ -111,6 +112,13 @@ def confirm_old_charge(
 ):
     client = client_repo.get(old_charge.client_id)
     transaction = transaction_repo.from_data(old_charge.transaction_id, client=client)
-    # subscription = client.mark_as_charged(old_charge.activity_name, old_charge.year, old_charge.month, transaction)
-    # subscription_repo.register_transaction(subscription, old_charge.year, old_charge.month, transaction)
+    subscription = client.mark_as_charged(String(old_charge.activity_name), old_charge.year, old_charge.month,
+                                          transaction)
+    subscription_repo.register_transaction(subscription, old_charge.year, old_charge.month, transaction)
+
+    logging.getLogger().getChild(__name__).info(
+        f"Confirmed charge of [activity_name={subscription.activity.name}] to [client_name={client.name}] for the "
+        f"[month={old_charge.month}] and [year={old_charge.year}]."
+    )
+    return subscription
 
