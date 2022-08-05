@@ -64,7 +64,7 @@ class OldChargesUI(QMainWindow):
 
         self.remove_btn = QPushButton(self.widget)
         self.layout.addWidget(self.remove_btn, alignment=Qt.AlignLeft)
-        config_btn(self.remove_btn, "Eliminar cobro")
+        config_btn(self.remove_btn, "Confirmar cobro")
 
         # Old charges.
         self.charges_table = QTableWidget(self.widget)
