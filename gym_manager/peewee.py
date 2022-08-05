@@ -63,7 +63,7 @@ class SqliteClientRepo(ClientRepo):
         if id_ in self.cache:
             return self.cache[id_]
 
-        client_q = ClientTable.select().where(id=id_)
+        client_q = ClientTable.select().where(ClientTable.id == id_)
 
         # Query that contains subs that don't have a charge associated and subs that do.
         predicate = (SubscriptionTable.client_id == SubscriptionCharge.client_id) & (SubscriptionTable.activity_id ==
@@ -112,7 +112,8 @@ class SqliteClientRepo(ClientRepo):
         if dni.as_primitive() is not None and self.is_active(dni):
             raise PersistenceError(f"There is an existing client with [client.dni={dni}].")
 
-        record = ClientTable.get_or_none(ClientTable.dni == dni.as_primitive()) if dni.as_primitive() is not None else None
+        record = ClientTable.get_or_none(
+            ClientTable.dni == dni.as_primitive()) if dni.as_primitive() is not None else None
         if record is None:
             # record will be None if *dni* is None or if there is no client in the table whose dni matches it.
             logger.getChild(type(self).__name__).info(f"Creating client [client.dni={dni}].")
