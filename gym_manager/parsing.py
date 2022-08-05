@@ -204,9 +204,6 @@ def _extract_charges(conn: Connection, transaction_repo: TransactionRepo, since:
 
     OldChargesRepo.add_all(old_charges)
 
-    for x in OldChargesRepo.all():
-        print(x)
-
 
 def _extract_extractions(conn: Connection, since: date):
     extractions = (raw for raw in conn.execute("select ic.fecha, u.usuario, ic.salida, ic.descripcion "
