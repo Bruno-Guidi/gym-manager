@@ -21,6 +21,7 @@ class OldChargesModel(Model):
     month = IntegerField()
     year = IntegerField()
     transaction = ForeignKeyField(TransactionTable, backref="old_charge")
+    amount = CharField()
 
     class Meta:
         database = DATABASE_PROXY
@@ -37,25 +38,25 @@ class OldChargesRepo:
             for batch in chunked(raw_charges, 256):
                 OldChargesModel.insert_many(batch, fields=[OldChargesModel.client_id, OldChargesModel.activity_id,
                                                            OldChargesModel.month, OldChargesModel.year,
-                                                           OldChargesModel.transaction_id]).execute()
+                                                           OldChargesModel.transaction_id, OldChargesModel.amount]
+                                            ).execute()
 
     @staticmethod
     def all(
             page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[OldCharge, None, None]:
-        old_charges_q = OldChargesModel.select()
+        old_charges_q = OldChargesModel.select(OldChargesModel).join(ClientTable)
 
         if filters is not None:  # Apply given filters.
             for filter_, value in filters:
                 old_charges_q = old_charges_q.where(filter_.passes_in_repo(OldChargesModel, value))
 
         if page_len is not None:
-            old_charges_q = old_charges_q.order_by(OldChargesModel.client_name).paginate(page, page_len)
+            old_charges_q = old_charges_q.paginate(page, page_len)
 
-        clients_q = ClientTable.select(ClientTable.id, ClientTable.cli_name)
-        for record in prefetch(old_charges_q, clients_q, TransactionTable):
-            yield (record.id, record.client_id, record.client.cli_name, record.activity_id, record.month, record.year,
-                   record.transaction_id, Currency.fmt(Currency(record.transaction.amount)))
+        for record in old_charges_q:
+            yield OldCharge(record.id, record.client_id, record.client.cli_name, record.activity_id, record.month,
+                            record.year, record.transaction_id, Currency.fmt(Currency(record.amount)))
 
     @staticmethod
     def remove(id_: int):
@@ -101,4 +102,3 @@ class OldExtractionRepo:
 
         for record in query:
             yield record.id, record.when, record.responsible, Currency.fmt(Currency(record.amount)), record.description
-

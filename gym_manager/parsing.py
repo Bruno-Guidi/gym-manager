@@ -198,7 +198,8 @@ def _extract_charges(conn: Connection, transaction_repo: TransactionRepo, since:
     old_charges = ((raw[0], raw[1], raw[2], raw[3],
                    transaction_repo.add_raw(("Cobro", raw[0], date(int(raw[3]), int(raw[2]), 1), raw[4], "Efectivo",
                                              "Admin", f"Cobro por '{raw[3]}' a cliente '{raw[0]}' en app vieja",
-                                             date.min)))
+                                             date.min)),
+                    raw[4])
                    for raw in query)
 
     OldChargesRepo.add_all(old_charges)
