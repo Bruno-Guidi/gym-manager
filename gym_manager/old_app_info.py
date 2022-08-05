@@ -19,7 +19,7 @@ OldExtraction: TypeAlias = tuple[int, date, str, str, str]
 class OldChargesModel(Model):
     id = IntegerField(primary_key=True)
     client = ForeignKeyField(ClientTable, backref="old_charges")
-    activity = ForeignKeyField(ActivityTable, backref="old_charges")
+    activity = ForeignKeyField(ActivityTable, backref="old_charges", on_delete="CASCADE")
     month = IntegerField()
     year = IntegerField()
     transaction = ForeignKeyField(TransactionTable, backref="old_charge")
