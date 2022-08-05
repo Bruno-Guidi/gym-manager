@@ -172,8 +172,9 @@ def _register_subscription_charging(
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
     # parsing is done.
-    sub_charges = ((raw[1], raw[0], raw[3], transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2],
-                                                                      "Efectivo", "Admin", "Desc", date.min)))
+    sub_charges = ((raw[1], raw[0], raw[3],
+                    transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo", "Admin",
+                                              f"Cobro por '{raw[3]}' a cliente '{raw[0]}' en app vieja", date.min)))
                    for raw in charges)
 
     subscription_repo.register_raw_charges(sub_charges)
