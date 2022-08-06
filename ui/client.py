@@ -10,7 +10,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QAction, QMenu, QLineEdit)
+    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QAction, QMenu, QLineEdit, QButtonGroup, QRadioButton)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
@@ -47,8 +47,6 @@ class MainController:
         self.activities_fn = activities_fn
         self._clients: dict[int, Client] = {}  # Dict that maps row numbers to the displayed client.
         self._subscriptions: dict[str, Subscription] = {}  # Maps raw activity name to subs of the selected client.
-
-        self._item_list_font = QFont("MS Shell Dlg 2", 14)
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -359,6 +357,48 @@ class ClientMainUI(QMainWindow):
         self.cancel_btn = QPushButton(self.widget)
         self.right_layout.addWidget(self.cancel_btn)
         config_btn(self.cancel_btn, "Eliminar", icon_path="ui/resources/minus.png", icon_size=24)
+
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+
+        # Subscription charges info.
+        self.charges_info_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.charges_info_layout)
+
+        self.charges_lbl = QLabel(self.widget)
+        self.charges_info_layout.addWidget(self.charges_lbl)
+        config_lbl(self.charges_lbl, "Cuotas del ")
+
+        self.year_combobox = QComboBox(self.widget)
+        self.charges_info_layout.addWidget(self.year_combobox)  # The config is done in the controller's __init__.
+
+        # Charges filtering.
+        self.charge_filter_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.charge_filter_layout)
+        self.charge_filter_layout.setAlignment(Qt.AlignCenter)
+        self.charge_filter_group = QButtonGroup(self.widget)
+
+        self.all_charges = QRadioButton("Todas")
+        self.charge_filter_group.addButton(self.all_charges)
+        self.charge_filter_layout.addWidget(self.all_charges)
+        self.all_charges.setFont(self.font)
+
+        self.only_paid_charges = QRadioButton("Pagas")
+        self.charge_filter_group.addButton(self.only_paid_charges)
+        self.charge_filter_layout.addWidget(self.only_paid_charges)
+        self.only_paid_charges.setFont(self.font)
+
+        self.only_unpaid_charges = QRadioButton("Sin pagar")
+        self.charge_filter_group.addButton(self.only_unpaid_charges)
+        self.charge_filter_layout.addWidget(self.only_unpaid_charges)
+        self.only_unpaid_charges.setFont(self.font)
+
+
+        # Charges table.
+        self.charge_table = QTableWidget(self.widget)
+        self.right_layout.addWidget(self.charge_table)
+        new_config_table(self.charge_table, width=500, columns={"Actividad": (.4, str), "Mes": (.1, bool),
+                                                                "Fecha pago": (.2, bool), "Monto": (.3, int)},
+                         min_rows_to_show=4, fix_width=True)
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
