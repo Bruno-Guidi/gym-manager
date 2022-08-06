@@ -120,6 +120,9 @@ class MainController:
             fill_combobox(self.main_ui.subscribe_combobox, subscribeable_activities,
                           display=lambda activity: activity.name.as_primitive())
 
+            # Disables the combobox if there is no activities to subscribe the client to.
+            self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
+
             self.fill_subscription_list()
 
         else:
