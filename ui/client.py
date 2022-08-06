@@ -76,9 +76,9 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.subscribe_btn.clicked.connect(self.create_subscription)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
+        self.main_ui.cancel_btn.clicked.connect(self.cancel_subscription)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
+        # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
         # noinspection PyUnresolvedReferences
         # self.main_ui.see_charges_btn.clicked.connect(self.see_charges)
 
@@ -214,6 +214,33 @@ class MainController:
         item.setFont(self.main_ui.font)
         self.main_ui.subscription_list.addItem(item)
         self._subscriptions[subscription.activity.name.as_primitive()] = subscription
+
+    def cancel_subscription(self):
+        if self.main_ui.client_table.currentRow() == -1:
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
+            return
+
+        if self.main_ui.subscription_list.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad en la lista.")
+            return
+
+        activity_name = self.main_ui.subscription_list.selectedItems()[0].text()
+        client_name = self._subscriptions[activity_name].client.name
+
+        if (self.main_ui.responsible_field.valid_value()
+                and Dialog.confirm(f"¿Desea eliminar a '{client_name}' de la actividad  '{activity_name}?")):
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
+
+                api.cancel(self.subscription_repo, self._subscriptions[activity_name])
+
+                self._subscriptions.pop(activity_name)
+                self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
+                Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
+                self.main_ui.responsible_field.setStyleSheet("")
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
