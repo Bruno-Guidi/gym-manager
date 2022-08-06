@@ -110,7 +110,7 @@ class MainController:
 
         else:
             # Clears the form.
-            self.main_ui.sub_list.clear()
+            self.main_ui.subscription_list.clear()
 
     def create_client(self):
         # noinspection PyAttributeOutsideInit
@@ -158,7 +158,7 @@ class MainController:
             self.main_ui.dni_field.clear()
 
             # Clears the subscriptions table.
-            self.main_ui.sub_list.clear()
+            self.main_ui.subscription_list.clear()
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
@@ -169,9 +169,9 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        self.main_ui.sub_list.clear()
+        self.main_ui.subscription_list.clear()
         for sub in self._clients[row].subscriptions():
-            self.main_ui.sub_list.addItem(QListWidgetItem(sub.activity.name.as_primitive()))
+            self.main_ui.subscription_list.addItem(QListWidgetItem(sub.activity.name.as_primitive()))
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
     def charge_sub(self):
@@ -213,7 +213,7 @@ class MainController:
 
         subscription = self._add_sub_ui.controller.subscription
         if subscription is not None:
-            self.main_ui.sub_list.addItem(QListWidgetItem(subscription.activity.name.as_primitive()))
+            self.main_ui.subscription_list.addItem(QListWidgetItem(subscription.activity.name.as_primitive()))
             self._subscriptions[subscription.activity.name.as_primitive()] = subscription
 
     def cancel_sub(self):
@@ -221,11 +221,11 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        if self.main_ui.sub_list.currentRow() == -1:
+        if self.main_ui.subscription_list.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad.")
             return
 
-        activity_name = self.main_ui.sub_list.selectedItems()[0].text()
+        activity_name = self.main_ui.subscription_list.selectedItems()[0].text()
         client_name = self._subscriptions[activity_name].client.name
 
         cancel_fn = functools.partial(api.cancel, self.subscription_repo, self._subscriptions[activity_name])
@@ -234,7 +234,7 @@ class MainController:
 
         if remove:
             subscription = self._subscriptions.pop(activity_name)
-            self.main_ui.sub_list.takeItem(self.main_ui.sub_list.currentRow())
+            self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
             Dialog.info("Éxito", f"La inscripción del cliente '{subscription.client.name}' a la actividad "
                                  f"'{subscription.activity.name}' fue cancelada.")
 
@@ -339,8 +339,8 @@ class ClientMainUI(QMainWindow):
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
-        self.sub_list = QListWidget(self.widget)
-        self.right_layout.addWidget(self.sub_list)
+        self.subscription_list = QListWidget(self.widget)
+        self.right_layout.addWidget(self.subscription_list)
 
         # self.sub_buttons_layout = QHBoxLayout()
         # self.right_layout.addLayout(self.sub_buttons_layout)
