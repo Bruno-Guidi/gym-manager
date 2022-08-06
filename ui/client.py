@@ -10,12 +10,12 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QAction, QMenu)
+    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QAction, QMenu, QLineEdit)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
 from gym_manager.core.base import (
-    String, TextLike, Client, Number, Activity, Subscription, month_range)
+    String, TextLike, Client, Number, Activity, Subscription, month_range, Currency)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
@@ -359,18 +359,42 @@ class ClientMainUI(QMainWindow):
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
-        # self.sub_buttons_layout = QHBoxLayout()
-        # self.right_layout.addLayout(self.sub_buttons_layout)
-        # self.sub_buttons_layout.setSpacing(3)
-        # self.sub_buttons_layout.setAlignment(Qt.AlignCenter)
-        #
-        # self.charge_btn = QPushButton(self.widget)
-        # self.sub_buttons_layout.addWidget(self.charge_btn)
-        # config_btn(self.charge_btn, icon_path="ui/resources/charge.png", icon_size=32)
-        #
-        # self.see_charges_btn = QPushButton(self.widget)
-        # self.sub_buttons_layout.addWidget(self.see_charges_btn)
-        # config_btn(self.see_charges_btn, icon_path="ui/resources/actions.png", icon_size=32)
+        # Charge form.
+        self.charge_form_layout = QGridLayout()
+        self.right_layout.addLayout(self.charge_form_layout)
+        self.charge_form_layout.setContentsMargins(50, 0, 50, 0)
+
+        # Method.
+        self.method_combobox = QComboBox(self)
+        self.charge_form_layout.addWidget(self.method_combobox, 0, 0)
+        config_combobox(self.method_combobox)
+
+        # Amount.
+        self.amount_line = Field(Currency, parent=self, positive=True)
+        self.charge_form_layout.addWidget(self.amount_line, 0, 1, 1, 2)
+        config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
+
+        # Month.
+        self.month_lbl = QLabel(self)
+        self.charge_form_layout.addWidget(self.month_lbl, 1, 0)
+        config_lbl(self.month_lbl, "Mes")
+
+        self.month_field = QComboBox(self)
+        self.charge_form_layout.addWidget(self.month_field, 1, 1, 1, 2)  # The config is done in the controller's __init__.
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self)
+        self.charge_form_layout.addWidget(self.responsible_lbl, 2, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self)
+        self.charge_form_layout.addWidget(self.responsible_field, 2, 1)
+        config_line(self.responsible_field, fixed_width=50)
+
+        # Charge button
+        self.charge_btn = QPushButton(self.widget)
+        self.charge_form_layout.addWidget(self.charge_btn, 2, 2, 1, 2, alignment=Qt.AlignCenter)
+        config_btn(self.charge_btn, "Cobrar")
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
