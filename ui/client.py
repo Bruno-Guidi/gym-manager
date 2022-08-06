@@ -176,7 +176,7 @@ class MainController:
         self._subscriptions.clear()
         for sub in self._clients[row].subscriptions():
             item = QListWidgetItem(sub.activity.name.as_primitive())
-            item.setFont(self._item_list_font)
+            item.setFont(self.main_ui.font)
             self.main_ui.subscription_list.addItem(item)
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
@@ -267,6 +267,9 @@ class ClientMainUI(QMainWindow):
             contact_repo: ContactRepo | None = None
     ) -> None:
         super().__init__()
+
+        self.font = QFont("MS Shell Dlg 2", 14)
+
         self._setup_ui()
         self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, security_handler,
                                          activities_fn, contact_repo)
