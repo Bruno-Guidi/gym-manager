@@ -446,9 +446,8 @@ class ClientMainUI(QMainWindow):
         # Charges table.
         self.charge_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.charge_table)
-        new_config_table(self.charge_table, width=500, columns={"Actividad": (.4, str), "Mes": (.1, bool),
-                                                                "Fecha pago": (.2, bool), "Monto": (.3, int)},
-                         min_rows_to_show=4, fix_width=True)
+        new_config_table(self.charge_table, width=500, min_rows_to_show=4, fix_width=True,
+                         columns={"Mes": (.2, bool), "Fecha pago": (.35, bool), "Monto": (.45, int)})
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
