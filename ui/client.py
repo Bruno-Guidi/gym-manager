@@ -65,7 +65,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.edit_action.triggered.connect(self.edit_client)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove_client)
+        self.main_ui.remove_action.triggered.connect(self.remove_client)
         # noinspection PyUnresolvedReferences
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
@@ -147,12 +147,12 @@ class MainController:
     def remove_client(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
         client = self._clients[row]
 
-        if Dialog.confirm(f"¿Desea eliminar el cliente '{client.name}'?"):
+        if Dialog.confirm(f"¿Desea eliminar el cliente '{client.name}'? (Sus pagos NO seran eliminados)"):
             self.client_repo.remove(client)
             remove_contact_by_client(self.contact_repo, client)
 
@@ -288,6 +288,9 @@ class ClientMainUI(QMainWindow):
 
         self.edit_action = QAction("&Editar", self)
         client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar", self)
+        client_menu.addAction(self.remove_action)
 
         # Layout.
 
