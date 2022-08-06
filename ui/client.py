@@ -317,41 +317,37 @@ class ClientMainUI(QMainWindow):
         # Subscriptions data.
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
-        self.subs_lbl = QLabel(self.widget)
-        self.right_layout.addWidget(self.subs_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.subs_lbl, "Actividades")
-
-        self.sub_buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.sub_buttons_layout)
-        self.sub_buttons_layout.setSpacing(3)
-        self.sub_buttons_layout.setAlignment(Qt.AlignCenter)
-
-        self.sub_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.sub_btn)
-        config_btn(self.sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
-
-        self.unsub_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.unsub_btn)
-        config_btn(self.unsub_btn, icon_path="ui/resources/minus.png", icon_size=32)
-
-        self.charge_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.charge_btn)
-        config_btn(self.charge_btn, icon_path="ui/resources/charge.png", icon_size=32)
-
-        self.see_charges_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.see_charges_btn)
-        config_btn(self.see_charges_btn, icon_path="ui/resources/actions.png", icon_size=32)
-
         self.sub_list = QListWidget(self.widget)
         self.right_layout.addWidget(self.sub_list)
+
+        # self.sub_buttons_layout = QHBoxLayout()
+        # self.right_layout.addLayout(self.sub_buttons_layout)
+        # self.sub_buttons_layout.setSpacing(3)
+        # self.sub_buttons_layout.setAlignment(Qt.AlignCenter)
+        #
+        # self.sub_btn = QPushButton(self.widget)
+        # self.sub_buttons_layout.addWidget(self.sub_btn)
+        # config_btn(self.sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
+        #
+        # self.unsub_btn = QPushButton(self.widget)
+        # self.sub_buttons_layout.addWidget(self.unsub_btn)
+        # config_btn(self.unsub_btn, icon_path="ui/resources/minus.png", icon_size=32)
+        #
+        # self.charge_btn = QPushButton(self.widget)
+        # self.sub_buttons_layout.addWidget(self.charge_btn)
+        # config_btn(self.charge_btn, icon_path="ui/resources/charge.png", icon_size=32)
+        #
+        # self.see_charges_btn = QPushButton(self.widget)
+        # self.sub_buttons_layout.addWidget(self.see_charges_btn)
+        # config_btn(self.see_charges_btn, icon_path="ui/resources/actions.png", icon_size=32)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
-        self.setFixedSize(self.minimumSizeHint())
+        # self.setFixedSize(self.minimumSizeHint())
 
-        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
-                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+        # self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+        #           int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
 class CreateController:
