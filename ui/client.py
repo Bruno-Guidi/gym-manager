@@ -56,6 +56,8 @@ class MainController:
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
                                        page_len=20, total_len=self.client_repo.count())
 
+        fill_combobox(self.main_ui.subscribe_combobox, activities_fn(), display=lambda a: a.name.as_primitive())
+
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
@@ -315,6 +317,26 @@ class ClientMainUI(QMainWindow):
         # self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         # Subscriptions data.
+        self.activity_lbl = QLabel(self.widget)
+        self.right_layout.addWidget(self.activity_lbl, alignment=Qt.AlignLeft)
+        config_lbl(self.activity_lbl, "Actividades")
+
+        self.subscribe_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.subscribe_layout)
+
+        self.subscribe_lbl = QLabel(self.widget)
+        self.subscribe_layout.addWidget(self.subscribe_lbl)
+        config_lbl(self.subscribe_lbl, "Inscribir en ")
+
+        self.subscribe_combobox = QComboBox(self.widget)
+        self.subscribe_layout.addWidget(self.subscribe_combobox)
+        config_combobox(self.subscribe_combobox)
+        self.subscribe_combobox.setMaximumWidth(220)
+
+        self.subscribe_btn = QPushButton(self.widget)
+        self.subscribe_layout.addWidget(self.subscribe_btn)
+        config_btn(self.subscribe_btn, "Confirmar", icon_path=r"ui/resources/tick.png", icon_size=24)
+
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
         self.sub_list = QListWidget(self.widget)
