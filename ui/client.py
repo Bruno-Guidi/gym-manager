@@ -58,11 +58,16 @@ class MainController:
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
                                        page_len=20, total_len=self.client_repo.count())
 
+        self.main_ui.all_charges.setChecked(True)  # By default, all months are displayed.
+
         # Disables subscription related widgets until a client is selected.
         self.main_ui.subscribe_combobox.setEnabled(False)
         self.main_ui.subscribe_btn.setEnabled(False)
         self.main_ui.cancel_btn.setEnabled(False)
         self.main_ui.year_spinbox.setEnabled(False)
+        self.main_ui.all_charges.setEnabled(False)
+        self.main_ui.only_paid_charges.setEnabled(False)
+        self.main_ui.only_unpaid_charges.setEnabled(False)
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -84,6 +89,8 @@ class MainController:
         self.main_ui.year_spinbox.valueChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
         self.main_ui.cancel_btn.clicked.connect(self.cancel_subscription)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_filter_group.buttonClicked.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
         # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
         # noinspection PyUnresolvedReferences
@@ -134,6 +141,9 @@ class MainController:
             self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
 
             self.main_ui.year_spinbox.setEnabled(False)
+            self.main_ui.all_charges.setEnabled(False)
+            self.main_ui.only_paid_charges.setEnabled(False)
+            self.main_ui.only_unpaid_charges.setEnabled(False)
 
         else:
             # Clears the form.
@@ -263,8 +273,12 @@ class MainController:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
-    def fill_charge_table(self, predicate: Callable[[Subscription, int, int], bool]):
+    def fill_charge_table(self):
         self.main_ui.year_spinbox.setEnabled(True)
+        self.main_ui.all_charges.setEnabled(True)
+        self.main_ui.only_paid_charges.setEnabled(True)
+        self.main_ui.only_unpaid_charges.setEnabled(True)
+
         self.main_ui.charge_table.setRowCount(0)
 
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
@@ -280,8 +294,15 @@ class MainController:
             elif year == today.year:
                 to = today.month + 1  # The year has some remaining months.
 
+            # Creates the callable to filter the months.
+            predicate = None
+            if self.main_ui.only_paid_charges.isChecked():
+                predicate = lambda subscription, year_, month_: subscription.is_charged(year_, month_)
+            elif self.main_ui.only_unpaid_charges.isChecked():
+                predicate = lambda subscription, year_, month_: not subscription.is_charged(year_, month_)
+
             for month in range(from_, to):
-                if predicate(sub, month, year):
+                if predicate is None or predicate(sub, year, month):
                     row = self.main_ui.charge_table.rowCount()
                     fill_cell(self.main_ui.charge_table, row, 0, f"{year}/{month}", str)
                     transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
