@@ -57,7 +57,9 @@ class MainController:
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
                                        page_len=20, total_len=self.client_repo.count())
 
-        fill_combobox(self.main_ui.subscribe_combobox, activities_fn(), display=lambda a: a.name.as_primitive())
+        # Blocks activity subscription until a client is selected.
+        self.main_ui.subscribe_combobox.setEnabled(False)
+        self.main_ui.subscribe_btn.setEnabled(False)
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -73,8 +75,6 @@ class MainController:
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
         # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
-        # noinspection PyUnresolvedReferences
-        # self.main_ui.sub_btn.clicked.connect(self.add_sub)
         # noinspection PyUnresolvedReferences
         # self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
         # noinspection PyUnresolvedReferences
@@ -106,7 +106,9 @@ class MainController:
     def update_client_info(self):
         row = self.main_ui.client_table.currentRow()
         if row != -1:
-            pass
+            self.main_ui.subscribe_combobox.setEnabled(True)
+            self.main_ui.subscribe_btn.setEnabled(True)
+
             self.fill_subscription_list()
 
         else:
@@ -178,6 +180,22 @@ class MainController:
             self.main_ui.subscription_list.addItem(item)
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
+    def create_subscription(self):
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
+            Dialog.info("Error", "Seleccione un cliente.")
+            return
+
+        # noinspection PyAttributeOutsideInit
+        self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
+                                    (activity for activity in self.activities_fn()), self._clients[row])
+        self._add_sub_ui.exec_()
+
+        subscription = self._add_sub_ui.controller.subscription
+        if subscription is not None:
+            self.main_ui.subscription_list.addItem(QListWidgetItem(subscription.activity.name.as_primitive()))
+            self._subscriptions[subscription.activity.name.as_primitive()] = subscription
+
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
@@ -203,22 +221,6 @@ class MainController:
                 String(f"Cobro de actividad {sub.activity.name}."), register_sub_charge, self._clients[row]
             )
             self._charge_ui.exec_()
-
-    def add_sub(self):
-        row = self.main_ui.client_table.currentRow()
-        if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
-            return
-
-        # noinspection PyAttributeOutsideInit
-        self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
-                                    (activity for activity in self.activities_fn()), self._clients[row])
-        self._add_sub_ui.exec_()
-
-        subscription = self._add_sub_ui.controller.subscription
-        if subscription is not None:
-            self.main_ui.subscription_list.addItem(QListWidgetItem(subscription.activity.name.as_primitive()))
-            self._subscriptions[subscription.activity.name.as_primitive()] = subscription
 
     def cancel_sub(self):
         if self.main_ui.client_table.currentRow() == -1:
