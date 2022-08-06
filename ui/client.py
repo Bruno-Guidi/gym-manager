@@ -119,11 +119,12 @@ class MainController:
             )
             fill_combobox(self.main_ui.subscribe_combobox, subscribeable_activities,
                           display=lambda activity: activity.name.as_primitive())
+            self.fill_subscription_list()
 
             # Disables the combobox if there is no activities to subscribe the client to.
             self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-
-            self.fill_subscription_list()
+            # Disables the button to cancel subscriptions if there is no subscriptions
+            self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
 
         else:
             # Clears the form.
@@ -208,6 +209,8 @@ class MainController:
 
         # Disables the combobox if there is no activities to subscribe the client to.
         self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
+        # Disables the button to cancel subscriptions if there is no subscriptions
+        self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
 
         # Adds the new subscription to the list.
         item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
@@ -236,8 +239,12 @@ class MainController:
 
                 self._subscriptions.pop(activity_name)
                 self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
-                Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
+
+                # Disables the button to cancel subscriptions if there is no subscriptions
+                self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
+
                 self.main_ui.responsible_field.setStyleSheet("")
+                Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
             except SecurityError as sec_err:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
