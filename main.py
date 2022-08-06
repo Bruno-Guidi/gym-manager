@@ -74,7 +74,7 @@ def main():
         action_tags={"subscribe", "cancel", "register_subscription_charge", "close_balance", "cancel_booking",
                      "charge_booking", "create_booking", "update_item_amount", "register_item_charge", "extract",
                      "confirm_subscription_charge"},
-        needs_responsible={"subscribe", "cancel", "register_subscription_charge", "close_balance", "cancel_booking",
+        needs_responsible={"cancel", "register_subscription_charge", "close_balance", "cancel_booking",
                            "charge_booking", "create_booking", "update_item_amount", "register_item_charge", "extract",
                            "confirm_subscription_charge"}
     )
