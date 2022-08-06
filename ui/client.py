@@ -6,6 +6,7 @@ from datetime import date, timedelta
 from typing import Iterable, Callable
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
@@ -46,6 +47,8 @@ class MainController:
         self.activities_fn = activities_fn
         self._clients: dict[int, Client] = {}  # Dict that maps row numbers to the displayed client.
         self._subscriptions: dict[str, Subscription] = {}  # Maps raw activity name to subs of the selected client.
+
+        self._item_list_font = QFont("MS Shell Dlg 2", 14)
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -166,12 +169,15 @@ class MainController:
         row = self.main_ui.client_table.currentRow()
         if row == -1:
             self.main_ui.overdue_subs_checkbox.setChecked(not self.main_ui.overdue_subs_checkbox.isChecked())
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
         self.main_ui.subscription_list.clear()
+        self._subscriptions.clear()
         for sub in self._clients[row].subscriptions():
-            self.main_ui.subscription_list.addItem(QListWidgetItem(sub.activity.name.as_primitive()))
+            item = QListWidgetItem(sub.activity.name.as_primitive())
+            item.setFont(self._item_list_font)
+            self.main_ui.subscription_list.addItem(item)
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
     def charge_sub(self):
