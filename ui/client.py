@@ -129,7 +129,7 @@ class MainController:
     def edit_client(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
         # noinspection PyAttributeOutsideInit
