@@ -310,14 +310,6 @@ class MainController:
                     transaction_amount = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).amount
                     fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
 
-    def filter_months(self):
-        if self.main_ui.all_charges.isChecked():
-            self.fill_charge_table(lambda subscription, year, month: True)
-        elif self.main_ui.only_paid_charges.isChecked():
-            self.fill_charge_table(lambda subscription, year, month: subscription.is_charged(year, month))
-        elif self.main_ui.only_unpaid_charges.isChecked():
-            self.fill_charge_table(lambda subscription, year, month: not subscription.is_charged(year, month))
-
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
