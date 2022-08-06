@@ -302,10 +302,12 @@ class MainController:
             for month in range(from_, to):
                 if predicate is None or predicate(sub, year, month):
                     row = self.main_ui.charge_table.rowCount()
-                    fill_cell(self.main_ui.charge_table, row, 0, f"{year}/{month}", str)
-                    transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
+                    fill_cell(self.main_ui.charge_table, row, 0, f"{month}/{year}", int)
+                    transaction_when, transaction_amount = "-", "-"
+                    if sub.is_charged(year, month):
+                        transaction_when = sub.transaction(year, month).when.strftime(utils.DATE_FORMAT)
+                        transaction_amount = sub.transaction(year, month).amount
                     fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
-                    transaction_amount = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).amount
                     fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
 
     def charge_sub(self):
@@ -504,7 +506,7 @@ class ClientMainUI(QMainWindow):
         self.charge_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.charge_table)
         new_config_table(self.charge_table, width=500, min_rows_to_show=4, fix_width=True,
-                         columns={"Mes": (.2, bool), "Fecha pago": (.35, bool), "Monto": (.45, int)})
+                         columns={"Mes": (.2, int), "Fecha pago": (.35, bool), "Monto": (.45, int)})
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
