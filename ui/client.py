@@ -133,6 +133,8 @@ class MainController:
             # Disables the button to cancel subscriptions if there is no subscriptions
             self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
 
+            self.main_ui.year_spinbox.setEnabled(False)
+
         else:
             # Clears the form.
             self.main_ui.subscription_list.clear()
