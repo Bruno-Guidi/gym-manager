@@ -203,6 +203,9 @@ class MainController:
         Dialog.info("Éxito", f"El cliente '{client.name}' fue registrado correctamente en la actividad "
                              f"'{self.main_ui.subscribe_combobox.currentText()}'.")
 
+        # Removes the added activity from the activities that can be subscribed to.
+        self.main_ui.subscribe_combobox.removeItem(self.main_ui.subscribe_combobox.currentIndex())
+
         # Adds the new subscription to the list.
         item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
         item.setFont(self.main_ui.font)
