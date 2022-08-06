@@ -264,6 +264,7 @@ class MainController:
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def fill_charge_table(self):
+        self.main_ui.year_spinbox.setEnabled(True)
         self.main_ui.charge_table.setRowCount(0)
 
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
