@@ -74,6 +74,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
+        self.main_ui.subscribe_btn.clicked.connect(self.create_subscription)
+        # noinspection PyUnresolvedReferences
         # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
         # noinspection PyUnresolvedReferences
         # self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
@@ -190,20 +192,19 @@ class MainController:
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
     def create_subscription(self):
-        row = self.main_ui.client_table.currentRow()
-        if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
-            return
+        client = self._clients[self.main_ui.client_table.currentRow()]
 
-        # noinspection PyAttributeOutsideInit
-        self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
-                                    (activity for activity in self.activities_fn()), self._clients[row])
-        self._add_sub_ui.exec_()
+        subscription = api.subscribe(self.subscription_repo, date.today(), client,
+                                     self.main_ui.subscribe_combobox.currentData(Qt.UserRole))
 
-        subscription = self._add_sub_ui.controller.subscription
-        if subscription is not None:
-            self.main_ui.subscription_list.addItem(QListWidgetItem(subscription.activity.name.as_primitive()))
-            self._subscriptions[subscription.activity.name.as_primitive()] = subscription
+        Dialog.info("Éxito", f"El cliente '{client.name}' fue registrado correctamente en la actividad "
+                             f"'{self.main_ui.subscribe_combobox.currentText()}'.")
+
+        # Adds the new subscription to the list.
+        item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
+        item.setFont(self.main_ui.font)
+        self.main_ui.subscription_list.addItem(item)
+        self._subscriptions[subscription.activity.name.as_primitive()] = subscription
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
