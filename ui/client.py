@@ -10,7 +10,8 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QAction, QMenu, QLineEdit, QButtonGroup, QRadioButton)
+    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QAction, QMenu, QLineEdit, QButtonGroup, QRadioButton,
+    QSpinBox)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
@@ -23,7 +24,7 @@ from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, config_checkbox,
-    config_combobox, fill_combobox, config_date_edit, new_config_table)
+    config_combobox, fill_combobox, config_date_edit, new_config_table, config_widget)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
 
 
@@ -408,13 +409,17 @@ class ClientMainUI(QMainWindow):
         # Subscription charges info.
         self.charges_info_layout = QHBoxLayout()
         self.right_layout.addLayout(self.charges_info_layout)
+        self.charges_info_layout.setAlignment(Qt.AlignLeft)
 
         self.charges_lbl = QLabel(self.widget)
         self.charges_info_layout.addWidget(self.charges_lbl)
         config_lbl(self.charges_lbl, "Cuotas del ")
 
-        self.year_combobox = QComboBox(self.widget)
-        self.charges_info_layout.addWidget(self.year_combobox)  # The config is done in the controller's __init__.
+        self.year_spinbox = QSpinBox(self.widget)
+        self.charges_info_layout.addWidget(self.year_spinbox)
+        config_widget(self.year_spinbox, fixed_width=70)
+        self.year_spinbox.setMaximum(9999)
+        self.year_spinbox.setValue(date.today().year)
 
         # Charges filtering.
         self.charge_filter_layout = QHBoxLayout()
