@@ -263,7 +263,7 @@ class MainController:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
-    def fill_charge_table(self):
+    def fill_charge_table(self, predicate: Callable[[Subscription, int, int], bool]):
         self.main_ui.year_spinbox.setEnabled(True)
         self.main_ui.charge_table.setRowCount(0)
 
@@ -281,13 +281,21 @@ class MainController:
                 to = today.month + 1  # The year has some remaining months.
 
             for month in range(from_, to):
-                # if not self.overdue_subs_checkbox.isChecked() or not sub.is_charged(year, month):
-                row = self.main_ui.charge_table.rowCount()
-                fill_cell(self.main_ui.charge_table, row, 0, f"{year}/{month}", str)
-                transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
-                fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
-                transaction_amount = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).amount
-                fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
+                if predicate(sub, month, year):
+                    row = self.main_ui.charge_table.rowCount()
+                    fill_cell(self.main_ui.charge_table, row, 0, f"{year}/{month}", str)
+                    transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
+                    fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
+                    transaction_amount = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).amount
+                    fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
+
+    def filter_months(self):
+        if self.main_ui.all_charges.isChecked():
+            self.fill_charge_table(lambda subscription, year, month: True)
+        elif self.main_ui.only_paid_charges.isChecked():
+            self.fill_charge_table(lambda subscription, year, month: subscription.is_charged(year, month))
+        elif self.main_ui.only_unpaid_charges.isChecked():
+            self.fill_charge_table(lambda subscription, year, month: not subscription.is_charged(year, month))
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
