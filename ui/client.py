@@ -442,7 +442,7 @@ class ClientMainUI(QMainWindow):
         self.subscribe_combobox = QComboBox(self.widget)
         self.subscribe_layout.addWidget(self.subscribe_combobox)
         config_combobox(self.subscribe_combobox)
-        self.subscribe_combobox.setMaximumWidth(220)
+        self.subscribe_combobox.setFixedWidth(250)
 
         self.subscribe_btn = QPushButton(self.widget)
         self.subscribe_layout.addWidget(self.subscribe_btn)
