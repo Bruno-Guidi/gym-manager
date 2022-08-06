@@ -322,13 +322,25 @@ class ClientMainUI(QMainWindow):
         # Vertical spacer.
         # self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
-        # Subscriptions data.
-        self.activity_lbl = QLabel(self.widget)
-        self.right_layout.addWidget(self.activity_lbl, alignment=Qt.AlignLeft)
-        config_lbl(self.activity_lbl, "Actividades")
+        # Responsible.
+        self.responsible_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.responsible_layout)
+        self.responsible_layout.setAlignment(Qt.AlignLeft)
 
+        self.responsible_lbl = QLabel(self)
+        self.responsible_layout.addWidget(self.responsible_lbl)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self)
+        self.responsible_layout.addWidget(self.responsible_field)
+        config_line(self.responsible_field, fixed_width=100)
+
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+
+        # Subscriptions data.
         self.subscribe_layout = QHBoxLayout()
         self.right_layout.addLayout(self.subscribe_layout)
+        self.subscribe_layout.setAlignment(Qt.AlignLeft)
 
         self.subscribe_lbl = QLabel(self.widget)
         self.subscribe_layout.addWidget(self.subscribe_lbl)
