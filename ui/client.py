@@ -106,8 +106,14 @@ class MainController:
     def update_client_info(self):
         row = self.main_ui.client_table.currentRow()
         if row != -1:
+            client = self._clients[row]
+
             self.main_ui.subscribe_combobox.setEnabled(True)
             self.main_ui.subscribe_btn.setEnabled(True)
+
+            not_subscribed_activities = itertools.filterfalse(client.is_subscribed, self.activities_fn())
+            fill_combobox(self.main_ui.subscribe_combobox, not_subscribed_activities,
+                          display=lambda activity: activity.name.as_primitive())
 
             self.fill_subscription_list()
 
