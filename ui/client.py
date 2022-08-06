@@ -540,6 +540,105 @@ class CreateUI(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, client_repo: ClientRepo, client: Client) -> None:
+        self.edit_ui = edit_ui
+
+        self.client_repo = client_repo
+        self.client = client
+
+        self.edit_ui.name_field.setText(client.name.as_primitive())
+        if client.dni.as_primitive() is not None:
+            self.edit_ui.dni_field.setText(str(client.dni))
+        self.edit_ui.birth_date_edit.setDate(client.birth_day)
+
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_client)
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
+
+    # noinspection PyTypeChecker
+    def edit_client(self):
+        if self.edit_ui.birth_date_edit.date().toPyDate() > date.today():
+            Dialog.info("Error", "La fecha de nacimiento no puede ser posterior al día de hoy.")
+        elif not all([self.edit_ui.name_field.valid_value(), self.edit_ui.dni_field.valid_value()]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        elif self.client_repo.is_active(self.edit_ui.dni_field.value()):
+            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.edit_ui.dni_field.value()}'.")
+        else:
+            self.client.name = self.edit_ui.name_field.value()
+            self.client.dni = self.edit_ui.dni_field.value()
+            self.client.birth_day = self.edit_ui.birth_date_edit.date().toPyDate()
+            self.client_repo.update(self.client)
+            Dialog.info("Éxito", f"El cliente '{self.edit_ui.name_field.value()}' fue editado correctamente.")
+            self.edit_ui.name_field.window().close()
+
+
+class EditUI(QDialog):
+    def __init__(self, client_repo: ClientRepo, client: Client) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = EditController(self, client_repo, client)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Editar cliente")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Nombre*")
+
+        self.name_field = Field(String, parent=self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # DNI.
+        self.dni_lbl = QLabel(self)
+        self.form_layout.addWidget(self.dni_lbl, 1, 0)
+        config_lbl(self.dni_lbl, "DNI")
+
+        self.dni_field = Field(Number, self, optional=True, min_value=utils.CLIENT_MIN_DNI,
+                               max_value=utils.CLIENT_MAX_DNI)
+        self.form_layout.addWidget(self.dni_field, 1, 1)
+        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
+
+        # Birthday.
+        self.birth_lbl = QLabel(self)
+        self.form_layout.addWidget(self.birth_lbl, 2, 0)
+        config_lbl(self.birth_lbl, "Nacimiento")
+
+        self.birth_date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.birth_date_edit, 2, 1)
+        config_date_edit(self.birth_date_edit, date.today(), calendar=True)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
 class AddSubController:
     def __init__(
             self, add_sub_ui: AddSubUI, subscription_repo: SubscriptionRepo, security_handler: SecurityHandler,
