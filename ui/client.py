@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem)
+    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem, QAction, QMenu)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
@@ -61,7 +61,7 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
@@ -289,6 +289,17 @@ class ClientMainUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
+
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Clientes", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar", self)
+        client_menu.addAction(self.create_action)
+
+        # Layout.
 
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
