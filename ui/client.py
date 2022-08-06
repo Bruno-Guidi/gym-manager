@@ -78,6 +78,10 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.subscribe_btn.clicked.connect(self.create_subscription)
         # noinspection PyUnresolvedReferences
+        self.main_ui.subscription_list.currentItemChanged.connect(self.fill_charge_table)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.year_spinbox.valueChanged.connect(self.fill_charge_table)
+        # noinspection PyUnresolvedReferences
         self.main_ui.cancel_btn.clicked.connect(self.cancel_subscription)
         # noinspection PyUnresolvedReferences
         # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
