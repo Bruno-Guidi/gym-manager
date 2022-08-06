@@ -69,13 +69,13 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
-        self.main_ui.charge_btn.clicked.connect(self.charge_sub)
+        # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
         # noinspection PyUnresolvedReferences
-        self.main_ui.sub_btn.clicked.connect(self.add_sub)
+        # self.main_ui.sub_btn.clicked.connect(self.add_sub)
         # noinspection PyUnresolvedReferences
-        self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
+        # self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
         # noinspection PyUnresolvedReferences
-        self.main_ui.see_charges_btn.clicked.connect(self.see_charges)
+        # self.main_ui.see_charges_btn.clicked.connect(self.see_charges)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
