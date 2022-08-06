@@ -241,28 +241,6 @@ class MainController:
             )
             self._charge_ui.exec_()
 
-    def cancel_sub(self):
-        if self.main_ui.client_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
-            return
-
-        if self.main_ui.subscription_list.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
-            return
-
-        activity_name = self.main_ui.subscription_list.selectedItems()[0].text()
-        client_name = self._subscriptions[activity_name].client.name
-
-        cancel_fn = functools.partial(api.cancel, self.subscription_repo, self._subscriptions[activity_name])
-        remove = DialogWithResp.confirm(f"¿Desea cancelar la inscripción del cliente '{client_name}' a la actividad "
-                                        f"'{activity_name}?", self.security_handler, cancel_fn)
-
-        if remove:
-            subscription = self._subscriptions.pop(activity_name)
-            self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
-            Dialog.info("Éxito", f"La inscripción del cliente '{subscription.client.name}' a la actividad "
-                                 f"'{subscription.activity.name}' fue cancelada.")
-
     def see_charges(self):
         if self.main_ui.client_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione un cliente.")
@@ -434,7 +412,7 @@ class ClientMainUI(QMainWindow):
 
         # Amount.
         self.amount_line = Field(Currency, parent=self, positive=True)
-        self.charge_form_layout.addWidget(self.amount_line, 0, 1, 1, 2)
+        self.charge_form_layout.addWidget(self.amount_line, 0, 1)
         config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
 
         # Month.
@@ -443,21 +421,11 @@ class ClientMainUI(QMainWindow):
         config_lbl(self.month_lbl, "Mes")
 
         self.month_field = QComboBox(self)
-        self.charge_form_layout.addWidget(self.month_field, 1, 1, 1,
-                                          2)  # The config is done in the controller's __init__.
-
-        # Responsible.
-        self.responsible_lbl = QLabel(self)
-        self.charge_form_layout.addWidget(self.responsible_lbl, 2, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = responsible_field(self)
-        self.charge_form_layout.addWidget(self.responsible_field, 2, 1)
-        config_line(self.responsible_field, fixed_width=50)
+        self.charge_form_layout.addWidget(self.month_field, 1, 1)  # The config is done in the controller's __init__.
 
         # Charge button
         self.charge_btn = QPushButton(self.widget)
-        self.charge_form_layout.addWidget(self.charge_btn, 2, 2, 1, 2, alignment=Qt.AlignCenter)
+        self.charge_form_layout.addWidget(self.charge_btn, 0, 2, 2, 1, alignment=Qt.AlignCenter)
         config_btn(self.charge_btn, "Cobrar")
 
         # Vertical spacer.
