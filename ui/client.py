@@ -61,7 +61,7 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_action.triggered.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_client)
         # noinspection PyUnresolvedReferences
         self.main_ui.edit_action.triggered.connect(self.edit_client)
         # noinspection PyUnresolvedReferences
@@ -118,7 +118,7 @@ class MainController:
             self.main_ui.dni_field.clear()
             self.main_ui.birthday_date_edit.setDate(date.today())
 
-    def create_ui(self):
+    def create_client(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.client_repo, self.contact_repo)
         self._create_ui.exec_()
