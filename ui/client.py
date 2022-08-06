@@ -65,7 +65,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.edit_action.triggered.connect(self.edit_client)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_btn.clicked.connect(self.remove_client)
         # noinspection PyUnresolvedReferences
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
@@ -144,7 +144,7 @@ class MainController:
         fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
 
-    def remove(self):
+    def remove_client(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
