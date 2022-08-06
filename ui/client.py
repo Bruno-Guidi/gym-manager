@@ -103,20 +103,12 @@ class MainController:
     def update_client_info(self):
         row = self.main_ui.client_table.currentRow()
         if row != -1:
-            # Fills the form.
-            self.main_ui.name_field.setText(str(self._clients[row].name))
-            dni = "" if self._clients[row].dni.as_primitive() is None else str(self._clients[row].dni.as_primitive())
-            self.main_ui.dni_field.setText(dni)
-            self.main_ui.dni_field.setEnabled(len(dni) == 0)
-            self.main_ui.birthday_date_edit.setDate(self._clients[row].birth_day)
-
+            pass
             self.fill_subscription_list()
 
         else:
             # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.dni_field.clear()
-            self.main_ui.birthday_date_edit.setDate(date.today())
+            self.main_ui.sub_list.clear()
 
     def create_client(self):
         # noinspection PyAttributeOutsideInit
@@ -293,13 +285,13 @@ class ClientMainUI(QMainWindow):
         client_menu.addAction(self.remove_action)
 
         # Layout.
-
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
         self.left_layout.setContentsMargins(10, 0, 10, 0)
 
         self.layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
 
+        # Right layout.
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
         self.right_layout.setContentsMargins(10, 0, 10, 0)
@@ -313,67 +305,14 @@ class ClientMainUI(QMainWindow):
         self.client_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.client_table)
         new_config_table(self.client_table, width=600, allow_resizing=False, min_rows_to_show=10,
-                         columns={"Nombre": (.4, str), "DNI": (.2, int), "Ingreso": (.2, bool), "Edad": (.2, int)}
-                         )
+                         columns={"Nombre": (.4, str), "DNI": (.2, int), "Ingreso": (.2, bool), "Edad": (.2, int)})
 
         # Index.
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
 
-        # Buttons.
         # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        self.buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
-
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
-
-        self.save_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
-
-        self.remove_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Client data form.
-        self.form_layout = QGridLayout()
-        self.right_layout.addLayout(self.form_layout)
-
-        # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre*")
-
-        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
-                                optional=False)
-        self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
-
-        # DNI.
-        self.dni_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.dni_lbl, 1, 0)
-        config_lbl(self.dni_lbl, "DNI")
-
-        self.dni_field = Field(Number, self.widget, optional=True, min_value=utils.CLIENT_MIN_DNI,
-                               max_value=utils.CLIENT_MAX_DNI)
-        self.form_layout.addWidget(self.dni_field, 1, 1)
-        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
-
-        # Birthday
-        self.birthday_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.birthday_lbl, 2, 0)
-        config_lbl(self.birthday_lbl, "Nacimiento")
-
-        self.birthday_date_edit = QDateEdit(self.widget)
-        self.form_layout.addWidget(self.birthday_date_edit, 2, 1)
-        config_date_edit(self.birthday_date_edit, date.today(), calendar=True)
+        # self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         # Subscriptions data.
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
