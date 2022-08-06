@@ -58,10 +58,11 @@ class MainController:
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
                                        page_len=20, total_len=self.client_repo.count())
 
-        # Blocks activity subscription until a client is selected.
+        # Disables subscription related widgets until a client is selected.
         self.main_ui.subscribe_combobox.setEnabled(False)
         self.main_ui.subscribe_btn.setEnabled(False)
         self.main_ui.cancel_btn.setEnabled(False)
+        self.main_ui.year_spinbox.setEnabled(False)
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -200,6 +201,8 @@ class MainController:
             self.main_ui.subscription_list.addItem(item)
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
+        self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
+
     def create_subscription(self):
         client = self._clients[self.main_ui.client_table.currentRow()]
 
@@ -214,8 +217,9 @@ class MainController:
 
         # Disables the combobox if there is no activities to subscribe the client to.
         self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-        # Disables the button to cancel subscriptions if there is no subscriptions
-        self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
+
+        self.main_ui.cancel_btn.setEnabled(True)
+        self.main_ui.year_spinbox.setEnabled(True)
 
         # Adds the new subscription to the list.
         item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
@@ -247,6 +251,9 @@ class MainController:
 
                 # Disables the button to cancel subscriptions if there is no subscriptions
                 self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
+
+                self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
+                self.main_ui.subscribe_combobox.setEnabled(True)
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
