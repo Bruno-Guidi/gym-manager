@@ -339,6 +339,10 @@ class ClientMainUI(QMainWindow):
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
+        self.subscription_info_lbl = QLabel(self.widget)
+        self.right_layout.addWidget(self.subscription_info_lbl)
+        config_lbl(self.subscription_info_lbl, "El cliente esta inscripto en las siguientes actividades.")
+
         self.subscription_list = QListWidget(self.widget)
         self.right_layout.addWidget(self.subscription_list)
 
