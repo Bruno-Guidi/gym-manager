@@ -63,7 +63,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.create_action.triggered.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_client)
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_btn.clicked.connect(self.remove)
         # noinspection PyUnresolvedReferences
@@ -126,36 +126,23 @@ class MainController:
             self._add_client(self._create_ui.controller.client, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
 
-    def save_changes(self):
+    def edit_client(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        client = self._clients[row]
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.client_repo, self._clients[row])
+        self._edit_ui.exec_()
 
-        if self.main_ui.birthday_date_edit.date().toPyDate() > date.today():
-            Dialog.info("Error", "La fecha de nacimiento no puede ser posterior al día de hoy.")
-        elif not all([self.main_ui.name_field.valid_value(), self.main_ui.dni_field.valid_value()]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        elif (client.dni != self.main_ui.dni_field.value()
-              and self.client_repo.is_active(self.main_ui.dni_field.value())):
-            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.main_ui.dni_field.value()}'.")
-        else:
-            # Updates the client
-            client.name = self.main_ui.name_field.value()
-            client.dni = self.main_ui.dni_field.value()
-            client.birth_day = self.main_ui.birthday_date_edit.date().toPyDate()
-            self.client_repo.update(client)
-
-            # Updates the ui.
-            fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
-            dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
-            self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
-            fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
-
-            Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
+        # Updates the ui.
+        client = self._edit_ui.controller.client
+        fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+        dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
+        self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
+        fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
+        fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
 
     def remove(self):
         row = self.main_ui.client_table.currentRow()
@@ -298,6 +285,9 @@ class ClientMainUI(QMainWindow):
 
         self.create_action = QAction("&Agregar", self)
         client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar", self)
+        client_menu.addAction(self.edit_action)
 
         # Layout.
 
@@ -564,7 +554,8 @@ class EditController:
             Dialog.info("Error", "La fecha de nacimiento no puede ser posterior al día de hoy.")
         elif not all([self.edit_ui.name_field.valid_value(), self.edit_ui.dni_field.valid_value()]):
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.client_repo.is_active(self.edit_ui.dni_field.value()):
+        elif (self.client.dni != self.edit_ui.dni_field.value()
+              and self.client_repo.is_active(self.edit_ui.dni_field.value())):
             Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.edit_ui.dni_field.value()}'.")
         else:
             self.client.name = self.edit_ui.name_field.value()
