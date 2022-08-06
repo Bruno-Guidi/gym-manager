@@ -61,6 +61,7 @@ class MainController:
         # Blocks activity subscription until a client is selected.
         self.main_ui.subscribe_combobox.setEnabled(False)
         self.main_ui.subscribe_btn.setEnabled(False)
+        self.main_ui.cancel_btn.setEnabled(False)
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
