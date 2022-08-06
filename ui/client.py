@@ -206,6 +206,9 @@ class MainController:
         # Removes the added activity from the activities that can be subscribed to.
         self.main_ui.subscribe_combobox.removeItem(self.main_ui.subscribe_combobox.currentIndex())
 
+        # Disables the combobox if there is no activities to subscribe the client to.
+        self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
+
         # Adds the new subscription to the list.
         item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
         item.setFont(self.main_ui.font)
