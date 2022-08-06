@@ -392,7 +392,6 @@ class ClientMainUI(QMainWindow):
         self.charge_filter_layout.addWidget(self.only_unpaid_charges)
         self.only_unpaid_charges.setFont(self.font)
 
-
         # Charges table.
         self.charge_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.charge_table)
@@ -423,7 +422,8 @@ class ClientMainUI(QMainWindow):
         config_lbl(self.month_lbl, "Mes")
 
         self.month_field = QComboBox(self)
-        self.charge_form_layout.addWidget(self.month_field, 1, 1, 1, 2)  # The config is done in the controller's __init__.
+        self.charge_form_layout.addWidget(self.month_field, 1, 1, 1,
+                                          2)  # The config is done in the controller's __init__.
 
         # Responsible.
         self.responsible_lbl = QLabel(self)
