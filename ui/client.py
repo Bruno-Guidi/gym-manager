@@ -93,8 +93,6 @@ class MainController:
         self.main_ui.charge_filter_group.buttonClicked.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
         # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
-        # noinspection PyUnresolvedReferences
-        # self.main_ui.see_charges_btn.clicked.connect(self.see_charges)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
