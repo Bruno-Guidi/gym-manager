@@ -189,7 +189,6 @@ class MainController:
     def fill_subscription_list(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
-            self.main_ui.overdue_subs_checkbox.setChecked(not self.main_ui.overdue_subs_checkbox.isChecked())
             Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
