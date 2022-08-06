@@ -111,8 +111,11 @@ class MainController:
             self.main_ui.subscribe_combobox.setEnabled(True)
             self.main_ui.subscribe_btn.setEnabled(True)
 
-            not_subscribed_activities = itertools.filterfalse(client.is_subscribed, self.activities_fn())
-            fill_combobox(self.main_ui.subscribe_combobox, not_subscribed_activities,
+            subscribeable_activities = itertools.filterfalse(
+                lambda activity: activity.charge_once or client.is_subscribed(activity),
+                self.activities_fn()
+            )
+            fill_combobox(self.main_ui.subscribe_combobox, subscribeable_activities,
                           display=lambda activity: activity.name.as_primitive())
 
             self.fill_subscription_list()
