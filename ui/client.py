@@ -251,6 +251,31 @@ class MainController:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
+    def fill_charge_table(self):
+        self.main_ui.charge_table.setRowCount(0)
+
+        if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
+            year = self.main_ui.year_spinbox.value()
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+
+            from_, to = 1, 1
+            if year == sub.when.year:
+                from_ = sub.when.month  # The client subscribed to the activity in that year.
+            today = date.today()
+            if year < today.year and year > sub.when.year:
+                to = 13  # The year has passed, meaning there should be transactions for all the months.
+            elif year == today.year:
+                to = today.month + 1  # The year has some remaining months.
+
+            for month in range(from_, to):
+                # if not self.overdue_subs_checkbox.isChecked() or not sub.is_charged(year, month):
+                row = self.main_ui.charge_table.rowCount()
+                fill_cell(self.main_ui.charge_table, row, 0, f"{year}/{month}", str)
+                transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
+                fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
+                transaction_amount = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).amount
+                fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
+
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
