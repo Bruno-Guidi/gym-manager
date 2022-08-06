@@ -351,6 +351,7 @@ class ClientMainUI(QMainWindow):
 
         self.subscription_list = QListWidget(self.widget)
         self.right_layout.addWidget(self.subscription_list)
+        self.subscription_list.setFixedHeight(150)
 
         # self.sub_buttons_layout = QHBoxLayout()
         # self.right_layout.addLayout(self.sub_buttons_layout)
