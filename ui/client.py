@@ -353,18 +353,16 @@ class ClientMainUI(QMainWindow):
         self.right_layout.addWidget(self.subscription_list)
         self.subscription_list.setFixedHeight(150)
 
+        self.cancel_btn = QPushButton(self.widget)
+        self.right_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Eliminar", icon_path="ui/resources/minus.png", icon_size=24)
+
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+
         # self.sub_buttons_layout = QHBoxLayout()
         # self.right_layout.addLayout(self.sub_buttons_layout)
         # self.sub_buttons_layout.setSpacing(3)
         # self.sub_buttons_layout.setAlignment(Qt.AlignCenter)
-        #
-        # self.sub_btn = QPushButton(self.widget)
-        # self.sub_buttons_layout.addWidget(self.sub_btn)
-        # config_btn(self.sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
-        #
-        # self.unsub_btn = QPushButton(self.widget)
-        # self.sub_buttons_layout.addWidget(self.unsub_btn)
-        # config_btn(self.unsub_btn, icon_path="ui/resources/minus.png", icon_size=32)
         #
         # self.charge_btn = QPushButton(self.widget)
         # self.sub_buttons_layout.addWidget(self.charge_btn)
