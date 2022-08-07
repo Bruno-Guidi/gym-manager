@@ -95,8 +95,7 @@ def test_ClientRepo_remove_withSubs():
 
     client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(""))
 
-    activity = Activity(String("Act"), Currency(100), String("Descr"))
-    activity_repo.create(activity)
+    activity = activity_repo.create(String("Act"), Currency(100), String("Descr"))
 
     subscription_repo.add(Subscription(date(2022, 5, 5), client, activity))
     assert activity_repo.n_subscribers(activity) == 1
@@ -176,8 +175,7 @@ def test_ClientRepo_update_withSubs():
     client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
     client.name = String("OtherName")
 
-    activity = Activity(String("Act"), Currency(1), String("Descr"))
-    activity_repo.create(activity)
+    activity = activity_repo.create(String("Act"), Currency(1), String("Descr"))
     subscription_repo.add(Subscription(date(2022, 2, 2), client, activity))
     assert activity_repo.n_subscribers(activity) == 1  # Asserts that the subscription was registered.
 
@@ -214,8 +212,7 @@ def test_persistence_removeActivity_lockedActivity_raisesPersistenceError():
     create_database(":memory:")
 
     repo = SqliteActivityRepo()
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
-    repo.create(activity)
+    activity = repo.create(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
     with pytest.raises(PersistenceError) as p_err:
         repo.remove(activity)
     assert str(p_err.value) == "The [activity.name=dummy_name] cannot be removed because its locked."
@@ -251,15 +248,14 @@ def test_ActivityRepo_update_subsAreNotRemoved():
 
     client = client_repo.create(String("Name"), date(2022, 5, 5), date(2000, 5, 5), Number(1))
 
-    activity = Activity(String("Act"), Currency(1), String("Desc"))
-    activity_repo.create(activity)
+    activity = activity_repo.create(String("Act"), Currency(1), String("Desc"))
 
     subscription_repo.add(Subscription(date(2022, 2, 2), client, activity))
 
     activity.description = String("NewDesc")
     activity_repo.update(activity)
 
-    activity = activity_repo.get(String("Act"))
+    activity = activity_repo.get(1)
 
     assert activity.description == String("NewDesc") and activity_repo.n_subscribers(activity) == 1
 
