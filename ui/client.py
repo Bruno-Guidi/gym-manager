@@ -533,7 +533,8 @@ class ClientMainUI(QMainWindow):
         config_lbl(self.month_lbl, "Mes")
 
         self.month_combobox = QComboBox(self)
-        self.charge_form_layout.addWidget(self.month_combobox, 1, 1)  # The config is done in the controller's __init__.
+        self.charge_form_layout.addWidget(self.month_combobox, 1, 1)
+        config_combobox(self.month_combobox)
 
         # Charge button
         self.charge_btn = QPushButton(self.widget)
