@@ -356,13 +356,13 @@ class MainController:
             try:
                 self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
-                # noinspection PyTypeChecker
-                transaction = self.transaction_repo.create(
-                    "Cobro", date.today(), self.main_ui.amount_line.value(), self.main_ui.method_combobox.currentText(),
-                    self.security_handler.current_responsible.name,
+                create_transaction_fn = functools.partial(
+                    self.transaction_repo.create, "Cobro", date.today(), self.main_ui.amount_line.value(),
+                    self.main_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
                     f"Cobro de actividad '{sub.activity.name}' a '{sub.client.name}'.", sub.client
                 )
-                _, transaction = api.register_subscription_charge(self.subscription_repo, sub, year, month, transaction)
+                _, transaction = api.register_subscription_charge(self.subscription_repo, sub, year, month,
+                                                                  create_transaction_fn)
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cobro a '{sub.client.name}' por '{sub.activity.name}' fue registrado.")
