@@ -37,11 +37,11 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_action.triggered.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_activity)
         # noinspection PyUnresolvedReferences
-        self.main_ui.edit_action.triggered.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_activity)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_action.triggered.connect(self.remove)
+        self.main_ui.remove_action.triggered.connect(self.remove_activity)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
@@ -64,7 +64,7 @@ class MainController:
             self._activities[activity.name.as_primitive()] = activity
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
-    def create_ui(self):
+    def create_activity(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.activity_repo)
         self._create_ui.exec_()
@@ -72,7 +72,7 @@ class MainController:
             self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
 
-    def save_changes(self):
+    def edit_activity(self):
         row = self.main_ui.activity_table.currentRow()
         if row == -1:
             Dialog.info("Error", "Seleccione una actividad en la tabla.")
@@ -92,7 +92,7 @@ class MainController:
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
                   data_type=int, increase_row_count=False)
 
-    def remove(self):
+    def remove_activity(self):
         if self.main_ui.activity_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad en la tabla.")
             return
