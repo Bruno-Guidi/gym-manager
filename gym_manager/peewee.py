@@ -167,6 +167,23 @@ class SqliteClientRepo(ClientRepo):
             self._views[client.id].dni = client.dni
             self._views[client.id].name = client.name
 
+    def _create_subscriptions(self, client: Client, subscriptions, subscriptions_charges):
+        subs = {}
+        for sub_record in subscriptions:
+            subs[sub_record.activity_id] = Subscription(sub_record.when, client,
+                                                        self.activity_repo.get(sub_record.activity_id))
+        for sub_charge in subscriptions_charges:
+            year, month = sub_charge.when.year, sub_charge.when.month
+            trans_record = sub_charge.transaction
+            subs[sub_charge.activity_id].add_transaction(
+                year, month, self.transaction_repo.from_data(
+                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
+                    trans_record.method, trans_record.responsible, trans_record.description, client,
+                    trans_record.balance_id
+                )
+            )
+        return subs.values()
+
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Client, None, None]:
@@ -197,21 +214,8 @@ class SqliteClientRepo(ClientRepo):
                 client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
                                 Number(record.dni if record.dni is not None else ""))
                 self.cache[record.id] = client
-                subs = {}
-                for sub_record in record.subscriptions:
-                    subs[sub_record.activity_id] = Subscription(sub_record.when, client,
-                                                                self.activity_repo.get(sub_record.activity_id))
-                for sub_charge in record.subscriptions_charges:
-                    year, month = sub_charge.when.year, sub_charge.when.month
-                    trans_record = sub_charge.transaction
-                    subs[sub_charge.activity_id].add_transaction(
-                        year, month, self.transaction_repo.from_data(
-                            trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
-                            trans_record.method, trans_record.responsible, trans_record.description, client,
-                            trans_record.balance_id
-                        )
-                    )
-                for subscription in subs.values():
+                for subscription in self._create_subscriptions(client, record.subscriptions,
+                                                               record.subscriptions_charges):
                     client.add(subscription)
             yield self.cache[record.id]
 
