@@ -279,18 +279,19 @@ class SqliteActivityRepo(ActivityRepo):
         Raises:
             KeyError if there is no activity with the given *id_*.
         """
-        if name in self.cache:
-            return self.cache[name]
+        if id_ in self.cache:
+            return self.cache[id_]
 
-        record = ActivityTable.get_or_none(act_name=name)
+        record = ActivityTable.get_or_none(id=id_)
         if record is None:
-            raise KeyError(f"There is no activity with the id '{name}'")
+            raise KeyError(f"There is no activity with the id '{id_}'")
 
         # The activity description was validated when it was created.
-        self.cache[name] = Activity(name, Currency(record.price), String(record.description, optional=True),
-                                    record.charge_once, record.locked)
-        logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={name}] from queried data.")
-        return self.cache[name]
+        self.cache[id_] = Activity(id_, String(record.act_name), Currency(record.price),
+                                   String(record.description, optional=True), record.charge_once, record.locked)
+        logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={self.cache[id_]}] from queried "
+                                                  f"data.")
+        return self.cache[id_]
 
     def remove(self, activity: Activity):
         """Removes the given *activity*.
