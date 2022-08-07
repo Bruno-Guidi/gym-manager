@@ -28,6 +28,19 @@ def discard_subscription(only_overdue: bool, up_to_date: bool) -> bool:
     return only_overdue and up_to_date
 
 
+def from_month_to_month(subscription_when: date, year: int, reference_date: date) -> tuple[int, int]:
+    from_, to = 1, 1
+    if year == subscription_when.year:
+        from_ = subscription_when.month  # The client subscribed to the activity in that year.
+    # noinspection PyChainedComparisons
+    if year < reference_date.year and year > subscription_when.year:
+        to = 13  # The year has passed, meaning there should be transactions for all the months.
+    elif year == reference_date.year:
+        to = reference_date.month + 1  # The year has some remaining months.
+
+    return from_, to
+
+
 def month_range(from_: date, to: date):
     from_m, from_y = from_.month, from_.year
     while from_ < to:
@@ -397,6 +410,12 @@ class Subscription:
         """Checks if the subscription has a registered charge in the *month* and *year*.
         """
         return (year, month) in self._transactions
+
+    def unpaid_months(self, reference_date: date) -> Iterable[int, int]:
+        for year in range(self.when.year, reference_date.year + 1):
+            for month in range(*from_month_to_month(self.when, year, reference_date)):
+                if not self.is_charged(year, month):
+                    yield year, month
 
 
 @dataclass

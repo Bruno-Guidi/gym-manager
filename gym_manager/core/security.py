@@ -223,7 +223,8 @@ class SimpleSecurityHandler(SecurityHandler):
         logger.getChild(type(self).__name__).info(
             f"Responsible '{self._responsible.name}' did the action '{action_description}'."
         )
-        self.security_repo.log_action(datetime.now(), self.current_responsible, action_level, action_description)
+        if action_level in self._needs_responsible:
+            self.security_repo.log_action(datetime.now(), self.current_responsible, action_level, action_description)
 
     def actions(self, page: int = 1, page_len: int = 20, tag: str | None = None) -> Iterable[Action]:
         yield from self.security_repo.actions(page, page_len, tag)

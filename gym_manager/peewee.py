@@ -490,6 +490,9 @@ class SqliteTransactionRepo(TransactionRepo):
     ) -> Transaction:
         """Register a new transaction with the given information. This method must return the created transaction.
         """
+        if len(responsible) == 0:
+            print(type, when, amount, method, description, client.name)
+            raise Exception
         # There is no need to check the cache because the Transaction is being created, it didn't exist before.
         record = TransactionTable.create(type=type, client=client.id if client is not None else None, when=when,
                                          amount=amount.as_primitive(), method=method,

@@ -2,28 +2,29 @@ from __future__ import annotations
 
 import functools
 import itertools
-from datetime import date, timedelta
+from datetime import date
 from typing import Iterable, Callable
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDateEdit, QDesktopWidget, QListWidget, QListWidgetItem)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox,
+    QDateEdit, QListWidget, QListWidgetItem, QAction, QMenu, QButtonGroup, QRadioButton,
+    QSpinBox, QDesktopWidget)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
 from gym_manager.core.base import (
-    String, TextLike, Client, Number, Activity, Subscription, month_range)
+    String, TextLike, Client, Number, Activity, Subscription, Currency, from_month_to_month)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
-from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
-    config_lbl, config_line, config_btn, fill_cell, config_checkbox,
-    config_combobox, fill_combobox, config_date_edit, new_config_table)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
+    config_lbl, config_line, config_btn, fill_cell, config_combobox, fill_combobox, config_date_edit, new_config_table,
+    config_widget)
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, responsible_field
 
 
 class MainController:
@@ -56,26 +57,62 @@ class MainController:
         self.main_ui.page_index.config(refresh_table=self.main_ui.filter_header.on_search_click,
                                        page_len=20, total_len=self.client_repo.count())
 
+        self.main_ui.all_charges.setChecked(True)  # By default, all months are displayed.
+
+        self._enable_subscribe()
+
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
+        # Fills the combobox with the transaction methods.
+        fill_combobox(self.main_ui.method_combobox, ("Efectivo", "Débito", "Crédito"),
+                      display=lambda method_name: method_name)
+
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_client)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_client)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_action.triggered.connect(self.remove_client)
         # noinspection PyUnresolvedReferences
         self.main_ui.client_table.itemSelectionChanged.connect(self.update_client_info)
         # noinspection PyUnresolvedReferences
-        self.main_ui.charge_btn.clicked.connect(self.charge_sub)
+        self.main_ui.subscribe_btn.clicked.connect(self.create_subscription)
         # noinspection PyUnresolvedReferences
-        self.main_ui.sub_btn.clicked.connect(self.add_sub)
+        self.main_ui.subscription_list.currentItemChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
-        self.main_ui.unsub_btn.clicked.connect(self.cancel_sub)
+        self.main_ui.subscription_list.itemPressed.connect(self.fill_unpaid_months)
         # noinspection PyUnresolvedReferences
-        self.main_ui.see_charges_btn.clicked.connect(self.see_charges)
+        self.main_ui.year_spinbox.valueChanged.connect(self.fill_charge_table)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.cancel_btn.clicked.connect(self.cancel_subscription)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_filter_group.buttonClicked.connect(self.fill_charge_table)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_table.itemSelectionChanged.connect(self.set_unpaid_month)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.charge_btn.clicked.connect(self.charge_subscription)
+
+    def _enable_subscribe(self):
+        client_selected = self.main_ui.client_table.currentRow() != -1
+        self.main_ui.subscribe_combobox.setEnabled(client_selected
+                                                   and self.main_ui.subscribe_combobox.currentIndex() != -1)
+        self.main_ui.subscribe_btn.setEnabled(client_selected
+                                              and self.main_ui.subscribe_combobox.currentIndex() != -1)
+
+        self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) > 0)
+
+        sub_selected = self.main_ui.subscription_list.currentRow() != -1
+        self.main_ui.year_spinbox.setEnabled(sub_selected)
+        self.main_ui.all_charges.setEnabled(sub_selected)
+        self.main_ui.only_paid_charges.setEnabled(sub_selected)
+        self.main_ui.only_unpaid_charges.setEnabled(sub_selected)
+
+        self.main_ui.method_combobox.setEnabled(client_selected)
+        self.main_ui.amount_line.setEnabled(client_selected)
+        self.main_ui.month_combobox.setEnabled(client_selected)
+        self.main_ui.charge_btn.setEnabled(client_selected)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
@@ -103,169 +140,215 @@ class MainController:
     def update_client_info(self):
         row = self.main_ui.client_table.currentRow()
         if row != -1:
-            # Fills the form.
-            self.main_ui.name_field.setText(str(self._clients[row].name))
-            dni = "" if self._clients[row].dni.as_primitive() is None else str(self._clients[row].dni.as_primitive())
-            self.main_ui.dni_field.setText(dni)
-            self.main_ui.dni_field.setEnabled(len(dni) == 0)
-            self.main_ui.birthday_date_edit.setDate(self._clients[row].birth_day)
+            client = self._clients[row]
 
+            subscribeable_activities = itertools.filterfalse(
+                lambda activity: activity.charge_once or client.is_subscribed(activity), self.activities_fn()
+            )
+            fill_combobox(self.main_ui.subscribe_combobox, subscribeable_activities,
+                          display=lambda activity: activity.name.as_primitive())
             self.fill_subscription_list()
 
-        else:
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.dni_field.clear()
-            self.main_ui.birthday_date_edit.setDate(date.today())
+            self._enable_subscribe()
 
-    def create_ui(self):
+    def create_client(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.client_repo, self.contact_repo)
         self._create_ui.exec_()
         if self._create_ui.controller.client is not None:
             self._add_client(self._create_ui.controller.client, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
+            self._enable_subscribe()
 
-    def save_changes(self):
+    def edit_client(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
+            return
+
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.client_repo, self._clients[row])
+        self._edit_ui.exec_()
+
+        # Updates the ui.
+        client = self._edit_ui.controller.client
+        fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
+        dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
+        fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
+        fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
+
+    def remove_client(self):
+        row = self.main_ui.client_table.currentRow()
+        if row == -1:
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
         client = self._clients[row]
 
-        if self.main_ui.birthday_date_edit.date().toPyDate() > date.today():
-            Dialog.info("Error", "La fecha de nacimiento no puede ser posterior al día de hoy.")
-        elif not all([self.main_ui.name_field.valid_value(), self.main_ui.dni_field.valid_value()]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        elif (client.dni != self.main_ui.dni_field.value()
-              and self.client_repo.is_active(self.main_ui.dni_field.value())):
-            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.main_ui.dni_field.value()}'.")
-        else:
-            # Updates the client
-            client.name = self.main_ui.name_field.value()
-            client.dni = self.main_ui.dni_field.value()
-            client.birth_day = self.main_ui.birthday_date_edit.date().toPyDate()
-            self.client_repo.update(client)
-
-            # Updates the ui.
-            fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
-            dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
-            self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
-            fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
-            fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
-
-            Dialog.info("Éxito", f"El cliente '{client.name}' fue actualizado correctamente.")
-
-    def remove(self):
-        row = self.main_ui.client_table.currentRow()
-        if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
-            return
-
-        client = self._clients[row]
-
-        if Dialog.confirm(f"¿Desea eliminar el cliente '{client.name}'?"):
+        if Dialog.confirm(f"¿Desea eliminar el cliente '{client.name}'? (Sus pagos NO seran eliminados)"):
             self.client_repo.remove(client)
             remove_contact_by_client(self.contact_repo, client)
 
             self._clients.pop(row)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.dni_field.clear()
-
             # Clears the subscriptions table.
-            self.main_ui.sub_list.clear()
+            self.main_ui.subscription_list.clear()
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
+
+            self._enable_subscribe()
 
     def fill_subscription_list(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
-            self.main_ui.overdue_subs_checkbox.setChecked(not self.main_ui.overdue_subs_checkbox.isChecked())
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
-        self.main_ui.sub_list.clear()
+        self.main_ui.subscription_list.clear()
+        self._subscriptions.clear()
         for sub in self._clients[row].subscriptions():
-            self.main_ui.sub_list.addItem(QListWidgetItem(sub.activity.name.as_primitive()))
+            item = QListWidgetItem(sub.activity.name.as_primitive())
+            item.setFont(self.main_ui.font)
+            self.main_ui.subscription_list.addItem(item)
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
-    def charge_sub(self):
-        row = self.main_ui.client_table.currentRow()
-        if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
-            return
+        self._enable_subscribe()
 
-        if self._clients[row].n_subscriptions() == 0:
-            Dialog.info("Error", "El cliente no esta inscripto a ninguna actividad.")
-            return
+    def create_subscription(self):
+        client = self._clients[self.main_ui.client_table.currentRow()]
 
-        # noinspection PyAttributeOutsideInit
-        self._pre_charge_ui = PreChargeUI(self._clients[row])
-        self._pre_charge_ui.exec_()
+        subscription = api.subscribe(self.subscription_repo, date.today(), client,
+                                     self.main_ui.subscribe_combobox.currentData(Qt.UserRole))
 
-        sub = self._pre_charge_ui.controller.sub
-        if sub is not None:
-            register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo, sub,
-                                                    self._pre_charge_ui.controller.year,
-                                                    self._pre_charge_ui.controller.month)
-            # noinspection PyAttributeOutsideInit
-            self._charge_ui = ChargeUI(
-                self.transaction_repo, self.security_handler, sub.activity.price,
-                String(f"Cobro de actividad {sub.activity.name}."), register_sub_charge, self._clients[row]
-            )
-            self._charge_ui.exec_()
+        Dialog.info("Éxito", f"El cliente '{client.name}' fue registrado correctamente en la actividad "
+                             f"'{self.main_ui.subscribe_combobox.currentText()}'.")
 
-    def add_sub(self):
-        row = self.main_ui.client_table.currentRow()
-        if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
-            return
+        # Removes the added activity from the activities that can be subscribed to.
+        self.main_ui.subscribe_combobox.removeItem(self.main_ui.subscribe_combobox.currentIndex())
 
-        # noinspection PyAttributeOutsideInit
-        self._add_sub_ui = AddSubUI(self.subscription_repo, self.security_handler,
-                                    (activity for activity in self.activities_fn()), self._clients[row])
-        self._add_sub_ui.exec_()
+        # Adds the new subscription to the list.
+        item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
+        item.setFont(self.main_ui.font)
+        self.main_ui.subscription_list.addItem(item)
+        self._subscriptions[subscription.activity.name.as_primitive()] = subscription
 
-        subscription = self._add_sub_ui.controller.subscription
-        if subscription is not None:
-            self.main_ui.sub_list.addItem(QListWidgetItem(subscription.activity.name.as_primitive()))
-            self._subscriptions[subscription.activity.name.as_primitive()] = subscription
+        self._enable_subscribe()
 
-    def cancel_sub(self):
+    def cancel_subscription(self):
         if self.main_ui.client_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
-        if self.main_ui.sub_list.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+        if self.main_ui.subscription_list.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad en la lista.")
             return
 
-        activity_name = self.main_ui.sub_list.selectedItems()[0].text()
+        activity_name = self.main_ui.subscription_list.selectedItems()[0].text()
         client_name = self._subscriptions[activity_name].client.name
 
-        cancel_fn = functools.partial(api.cancel, self.subscription_repo, self._subscriptions[activity_name])
-        remove = DialogWithResp.confirm(f"¿Desea cancelar la inscripción del cliente '{client_name}' a la actividad "
-                                        f"'{activity_name}?", self.security_handler, cancel_fn)
+        if (self.main_ui.responsible_field.valid_value()
+                and Dialog.confirm(f"¿Desea eliminar a '{client_name}' de la actividad  '{activity_name}?")):
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
-        if remove:
-            subscription = self._subscriptions.pop(activity_name)
-            self.main_ui.sub_list.takeItem(self.main_ui.sub_list.currentRow())
-            Dialog.info("Éxito", f"La inscripción del cliente '{subscription.client.name}' a la actividad "
-                                 f"'{subscription.activity.name}' fue cancelada.")
+                api.cancel(self.subscription_repo, self._subscriptions[activity_name])
 
-    def see_charges(self):
-        if self.main_ui.client_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
+                activity = self._subscriptions.pop(activity_name).activity
+                self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
+                self.main_ui.subscribe_combobox.addItem(activity.name.as_primitive(), activity)
+
+                self.main_ui.responsible_field.setStyleSheet("")
+                Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
+
+        self._enable_subscribe()
+
+    def fill_charge_table(self):
+        self.main_ui.charge_table.setRowCount(0)
+
+        if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
+            year = self.main_ui.year_spinbox.value()
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+
+            self.main_ui.amount_line.setText(Currency.fmt(sub.activity.price, symbol=""))
+
+            # Filters months according to which radio button is checked.
+            month_it = (month for month in range(*from_month_to_month(sub.when, year, date.today())))
+            if self.main_ui.only_paid_charges.isChecked():
+                month_it = itertools.filterfalse(lambda month_: not sub.is_charged(year, month_), month_it)
+            if self.main_ui.only_unpaid_charges.isChecked():
+                month_it = itertools.filterfalse(lambda month_: sub.is_charged(year, month_), month_it)
+
+            for month in month_it:
+                row = self.main_ui.charge_table.rowCount()
+                fill_cell(self.main_ui.charge_table, row, 0, f"{month}/{year}", int)
+                transaction_when, transaction_amount = "-", "-"
+                if sub.is_charged(year, month):
+                    transaction_when = sub.transaction(year, month).when.strftime(utils.DATE_FORMAT)
+                    transaction_amount = Currency.fmt(sub.transaction(year, month).amount)
+                fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
+                fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
+
+        self._enable_subscribe()
+
+    def fill_unpaid_months(self):
+        if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+            fill_combobox(self.main_ui.month_combobox, sub.unpaid_months(date.today()),
+                          display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
+
+    def set_unpaid_month(self):
+        if self.main_ui.charge_table.currentRow() != -1:
+            month_year_str = self.main_ui.charge_table.item(self.main_ui.charge_table.currentRow(), 0).text()
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+            month, year = month_year_str.split("/")
+            if not sub.is_charged(int(year), int(month)):
+                for i in range(len(self.main_ui.month_combobox)):
+                    if self.main_ui.month_combobox.itemText(i) == month_year_str:
+                        self.main_ui.month_combobox.setCurrentIndex(i)
+                        break
+
+    def charge_subscription(self):
+        if len(self.main_ui.subscription_list) == 0:
+            Dialog.info("Error", "El cliente no esta inscripto en ninguna actividad.")
+            return
+        if self.main_ui.subscription_list.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad en la lista.")
+            return
+        if self.main_ui.month_combobox.currentIndex() == -1:
+            Dialog.info("Error", f"El cliente tiene la actividad "
+                                 f"'{self.main_ui.subscription_list.currentItem().text()}' al día.")
             return
 
-        # noinspection PyAttributeOutsideInit
-        self._subs_ui = SubsChargesUI(self._clients[self.main_ui.client_table.currentRow()])
-        self._subs_ui.setWindowModality(Qt.ApplicationModal)
-        self._subs_ui.show()
+        if not self.main_ui.amount_line.valid_value():
+            Dialog.info("Error", f"El monto ingresado no es válido.")
+        else:
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+            year, month = self.main_ui.month_combobox.currentData(Qt.UserRole)
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
+
+                create_transaction_fn = functools.partial(
+                    self.transaction_repo.create, "Cobro", date.today(), self.main_ui.amount_line.value(),
+                    self.main_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                    f"Cobro de actividad '{sub.activity.name}' a '{sub.client.name}'.", sub.client
+                )
+                _, transaction = api.register_subscription_charge(self.subscription_repo, sub, year, month,
+                                                                  create_transaction_fn)
+
+                self.main_ui.responsible_field.setStyleSheet("")
+                Dialog.info("Éxito", f"El cobro a '{sub.client.name}' por '{sub.activity.name}' fue registrado.")
+
+                # Updates the ui.
+                self.fill_charge_table()
+                self.fill_unpaid_months()
+
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
 
 class ClientMainUI(QMainWindow):
@@ -280,6 +363,9 @@ class ClientMainUI(QMainWindow):
             contact_repo: ContactRepo | None = None
     ) -> None:
         super().__init__()
+
+        self.font = QFont("MS Shell Dlg 2", 14)
+
         self._setup_ui()
         self.controller = MainController(self, client_repo, subscription_repo, transaction_repo, security_handler,
                                          activities_fn, contact_repo)
@@ -290,12 +376,29 @@ class ClientMainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
 
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Clientes", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar", self)
+        client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar", self)
+        client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar", self)
+        client_menu.addAction(self.remove_action)
+
+        # Layout.
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
         self.left_layout.setContentsMargins(10, 0, 10, 0)
 
         self.layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
 
+        # Right layout.
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
         self.right_layout.setContentsMargins(10, 0, 10, 0)
@@ -309,104 +412,141 @@ class ClientMainUI(QMainWindow):
         self.client_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.client_table)
         new_config_table(self.client_table, width=600, allow_resizing=False, min_rows_to_show=10,
-                         columns={"Nombre": (.4, str), "DNI": (.2, int), "Ingreso": (.2, bool), "Edad": (.2, int)}
-                         )
+                         columns={"Nombre": (.4, str), "DNI": (.2, int), "Ingreso": (.2, bool), "Edad": (.2, int)})
 
         # Index.
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
 
-        # Buttons.
         # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+        # self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
-        self.buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
+        # Responsible.
+        self.responsible_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.responsible_layout)
+        self.responsible_layout.setAlignment(Qt.AlignLeft)
 
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
+        self.responsible_lbl = QLabel(self)
+        self.responsible_layout.addWidget(self.responsible_lbl)
+        config_lbl(self.responsible_lbl, "Responsable")
 
-        self.save_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
-
-        self.remove_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
+        self.responsible_field = responsible_field(self)
+        self.responsible_layout.addWidget(self.responsible_field)
+        config_line(self.responsible_field, fixed_width=100)
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Client data form.
-        self.form_layout = QGridLayout()
-        self.right_layout.addLayout(self.form_layout)
-
-        # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre*")
-
-        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
-                                optional=False)
-        self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
-
-        # DNI.
-        self.dni_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.dni_lbl, 1, 0)
-        config_lbl(self.dni_lbl, "DNI")
-
-        self.dni_field = Field(Number, self.widget, optional=True, min_value=utils.CLIENT_MIN_DNI,
-                               max_value=utils.CLIENT_MAX_DNI)
-        self.form_layout.addWidget(self.dni_field, 1, 1)
-        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
-
-        # Birthday
-        self.birthday_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.birthday_lbl, 2, 0)
-        config_lbl(self.birthday_lbl, "Nacimiento")
-
-        self.birthday_date_edit = QDateEdit(self.widget)
-        self.form_layout.addWidget(self.birthday_date_edit, 2, 1)
-        config_date_edit(self.birthday_date_edit, date.today(), calendar=True)
 
         # Subscriptions data.
+        self.subscribe_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.subscribe_layout)
+        self.subscribe_layout.setAlignment(Qt.AlignLeft)
+
+        self.subscribe_lbl = QLabel(self.widget)
+        self.subscribe_layout.addWidget(self.subscribe_lbl)
+        config_lbl(self.subscribe_lbl, "Inscribir en ")
+
+        self.subscribe_combobox = QComboBox(self.widget)
+        self.subscribe_layout.addWidget(self.subscribe_combobox)
+        config_combobox(self.subscribe_combobox)
+        self.subscribe_combobox.setFixedWidth(250)
+
+        self.subscribe_btn = QPushButton(self.widget)
+        self.subscribe_layout.addWidget(self.subscribe_btn)
+        config_btn(self.subscribe_btn, "Confirmar", icon_path=r"ui/resources/tick.png", icon_size=24)
+
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
-        self.subs_lbl = QLabel(self.widget)
-        self.right_layout.addWidget(self.subs_lbl, alignment=Qt.AlignCenter)
-        config_lbl(self.subs_lbl, "Actividades")
+        self.subscription_info_lbl = QLabel(self.widget)
+        self.right_layout.addWidget(self.subscription_info_lbl)
+        config_lbl(self.subscription_info_lbl, "El cliente esta inscripto en las siguientes actividades.")
 
-        self.sub_buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.sub_buttons_layout)
-        self.sub_buttons_layout.setSpacing(3)
-        self.sub_buttons_layout.setAlignment(Qt.AlignCenter)
+        self.subscription_list = QListWidget(self.widget)
+        self.right_layout.addWidget(self.subscription_list)
+        self.subscription_list.setFixedHeight(150)
 
-        self.sub_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.sub_btn)
-        config_btn(self.sub_btn, icon_path="ui/resources/plus.png", icon_size=32)
+        self.cancel_btn = QPushButton(self.widget)
+        self.right_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Eliminar", icon_path=r"ui/resources/trash_can.png", icon_size=24)
 
-        self.unsub_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.unsub_btn)
-        config_btn(self.unsub_btn, icon_path="ui/resources/minus.png", icon_size=32)
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
+        # Subscription charges info.
+        self.charges_info_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.charges_info_layout)
+        self.charges_info_layout.setAlignment(Qt.AlignLeft)
+
+        self.charges_lbl = QLabel(self.widget)
+        self.charges_info_layout.addWidget(self.charges_lbl)
+        config_lbl(self.charges_lbl, "Cuotas del ")
+
+        self.year_spinbox = QSpinBox(self.widget)
+        self.charges_info_layout.addWidget(self.year_spinbox)
+        config_widget(self.year_spinbox, fixed_width=70)
+        self.year_spinbox.setMaximum(9999)
+        self.year_spinbox.setValue(date.today().year)
+
+        # Charges filtering.
+        self.charge_filter_layout = QHBoxLayout()
+        self.right_layout.addLayout(self.charge_filter_layout)
+        self.charge_filter_layout.setAlignment(Qt.AlignCenter)
+        self.charge_filter_group = QButtonGroup(self.widget)
+
+        self.all_charges = QRadioButton("Todas")
+        self.charge_filter_group.addButton(self.all_charges)
+        self.charge_filter_layout.addWidget(self.all_charges)
+        self.all_charges.setFont(self.font)
+
+        self.only_paid_charges = QRadioButton("Pagas")
+        self.charge_filter_group.addButton(self.only_paid_charges)
+        self.charge_filter_layout.addWidget(self.only_paid_charges)
+        self.only_paid_charges.setFont(self.font)
+
+        self.only_unpaid_charges = QRadioButton("Sin pagar")
+        self.charge_filter_group.addButton(self.only_unpaid_charges)
+        self.charge_filter_layout.addWidget(self.only_unpaid_charges)
+        self.only_unpaid_charges.setFont(self.font)
+
+        # Charges table.
+        self.charge_table = QTableWidget(self.widget)
+        self.right_layout.addWidget(self.charge_table)
+        new_config_table(self.charge_table, width=500, min_rows_to_show=4, fix_width=True,
+                         columns={"Mes": (.2, int), "Fecha pago": (.35, bool), "Monto": (.45, int)})
+
+        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
+
+        # Charge form.
+        self.charge_form_layout = QGridLayout()
+        self.right_layout.addLayout(self.charge_form_layout)
+        self.charge_form_layout.setContentsMargins(50, 0, 50, 0)
+
+        # Method.
+        self.method_combobox = QComboBox(self)
+        self.charge_form_layout.addWidget(self.method_combobox, 0, 0)
+        config_combobox(self.method_combobox)
+
+        # Amount.
+        self.amount_line = Field(Currency, parent=self, positive=True)
+        self.charge_form_layout.addWidget(self.amount_line, 0, 1)
+        config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
+
+        # Month.
+        self.month_lbl = QLabel(self)
+        self.charge_form_layout.addWidget(self.month_lbl, 1, 0)
+        config_lbl(self.month_lbl, "Mes")
+
+        self.month_combobox = QComboBox(self)
+        self.charge_form_layout.addWidget(self.month_combobox, 1, 1)
+        config_combobox(self.month_combobox)
+
+        # Charge button
         self.charge_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.charge_btn)
-        config_btn(self.charge_btn, icon_path="ui/resources/charge.png", icon_size=32)
-
-        self.see_charges_btn = QPushButton(self.widget)
-        self.sub_buttons_layout.addWidget(self.see_charges_btn)
-        config_btn(self.see_charges_btn, icon_path="ui/resources/actions.png", icon_size=32)
-
-        self.sub_list = QListWidget(self.widget)
-        self.right_layout.addWidget(self.sub_list)
+        self.charge_form_layout.addWidget(self.charge_btn, 0, 2, 2, 1, alignment=Qt.AlignCenter)
+        config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         self.setFixedSize(self.minimumSizeHint())
-
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
@@ -529,77 +669,85 @@ class CreateUI(QDialog):
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
 
 
-class AddSubController:
-    def __init__(
-            self, add_sub_ui: AddSubUI, subscription_repo: SubscriptionRepo, security_handler: SecurityHandler,
-            activities: Iterable[Activity], client: Client
-    ):
-        self.add_sub_ui = add_sub_ui
-        self.subscription_repo = subscription_repo
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, client_repo: ClientRepo, client: Client) -> None:
+        self.edit_ui = edit_ui
+
+        self.client_repo = client_repo
         self.client = client
-        self.security_handler = security_handler
-        self.subscription: Subscription | None = None
 
-        activities = itertools.filterfalse(lambda activity: self.client.is_subscribed(activity) or activity.charge_once,
-                                           activities)
-        fill_combobox(self.add_sub_ui.activity_combobox, activities, display=lambda activity: str(activity.name))
+        self.edit_ui.name_field.setText(client.name.as_primitive())
+        if client.dni.as_primitive() is not None:
+            self.edit_ui.dni_field.setText(str(client.dni))
+        self.edit_ui.birth_date_edit.setDate(client.birth_day)
 
-        # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.add_sub_ui.confirm_btn.clicked.connect(self.add_sub)
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_client)
         # noinspection PyUnresolvedReferences
-        self.add_sub_ui.cancel_btn.clicked.connect(self.add_sub_ui.reject)
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
 
-    def add_sub(self):
-        if self.add_sub_ui.activity_combobox.count() == 0:
-            Dialog.info("Error", "No hay actividades disponibles.")
+    # noinspection PyTypeChecker
+    def edit_client(self):
+        if self.edit_ui.birth_date_edit.date().toPyDate() > date.today():
+            Dialog.info("Error", "La fecha de nacimiento no puede ser posterior al día de hoy.")
+        elif not all([self.edit_ui.name_field.valid_value(), self.edit_ui.dni_field.valid_value()]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        elif (self.client.dni != self.edit_ui.dni_field.value()
+              and self.client_repo.is_active(self.edit_ui.dni_field.value())):
+            Dialog.info("Error", f"Ya existe un cliente con el DNI '{self.edit_ui.dni_field.value()}'.")
         else:
-            activity: Activity = self.add_sub_ui.activity_combobox.currentData(Qt.UserRole)
-            try:
-                self.security_handler.current_responsible = self.add_sub_ui.responsible_field.value()
-                self.subscription = api.subscribe(self.subscription_repo, date.today(), self.client, activity)
-
-                Dialog.info("Éxito", f"El cliente '{self.client.name}' fue inscripto correctamente en la actividad "
-                                     f"'{activity.name}'.")
-                self.add_sub_ui.activity_combobox.window().close()
-            except SecurityError as sec_err:
-                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
+            self.client.name = self.edit_ui.name_field.value()
+            self.client.dni = self.edit_ui.dni_field.value()
+            self.client.birth_day = self.edit_ui.birth_date_edit.date().toPyDate()
+            self.client_repo.update(self.client)
+            Dialog.info("Éxito", f"El cliente '{self.edit_ui.name_field.value()}' fue editado correctamente.")
+            self.edit_ui.name_field.window().close()
 
 
-class AddSubUI(QDialog):
-    def __init__(
-            self, subscription_repo: SubscriptionRepo, security_handler: SecurityHandler,
-            activities: Iterable[Activity], client: Client
-    ) -> None:
+class EditUI(QDialog):
+    def __init__(self, client_repo: ClientRepo, client: Client) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = AddSubController(self, subscription_repo, security_handler, activities, client)
+        self.controller = EditController(self, client_repo, client)
 
     def _setup_ui(self):
-        self.setWindowTitle("Inscribir cliente")
-
+        self.setWindowTitle("Editar cliente")
         self.layout = QVBoxLayout(self)
 
+        # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
 
-        # Responsible
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 1, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = responsible_field(self)
-        self.form_layout.addWidget(self.responsible_field, 1, 1)
-        config_line(self.responsible_field, place_holder="Responsable")
-
-        # Activity.
+        # Name.
         self.name_lbl = QLabel(self)
         self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Actividad")
+        config_lbl(self.name_lbl, "Nombre*")
 
-        self.activity_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.activity_combobox, 0, 1)
-        config_combobox(self.activity_combobox, fixed_width=self.responsible_field.width())
+        self.name_field = Field(String, parent=self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # DNI.
+        self.dni_lbl = QLabel(self)
+        self.form_layout.addWidget(self.dni_lbl, 1, 0)
+        config_lbl(self.dni_lbl, "DNI")
+
+        self.dni_field = Field(Number, self, optional=True, min_value=utils.CLIENT_MIN_DNI,
+                               max_value=utils.CLIENT_MAX_DNI)
+        self.form_layout.addWidget(self.dni_field, 1, 1)
+        config_line(self.dni_field, place_holder="XXYYYZZZ", adjust_to_hint=False)
+
+        # Birthday.
+        self.birth_lbl = QLabel(self)
+        self.form_layout.addWidget(self.birth_lbl, 2, 0)
+        config_lbl(self.birth_lbl, "Nacimiento")
+
+        self.birth_date_edit = QDateEdit(self)
+        self.form_layout.addWidget(self.birth_date_edit, 2, 1)
+        config_date_edit(self.birth_date_edit, date.today(), calendar=True)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
@@ -619,135 +767,3 @@ class AddSubUI(QDialog):
 
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
-
-
-class PreChargeController:
-    def __init__(self, pre_charge_ui: PreChargeUI, client: Client):
-        self.pre_charge_ui = pre_charge_ui
-        self._subs = {sub.activity.name.as_primitive(): sub for sub in client.subscriptions()}
-        self.sub: Subscription | None = None
-        self.year: int | None = None
-        self.month: int | None = None
-
-        fill_combobox(self.pre_charge_ui.activity_combobox, self._subs.keys(), display=lambda sub_name: sub_name)
-        self.update_month_combobox()
-
-        # noinspection PyUnresolvedReferences
-        self.pre_charge_ui.confirm_btn.clicked.connect(self.save_state)
-        # noinspection PyUnresolvedReferences
-        self.pre_charge_ui.cancel_btn.clicked.connect(self.pre_charge_ui.reject)
-        # noinspection PyUnresolvedReferences
-        self.pre_charge_ui.activity_combobox.currentTextChanged.connect(self.update_month_combobox)
-
-    def save_state(self):
-        if self.pre_charge_ui.month_combobox.currentIndex() == -1:
-            Dialog.info("Error", "El cliente tiene los pagos al día de la actividad seleccionada.")
-            return
-
-        self.sub = self._subs[self.pre_charge_ui.activity_combobox.currentText()]
-        month, year = self.pre_charge_ui.month_combobox.currentText().split("/")
-        self.year, self.month = int(year), int(month)
-        self.pre_charge_ui.activity_combobox.window().close()
-
-    def update_month_combobox(self):
-        _from = self._subs[self.pre_charge_ui.activity_combobox.currentText()].when
-        not_charged_months = ((y, m) for m, y in month_range(_from, date.today() + timedelta(days=1))
-                              if not self._subs[self.pre_charge_ui.activity_combobox.currentText()].is_charged(y, m))
-        fill_combobox(self.pre_charge_ui.month_combobox, not_charged_months,
-                      display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
-
-
-class PreChargeUI(QDialog):
-    def __init__(
-            self, client: Client
-    ) -> None:
-        super().__init__()
-        self._setup_ui()
-        self.controller = PreChargeController(self, client)
-
-    def _setup_ui(self):
-        self.setWindowTitle("Cobrar actividad")
-
-        self.layout = QVBoxLayout(self)
-
-        self.form_layout = QGridLayout()
-        self.layout.addLayout(self.form_layout)
-
-        # Activity.
-        self.name_lbl = QLabel(self)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Actividad")
-
-        self.activity_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.activity_combobox, 0, 1)
-        config_combobox(self.activity_combobox)
-
-        # Month being paid.
-        self.month_lbl = QLabel(self)
-        self.form_layout.addWidget(self.month_lbl, 1, 0)
-        config_lbl(self.month_lbl, "Cuota")
-
-        self.month_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.month_combobox, 1, 1)
-        config_combobox(self.month_combobox, fixed_width=self.activity_combobox.width())
-
-        # Vertical spacer.
-        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
-
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
-
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
-
-        # Adjusts size.
-        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
-
-
-class SubsChargesUI(QMainWindow):
-    def __init__(self, client: Client):
-        super().__init__()
-        self._setup_ui()
-        self.client = client
-
-        self.fill_table()
-
-        # noinspection PyUnresolvedReferences
-        self.overdue_subs_checkbox.stateChanged.connect(self.fill_table)
-
-    def _setup_ui(self):
-        self.setWindowTitle("Pagos")
-        self.widget = QWidget()
-        self.setCentralWidget(self.widget)
-        self.layout = QVBoxLayout(self.widget)
-
-        # Checkbox that enables showing only subscriptions that aren't up-to-date.
-        self.overdue_subs_checkbox = QCheckBox(self.widget)
-        self.layout.addWidget(self.overdue_subs_checkbox)
-        config_checkbox(self.overdue_subs_checkbox, "Solo cuotas inpagas", checked=False)
-
-        # Subscription table.
-        self.subscription_table = QTableWidget(self.widget)
-        self.layout.addWidget(self.subscription_table)
-        new_config_table(self.subscription_table, width=500, allow_resizing=False,
-                         columns={"Actividad": (.45, str), "Cuota": (.2, bool), "Fecha pago": (.35, bool)})
-
-    def fill_table(self):
-        self.subscription_table.setRowCount(0)
-
-        today = date.today()
-        for sub in self.client.subscriptions():
-            for month, year in month_range(from_=sub.when, to=today + timedelta(days=1)):
-                if not self.overdue_subs_checkbox.isChecked() or not sub.is_charged(year, month):
-                    row = self.subscription_table.rowCount()
-                    fill_cell(self.subscription_table, row, 0, sub.activity.name, str)
-                    fill_cell(self.subscription_table, row, 1, f"{year}/{month}", str, increase_row_count=False)
-                    transaction_when = "-" if not sub.is_charged(year, month) else sub.transaction(year, month).when
-                    fill_cell(self.subscription_table, row, 2, transaction_when, bool, increase_row_count=False)

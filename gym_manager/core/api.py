@@ -84,8 +84,9 @@ def cancel(subscription_repo: SubscriptionRepo, subscription: Subscription) -> S
     return subscription
 
 
-def _charge_sub_description(subscription: Subscription) -> str:
-    return (f"Cobro de {Currency.fmt(subscription.activity.price)} por actividad {subscription.activity.name} a "
+def _charge_sub_description(pair: tuple[Subscription, Transaction]) -> str:
+    subscription, transaction = pair
+    return (f"Cobro de {Currency.fmt(transaction.amount)} por actividad {subscription.activity.name} a "
             f"{subscription.client.name}")
 
 
@@ -93,7 +94,7 @@ def _charge_sub_description(subscription: Subscription) -> str:
 def register_subscription_charge(
         subscription_repo: SubscriptionRepo, subscription: Subscription, year: int, month: int,
         create_transaction_fn: CreateTransactionFn
-) -> Subscription:
+) -> tuple[Subscription, Transaction]:
     """Registers that the *client* was charged for its *activity* subscription.
 
     Args:
@@ -120,7 +121,7 @@ def register_subscription_charge(
         f"{subscription.activity.price}]."
     )
 
-    return subscription
+    return subscription, transaction
 
 
 def _extract_description(transaction: Transaction) -> str:
