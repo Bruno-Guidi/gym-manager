@@ -1,6 +1,6 @@
 import functools
 from datetime import date
-from typing import Generator, Iterable
+from typing import Iterable
 
 import pytest
 
@@ -53,8 +53,7 @@ def test_subscribe():
     # Data setup.
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), Number(""))
 
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False)
-    activity_repo.create(activity)
+    activity = activity_repo.create(String("dummy_name"), Currency(0.0), String("dummy_descr"))
 
     # Feature being tested.
     api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
@@ -65,7 +64,7 @@ def test_subscribe_activityChargeOnce_raisesOperationalError():
     log_responsible.config(MockSecurityHandler())
 
     client = Client(1, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1))
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
+    activity = Activity(0, String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=True, locked=True)
     with pytest.raises(OperationalError) as op_error:
         # noinspection PyTypeChecker
         api.subscribe(None, date(2022, 2, 2), client, activity)
@@ -78,7 +77,7 @@ def test_subscribe_invalidClients_raisesOperationalError():
 
     client = Client(1, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1))
     other = Client(2, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1))
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
+    activity = Activity(0, String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
     # noinspection PyTypeChecker
     transaction = Transaction(1, type=None, when=None, amount=None, method=None, responsible=None, description=None,
                               client=client)
@@ -104,7 +103,7 @@ def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
     lesser, greater = date(2022, 2, 1), date(2022, 2, 2)
 
     client = Client(1, String("dummy_name"), greater, date(2022, 2, 1))
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
+    activity = Activity(0, String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
     with pytest.raises(InvalidDate):
         # noinspection PyTypeChecker
         api.subscribe(None, lesser, client, activity)
@@ -123,8 +122,7 @@ def test_cancel():
     # Data setup.
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), Number(""))
 
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False)
-    activity_repo.create(activity)
+    activity = activity_repo.create(String("dummy_name"), Currency(0.0), String("dummy_descr"))
 
     subscription = Subscription(date(2022, 2, 2), client, activity)
     client.add(subscription)
@@ -149,9 +147,7 @@ def test_charge_notChargeOnceActivity():
     # Data setup.
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), Number(""))
 
-    activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
-                        charge_once=False)
-    activity_repo.create(activity)
+    activity = activity_repo.create(String("dummy_name"), Currency(0.0), String("dummy_descr"))
 
     subscription = Subscription(date(2022, 2, 2), client, activity)
     client.add(subscription)
