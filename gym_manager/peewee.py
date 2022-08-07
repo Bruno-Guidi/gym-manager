@@ -341,7 +341,7 @@ class SqliteActivityRepo(ActivityRepo):
     def n_subscribers(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
         """
-        return SubscriptionTable.select().where(SubscriptionTable.activity == activity.name).count()
+        return SubscriptionTable.select().where(SubscriptionTable.activity_id == activity.id).count()
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of activities in the repository.
