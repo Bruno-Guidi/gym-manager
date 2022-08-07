@@ -21,7 +21,7 @@ class MainController:
         self.main_ui = main_ui
         self.activity_repo = activity_repo
         self.security_handler = security_handler
-        self._activities: dict[str, Activity] = {}  # Dict that maps raw activity name to the associated activity.
+        self._activities: dict[int, Activity] = {}  # Dict that maps row number to the associated activity.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -52,8 +52,8 @@ class MainController:
         if check_filters and not self.main_ui.filter_header.passes_filters(activity):
             return
 
-        self._activities[activity.name.as_primitive()] = activity
         row = self.main_ui.activity_table.rowCount()
+        self._activities[row] = activity
         fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
         fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int)
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
@@ -63,7 +63,6 @@ class MainController:
 
         self.main_ui.page_index.total_len = self.activity_repo.count(filters)
         for activity in self.activity_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-            self._activities[activity.name.as_primitive()] = activity
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
     def create_activity(self):
@@ -80,8 +79,7 @@ class MainController:
             Dialog.info("Error", "Seleccione una actividad en la tabla.")
             return
 
-        activity_name = self.main_ui.activity_table.item(row, 0).text()
-        activity = self._activities[activity_name]
+        activity = self._activities[row]
 
         # noinspection PyAttributeOutsideInit
         self._edit_ui = EditUI(self.activity_repo, activity)
@@ -100,8 +98,7 @@ class MainController:
             Dialog.info("Error", "Seleccione una actividad en la tabla.")
             return
 
-        activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
-        activity = self._activities[activity_name]
+        activity = self._activities[self.main_ui.activity_table.currentRow()]
         if activity.locked:
             Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
             return
@@ -119,9 +116,7 @@ class MainController:
     def update_description(self):
         row = self.main_ui.activity_table.currentRow()
         if row != -1:
-            self.main_ui.description_text.setText(
-                self._activities[self.main_ui.activity_table.item(row, 0).text()].description.as_primitive()
-            )
+            self.main_ui.description_text.setText(self._activities[row].description.as_primitive())
 
 
 class ActivityMainUI(QMainWindow):
@@ -211,8 +206,6 @@ class CreateController:
                             valid_descr])
         if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.activity_repo.exists(self.create_ui.name_field.value()):
-            Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
         else:
             self.activity = self.activity_repo.create(
                 self.create_ui.name_field.value(), self.create_ui.price_field.value(), descr
