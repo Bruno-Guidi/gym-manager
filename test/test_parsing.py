@@ -2,7 +2,6 @@ from datetime import date
 
 from gym_manager import peewee
 from gym_manager.contact.peewee import SqliteContactRepo
-from gym_manager.old_app_info import confirm_old_charge, OldChargesRepo
 from gym_manager.parsing import parse, minus_n_months
 
 
@@ -29,8 +28,4 @@ def test_parse():
     parse(activity_repo, client_repo, subscription_repo, transaction_repo, balance_repo,
           since=date(2022, 1, 1), backup_path=r"E:\downloads\chrome_bruno-leisure\backup_dia_26.sql",
           contact_repo=contact_repo)
-
-    # old_charge = [old_charge for old_charge in OldChargesRepo.all()][0]  # TODO Remove on corresponding PR
-    #
-    # confirm_old_charge(client_repo, transaction_repo, subscription_repo, old_charge)
 
