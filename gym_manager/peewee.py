@@ -302,8 +302,8 @@ class SqliteActivityRepo(ActivityRepo):
         if activity.locked:
             raise PersistenceError(f"The [activity.name={activity.name}] cannot be removed because its locked.")
 
-        self.cache.pop(activity.name)
-        ActivityTable.delete_by_id(activity.name)
+        self.cache.pop(activity.id)
+        ActivityTable.delete_by_id(activity.id)
 
         return activity
 
