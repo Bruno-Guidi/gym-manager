@@ -360,10 +360,15 @@ class MainController:
                     self.security_handler.current_responsible.name,
                     f"Cobro de actividad '{sub.activity.name}' a '{sub.client.name}'.", sub.client
                 )
-                api.register_subscription_charge(self.subscription_repo, sub, year, month, transaction)
+                _, transaction = api.register_subscription_charge(self.subscription_repo, sub, year, month, transaction)
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cobro a '{sub.client.name}' por '{sub.activity.name}' fue registrado.")
+
+                # Updates the ui.
+                self.fill_charge_table()
+                self.fill_unpaid_months()
+
             except SecurityError as sec_err:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
