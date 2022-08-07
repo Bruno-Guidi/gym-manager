@@ -41,7 +41,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         # self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_action.triggered.connect(self.remove)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
@@ -63,19 +63,6 @@ class MainController:
         for activity in self.activity_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
             self._activities[activity.name.as_primitive()] = activity
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
-
-    def refresh_form(self):
-        if self.main_ui.activity_table.currentRow() != -1:
-            activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
-            activity = self._activities[activity_name]
-            self.main_ui.name_field.setText(str(activity.name))
-            self.main_ui.price_field.setText(Currency.fmt(activity.price, symbol=''))
-            self.main_ui.description_text.setText(str(activity.description))
-        else:
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
-            self.main_ui.description_text.clear()
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
