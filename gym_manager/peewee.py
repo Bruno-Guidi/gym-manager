@@ -267,11 +267,11 @@ class SqliteActivityRepo(ActivityRepo):
         self.cache[record.id] = Activity(record.id, name, price, description, charge_once, locked)
         return self.cache[record.id]
 
-    def exists(self, name: String) -> bool:
-        if name in self.cache:  # First search in the cache.
+    def exists(self, id_: int) -> bool:
+        if id_ in self.cache:  # First search in the cache.
             return True
 
-        return ActivityTable.get_or_none(act_name=name) is not None  # Then search in the db.
+        return ActivityTable.get_or_none(id=id_) is not None  # Then search in the db.
 
     def get(self, id_: int) -> Activity:
         """Retrieves the activity with the given *id_* in the repository, if it exists.
@@ -332,11 +332,11 @@ class SqliteActivityRepo(ActivityRepo):
             if record.id not in self.cache:
                 logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={activity_name}] from "
                                                           f"queried data.")
-                self.cache[activity_name] = Activity(
+                self.cache[record.id] = Activity(
                     record.id, activity_name, Currency(record.price), String(record.description, optional=True),
                     record.charge_once, record.locked
                 )
-            yield self.cache[activity_name]
+            yield self.cache[record.id]
 
     def n_subscribers(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
