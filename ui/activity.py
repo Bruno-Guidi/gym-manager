@@ -37,7 +37,7 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        # self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
         # self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
