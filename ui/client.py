@@ -72,6 +72,10 @@ class MainController:
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
+        # Fills the combobox with the transaction methods.
+        fill_combobox(self.main_ui.method_combobox, ("Efectivo", "Débito", "Crédito"),
+                      display=lambda method_name: method_name)
+
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_action.triggered.connect(self.create_client)
