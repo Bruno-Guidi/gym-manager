@@ -217,6 +217,10 @@ class SqliteClientRepo(ClientRepo):
                 for subscription in self._create_subscriptions(client, record.subscriptions,
                                                                record.subscriptions_charges):
                     client.add(subscription)
+            else:
+                removed_activities = [subscription.activity for subscription in self.cache[record.id].subscriptions()]
+                for activity in removed_activities:
+                    self.cache[record.id].unsubscribe(activity)
             yield self.cache[record.id]
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
