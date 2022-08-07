@@ -45,11 +45,11 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.create_action.triggered.connect(self.create_contact)
         # noinspection PyUnresolvedReferences
-        self.main_ui.edit_action.triggered.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_contact)
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_action.triggered.connect(self.remove_contact)
         # noinspection PyUnresolvedReferences
-        self.main_ui.contact_table.itemSelectionChanged.connect(self.update_contact_info)
+        self.main_ui.contact_table.itemSelectionChanged.connect(self.update_description)
 
     def _add_contact(self, contact: Contact, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.contact_table.rowCount() == self.main_ui.page_index.page_len:
@@ -73,7 +73,7 @@ class MainController:
         for contact in self.contact_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, name=name):
             self._add_contact(contact, check_filters=False)  # Contacts are filtered in the repo.
 
-    def update_contact_info(self):
+    def update_description(self):
         row = self.main_ui.contact_table.currentRow()
         if row != -1:
             self.main_ui.description_text.setText(str(self._contacts[row].description))
@@ -86,7 +86,7 @@ class MainController:
             self._add_contact(self._create_ui.controller.contact, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
 
-    def save_changes(self):
+    def edit_contact(self):
         row = self.main_ui.contact_table.currentRow()
         if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
@@ -103,7 +103,7 @@ class MainController:
         fill_cell(self.main_ui.contact_table, row, 3, self._contacts[row].direction, data_type=str,
                   increase_row_count=False)
 
-        self.update_contact_info()
+        self.update_description()
 
     def remove_contact(self):
         row = self.main_ui.contact_table.currentRow()
