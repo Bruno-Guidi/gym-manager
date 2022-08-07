@@ -2,18 +2,7 @@ from datetime import date
 
 from gym_manager import peewee
 from gym_manager.contact.peewee import SqliteContactRepo
-from gym_manager.parsing import parse, minus_n_months
-
-
-def test_minusNMonths():
-    date_ = date(2022, 1, 1)
-    assert minus_n_months(date_, 1) == date(2021, 12, 1)
-
-    date_ = date(2022, 8, 4)
-    assert minus_n_months(date_, 1) == date(2022, 7, 1)
-
-    date_ = date(2022, 12, 31)
-    assert minus_n_months(date_, 1) == date(2022, 11, 1)
+from gym_manager.parsing import parse
 
 
 def test_parse():

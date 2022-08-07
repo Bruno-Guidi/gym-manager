@@ -179,17 +179,6 @@ def _register_subscription_charging(
     subscription_repo.register_raw_charges(sub_charges)
 
 
-def minus_n_months(date_: date, n: int) -> date:
-    """Subtracts *n* months to *date_*.
-    """
-    month = date_.month - n
-    year = date_.year
-    if month < 1:
-        year -= 1
-        month = 12 + month
-    return date(year, month, 1)
-
-
 def parse(
         activity_repo: ActivityRepo,
         client_repo: ClientRepo,
