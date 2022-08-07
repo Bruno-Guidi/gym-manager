@@ -95,12 +95,11 @@ class MainController:
         self.main_ui.charge_btn.clicked.connect(self.charge_subscription)
 
     def _enable_subscribe(self):
-        enable_creation = (
-                self.main_ui.client_table.currentRow() != -1  # There is a client selected.
-                and self.main_ui.subscribe_combobox.currentIndex() != -1  # There is one activity to subscribe to.
-        )
-        self.main_ui.subscribe_combobox.setEnabled(enable_creation)
-        self.main_ui.subscribe_btn.setEnabled(enable_creation)
+        client_selected = self.main_ui.client_table.currentRow() != -1
+        self.main_ui.subscribe_combobox.setEnabled(client_selected
+                                                   and self.main_ui.subscribe_combobox.currentIndex() != -1)
+        self.main_ui.subscribe_btn.setEnabled(client_selected
+                                              and self.main_ui.subscribe_combobox.currentIndex() != -1)
 
         self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) > 0)
 
@@ -109,6 +108,11 @@ class MainController:
         self.main_ui.all_charges.setEnabled(sub_selected)
         self.main_ui.only_paid_charges.setEnabled(sub_selected)
         self.main_ui.only_unpaid_charges.setEnabled(sub_selected)
+
+        self.main_ui.method_combobox.setEnabled(client_selected)
+        self.main_ui.amount_line.setEnabled(client_selected)
+        self.main_ui.month_combobox.setEnabled(client_selected)
+        self.main_ui.charge_btn.setEnabled(client_selected)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
