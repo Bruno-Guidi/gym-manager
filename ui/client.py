@@ -258,7 +258,7 @@ class MainController:
                 self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
                 self.main_ui.subscribe_combobox.addItem(activity.name.as_primitive(), activity)
 
-                self.main_ui.month_combobox.clear()
+                self.fill_unpaid_months()
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
@@ -301,6 +301,8 @@ class MainController:
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
             fill_combobox(self.main_ui.month_combobox, sub.unpaid_months(date.today()),
                           display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
+        if self.main_ui.subscription_list.currentItem() is None:
+            self.main_ui.month_combobox.clear()
 
     def set_unpaid_month(self):
         if self.main_ui.charge_table.currentRow() != -1:
