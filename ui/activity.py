@@ -39,7 +39,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.create_action.triggered.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_action.triggered.connect(self.remove)
 
@@ -73,32 +73,24 @@ class MainController:
             self.main_ui.page_index.total_len += 1
 
     def save_changes(self):
-        if self.main_ui.activity_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+        row = self.main_ui.activity_table.currentRow()
+        if row == -1:
+            Dialog.info("Error", "Seleccione una actividad en la tabla.")
             return
 
-        valid_descr, descr = valid_text_value(self.main_ui.description_text, optional=True,
-                                              max_len=utils.ACTIVITY_DESCR_CHARS)
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        else:
-            activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
-            activity = self._activities[activity_name]
+        activity_name = self.main_ui.activity_table.item(row, 0).text()
+        activity = self._activities[activity_name]
 
-            # Updates the activity.
-            activity.price, activity.description = self.main_ui.price_field.value(), descr
-            self.activity_repo.update(activity)
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.activity_repo, activity)
+        self._edit_ui.exec_()
 
-            # Updates the ui.
-            row = self.main_ui.activity_table.currentRow()
-            fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
-            # noinspection PyTypeChecker
-            fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int,
-                      increase_row_count=False)
-            fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
-                      data_type=int, increase_row_count=False)
-
-            Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
+        # Updates the ui.
+        fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int,
+                  increase_row_count=False)
+        fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
+                  data_type=int, increase_row_count=False)
 
     def remove(self):
         if self.main_ui.activity_table.currentRow() == -1:
@@ -273,8 +265,12 @@ class EditController:
     def __init__(self, edit_ui: EditUI, activity_repo: ActivityRepo, activity: Activity) -> None:
         self.edit_ui = edit_ui
 
-        self.activity = activity
         self.activity_repo = activity_repo
+
+        self.activity = activity
+        self.edit_ui.name_field.setText(activity.name.as_primitive())
+        self.edit_ui.price_field.setText(str(Currency.fmt(activity.price, symbol="")))
+        self.edit_ui.description_text.setText(activity.description.as_primitive())
 
         # noinspection PyUnresolvedReferences
         self.edit_ui.confirm_btn.clicked.connect(self.edit_activity)
