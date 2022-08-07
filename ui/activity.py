@@ -266,3 +266,94 @@ class CreateUI(QDialog):
 
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, activity_repo: ActivityRepo, activity: Activity) -> None:
+        self.edit_ui = edit_ui
+
+        self.activity = activity
+        self.activity_repo = activity_repo
+
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_activity)
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
+
+    # noinspection PyTypeChecker
+    def edit_activity(self):
+        valid_descr, descr = valid_text_value(self.edit_ui.description_text, optional=True,
+                                              max_len=utils.ACTIVITY_DESCR_CHARS)
+        valid_fields = all([self.edit_ui.name_field.valid_value(), self.edit_ui.price_field.valid_value(),
+                            valid_descr])
+        if not valid_fields:
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            self.activity.name = self.edit_ui.name_field.value()
+            self.activity.price = self.edit_ui.price_field.value()
+            self.activity.description = descr
+            Dialog.info("Éxito", f"La categoría '{self.edit_ui.name_field.value()}' fue editada correctamente.")
+            self.edit_ui.name_field.window().close()
+
+
+class EditUI(QDialog):
+    def __init__(self, activity_repo: ActivityRepo) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = CreateController(self, activity_repo)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Editar actividad")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Nombre*")
+
+        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # Price.
+        self.price_lbl = QLabel(self)
+        self.form_layout.addWidget(self.price_lbl, 1, 0)
+        config_lbl(self.price_lbl, "Precio*")
+
+        self.price_field = Field(Currency, self)
+        self.form_layout.addWidget(self.price_field, 1, 1)
+        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
+
+        # Description.
+        self.description_lbl = QLabel(self)
+        self.form_layout.addWidget(self.description_lbl, 2, 0, alignment=Qt.AlignTop)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 2, 1)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
