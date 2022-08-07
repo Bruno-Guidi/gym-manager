@@ -252,7 +252,7 @@ def parse(
     # OldChargesRepo.create_model()
     # _extract_charges(conn, transaction_repo, since=to)
     #
-    # OldExtractionRepo.create_model()
+    # OldExtractionRepo.create_model()  # TODO Remove on corresponding PR
     # _extract_extractions(conn, since=to)
 
     conn.close()
