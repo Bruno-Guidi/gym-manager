@@ -3,7 +3,7 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QMenu, QAction)
 
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
@@ -37,13 +37,11 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        # self.main_ui.create_btn.clicked.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        # self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.activity_table.itemSelectionChanged.connect(self.refresh_form)
+        # self.main_ui.remove_btn.clicked.connect(self.remove)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
@@ -153,6 +151,21 @@ class ActivityMainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
 
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Actividades", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar", self)
+        client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar", self)
+        client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar", self)
+        client_menu.addAction(self.remove_action)
+
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
         self.left_layout.setContentsMargins(10, 0, 10, 0)
@@ -177,62 +190,6 @@ class ActivityMainUI(QMainWindow):
         # Index.
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
-
-        # Buttons.
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        self.buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
-
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
-
-        self.save_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
-
-        self.remove_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Activity data form.
-        self.form_layout = QGridLayout()
-        self.right_layout.addLayout(self.form_layout)
-
-        # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre")
-
-        self.name_field = Field(String, self.widget, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
-        self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False, enabled=False)
-
-        # Price.
-        self.price_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.price_lbl, 1, 0)
-        config_lbl(self.price_lbl, "Precio*")
-
-        self.price_field = Field(Currency, self.widget)
-        self.form_layout.addWidget(self.price_field, 1, 1)
-        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
-
-        # Description.
-        self.description_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.description_lbl, 2, 0, 1, 2)
-        config_lbl(self.description_lbl, "Descripción")
-
-        self.description_text = QTextEdit(self.widget)
-        self.form_layout.addWidget(self.description_text, 3, 0, 1, 2)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         self.setFixedSize(self.minimumSizeHint())
 
