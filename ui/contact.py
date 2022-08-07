@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDesktopWidget, QTextEdit)
+    QDesktopWidget, QTextEdit, QMenu, QAction)
 
 from gym_manager.contact.core import ContactRepo, Contact, create_contact, update_contact, remove_contact
 from gym_manager.core.base import (
@@ -43,11 +43,11 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        # self.main_ui.create_btn.clicked.connect(self.create_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        # self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
+        # self.main_ui.remove_btn.clicked.connect(self.remove)
         # noinspection PyUnresolvedReferences
         self.main_ui.contact_table.itemSelectionChanged.connect(self.update_contact_info)
 
@@ -76,19 +76,8 @@ class MainController:
     def update_contact_info(self):
         row = self.main_ui.contact_table.currentRow()
         if row != -1:
-            # Fills the form.
-            self.main_ui.name_field.setText(str(self._contacts[row].name))
-            self.main_ui.name_field.setEnabled(self._contacts[row].client is None)
-            self.main_ui.tel1_field.setText(str(self._contacts[row].tel1))
-            self.main_ui.tel2_field.setText(str(self._contacts[row].tel2))
-            self.main_ui.dir_field.setText(str(self._contacts[row].direction))
-            self.main_ui.description_text.setText(str(self._contacts[row].description))
-        else:
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.tel1_field.clear()
-            self.main_ui.tel2_field.clear()
-            self.main_ui.dir_field.clear()
+            pass
+            # self.main_ui.description_text.setText(str(self._contacts[row].description))
 
     def create_ui(self):
         # noinspection PyAttributeOutsideInit
@@ -167,6 +156,21 @@ class ContactMainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
 
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Agenda", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar contacto", self)
+        client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar contacto", self)
+        client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar contacto", self)
+        client_menu.addAction(self.remove_action)
+
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
         self.left_layout.setContentsMargins(10, 0, 10, 0)
@@ -193,80 +197,14 @@ class ContactMainUI(QMainWindow):
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
 
-        # Buttons.
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        self.buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
-
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
-
-        self.save_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
-
-        self.remove_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Contact data form.
-        self.form_layout = QGridLayout()
-        self.right_layout.addLayout(self.form_layout)
-
-        # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre")
-
-        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
-                                optional=False)
-        self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
-
-        # Telephone 1.
-        self.tel1_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.tel1_lbl, 1, 0)
-        config_lbl(self.tel1_lbl, "Teléfono 1")
-
-        self.tel1_field = Field(String, self.widget, optional=True, min_value=utils.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel1_field, 1, 1)
-        config_line(self.tel1_field, place_holder="Teléfono 1", adjust_to_hint=False)
-
-        # Telephone 2.
-        self.tel2_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.tel2_lbl, 2, 0)
-        config_lbl(self.tel2_lbl, "Teléfono 2")
-
-        self.tel2_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel2_field, 2, 1)
-        config_line(self.tel2_field, place_holder="Teléfono 2", adjust_to_hint=False)
-
-        # Direction.
-        self.dir_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.dir_lbl, 3, 0)
-        config_lbl(self.dir_lbl, "Dirección")
-
-        self.dir_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_DIR_CHARS)
-        self.form_layout.addWidget(self.dir_field, 3, 1)
-        config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
-
         # Description.
-        self.description_lbl = QLabel(self)
-        self.form_layout.addWidget(self.description_lbl, 4, 0, alignment=Qt.AlignTop)
+        self.description_lbl = QLabel(self.widget)
+        self.right_layout.addWidget(self.description_lbl)
         config_lbl(self.description_lbl, "Descripción")
 
-        self.description_text = QTextEdit(self)
-        self.form_layout.addWidget(self.description_text, 4, 1)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+        self.description_text = QTextEdit(self.widget)
+        self.right_layout.addWidget(self.description_text)
+        config_line(self.description_text, read_only=True)
 
         self.setFixedSize(self.minimumSizeHint())
 
