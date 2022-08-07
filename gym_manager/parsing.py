@@ -6,7 +6,6 @@ from sqlite3 import Connection
 from gym_manager.contact.core import ContactRepo
 from gym_manager.core.base import String
 from gym_manager.core.persistence import ActivityRepo, ClientRepo, SubscriptionRepo, TransactionRepo, BalanceRepo
-from gym_manager.old_app_info import OldChargesRepo, OldExtractionRepo
 
 
 def _create_temp_tables(db: Connection):
@@ -178,39 +177,6 @@ def _register_subscription_charging(
     subscription_repo.register_raw_charges(sub_charges)
 
 
-def _extract_charges(conn: Connection, transaction_repo: TransactionRepo, since: date):
-    """Sums charges made after *since* for a given (month, year, activity, client). This is used to visualize if a
-    client owes money of a monthly subscription.
-    """
-    query = conn.execute(
-        "select c.id, a.descripcion, strftime('%m', p.fecha), strftime('%Y', p.fecha), sum(p.importe) "
-        "from pago p "
-        "inner join actividad a on p.id_actividad = a.id "
-        "inner join cliente c on p.id_cliente = c.id "
-        "where p.fecha >= (?) "
-        "group by strftime('%m', p.fecha), strftime('%Y', p.fecha), p.id_cliente, a.descripcion", (since,)
-    )
-
-    # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
-    # parsing is done.
-    old_charges = ((raw[0], raw[1], raw[2], raw[3],
-                   transaction_repo.add_raw(("Cobro", raw[0], date(int(raw[3]), int(raw[2]), 1), raw[4], "Efectivo",
-                                             "Admin", f"Cobro por '{raw[3]}' a cliente '{raw[0]}' en app vieja",
-                                             date.min)),
-                    raw[4])
-                   for raw in query)
-
-    OldChargesRepo.add_all(old_charges)
-
-
-def _extract_extractions(conn: Connection, since: date):
-    extractions = (raw for raw in conn.execute("select ic.fecha, u.usuario, ic.salida, ic.descripcion "
-                                               "from item_texto_caja ic "
-                                               "inner join usuario u on u.id = ic.responsable "
-                                               "where ic.salida != 0.0 and ic.fecha > (?)", (since,)))
-    OldExtractionRepo.add_all(extractions)
-
-
 def minus_n_months(date_: date, n: int) -> date:
     """Subtracts *n* months to *date_*.
     """
@@ -247,13 +213,6 @@ def parse(
     # parsing is done.
     balance_repo.add(date.min, String("Admin"), {})
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since, to)
-
-    # The following line will extract charges made in the current month and in the previous one.
-    # OldChargesRepo.create_model()
-    # _extract_charges(conn, transaction_repo, since=to)
-    #
-    # OldExtractionRepo.create_model()  # TODO Remove on corresponding PR
-    # _extract_extractions(conn, since=to)
 
     conn.close()
 
