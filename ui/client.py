@@ -133,9 +133,6 @@ class MainController:
         if row != -1:
             client = self._clients[row]
 
-            self.main_ui.subscribe_combobox.setEnabled(True)
-            self.main_ui.subscribe_btn.setEnabled(True)
-
             subscribeable_activities = itertools.filterfalse(
                 lambda activity: activity.charge_once or client.is_subscribed(activity),
                 self.activities_fn()
@@ -146,6 +143,7 @@ class MainController:
 
             # Disables the combobox if there is no activities to subscribe the client to.
             self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
+            self.main_ui.subscribe_btn.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
             # Disables the button to cancel subscriptions if there is no subscriptions
             self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
 
@@ -158,10 +156,6 @@ class MainController:
             self.main_ui.amount_line.setEnabled(True)
             self.main_ui.month_combobox.setEnabled(True)
             self.main_ui.charge_btn.setEnabled(True)
-
-        else:
-            # Clears the form.
-            self.main_ui.subscription_list.clear()
 
     def create_client(self):
         # noinspection PyAttributeOutsideInit
@@ -243,6 +237,7 @@ class MainController:
 
         # Disables the combobox if there is no activities to subscribe the client to.
         self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
+        self.main_ui.subscribe_btn.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
 
         self.main_ui.cancel_btn.setEnabled(True)
         self.main_ui.year_spinbox.setEnabled(True)
