@@ -300,6 +300,8 @@ class MainController:
             year = self.main_ui.year_spinbox.value()
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
 
+            self.main_ui.amount_line.setText(Currency.fmt(sub.activity.price, symbol=""))
+
             # Filters months according to which radio button is checked.
             month_it = (month for month in range(*from_month_to_month(sub.when, year, date.today())))
             if self.main_ui.only_paid_charges.isChecked():

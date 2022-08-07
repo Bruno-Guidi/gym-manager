@@ -93,7 +93,7 @@ def _charge_sub_description(pair: tuple[Subscription, Transaction]) -> str:
 @log_responsible(action_tag="register_subscription_charge", to_str=_charge_sub_description)
 def register_subscription_charge(
         subscription_repo: SubscriptionRepo, subscription: Subscription, year: int, month: int,
-        transaction: Transaction
+        create_transaction_fn: CreateTransactionFn
 ) -> tuple[Subscription, Transaction]:
     """Registers that the *client* was charged for its *activity* subscription.
 
@@ -102,8 +102,10 @@ def register_subscription_charge(
         subscription: subscription being charged.
         year: year that was charged.
         month: month of the year that was charged.
-        transaction: charge for the subscription.
+        create_transaction_fn: function used to create the associated transaction.
     """
+    transaction = create_transaction_fn()
+
     if subscription.activity.charge_once:
         raise OperationalError(f"The [activity={subscription.activity.name}] is not subscribeable")
     if subscription.client != transaction.client:
