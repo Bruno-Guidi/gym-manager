@@ -250,11 +250,11 @@ def parse(
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since, to)
 
     # The following line will extract charges made in the current month and in the previous one.
-    OldChargesRepo.create_model()
-    _extract_charges(conn, transaction_repo, since=to)
-
-    OldExtractionRepo.create_model()
-    _extract_extractions(conn, since=to)
+    # OldChargesRepo.create_model()
+    # _extract_charges(conn, transaction_repo, since=to)
+    #
+    # OldExtractionRepo.create_model()
+    # _extract_extractions(conn, since=to)
 
     conn.close()
 
