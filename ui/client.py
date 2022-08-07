@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
 from gym_manager.core.base import (
-    String, TextLike, Client, Number, Activity, Subscription, month_range, Currency)
+    String, TextLike, Client, Number, Activity, Subscription, month_range, Currency, from_month_to_month)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
@@ -287,17 +287,8 @@ class MainController:
             year = self.main_ui.year_spinbox.value()
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
 
-            from_, to = 1, 1
-            if year == sub.when.year:
-                from_ = sub.when.month  # The client subscribed to the activity in that year.
-            today = date.today()
-            if year < today.year and year > sub.when.year:
-                to = 13  # The year has passed, meaning there should be transactions for all the months.
-            elif year == today.year:
-                to = today.month + 1  # The year has some remaining months.
-
             # Filters months according to which radio button is checked.
-            month_it = (month for month in range(from_, to))
+            month_it = (month for month in range(*from_month_to_month(sub.when, year, date.today())))
             if self.main_ui.only_paid_charges.isChecked():
                 month_it = itertools.filterfalse(lambda month_: not sub.is_charged(year, month_), month_it)
             if self.main_ui.only_unpaid_charges.isChecked():
