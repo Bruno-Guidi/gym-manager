@@ -173,7 +173,7 @@ class ActivityRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def add(self, activity: Activity):
+    def create(self, name: String, price: Currency, description: String) -> Activity:
         """Adds *activity* to the repository.
         """
         raise NotImplementedError

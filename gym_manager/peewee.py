@@ -256,7 +256,7 @@ class SqliteActivityRepo(ActivityRepo):
 
         self.cache = LRUCache(int, Activity, max_len=cache_len)
 
-    def add(self, activity: Activity):
+    def create(self, name: String, price: Currency, description: String) -> Activity:
         """Adds *activity* to the repository.
 
         Raises:
