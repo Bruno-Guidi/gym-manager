@@ -384,6 +384,7 @@ class Activity:
     description: String = field(compare=False)
     charge_once: bool = field(compare=False, default=False)
     locked: bool = field(compare=False, default=False)
+    removed: bool = field(compare=False, default=False)
 
 
 @dataclass
