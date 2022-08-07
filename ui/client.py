@@ -256,15 +256,9 @@ class MainController:
 
                 api.cancel(self.subscription_repo, self._subscriptions[activity_name])
 
-                self._subscriptions.pop(activity_name)
+                activity = self._subscriptions.pop(activity_name).activity
                 self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
-
-                # Disables the button to cancel subscriptions if there is no subscriptions
-                # self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
-
-                # self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
-                # self.main_ui.subscribe_combobox.setEnabled(True)
-                # self.main_ui.subscribe_btn.setEnabled(True)
+                self.main_ui.subscribe_combobox.addItem(activity.name.as_primitive(), activity)
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
