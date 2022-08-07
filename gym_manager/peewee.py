@@ -591,19 +591,19 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
 
     def add(self, subscription: Subscription):
         SubscriptionTable.create(when=subscription.when, client_id=subscription.client.id,
-                                 activity_id=subscription.activity.name.as_primitive())
+                                 activity_id=subscription.activity.id)
 
     def remove(self, subscription: Subscription):
         SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.id)
-                                         & (SubscriptionTable.activity_id == subscription.activity.name)).execute()
+                                         & (SubscriptionTable.activity_id == subscription.activity.id)).execute()
         SubscriptionCharge.delete().where((SubscriptionCharge.client_id == subscription.client.id)
-                                          & (SubscriptionCharge.activity_id == subscription.activity.name)).execute()
+                                          & (SubscriptionCharge.activity_id == subscription.activity.id)).execute()
 
     def register_transaction(self, subscription: Subscription, year: int, month: int, transaction: Transaction):
         """Registers the charge for the subscription.
         """
         SubscriptionCharge.create(when=date(year, month, 1), client_id=subscription.client.id,
-                                  activity_id=subscription.activity.name.as_primitive(), transaction_id=transaction.id)
+                                  activity_id=subscription.activity.id, transaction_id=transaction.id)
 
     def add_all(self, raw_subscriptions: Iterable[tuple]):
         """Adds the subscriptions in the iterable directly into the repository, without creating Subscription
