@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QCheckBox, QComboBox,
-    QDesktopWidget, QTextEdit)
+    QDesktopWidget, QTextEdit, QMenu, QAction)
 
 from gym_manager.contact.core import ContactRepo, Contact, create_contact, update_contact, remove_contact
 from gym_manager.core.base import (
@@ -43,13 +43,13 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_contact)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_contact)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_action.triggered.connect(self.remove_contact)
         # noinspection PyUnresolvedReferences
-        self.main_ui.contact_table.itemSelectionChanged.connect(self.update_contact_info)
+        self.main_ui.contact_table.itemSelectionChanged.connect(self.update_description)
 
     def _add_contact(self, contact: Contact, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.contact_table.rowCount() == self.main_ui.page_index.page_len:
@@ -73,24 +73,12 @@ class MainController:
         for contact in self.contact_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, name=name):
             self._add_contact(contact, check_filters=False)  # Contacts are filtered in the repo.
 
-    def update_contact_info(self):
+    def update_description(self):
         row = self.main_ui.contact_table.currentRow()
         if row != -1:
-            # Fills the form.
-            self.main_ui.name_field.setText(str(self._contacts[row].name))
-            self.main_ui.name_field.setEnabled(self._contacts[row].client is None)
-            self.main_ui.tel1_field.setText(str(self._contacts[row].tel1))
-            self.main_ui.tel2_field.setText(str(self._contacts[row].tel2))
-            self.main_ui.dir_field.setText(str(self._contacts[row].direction))
             self.main_ui.description_text.setText(str(self._contacts[row].description))
-        else:
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.tel1_field.clear()
-            self.main_ui.tel2_field.clear()
-            self.main_ui.dir_field.clear()
 
-    def create_ui(self):
+    def create_contact(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.contact_repo, self.client_repo)
         self._create_ui.exec_()
@@ -98,39 +86,29 @@ class MainController:
             self._add_contact(self._create_ui.controller.contact, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
 
-    def save_changes(self):
+    def edit_contact(self):
         row = self.main_ui.contact_table.currentRow()
         if row == -1:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        # noinspection PyTypeChecker
-        valid_descr, descr = valid_text_value(self.main_ui.description_text, utils.ACTIVITY_DESCR_CHARS,
-                                              optional=True)
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel1_field.valid_value(),
-                    self.main_ui.tel2_field.valid_value(), self.main_ui.dir_field.valid_value(), valid_descr]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        else:
-            if Dialog.confirm("¿Desea modificar la información del contacto?"):
-                contact = self._contacts[row]
-                # noinspection PyTypeChecker
-                update_contact(self.contact_repo, contact, self.main_ui.name_field.value(),
-                               self.main_ui.tel1_field.value(), self.main_ui.tel2_field.value(),
-                               self.main_ui.dir_field.value(), descr)
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.contact_repo, self._contacts[row])
+        self._edit_ui.exec_()
 
-                # Updates the ui.
-                fill_cell(self.main_ui.contact_table, row, 0, contact.name, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 1, contact.tel1, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 2, contact.tel2, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 3, contact.direction, data_type=str,
-                          increase_row_count=False)
+        # Updates the ui.
+        fill_cell(self.main_ui.contact_table, row, 0, self._contacts[row].name, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.contact_table, row, 1, self._contacts[row].tel1, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.contact_table, row, 2, self._contacts[row].tel2, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.contact_table, row, 3, self._contacts[row].direction, data_type=str,
+                  increase_row_count=False)
 
-                Dialog.info("Éxito", f"El contacto '{contact.name}' fue actualizado correctamente.")
+        self.update_description()
 
-    def remove(self):
+    def remove_contact(self):
         row = self.main_ui.contact_table.currentRow()
         if row == -1:
-            Dialog.info("Error", "Seleccione un contacto.")
+            Dialog.info("Error", "Seleccione un contacto en la tabla.")
             return
 
         contact = self._contacts[row]
@@ -140,11 +118,7 @@ class MainController:
             self._contacts.pop(row)
             self.fill_contact_table([])  # Refreshes the table.
 
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.tel1_field.clear()
-            self.main_ui.tel2_field.clear()
-            self.main_ui.dir_field.clear()
+            # Clears the description.
             self.main_ui.description_text.clear()
 
             Dialog.info("Éxito", f"El contacto '{contact.name}' fue eliminado correctamente.")
@@ -167,6 +141,21 @@ class ContactMainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
 
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Agenda", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar contacto", self)
+        client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar contacto", self)
+        client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar contacto", self)
+        client_menu.addAction(self.remove_action)
+
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
         self.left_layout.setContentsMargins(10, 0, 10, 0)
@@ -175,8 +164,8 @@ class ContactMainUI(QMainWindow):
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
-        self.right_layout.setContentsMargins(10, 0, 10, 0)
-        self.right_layout.setAlignment(Qt.AlignCenter)
+        self.right_layout.setContentsMargins(0, 80, 0, 0)
+        self.right_layout.setAlignment(Qt.AlignTop)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
@@ -193,80 +182,14 @@ class ContactMainUI(QMainWindow):
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
 
-        # Buttons.
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        self.buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
-
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
-
-        self.save_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
-
-        self.remove_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Contact data form.
-        self.form_layout = QGridLayout()
-        self.right_layout.addLayout(self.form_layout)
-
-        # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre")
-
-        self.name_field = Field(String, self.widget, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
-                                optional=False)
-        self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
-
-        # Telephone 1.
-        self.tel1_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.tel1_lbl, 1, 0)
-        config_lbl(self.tel1_lbl, "Teléfono 1")
-
-        self.tel1_field = Field(String, self.widget, optional=True, min_value=utils.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel1_field, 1, 1)
-        config_line(self.tel1_field, place_holder="Teléfono 1", adjust_to_hint=False)
-
-        # Telephone 2.
-        self.tel2_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.tel2_lbl, 2, 0)
-        config_lbl(self.tel2_lbl, "Teléfono 2")
-
-        self.tel2_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_TEL_CHARS)
-        self.form_layout.addWidget(self.tel2_field, 2, 1)
-        config_line(self.tel2_field, place_holder="Teléfono 2", adjust_to_hint=False)
-
-        # Direction.
-        self.dir_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.dir_lbl, 3, 0)
-        config_lbl(self.dir_lbl, "Dirección")
-
-        self.dir_field = Field(String, self.widget, optional=True, max_len=utils.CLIENT_DIR_CHARS)
-        self.form_layout.addWidget(self.dir_field, 3, 1)
-        config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
-
         # Description.
-        self.description_lbl = QLabel(self)
-        self.form_layout.addWidget(self.description_lbl, 4, 0, alignment=Qt.AlignTop)
+        self.description_lbl = QLabel(self.widget)
+        self.right_layout.addWidget(self.description_lbl)
         config_lbl(self.description_lbl, "Descripción")
 
-        self.description_text = QTextEdit(self)
-        self.form_layout.addWidget(self.description_text, 4, 1)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+        self.description_text = QTextEdit(self.widget)
+        self.right_layout.addWidget(self.description_text)
+        config_line(self.description_text, read_only=True)
 
         self.setFixedSize(self.minimumSizeHint())
 
@@ -405,6 +328,124 @@ class CreateUI(QDialog):
 
         self.description_text = QTextEdit(self)
         self.form_layout.addWidget(self.description_text, 5, 1)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, contact_repo: ContactRepo, contact: Contact) -> None:
+        self.edit_ui = edit_ui
+
+        self.contact = contact
+        self.contact_repo = contact_repo
+
+        self.edit_ui.name_field.setEnabled(self.contact.client is None)
+
+        self.edit_ui.name_field.setText(contact.name.as_primitive())
+        self.edit_ui.tel1_field.setText(contact.tel1.as_primitive())
+        self.edit_ui.tel2_field.setText(contact.tel2.as_primitive())
+        self.edit_ui.dir_field.setText(contact.direction.as_primitive())
+        self.edit_ui.description_text.setText(contact.description.as_primitive())
+
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_contact)
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
+
+    # noinspection PyTypeChecker
+    def edit_contact(self):
+        valid_descr, descr = valid_text_value(self.edit_ui.description_text, utils.ACTIVITY_DESCR_CHARS,
+                                              optional=True)
+        if not all([self.edit_ui.name_field.valid_value(), self.edit_ui.tel1_field.valid_value(),
+                    self.edit_ui.tel2_field.valid_value(), self.edit_ui.dir_field.valid_value(), valid_descr]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+            return
+        else:
+            update_contact(self.contact_repo, self.contact, self.edit_ui.name_field.value(),
+                           self.edit_ui.tel1_field.value(), self.edit_ui.tel2_field.value(),
+                           self.edit_ui.dir_field.value(), descr)
+            Dialog.info("Éxito", f"El contacto '{self.contact.name}' fue editado correctamente.")
+            self.edit_ui.name_field.window().close()
+
+
+class EditUI(QDialog):
+    def __init__(self, contact_repo: ContactRepo, contact: Contact) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = EditController(self, contact_repo, contact)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Editar contacto")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Nombre")
+
+        self.name_field = Field(String, self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # Telephone 1.
+        self.tel1_lbl = QLabel(self)
+        self.form_layout.addWidget(self.tel1_lbl, 1, 0)
+        config_lbl(self.tel1_lbl, "Teléfono 1")
+
+        self.tel1_field = Field(String, self, optional=True, min_value=utils.CLIENT_TEL_CHARS)
+        self.form_layout.addWidget(self.tel1_field, 1, 1)
+        config_line(self.tel1_field, place_holder="Teléfono 1", adjust_to_hint=False)
+
+        # Telephone 2.
+        self.tel2_lbl = QLabel(self)
+        self.form_layout.addWidget(self.tel2_lbl, 2, 0)
+        config_lbl(self.tel2_lbl, "Teléfono 2")
+
+        self.tel2_field = Field(String, self, optional=True, max_len=utils.CLIENT_TEL_CHARS)
+        self.form_layout.addWidget(self.tel2_field, 2, 1)
+        config_line(self.tel2_field, place_holder="Teléfono 2", adjust_to_hint=False)
+
+        # Direction.
+        self.dir_lbl = QLabel(self)
+        self.form_layout.addWidget(self.dir_lbl, 3, 0)
+        config_lbl(self.dir_lbl, "Dirección")
+
+        self.dir_field = Field(String, self, optional=True, max_len=utils.CLIENT_DIR_CHARS)
+        self.form_layout.addWidget(self.dir_field, 3, 1)
+        config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
+
+        # Description.
+        self.description_lbl = QLabel(self)
+        self.form_layout.addWidget(self.description_lbl, 4, 0, alignment=Qt.AlignTop)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 4, 1)
         config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
 
         # Vertical spacer.

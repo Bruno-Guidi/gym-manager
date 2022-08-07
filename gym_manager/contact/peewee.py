@@ -72,7 +72,7 @@ class SqliteContactRepo(ContactRepo):
         for record in query:
             client, client_record = None, record.client
             if client_record is not None:
-                client = ClientView(client_record.id, client_record.cli_name, "SqliteContactRepo.all",
+                client = ClientView(client_record.id, String(client_record.cli_name), "SqliteContactRepo.all",
                                     Number(client_record.dni if client_record.dni is not None else ""))
             yield Contact(record.id, String(record.c_name), String(record.tel1), String(record.tel2),
                           String(record.direction), String(record.description), client)
