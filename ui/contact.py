@@ -179,8 +179,8 @@ class ContactMainUI(QMainWindow):
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
-        self.right_layout.setContentsMargins(10, 0, 10, 0)
-        self.right_layout.setAlignment(Qt.AlignCenter)
+        self.right_layout.setContentsMargins(0, 80, 0, 0)
+        self.right_layout.setAlignment(Qt.AlignTop)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
