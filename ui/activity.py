@@ -298,10 +298,10 @@ class EditController:
 
 
 class EditUI(QDialog):
-    def __init__(self, activity_repo: ActivityRepo) -> None:
+    def __init__(self, activity_repo: ActivityRepo, activity: Activity) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, activity_repo)
+        self.controller = EditController(self, activity_repo, activity)
 
     def _setup_ui(self):
         self.setWindowTitle("Editar actividad")
