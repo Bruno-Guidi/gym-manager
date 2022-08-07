@@ -237,7 +237,8 @@ class SqliteClientRepo(ClientRepo):
 
 
 class ActivityTable(Model):
-    act_name = CharField(primary_key=True)
+    id = IntegerField(primary_key=True)
+    act_name = CharField()
     price = CharField()
     charge_once = BooleanField()
     description = TextField()
