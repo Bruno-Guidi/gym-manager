@@ -362,12 +362,11 @@ class CreateUI(QDialog):
 
 class EditController:
 
-    def __init__(self, edit_ui: EditUI, contact_repo: ContactRepo, client_repo: ClientRepo) -> None:
+    def __init__(self, edit_ui: EditUI, contact_repo: ContactRepo, contact: Contact) -> None:
         self.edit_ui = edit_ui
 
-        self.contact: Contact | None = None
+        self.contact = contact
         self.contact_repo = contact_repo
-        self.client_repo = client_repo
 
         self.edit_ui.name_field.setEnabled(self.contact.client is None)
 
@@ -393,10 +392,10 @@ class EditController:
 
 
 class EditUI(QDialog):
-    def __init__(self, contact_repo: ContactRepo, client_repo: ClientRepo) -> None:
+    def __init__(self, contact_repo: ContactRepo, contact: Contact) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, contact_repo, client_repo)
+        self.controller = CreateController(self, contact_repo, contact)
 
     def _setup_ui(self):
         self.setWindowTitle("Editar contacto")
