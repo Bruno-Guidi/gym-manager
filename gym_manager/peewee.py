@@ -329,11 +329,11 @@ class SqliteActivityRepo(ActivityRepo):
             activity: Activity
             # The activity name and description were validated when it was created.
             activity_name = String(record.act_name)
-            if activity_name not in self.cache:
+            if record.id not in self.cache:
                 logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={activity_name}] from "
                                                           f"queried data.")
                 self.cache[activity_name] = Activity(
-                    activity_name, Currency(record.price), String(record.description, optional=True),
+                    record.id, activity_name, Currency(record.price), String(record.description, optional=True),
                     record.charge_once, record.locked
                 )
             yield self.cache[activity_name]
