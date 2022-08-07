@@ -296,23 +296,22 @@ class MainController:
             elif year == today.year:
                 to = today.month + 1  # The year has some remaining months.
 
-            # Creates the callable to filter the months.
-            predicate = None
+            # Filters months according to which radio button is checked.
+            month_it = (month for month in range(from_, to))
             if self.main_ui.only_paid_charges.isChecked():
-                predicate = lambda subscription, year_, month_: subscription.is_charged(year_, month_)
-            elif self.main_ui.only_unpaid_charges.isChecked():
-                predicate = lambda subscription, year_, month_: not subscription.is_charged(year_, month_)
+                month_it = itertools.filterfalse(lambda month_: not sub.is_charged(year, month_), month_it)
+            if self.main_ui.only_unpaid_charges.isChecked():
+                month_it = itertools.filterfalse(lambda month_: sub.is_charged(year, month_), month_it)
 
-            for month in range(from_, to):
-                if predicate is None or predicate(sub, year, month):
-                    row = self.main_ui.charge_table.rowCount()
-                    fill_cell(self.main_ui.charge_table, row, 0, f"{month}/{year}", int)
-                    transaction_when, transaction_amount = "-", "-"
-                    if sub.is_charged(year, month):
-                        transaction_when = sub.transaction(year, month).when.strftime(utils.DATE_FORMAT)
-                        transaction_amount = sub.transaction(year, month).amount
-                    fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
-                    fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
+            for month in month_it:
+                row = self.main_ui.charge_table.rowCount()
+                fill_cell(self.main_ui.charge_table, row, 0, f"{month}/{year}", int)
+                transaction_when, transaction_amount = "-", "-"
+                if sub.is_charged(year, month):
+                    transaction_when = sub.transaction(year, month).when.strftime(utils.DATE_FORMAT)
+                    transaction_amount = sub.transaction(year, month).amount
+                fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
+                fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
