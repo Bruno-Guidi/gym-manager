@@ -42,6 +42,8 @@ class MainController:
         self.main_ui.edit_action.triggered.connect(self.edit_activity)
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_action.triggered.connect(self.remove_activity)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.activity_table.itemSelectionChanged.connect(self.update_description)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
@@ -91,6 +93,7 @@ class MainController:
                   increase_row_count=False)
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
                   data_type=int, increase_row_count=False)
+        self.main_ui.description_text.setText(activity.description.as_primitive())
 
     def remove_activity(self):
         if self.main_ui.activity_table.currentRow() == -1:
@@ -110,6 +113,15 @@ class MainController:
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
+
+            self.main_ui.description_text.clear()
+
+    def update_description(self):
+        row = self.main_ui.activity_table.currentRow()
+        if row != -1:
+            self.main_ui.description_text.setText(
+                self._activities[self.main_ui.activity_table.item(row, 0).text()].description.as_primitive()
+            )
 
 
 class ActivityMainUI(QMainWindow):
@@ -148,7 +160,8 @@ class ActivityMainUI(QMainWindow):
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
-        self.right_layout.setContentsMargins(10, 0, 10, 0)
+        self.right_layout.setContentsMargins(0, 80, 0, 0)
+        self.right_layout.setAlignment(Qt.AlignTop)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
@@ -164,6 +177,15 @@ class ActivityMainUI(QMainWindow):
         # Index.
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
+
+        # Description.
+        self.description_lbl = QLabel(self.widget)
+        self.right_layout.addWidget(self.description_lbl)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self.widget)
+        self.right_layout.addWidget(self.description_text)
+        config_line(self.description_text, read_only=True)
 
         self.setFixedSize(self.minimumSizeHint())
 
