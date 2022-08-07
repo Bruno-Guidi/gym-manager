@@ -106,7 +106,7 @@ class MainController:
         if Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?"):
             self.activity_repo.remove(activity)
 
-            self._activities.pop(activity.name.as_primitive())
+            self._activities.pop(self.main_ui.activity_table.currentRow())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
             Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
