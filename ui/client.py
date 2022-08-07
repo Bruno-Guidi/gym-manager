@@ -171,7 +171,6 @@ class MainController:
         client = self._edit_ui.controller.client
         fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
         dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
-        # self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
         fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
 
