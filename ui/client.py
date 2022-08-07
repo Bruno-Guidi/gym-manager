@@ -466,7 +466,7 @@ class ClientMainUI(QMainWindow):
 
         self.cancel_btn = QPushButton(self.widget)
         self.right_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Eliminar", icon_path="ui/resources/minus.png", icon_size=24)
+        config_btn(self.cancel_btn, "Eliminar", icon_path=r"ui/resources/trash_can.png", icon_size=24)
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
@@ -541,7 +541,7 @@ class ClientMainUI(QMainWindow):
         # Charge button
         self.charge_btn = QPushButton(self.widget)
         self.charge_form_layout.addWidget(self.charge_btn, 0, 2, 2, 1, alignment=Qt.AlignCenter)
-        config_btn(self.charge_btn, "Cobrar")
+        config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
 
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
