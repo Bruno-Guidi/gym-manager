@@ -313,7 +313,7 @@ class MainController:
                 transaction_when, transaction_amount = "-", "-"
                 if sub.is_charged(year, month):
                     transaction_when = sub.transaction(year, month).when.strftime(utils.DATE_FORMAT)
-                    transaction_amount = sub.transaction(year, month).amount
+                    transaction_amount = Currency.fmt(sub.transaction(year, month).amount)
                 fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
                 fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
 
