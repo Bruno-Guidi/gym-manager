@@ -293,6 +293,7 @@ class EditController:
             self.activity.name = self.edit_ui.name_field.value()
             self.activity.price = self.edit_ui.price_field.value()
             self.activity.description = descr
+            self.activity_repo.update(self.activity)
             Dialog.info("Éxito", f"La categoría '{self.edit_ui.name_field.value()}' fue editada correctamente.")
             self.edit_ui.name_field.window().close()
 
