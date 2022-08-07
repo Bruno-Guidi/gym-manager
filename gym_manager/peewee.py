@@ -357,7 +357,7 @@ class SqliteActivityRepo(ActivityRepo):
         """
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_activities, 50):
-                ActivityTable.insert_many(batch, fields=[ActivityTable.act_name, ActivityTable.price,
+                ActivityTable.insert_many(batch, fields=[ActivityTable.id, ActivityTable.act_name, ActivityTable.price,
                                                          ActivityTable.charge_once, ActivityTable.description,
                                                          ActivityTable.locked]).execute()
 
