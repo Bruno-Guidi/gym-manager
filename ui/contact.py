@@ -401,10 +401,6 @@ class EditUI(QDialog):
         self.setWindowTitle("Editar contacto")
         self.layout = QVBoxLayout(self)
 
-        # Filtering.
-        self.filter_header = FilterHeader(show_clear_button=False)
-        self.layout.addWidget(self.filter_header)
-
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
@@ -412,12 +408,12 @@ class EditUI(QDialog):
 
         # Name.
         self.name_lbl = QLabel(self)
-        self.form_layout.addWidget(self.name_lbl, 1, 0)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
         config_lbl(self.name_lbl, "Nombre")
 
         self.name_field = Field(String, self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
                                 optional=False)
-        self.form_layout.addWidget(self.name_field, 1, 1)
+        self.form_layout.addWidget(self.name_field, 0, 1)
         config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
 
         # Telephone 1.
