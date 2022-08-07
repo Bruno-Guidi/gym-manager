@@ -165,9 +165,8 @@ def _register_subscription_charging(
     """This function extracts charges from the old database. If there is at least one charge in a given (month, year),
     then the given monthly subscription is considered charged, no matter the total amount that was charged.
     """
-    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, a.descripcion "
-                                           "from pago p inner join actividad a on p.id_actividad = a.id "
-                                           "where p.fecha >= (?) and p.fecha < (?)", (since, to)))
+    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_actividad "
+                                           "from pago p where p.fecha >= (?) and p.fecha < (?)", (since, to)))
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
     # parsing is done.
