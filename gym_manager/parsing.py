@@ -119,9 +119,9 @@ def transfer_backup(backup_path: str, conn: Connection):
 
 
 def _insert_activities(conn: Connection, activity_repo: ActivityRepo):
-    # (name, price, charge_once, description, locked)
-    gen = ((raw[0], "0", False, raw[1], False) for raw in conn.execute("SELECT a.descripcion, a.texto "
-                                                                       "FROM actividad a"))
+    # (id, name, price, charge_once, description, locked)
+    gen = ((raw[0], raw[1], "0", False, raw[2], False) for raw in conn.execute("SELECT a.id, a.descripcion, a.texto "
+                                                                               "FROM actividad a"))
     activity_repo.add_all(gen)
 
 
