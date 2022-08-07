@@ -102,7 +102,7 @@ class MainController:
 
     def remove(self):
         if self.main_ui.activity_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+            Dialog.info("Error", "Seleccione una actividad en la tabla.")
             return
 
         activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
@@ -116,11 +116,6 @@ class MainController:
 
             self._activities.pop(activity.name.as_primitive())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
-
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
-            self.main_ui.description_text.clear()
 
             Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
 
