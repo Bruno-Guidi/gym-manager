@@ -102,8 +102,13 @@ class MainController:
         self.main_ui.subscribe_combobox.setEnabled(enable_creation)
         self.main_ui.subscribe_btn.setEnabled(enable_creation)
 
-        enable_cancelling = len(self.main_ui.subscription_list) > 0
-        self.main_ui.cancel_btn.setEnabled(enable_cancelling)
+        self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) > 0)
+
+        sub_selected = self.main_ui.subscription_list.currentRow() != -1
+        self.main_ui.year_spinbox.setEnabled(sub_selected)
+        self.main_ui.all_charges.setEnabled(sub_selected)
+        self.main_ui.only_paid_charges.setEnabled(sub_selected)
+        self.main_ui.only_unpaid_charges.setEnabled(sub_selected)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
@@ -210,7 +215,7 @@ class MainController:
             self.main_ui.subscription_list.addItem(item)
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
-        # self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
+        self._enable_subscribe()
 
     def create_subscription(self):
         client = self._clients[self.main_ui.client_table.currentRow()]
@@ -224,18 +229,13 @@ class MainController:
         # Removes the added activity from the activities that can be subscribed to.
         self.main_ui.subscribe_combobox.removeItem(self.main_ui.subscribe_combobox.currentIndex())
 
-        # Disables the combobox if there is no activities to subscribe the client to.
-        # self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-        # self.main_ui.subscribe_btn.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-        #
-        # self.main_ui.cancel_btn.setEnabled(True)
-        # self.main_ui.year_spinbox.setEnabled(True)
-
         # Adds the new subscription to the list.
         item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
         item.setFont(self.main_ui.font)
         self.main_ui.subscription_list.addItem(item)
         self._subscriptions[subscription.activity.name.as_primitive()] = subscription
+
+        self._enable_subscribe()
 
     def cancel_subscription(self):
         if self.main_ui.client_table.currentRow() == -1:
@@ -266,12 +266,9 @@ class MainController:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
-    def fill_charge_table(self):
-        # self.main_ui.year_spinbox.setEnabled(True)
-        # self.main_ui.all_charges.setEnabled(True)
-        # self.main_ui.only_paid_charges.setEnabled(True)
-        # self.main_ui.only_unpaid_charges.setEnabled(True)
+        self._enable_subscribe()
 
+    def fill_charge_table(self):
         self.main_ui.charge_table.setRowCount(0)
 
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
@@ -296,6 +293,8 @@ class MainController:
                     transaction_amount = Currency.fmt(sub.transaction(year, month).amount)
                 fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
                 fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
+
+        self._enable_subscribe()
 
     def fill_unpaid_months(self):
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
