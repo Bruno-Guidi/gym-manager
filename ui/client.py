@@ -68,6 +68,10 @@ class MainController:
         self.main_ui.all_charges.setEnabled(False)
         self.main_ui.only_paid_charges.setEnabled(False)
         self.main_ui.only_unpaid_charges.setEnabled(False)
+        self.main_ui.method_combobox.setEnabled(False)
+        self.main_ui.amount_line.setEnabled(False)
+        self.main_ui.month_combobox.setEnabled(False)
+        self.main_ui.charge_btn.setEnabled(False)
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -150,6 +154,11 @@ class MainController:
             self.main_ui.all_charges.setEnabled(False)
             self.main_ui.only_paid_charges.setEnabled(False)
             self.main_ui.only_unpaid_charges.setEnabled(False)
+
+            self.main_ui.method_combobox.setEnabled(True)
+            self.main_ui.amount_line.setEnabled(True)
+            self.main_ui.month_combobox.setEnabled(True)
+            self.main_ui.charge_btn.setEnabled(True)
 
         else:
             # Clears the form.
@@ -328,7 +337,7 @@ class MainController:
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
-            Dialog.info("Error", "Seleccione un cliente.")
+            Dialog.info("Error", "Seleccione un cliente en la tabla.")
             return
 
         if self._clients[row].n_subscriptions() == 0:
