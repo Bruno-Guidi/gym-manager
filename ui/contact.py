@@ -76,8 +76,7 @@ class MainController:
     def update_contact_info(self):
         row = self.main_ui.contact_table.currentRow()
         if row != -1:
-            pass
-            # self.main_ui.description_text.setText(str(self._contacts[row].description))
+            self.main_ui.description_text.setText(str(self._contacts[row].description))
 
     def create_contact(self):
         # noinspection PyAttributeOutsideInit
