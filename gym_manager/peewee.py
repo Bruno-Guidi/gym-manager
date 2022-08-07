@@ -257,19 +257,15 @@ class SqliteActivityRepo(ActivityRepo):
 
         self.cache = LRUCache(int, Activity, max_len=cache_len)
 
-    def create(self, name: String, price: Currency, description: String) -> Activity:
-        """Adds *activity* to the repository.
-
-        Raises:
-            PersistenceError if there is an existing activity with *activity.name*.
+    def create(
+            self, name: String, price: Currency, description: String, charge_once: bool = False, locked: bool = False
+    ) -> Activity:
+        """Creates an activity with the given data.
         """
-        if self.exists(activity.name):
-            raise PersistenceError(f"An activity with [activity.name={activity.name}] already exists.")
-
-        ActivityTable.create(act_name=activity.name.as_primitive(), price=str(activity.price),
-                             charge_once=activity.charge_once, description=activity.description.as_primitive(),
-                             locked=activity.locked)
-        self.cache[activity.name] = activity
+        record = ActivityTable.create(act_name=name.as_primitive(), price=str(price), charge_once=charge_once,
+                                      description=description.as_primitive(), locked=locked)
+        self.cache[record.id] = Activity(record.id, name, price, description, charge_once, locked)
+        return self.cache[record.id]
 
     def exists(self, name: String) -> bool:
         if name in self.cache:  # First search in the cache.
