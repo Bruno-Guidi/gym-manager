@@ -395,7 +395,7 @@ class EditUI(QDialog):
     def __init__(self, contact_repo: ContactRepo, contact: Contact) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, contact_repo, contact)
+        self.controller = EditController(self, contact_repo, contact)
 
     def _setup_ui(self):
         self.setWindowTitle("Editar contacto")
