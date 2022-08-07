@@ -119,7 +119,7 @@ def register_subscription_charge(
         f"{subscription.activity.price}]."
     )
 
-    return subscription
+    return subscription, transaction
 
 
 def _extract_description(transaction: Transaction) -> str:
