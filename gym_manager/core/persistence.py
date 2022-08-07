@@ -173,8 +173,10 @@ class ActivityRepo(abc.ABC):
     """
 
     @abc.abstractmethod
-    def add(self, activity: Activity):
-        """Adds *activity* to the repository.
+    def create(
+            self, name: String, price: Currency, description: String, charge_once: bool = False, locked: bool = False
+    ) -> Activity:
+        """Creates an activity with the given data.
         """
         raise NotImplementedError
 
@@ -183,11 +185,11 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, name: String) -> Activity:
-        """Retrieves the activity with the given *id* in the repository, if it exists.
+    def get(self, id_: int) -> Activity:
+        """Retrieves the activity with the given *id_* in the repository, if it exists.
 
         Raises:
-            KeyError if there is no activity with the given *id*.
+            KeyError if there is no activity with the given *id_*.
         """
         raise NotImplementedError
 

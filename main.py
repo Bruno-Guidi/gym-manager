@@ -49,13 +49,11 @@ def main():
 
     # Booking initialization.
     booking_activity: Activity
-    booking_activity_name = String("Padel", max_len=10)
-    if activity_repo.exists(booking_activity_name):
-        booking_activity = activity_repo.get(booking_activity_name)
+    if activity_repo.exists(1):
+        booking_activity = activity_repo.get(1)
     else:
-        booking_activity = Activity(booking_activity_name, Currency(100.00), String("d", max_len=10),
-                                    charge_once=True, locked=True)
-        activity_repo.add(booking_activity)
+        booking_activity = activity_repo.create(String("Padel"), Currency(100.00), String("d", max_len=10),
+                                                charge_once=True, locked=True)
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)
     booking_system = BookingSystem(
         booking_activity, booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),

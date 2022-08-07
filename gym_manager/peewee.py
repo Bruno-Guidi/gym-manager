@@ -79,7 +79,7 @@ class SqliteClientRepo(ClientRepo):
         subs = {}
         for sub_record in record.subscriptions:
             subs[sub_record.activity_id] = Subscription(sub_record.when, client,
-                                                        self.activity_repo.get(String(sub_record.activity_id)))
+                                                        self.activity_repo.get(sub_record.activity_id))
         for sub_charge in record.subscriptions_charges:
             year, month = sub_charge.when.year, sub_charge.when.month
             trans_record = sub_charge.transaction
@@ -167,6 +167,23 @@ class SqliteClientRepo(ClientRepo):
             self._views[client.id].dni = client.dni
             self._views[client.id].name = client.name
 
+    def _create_subscriptions(self, client: Client, subscriptions, subscriptions_charges):
+        subs = {}
+        for sub_record in subscriptions:
+            subs[sub_record.activity_id] = Subscription(sub_record.when, client,
+                                                        self.activity_repo.get(sub_record.activity_id))
+        for sub_charge in subscriptions_charges:
+            year, month = sub_charge.when.year, sub_charge.when.month
+            trans_record = sub_charge.transaction
+            subs[sub_charge.activity_id].add_transaction(
+                year, month, self.transaction_repo.from_data(
+                    trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
+                    trans_record.method, trans_record.responsible, trans_record.description, client,
+                    trans_record.balance_id
+                )
+            )
+        return subs.values()
+
     def all(
             self, page: int = 1, page_len: int | None = None, filters: list[FilterValuePair] | None = None
     ) -> Generator[Client, None, None]:
@@ -197,22 +214,13 @@ class SqliteClientRepo(ClientRepo):
                 client = Client(record.id, String(record.cli_name), record.admission, record.birth_day,
                                 Number(record.dni if record.dni is not None else ""))
                 self.cache[record.id] = client
-                subs = {}
-                for sub_record in record.subscriptions:
-                    subs[sub_record.activity_id] = Subscription(sub_record.when, client,
-                                                                self.activity_repo.get(String(sub_record.activity_id)))
-                for sub_charge in record.subscriptions_charges:
-                    year, month = sub_charge.when.year, sub_charge.when.month
-                    trans_record = sub_charge.transaction
-                    subs[sub_charge.activity_id].add_transaction(
-                        year, month, self.transaction_repo.from_data(
-                            trans_record.id, trans_record.type, trans_record.when, trans_record.amount,
-                            trans_record.method, trans_record.responsible, trans_record.description, client,
-                            trans_record.balance_id
-                        )
-                    )
-                for subscription in subs.values():
+                for subscription in self._create_subscriptions(client, record.subscriptions,
+                                                               record.subscriptions_charges):
                     client.add(subscription)
+            else:
+                removed_activities = [subscription.activity for subscription in self.cache[record.id].subscriptions()]
+                for activity in removed_activities:
+                    self.cache[record.id].unsubscribe(activity)
             yield self.cache[record.id]
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
@@ -237,7 +245,8 @@ class SqliteClientRepo(ClientRepo):
 
 
 class ActivityTable(Model):
-    act_name = CharField(primary_key=True)
+    id = IntegerField(primary_key=True)
+    act_name = CharField()
     price = CharField()
     charge_once = BooleanField()
     description = TextField()
@@ -254,46 +263,43 @@ class SqliteActivityRepo(ActivityRepo):
     def __init__(self, cache_len: int = 50) -> None:
         DATABASE_PROXY.create_tables([ActivityTable, SubscriptionTable, SubscriptionCharge])
 
-        self.cache = LRUCache(String, Activity, max_len=cache_len)
+        self.cache = LRUCache(int, Activity, max_len=cache_len)
 
-    def add(self, activity: Activity):
-        """Adds *activity* to the repository.
-
-        Raises:
-            PersistenceError if there is an existing activity with *activity.name*.
+    def create(
+            self, name: String, price: Currency, description: String, charge_once: bool = False, locked: bool = False
+    ) -> Activity:
+        """Creates an activity with the given data.
         """
-        if self.exists(activity.name):
-            raise PersistenceError(f"An activity with [activity.name={activity.name}] already exists.")
+        record = ActivityTable.create(act_name=name.as_primitive(), price=str(price), charge_once=charge_once,
+                                      description=description.as_primitive(), locked=locked)
+        self.cache[record.id] = Activity(record.id, name, price, description, charge_once, locked)
+        return self.cache[record.id]
 
-        ActivityTable.create(act_name=activity.name.as_primitive(), price=str(activity.price),
-                             charge_once=activity.charge_once, description=activity.description.as_primitive(),
-                             locked=activity.locked)
-        self.cache[activity.name] = activity
-
-    def exists(self, name: String) -> bool:
-        if name in self.cache:  # First search in the cache.
+    def exists(self, id_: int) -> bool:
+        if id_ in self.cache:  # First search in the cache.
             return True
 
-        return ActivityTable.get_or_none(act_name=name) is not None  # Then search in the db.
+        return ActivityTable.get_or_none(id=id_) is not None  # Then search in the db.
 
-    def get(self, name: String) -> Activity:
-        """Retrieves the activity with the given *name* in the repository, if it exists.
+    def get(self, id_: int) -> Activity:
+        """Retrieves the activity with the given *id_* in the repository, if it exists.
 
         Raises:
-            KeyError if there is no activity with the given *name*.
+            KeyError if there is no activity with the given *id_*.
         """
-        if name in self.cache:
-            return self.cache[name]
+        if id_ in self.cache:
+            return self.cache[id_]
 
-        record = ActivityTable.get_or_none(act_name=name)
+        record = ActivityTable.get_or_none(id=id_)
         if record is None:
-            raise KeyError(f"There is no activity with the id '{name}'")
+            raise KeyError(f"There is no activity with the id '{id_}'")
 
         # The activity description was validated when it was created.
-        self.cache[name] = Activity(name, Currency(record.price), String(record.description, optional=True),
-                                    record.charge_once, record.locked)
-        logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={name}] from queried data.")
-        return self.cache[name]
+        self.cache[id_] = Activity(id_, String(record.act_name), Currency(record.price),
+                                   String(record.description, optional=True), record.charge_once, record.locked)
+        logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={self.cache[id_]}] from queried "
+                                                  f"data.")
+        return self.cache[id_]
 
     def remove(self, activity: Activity):
         """Removes the given *activity*.
@@ -304,14 +310,15 @@ class SqliteActivityRepo(ActivityRepo):
         if activity.locked:
             raise PersistenceError(f"The [activity.name={activity.name}] cannot be removed because its locked.")
 
-        self.cache.pop(activity.name)
-        ActivityTable.delete_by_id(activity.name)
+        self.cache.pop(activity.id)
+        ActivityTable.delete_by_id(activity.id)
 
         return activity
 
     def update(self, activity: Activity):
-        record = ActivityTable.get_by_id(activity.name.as_primitive())
-        record.price = activity.price.as_primitive()
+        record = ActivityTable.get_by_id(activity.id)
+        record.act_name = activity.name.as_primitive()
+        record.price = str(activity.price)
         record.description = activity.description.as_primitive()
         record.save()
 
@@ -330,19 +337,19 @@ class SqliteActivityRepo(ActivityRepo):
             activity: Activity
             # The activity name and description were validated when it was created.
             activity_name = String(record.act_name)
-            if activity_name not in self.cache:
+            if record.id not in self.cache:
                 logger.getChild(type(self).__name__).info(f"Creating Activity [activity.name={activity_name}] from "
                                                           f"queried data.")
-                self.cache[activity_name] = Activity(
-                    activity_name, Currency(record.price), String(record.description, optional=True),
+                self.cache[record.id] = Activity(
+                    record.id, activity_name, Currency(record.price), String(record.description, optional=True),
                     record.charge_once, record.locked
                 )
-            yield self.cache[activity_name]
+            yield self.cache[record.id]
 
     def n_subscribers(self, activity: Activity) -> int:
         """Returns the number of clients that are signed up in the given *activity*.
         """
-        return SubscriptionTable.select().where(SubscriptionTable.activity == activity.name).count()
+        return SubscriptionTable.select().where(SubscriptionTable.activity_id == activity.id).count()
 
     def count(self, filters: list[FilterValuePair] | None = None) -> int:
         """Counts the number of activities in the repository.
@@ -358,7 +365,7 @@ class SqliteActivityRepo(ActivityRepo):
         """
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_activities, 50):
-                ActivityTable.insert_many(batch, fields=[ActivityTable.act_name, ActivityTable.price,
+                ActivityTable.insert_many(batch, fields=[ActivityTable.id, ActivityTable.act_name, ActivityTable.price,
                                                          ActivityTable.charge_once, ActivityTable.description,
                                                          ActivityTable.locked]).execute()
 
@@ -592,19 +599,19 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
 
     def add(self, subscription: Subscription):
         SubscriptionTable.create(when=subscription.when, client_id=subscription.client.id,
-                                 activity_id=subscription.activity.name.as_primitive())
+                                 activity_id=subscription.activity.id)
 
     def remove(self, subscription: Subscription):
         SubscriptionTable.delete().where((SubscriptionTable.client_id == subscription.client.id)
-                                         & (SubscriptionTable.activity_id == subscription.activity.name)).execute()
+                                         & (SubscriptionTable.activity_id == subscription.activity.id)).execute()
         SubscriptionCharge.delete().where((SubscriptionCharge.client_id == subscription.client.id)
-                                          & (SubscriptionCharge.activity_id == subscription.activity.name)).execute()
+                                          & (SubscriptionCharge.activity_id == subscription.activity.id)).execute()
 
     def register_transaction(self, subscription: Subscription, year: int, month: int, transaction: Transaction):
         """Registers the charge for the subscription.
         """
         SubscriptionCharge.create(when=date(year, month, 1), client_id=subscription.client.id,
-                                  activity_id=subscription.activity.name.as_primitive(), transaction_id=transaction.id)
+                                  activity_id=subscription.activity.id, transaction_id=transaction.id)
 
     def add_all(self, raw_subscriptions: Iterable[tuple]):
         """Adds the subscriptions in the iterable directly into the repository, without creating Subscription

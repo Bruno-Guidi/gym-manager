@@ -378,11 +378,13 @@ class Activity:
     """Stores general information about an activity.
     """
 
+    id: int = field(compare=False)
     name: String
     price: Currency = field(compare=False)
     description: String = field(compare=False)
     charge_once: bool = field(compare=False, default=False)
     locked: bool = field(compare=False, default=False)
+    removed: bool = field(compare=False, default=False)
 
 
 @dataclass

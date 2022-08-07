@@ -336,7 +336,7 @@ def test_FixedBookingHandler_bookingAvailable_withCancelledFixedBooking():
 
 
 def test_BookingSystem_bookingAvailable():
-    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
+    dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     booking_repo = MockBookingRepo()
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
@@ -349,7 +349,7 @@ def test_BookingSystem_bookingAvailable():
 
 
 def test_BookingSystem_bookings():
-    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
+    dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     booking_repo = MockBookingRepo()
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
@@ -407,7 +407,7 @@ def test_integration_registerCharge_fixedBooking():
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
-    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
+    dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
@@ -439,7 +439,7 @@ def test_integration_cancelTemporary_fixedBooking(resp_name):
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
-    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
+    dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
@@ -472,7 +472,7 @@ def test_integration_cancelDefinitely_fixedBooking(resp_name):
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
-    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
+    dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)
@@ -504,7 +504,7 @@ def test_integration_cancelDefinitely_tempBooking(resp_name):
     booking_repo = SqliteBookingRepo(client_repo, transaction_repo, cache_len=64)
 
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
-    dummy_activity = Activity(String("TestName"), Currency(100), String("TestDescr"))
+    dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
     booking_system = BookingSystem(dummy_activity, booking_repo, courts_names=("1", "2"), durations=(),
                                    start=time(8, 0), end=time(18, 0), minute_step=60)

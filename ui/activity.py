@@ -3,7 +3,7 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QTextEdit, QDialog, QGridLayout, QTableWidget, QMenu, QAction)
 
 from gym_manager.core.base import String, Activity, Currency, TextLike
 from gym_manager.core.persistence import ActivityRepo, FilterValuePair
@@ -21,7 +21,7 @@ class MainController:
         self.main_ui = main_ui
         self.activity_repo = activity_repo
         self.security_handler = security_handler
-        self._activities: dict[str, Activity] = {}  # Dict that maps raw activity name to the associated activity.
+        self._activities: dict[int, Activity] = {}  # Dict that maps row number to the associated activity.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name",
@@ -37,13 +37,13 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_activity)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_activity)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_action.triggered.connect(self.remove_activity)
         # noinspection PyUnresolvedReferences
-        self.main_ui.activity_table.itemSelectionChanged.connect(self.refresh_form)
+        self.main_ui.activity_table.itemSelectionChanged.connect(self.update_description)
 
     def _add_activity(self, activity: Activity, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.activity_table.rowCount() == self.main_ui.page_index.page_len:
@@ -52,8 +52,8 @@ class MainController:
         if check_filters and not self.main_ui.filter_header.passes_filters(activity):
             return
 
-        self._activities[activity.name.as_primitive()] = activity
         row = self.main_ui.activity_table.rowCount()
+        self._activities[row] = activity
         fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str)
         fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int)
         fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity), data_type=int)
@@ -63,23 +63,9 @@ class MainController:
 
         self.main_ui.page_index.total_len = self.activity_repo.count(filters)
         for activity in self.activity_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-            self._activities[activity.name.as_primitive()] = activity
             self._add_activity(activity, check_filters=False)  # Activities are filtered in the repo.
 
-    def refresh_form(self):
-        if self.main_ui.activity_table.currentRow() != -1:
-            activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
-            activity = self._activities[activity_name]
-            self.main_ui.name_field.setText(str(activity.name))
-            self.main_ui.price_field.setText(Currency.fmt(activity.price, symbol=''))
-            self.main_ui.description_text.setText(str(activity.description))
-        else:
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
-            self.main_ui.description_text.clear()
-
-    def create_ui(self):
+    def create_activity(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.activity_repo)
         self._create_ui.exec_()
@@ -87,57 +73,51 @@ class MainController:
             self._add_activity(self._create_ui.controller.activity, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
 
-    def save_changes(self):
-        if self.main_ui.activity_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+    def edit_activity(self):
+        row = self.main_ui.activity_table.currentRow()
+        if row == -1:
+            Dialog.info("Error", "Seleccione una actividad en la tabla.")
             return
 
-        valid_descr, descr = valid_text_value(self.main_ui.description_text, optional=True,
-                                              max_len=utils.ACTIVITY_DESCR_CHARS)
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value(), valid_descr]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        else:
-            activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
-            activity = self._activities[activity_name]
+        activity = self._activities[row]
 
-            # Updates the activity.
-            activity.price, activity.description = self.main_ui.price_field.value(), descr
-            self.activity_repo.update(activity)
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.activity_repo, activity)
+        self._edit_ui.exec_()
 
-            # Updates the ui.
-            row = self.main_ui.activity_table.currentRow()
-            fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
-            # noinspection PyTypeChecker
-            fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int,
-                      increase_row_count=False)
-            fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
-                      data_type=int, increase_row_count=False)
+        # Updates the ui.
+        fill_cell(self.main_ui.activity_table, row, 0, activity.name, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.activity_table, row, 1, Currency.fmt(activity.price), data_type=int,
+                  increase_row_count=False)
+        fill_cell(self.main_ui.activity_table, row, 2, self.activity_repo.n_subscribers(activity),
+                  data_type=int, increase_row_count=False)
+        self.main_ui.description_text.setText(activity.description.as_primitive())
 
-            Dialog.info("Éxito", f"La actividad '{activity.name}' fue actualizada correctamente.")
-
-    def remove(self):
+    def remove_activity(self):
         if self.main_ui.activity_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione una actividad.")
+            Dialog.info("Error", "Seleccione una actividad en la tabla.")
             return
 
-        activity_name = self.main_ui.activity_table.item(self.main_ui.activity_table.currentRow(), 0).text()
-        activity = self._activities[activity_name]
+        activity = self._activities[self.main_ui.activity_table.currentRow()]
         if activity.locked:
             Dialog.info("Error", f"No esta permitido eliminar la actividad '{activity.name}'.")
             return
 
         if Dialog.confirm(f"¿Desea eliminar la actividad '{activity.name}'?"):
             self.activity_repo.remove(activity)
+            activity.removed = True
 
-            self._activities.pop(activity.name.as_primitive())
+            self._activities.pop(self.main_ui.activity_table.currentRow())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
+            Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
+
             self.main_ui.description_text.clear()
 
-            Dialog.info("Éxito", f"La actividad '{activity.name}' fue eliminada correctamente.")
+    def update_description(self):
+        row = self.main_ui.activity_table.currentRow()
+        if row != -1:
+            self.main_ui.description_text.setText(self._activities[row].description.as_primitive())
 
 
 class ActivityMainUI(QMainWindow):
@@ -153,6 +133,21 @@ class ActivityMainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
 
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Actividades", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar", self)
+        client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar", self)
+        client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar", self)
+        client_menu.addAction(self.remove_action)
+
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
         self.left_layout.setContentsMargins(10, 0, 10, 0)
@@ -161,7 +156,8 @@ class ActivityMainUI(QMainWindow):
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
-        self.right_layout.setContentsMargins(10, 0, 10, 0)
+        self.right_layout.setContentsMargins(0, 80, 0, 0)
+        self.right_layout.setAlignment(Qt.AlignTop)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
@@ -178,61 +174,14 @@ class ActivityMainUI(QMainWindow):
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
 
-        # Buttons.
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        self.buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
-
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
-
-        self.save_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
-
-        self.remove_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Activity data form.
-        self.form_layout = QGridLayout()
-        self.right_layout.addLayout(self.form_layout)
-
-        # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre")
-
-        self.name_field = Field(String, self.widget, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
-        self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False, enabled=False)
-
-        # Price.
-        self.price_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.price_lbl, 1, 0)
-        config_lbl(self.price_lbl, "Precio*")
-
-        self.price_field = Field(Currency, self.widget)
-        self.form_layout.addWidget(self.price_field, 1, 1)
-        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
-
         # Description.
         self.description_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.description_lbl, 2, 0, 1, 2)
+        self.right_layout.addWidget(self.description_lbl)
         config_lbl(self.description_lbl, "Descripción")
 
         self.description_text = QTextEdit(self.widget)
-        self.form_layout.addWidget(self.description_text, 3, 0, 1, 2)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+        self.right_layout.addWidget(self.description_text)
+        config_line(self.description_text, read_only=True)
 
         self.setFixedSize(self.minimumSizeHint())
 
@@ -258,11 +207,10 @@ class CreateController:
                             valid_descr])
         if not valid_fields:
             Dialog.info("Error", "Hay datos que no son válidos.")
-        elif self.activity_repo.exists(self.create_ui.name_field.value()):
-            Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
         else:
-            self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(), descr)
-            self.activity_repo.add(self.activity)
+            self.activity = self.activity_repo.create(
+                self.create_ui.name_field.value(), self.create_ui.price_field.value(), descr
+            )
             Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
             self.create_ui.name_field.window().close()
 
@@ -275,6 +223,102 @@ class CreateUI(QDialog):
 
     def _setup_ui(self):
         self.setWindowTitle("Nueva actividad")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Nombre*")
+
+        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # Price.
+        self.price_lbl = QLabel(self)
+        self.form_layout.addWidget(self.price_lbl, 1, 0)
+        config_lbl(self.price_lbl, "Precio*")
+
+        self.price_field = Field(Currency, self)
+        self.form_layout.addWidget(self.price_field, 1, 1)
+        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
+
+        # Description.
+        self.description_lbl = QLabel(self)
+        self.form_layout.addWidget(self.description_lbl, 2, 0, alignment=Qt.AlignTop)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 2, 1)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, activity_repo: ActivityRepo, activity: Activity) -> None:
+        self.edit_ui = edit_ui
+
+        self.activity_repo = activity_repo
+
+        self.activity = activity
+        self.edit_ui.name_field.setText(activity.name.as_primitive())
+        self.edit_ui.price_field.setText(str(Currency.fmt(activity.price, symbol="")))
+        self.edit_ui.description_text.setText(activity.description.as_primitive())
+
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_activity)
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
+
+    # noinspection PyTypeChecker
+    def edit_activity(self):
+        valid_descr, descr = valid_text_value(self.edit_ui.description_text, optional=True,
+                                              max_len=utils.ACTIVITY_DESCR_CHARS)
+        valid_fields = all([self.edit_ui.name_field.valid_value(), self.edit_ui.price_field.valid_value(),
+                            valid_descr])
+        if not valid_fields:
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            self.activity.name = self.edit_ui.name_field.value()
+            self.activity.price = self.edit_ui.price_field.value()
+            self.activity.description = descr
+            self.activity_repo.update(self.activity)
+            Dialog.info("Éxito", f"La categoría '{self.edit_ui.name_field.value()}' fue editada correctamente.")
+            self.edit_ui.name_field.window().close()
+
+
+class EditUI(QDialog):
+    def __init__(self, activity_repo: ActivityRepo, activity: Activity) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = EditController(self, activity_repo, activity)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Editar actividad")
         self.layout = QVBoxLayout(self)
 
         # Form.

@@ -119,9 +119,9 @@ def transfer_backup(backup_path: str, conn: Connection):
 
 
 def _insert_activities(conn: Connection, activity_repo: ActivityRepo):
-    # (name, price, charge_once, description, locked)
-    gen = ((raw[0], "0", False, raw[1], False) for raw in conn.execute("SELECT a.descripcion, a.texto "
-                                                                       "FROM actividad a"))
+    # (id, name, price, charge_once, description, locked)
+    gen = ((raw[0], raw[1], "0", False, raw[2], False) for raw in conn.execute("SELECT a.id, a.descripcion, a.texto "
+                                                                               "FROM actividad a"))
     activity_repo.add_all(gen)
 
 
@@ -149,9 +149,8 @@ def _insert_clients(conn: Connection, client_repo: ClientRepo, contact_repo: Con
 
 
 def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo, since: date):
-    gen = (raw for raw in conn.execute("select min(p.fecha), p.id_cliente, a.descripcion "
+    gen = (raw for raw in conn.execute("select min(p.fecha), p.id_cliente, p.id_actividad "
                                        "from pago p "
-                                       "inner join actividad a on a.id = p.id_actividad "
                                        "where (p.id_cliente, p.id_actividad) in ("
                                        "    select id_cliente, id_actividad "
                                        "    from cliente_actividad"
@@ -166,9 +165,8 @@ def _register_subscription_charging(
     """This function extracts charges from the old database. If there is at least one charge in a given (month, year),
     then the given monthly subscription is considered charged, no matter the total amount that was charged.
     """
-    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, a.descripcion "
-                                           "from pago p inner join actividad a on p.id_actividad = a.id "
-                                           "where p.fecha >= (?) and p.fecha < (?)", (since, to)))
+    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_actividad "
+                                           "from pago p where p.fecha >= (?) and p.fecha < (?)", (since, to)))
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
     # parsing is done.
@@ -251,11 +249,11 @@ def parse(
     _register_subscription_charging(conn, subscription_repo, transaction_repo, since, to)
 
     # The following line will extract charges made in the current month and in the previous one.
-    OldChargesRepo.create_model()
-    _extract_charges(conn, transaction_repo, since=to)
-
-    OldExtractionRepo.create_model()
-    _extract_extractions(conn, since=to)
+    # OldChargesRepo.create_model()
+    # _extract_charges(conn, transaction_repo, since=to)
+    #
+    # OldExtractionRepo.create_model()  # TODO Remove on corresponding PR
+    # _extract_extractions(conn, since=to)
 
     conn.close()
 
