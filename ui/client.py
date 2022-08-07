@@ -90,13 +90,15 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.subscription_list.currentItemChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
+        self.main_ui.subscription_list.itemPressed.connect(self.fill_unpaid_months)
+        # noinspection PyUnresolvedReferences
         self.main_ui.year_spinbox.valueChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
         self.main_ui.cancel_btn.clicked.connect(self.cancel_subscription)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_filter_group.buttonClicked.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
-        self.main_ui.subscription_list.itemPressed.connect(self.fill_unpaid_months)
+        self.main_ui.charge_table.itemSelectionChanged.connect(self.set_unpaid_month)
         # noinspection PyUnresolvedReferences
         # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
 
@@ -311,6 +313,17 @@ class MainController:
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
             fill_combobox(self.main_ui.month_combobox, sub.unpaid_months(date.today()),
                           display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
+
+    def set_unpaid_month(self):
+        if self.main_ui.charge_table.currentRow() != -1:
+            month_year_str = self.main_ui.charge_table.item(self.main_ui.charge_table.currentRow(), 0).text()
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+            month, year = month_year_str.split("/")
+            if not sub.is_charged(int(year), int(month)):
+                for i in range(len(self.main_ui.month_combobox)):
+                    if self.main_ui.month_combobox.itemText(i) == month_year_str:
+                        self.main_ui.month_combobox.setCurrentIndex(i)
+                        break
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
