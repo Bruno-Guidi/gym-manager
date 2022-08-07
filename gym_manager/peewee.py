@@ -308,8 +308,9 @@ class SqliteActivityRepo(ActivityRepo):
         return activity
 
     def update(self, activity: Activity):
-        record = ActivityTable.get_by_id(activity.name.as_primitive())
-        record.price = activity.price.as_primitive()
+        record = ActivityTable.get_by_id(activity.id)
+        record.name = activity.name.as_primitive()
+        record.price = str(activity.price)
         record.description = activity.description.as_primitive()
         record.save()
 
