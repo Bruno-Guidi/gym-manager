@@ -59,18 +59,7 @@ class MainController:
 
         self.main_ui.all_charges.setChecked(True)  # By default, all months are displayed.
 
-        # Disables subscription related widgets until a client is selected.
-        self.main_ui.subscribe_combobox.setEnabled(False)
-        self.main_ui.subscribe_btn.setEnabled(False)
-        self.main_ui.cancel_btn.setEnabled(False)
-        self.main_ui.year_spinbox.setEnabled(False)
-        self.main_ui.all_charges.setEnabled(False)
-        self.main_ui.only_paid_charges.setEnabled(False)
-        self.main_ui.only_unpaid_charges.setEnabled(False)
-        self.main_ui.method_combobox.setEnabled(False)
-        self.main_ui.amount_line.setEnabled(False)
-        self.main_ui.month_combobox.setEnabled(False)
-        self.main_ui.charge_btn.setEnabled(False)
+        self._enable_subscribe()
 
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
@@ -104,6 +93,17 @@ class MainController:
         self.main_ui.charge_table.itemSelectionChanged.connect(self.set_unpaid_month)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_subscription)
+
+    def _enable_subscribe(self):
+        enable_creation = (
+                self.main_ui.client_table.currentRow() != -1  # There is a client selected.
+                and self.main_ui.subscribe_combobox.currentIndex() != -1  # There is one activity to subscribe to.
+        )
+        self.main_ui.subscribe_combobox.setEnabled(enable_creation)
+        self.main_ui.subscribe_btn.setEnabled(enable_creation)
+
+        enable_cancelling = len(self.main_ui.subscription_list) > 0
+        self.main_ui.cancel_btn.setEnabled(enable_cancelling)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
@@ -141,21 +141,7 @@ class MainController:
                           display=lambda activity: activity.name.as_primitive())
             self.fill_subscription_list()
 
-            # Disables the combobox if there is no activities to subscribe the client to.
-            self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-            self.main_ui.subscribe_btn.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-            # Disables the button to cancel subscriptions if there is no subscriptions
-            self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
-
-            self.main_ui.year_spinbox.setEnabled(False)
-            self.main_ui.all_charges.setEnabled(False)
-            self.main_ui.only_paid_charges.setEnabled(False)
-            self.main_ui.only_unpaid_charges.setEnabled(False)
-
-            self.main_ui.method_combobox.setEnabled(True)
-            self.main_ui.amount_line.setEnabled(True)
-            self.main_ui.month_combobox.setEnabled(True)
-            self.main_ui.charge_btn.setEnabled(True)
+            self._enable_subscribe()
 
     def create_client(self):
         # noinspection PyAttributeOutsideInit
@@ -164,6 +150,7 @@ class MainController:
         if self._create_ui.controller.client is not None:
             self._add_client(self._create_ui.controller.client, check_filters=True, check_limit=True)
             self.main_ui.page_index.total_len += 1
+            self._enable_subscribe()
 
     def edit_client(self):
         row = self.main_ui.client_table.currentRow()
@@ -179,7 +166,7 @@ class MainController:
         client = self._edit_ui.controller.client
         fill_cell(self.main_ui.client_table, row, 0, client.name, data_type=str, increase_row_count=False)
         dni = "" if client.dni.as_primitive() is None else str(client.dni.as_primitive())
-        self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
+        # self.main_ui.dni_field.setEnabled(len(dni) == 0)  # If the dni was set, then block its edition.
         fill_cell(self.main_ui.client_table, row, 1, dni, data_type=int, increase_row_count=False)
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
 
@@ -207,6 +194,8 @@ class MainController:
 
             Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
 
+            self._enable_subscribe()
+
     def fill_subscription_list(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
@@ -221,7 +210,7 @@ class MainController:
             self.main_ui.subscription_list.addItem(item)
             self._subscriptions[sub.activity.name.as_primitive()] = sub
 
-        self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
+        # self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
 
     def create_subscription(self):
         client = self._clients[self.main_ui.client_table.currentRow()]
@@ -236,11 +225,11 @@ class MainController:
         self.main_ui.subscribe_combobox.removeItem(self.main_ui.subscribe_combobox.currentIndex())
 
         # Disables the combobox if there is no activities to subscribe the client to.
-        self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-        self.main_ui.subscribe_btn.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
-
-        self.main_ui.cancel_btn.setEnabled(True)
-        self.main_ui.year_spinbox.setEnabled(True)
+        # self.main_ui.subscribe_combobox.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
+        # self.main_ui.subscribe_btn.setEnabled(self.main_ui.subscribe_combobox.currentIndex() != -1)
+        #
+        # self.main_ui.cancel_btn.setEnabled(True)
+        # self.main_ui.year_spinbox.setEnabled(True)
 
         # Adds the new subscription to the list.
         item = QListWidgetItem(subscription.activity.name.as_primitive(), parent=self.main_ui.subscription_list)
@@ -271,10 +260,11 @@ class MainController:
                 self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
 
                 # Disables the button to cancel subscriptions if there is no subscriptions
-                self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
+                # self.main_ui.cancel_btn.setEnabled(len(self.main_ui.subscription_list) != 0)
 
-                self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
-                self.main_ui.subscribe_combobox.setEnabled(True)
+                # self.main_ui.year_spinbox.setEnabled(len(self.main_ui.subscription_list) != 0)
+                # self.main_ui.subscribe_combobox.setEnabled(True)
+                # self.main_ui.subscribe_btn.setEnabled(True)
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
@@ -283,10 +273,10 @@ class MainController:
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def fill_charge_table(self):
-        self.main_ui.year_spinbox.setEnabled(True)
-        self.main_ui.all_charges.setEnabled(True)
-        self.main_ui.only_paid_charges.setEnabled(True)
-        self.main_ui.only_unpaid_charges.setEnabled(True)
+        # self.main_ui.year_spinbox.setEnabled(True)
+        # self.main_ui.all_charges.setEnabled(True)
+        # self.main_ui.only_paid_charges.setEnabled(True)
+        # self.main_ui.only_unpaid_charges.setEnabled(True)
 
         self.main_ui.charge_table.setRowCount(0)
 
