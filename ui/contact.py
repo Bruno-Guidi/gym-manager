@@ -358,3 +358,120 @@ class CreateUI(QDialog):
 
         # Adjusts size.
         self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, contact_repo: ContactRepo, client_repo: ClientRepo) -> None:
+        self.edit_ui = edit_ui
+
+        self.contact: Contact | None = None
+        self.contact_repo = contact_repo
+        self.client_repo = client_repo
+
+        self.edit_ui.name_field.setEnabled(self.contact.client is None)
+
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_contact)
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
+
+    # noinspection PyTypeChecker
+    def edit_contact(self):
+        valid_descr, descr = valid_text_value(self.edit_ui.description_text, utils.ACTIVITY_DESCR_CHARS,
+                                              optional=True)
+        if not all([self.edit_ui.name_field.valid_value(), self.edit_ui.tel1_field.valid_value(),
+                    self.edit_ui.tel2_field.valid_value(), self.edit_ui.dir_field.valid_value(), valid_descr]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+            return
+        else:
+            update_contact(self.contact_repo, self.contact, self.edit_ui.name_field.value(),
+                           self.edit_ui.tel1_field.value(), self.edit_ui.tel2_field.value(),
+                           self.edit_ui.dir_field.value(), descr)
+            Dialog.info("Éxito", f"El contacto '{self.contact.name}' fue editado correctamente.")
+            self.edit_ui.name_field.window().close()
+
+
+class EditUI(QDialog):
+    def __init__(self, contact_repo: ContactRepo, client_repo: ClientRepo) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = CreateController(self, contact_repo, client_repo)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Editar contacto")
+        self.layout = QVBoxLayout(self)
+
+        # Filtering.
+        self.filter_header = FilterHeader(show_clear_button=False)
+        self.layout.addWidget(self.filter_header)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 1, 0)
+        config_lbl(self.name_lbl, "Nombre")
+
+        self.name_field = Field(String, self, max_len=utils.CLIENT_NAME_CHARS, invalid_values=("Pago", "Fijo"),
+                                optional=False)
+        self.form_layout.addWidget(self.name_field, 1, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # Telephone 1.
+        self.tel1_lbl = QLabel(self)
+        self.form_layout.addWidget(self.tel1_lbl, 1, 0)
+        config_lbl(self.tel1_lbl, "Teléfono 1")
+
+        self.tel1_field = Field(String, self, optional=True, min_value=utils.CLIENT_TEL_CHARS)
+        self.form_layout.addWidget(self.tel1_field, 1, 1)
+        config_line(self.tel1_field, place_holder="Teléfono 1", adjust_to_hint=False)
+
+        # Telephone 2.
+        self.tel2_lbl = QLabel(self)
+        self.form_layout.addWidget(self.tel2_lbl, 2, 0)
+        config_lbl(self.tel2_lbl, "Teléfono 2")
+
+        self.tel2_field = Field(String, self, optional=True, max_len=utils.CLIENT_TEL_CHARS)
+        self.form_layout.addWidget(self.tel2_field, 2, 1)
+        config_line(self.tel2_field, place_holder="Teléfono 2", adjust_to_hint=False)
+
+        # Direction.
+        self.dir_lbl = QLabel(self)
+        self.form_layout.addWidget(self.dir_lbl, 3, 0)
+        config_lbl(self.dir_lbl, "Dirección")
+
+        self.dir_field = Field(String, self, optional=True, max_len=utils.CLIENT_DIR_CHARS)
+        self.form_layout.addWidget(self.dir_field, 3, 1)
+        config_line(self.dir_field, place_holder="Dirección", adjust_to_hint=False)
+
+        # Description.
+        self.description_lbl = QLabel(self)
+        self.form_layout.addWidget(self.description_lbl, 4, 0, alignment=Qt.AlignTop)
+        config_lbl(self.description_lbl, "Descripción")
+
+        self.description_text = QTextEdit(self)
+        self.form_layout.addWidget(self.description_text, 4, 1)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
