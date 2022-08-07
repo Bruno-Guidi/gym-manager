@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox,
     QDateEdit, QListWidget, QListWidgetItem, QAction, QMenu, QButtonGroup, QRadioButton,
-    QSpinBox)
+    QSpinBox, QDesktopWidget)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
@@ -546,10 +546,9 @@ class ClientMainUI(QMainWindow):
         # Vertical spacer.
         self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
-        # self.setFixedSize(self.minimumSizeHint())
-
-        # self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
-        #           int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+        self.setFixedSize(self.minimumSizeHint())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
 class CreateController:
