@@ -165,14 +165,19 @@ def _register_subscription_charging(
     then the given monthly subscription is considered charged, no matter the total amount that was charged.
     """
     to = str(to)
-    charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_actividad "
-                                           "from pago p where p.fecha >= (?) and p.fecha <= (?)", (since, to)))
+    charges = (raw for raw in conn.execute(
+        "select p.id_cliente, p.fecha, p.importe, p.id_actividad, c.nombre, a.descripcion "
+        "from pago p "
+        "inner join actividad a on p.id_actividad = a.id "
+        "inner join cliente c on p.id_cliente = c.id "
+        "where p.fecha >= (?) and p.fecha <= (?) ", (since, to)
+    ))
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
     # parsing is done.
     sub_charges = ((raw[1], raw[0], raw[3],
                     transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo", "Admin",
-                                              f"Cobro por '{raw[3]}' a cliente '{raw[0]}' en app vieja",
+                                              f"Cobro por '{raw[5]}' a cliente '{raw[4]}' en app vieja",
                                               date.min if raw[1] != to else None)))
                    for raw in charges)
 
