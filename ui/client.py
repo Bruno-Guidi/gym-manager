@@ -193,10 +193,6 @@ class MainController:
             self._clients.pop(row)
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.dni_field.clear()
-
             # Clears the subscriptions table.
             self.main_ui.subscription_list.clear()
 
