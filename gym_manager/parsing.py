@@ -149,9 +149,8 @@ def _insert_clients(conn: Connection, client_repo: ClientRepo, contact_repo: Con
 
 
 def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo, since: date):
-    gen = (raw for raw in conn.execute("select min(p.fecha), p.id_cliente, a.descripcion "
+    gen = (raw for raw in conn.execute("select min(p.fecha), p.id_cliente, p.id_actividad "
                                        "from pago p "
-                                       "inner join actividad a on a.id = p.id_actividad "
                                        "where (p.id_cliente, p.id_actividad) in ("
                                        "    select id_cliente, id_actividad "
                                        "    from cliente_actividad"
