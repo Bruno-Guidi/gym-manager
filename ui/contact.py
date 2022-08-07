@@ -45,7 +45,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.create_action.triggered.connect(self.create_contact)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_action.triggered.connect(self.remove_contact)
         # noinspection PyUnresolvedReferences
@@ -92,28 +92,18 @@ class MainController:
             Dialog.info("Error", "Seleccione un cliente.")
             return
 
-        # noinspection PyTypeChecker
-        valid_descr, descr = valid_text_value(self.main_ui.description_text, utils.ACTIVITY_DESCR_CHARS,
-                                              optional=True)
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.tel1_field.valid_value(),
-                    self.main_ui.tel2_field.valid_value(), self.main_ui.dir_field.valid_value(), valid_descr]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        else:
-            if Dialog.confirm("¿Desea modificar la información del contacto?"):
-                contact = self._contacts[row]
-                # noinspection PyTypeChecker
-                update_contact(self.contact_repo, contact, self.main_ui.name_field.value(),
-                               self.main_ui.tel1_field.value(), self.main_ui.tel2_field.value(),
-                               self.main_ui.dir_field.value(), descr)
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.contact_repo, self._contacts[row])
+        self._edit_ui.exec_()
 
-                # Updates the ui.
-                fill_cell(self.main_ui.contact_table, row, 0, contact.name, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 1, contact.tel1, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 2, contact.tel2, data_type=str, increase_row_count=False)
-                fill_cell(self.main_ui.contact_table, row, 3, contact.direction, data_type=str,
-                          increase_row_count=False)
+        # Updates the ui.
+        fill_cell(self.main_ui.contact_table, row, 0, self._contacts[row].name, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.contact_table, row, 1, self._contacts[row].tel1, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.contact_table, row, 2, self._contacts[row].tel2, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.contact_table, row, 3, self._contacts[row].direction, data_type=str,
+                  increase_row_count=False)
 
-                Dialog.info("Éxito", f"El contacto '{contact.name}' fue actualizado correctamente.")
+        self.update_contact_info()
 
     def remove_contact(self):
         row = self.main_ui.contact_table.currentRow()
@@ -369,6 +359,12 @@ class EditController:
         self.contact_repo = contact_repo
 
         self.edit_ui.name_field.setEnabled(self.contact.client is None)
+
+        self.edit_ui.name_field.setText(contact.name.as_primitive())
+        self.edit_ui.tel1_field.setText(contact.tel1.as_primitive())
+        self.edit_ui.tel2_field.setText(contact.tel2.as_primitive())
+        self.edit_ui.dir_field.setText(contact.direction.as_primitive())
+        self.edit_ui.description_text.setText(contact.description.as_primitive())
 
         # noinspection PyUnresolvedReferences
         self.edit_ui.confirm_btn.clicked.connect(self.edit_contact)
