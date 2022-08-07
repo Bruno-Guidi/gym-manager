@@ -164,14 +164,16 @@ def _register_subscription_charging(
     """This function extracts charges from the old database. If there is at least one charge in a given (month, year),
     then the given monthly subscription is considered charged, no matter the total amount that was charged.
     """
+    to = str(to)
     charges = (raw for raw in conn.execute("select p.id_cliente, p.fecha, p.importe, p.id_actividad "
-                                           "from pago p where p.fecha >= (?) and p.fecha < (?)", (since, to)))
+                                           "from pago p where p.fecha >= (?) and p.fecha <= (?)", (since, to)))
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
     # parsing is done.
     sub_charges = ((raw[1], raw[0], raw[3],
                     transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo", "Admin",
-                                              f"Cobro por '{raw[3]}' a cliente '{raw[0]}' en app vieja", date.min)))
+                                              f"Cobro por '{raw[3]}' a cliente '{raw[0]}' en app vieja",
+                                              date.min if raw[1] != to else None)))
                    for raw in charges)
 
     subscription_repo.register_raw_charges(sub_charges)
@@ -208,11 +210,10 @@ def parse(
     _insert_clients(conn, client_repo, contact_repo)
     _insert_subscriptions(conn, subscription_repo, since)
 
-    to = minus_n_months(date.today(), n=1)
     # This balance is created so the transactions parsed are not included in the daily balance of the day when the
     # parsing is done.
     balance_repo.add(date.min, String("Admin"), {})
-    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, to)
+    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, date(2022, 7, 25))
 
     conn.close()
 
