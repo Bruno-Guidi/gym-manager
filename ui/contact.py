@@ -47,7 +47,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         # self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_action.triggered.connect(self.remove_contact)
         # noinspection PyUnresolvedReferences
         self.main_ui.contact_table.itemSelectionChanged.connect(self.update_contact_info)
 
@@ -116,10 +116,10 @@ class MainController:
 
                 Dialog.info("Éxito", f"El contacto '{contact.name}' fue actualizado correctamente.")
 
-    def remove(self):
+    def remove_contact(self):
         row = self.main_ui.contact_table.currentRow()
         if row == -1:
-            Dialog.info("Error", "Seleccione un contacto.")
+            Dialog.info("Error", "Seleccione un contacto en la tabla.")
             return
 
         contact = self._contacts[row]
@@ -129,11 +129,7 @@ class MainController:
             self._contacts.pop(row)
             self.fill_contact_table([])  # Refreshes the table.
 
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.tel1_field.clear()
-            self.main_ui.tel2_field.clear()
-            self.main_ui.dir_field.clear()
+            # Clears the description.
             self.main_ui.description_text.clear()
 
             Dialog.info("Éxito", f"El contacto '{contact.name}' fue eliminado correctamente.")
