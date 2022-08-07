@@ -96,6 +96,8 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_filter_group.buttonClicked.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
+        self.main_ui.subscription_list.itemPressed.connect(self.fill_unpaid_months)
+        # noinspection PyUnresolvedReferences
         # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
@@ -303,6 +305,12 @@ class MainController:
                     transaction_amount = sub.transaction(year, month).amount
                 fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
                 fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
+
+    def fill_unpaid_months(self):
+        if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+            fill_combobox(self.main_ui.month_combobox, sub.unpaid_months(date.today()),
+                          display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
 
     def charge_sub(self):
         row = self.main_ui.client_table.currentRow()
