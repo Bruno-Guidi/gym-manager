@@ -185,11 +185,11 @@ class ActivityRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def get(self, name: String) -> Activity:
-        """Retrieves the activity with the given *id* in the repository, if it exists.
+    def get(self, id_: int) -> Activity:
+        """Retrieves the activity with the given *id_* in the repository, if it exists.
 
         Raises:
-            KeyError if there is no activity with the given *id*.
+            KeyError if there is no activity with the given *id_*.
         """
         raise NotImplementedError
 

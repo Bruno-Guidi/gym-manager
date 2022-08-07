@@ -273,11 +273,11 @@ class SqliteActivityRepo(ActivityRepo):
 
         return ActivityTable.get_or_none(act_name=name) is not None  # Then search in the db.
 
-    def get(self, name: String) -> Activity:
-        """Retrieves the activity with the given *name* in the repository, if it exists.
+    def get(self, id_: int) -> Activity:
+        """Retrieves the activity with the given *id_* in the repository, if it exists.
 
         Raises:
-            KeyError if there is no activity with the given *name*.
+            KeyError if there is no activity with the given *id_*.
         """
         if name in self.cache:
             return self.cache[name]
