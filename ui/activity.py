@@ -215,7 +215,7 @@ class CreateController:
             Dialog.info("Error", f"Ya existe una categoría con el nombre '{self.create_ui.name_field.value()}'.")
         else:
             self.activity = Activity(self.create_ui.name_field.value(), self.create_ui.price_field.value(), descr)
-            self.activity_repo.add(self.activity)
+            self.activity_repo.create(self.activity)
             Dialog.info("Éxito", f"La categoría '{self.create_ui.name_field.value()}' fue creada correctamente.")
             self.create_ui.name_field.window().close()
 

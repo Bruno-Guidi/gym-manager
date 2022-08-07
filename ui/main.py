@@ -126,7 +126,7 @@ class Controller:
             today = date.today()
             self.security_handler.current_responsible = String("Admin")
             activity = Activity(String("TestAct"), Currency("2000"), String("descr"))
-            self.activity_repo.add(activity)
+            self.activity_repo.create(activity)
             for i in range(0, 50):
                 client = self.client_repo.create(String(str(i)), today, today, Number(i))
                 sub = api.subscribe(self.subscription_repo, today, client, activity)

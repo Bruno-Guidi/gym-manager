@@ -54,7 +54,7 @@ def test_subscribe():
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), Number(""))
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False)
-    activity_repo.add(activity)
+    activity_repo.create(activity)
 
     # Feature being tested.
     api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
@@ -124,7 +124,7 @@ def test_cancel():
     client = client_repo.create(String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1), Number(""))
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False)
-    activity_repo.add(activity)
+    activity_repo.create(activity)
 
     subscription = Subscription(date(2022, 2, 2), client, activity)
     client.add(subscription)
@@ -151,7 +151,7 @@ def test_charge_notChargeOnceActivity():
 
     activity = Activity(String("dummy_name"), Currency(0.0), String("dummy_descr"),
                         charge_once=False)
-    activity_repo.add(activity)
+    activity_repo.create(activity)
 
     subscription = Subscription(date(2022, 2, 2), client, activity)
     client.add(subscription)
