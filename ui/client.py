@@ -335,8 +335,6 @@ class MainController:
                         break
 
     def charge_subscription(self):
-        row = self.main_ui.client_table.currentRow()
-
         if len(self.main_ui.subscription_list) == 0:
             Dialog.info("Error", "El cliente no esta inscripto en ninguna actividad.")
             return
