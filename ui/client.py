@@ -104,7 +104,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_table.itemSelectionChanged.connect(self.set_unpaid_month)
         # noinspection PyUnresolvedReferences
-        # self.main_ui.charge_btn.clicked.connect(self.charge_sub)
+        self.main_ui.charge_btn.clicked.connect(self.charge_subscription)
 
     def _add_client(self, client: Client, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.client_table.rowCount() == self.main_ui.page_index.page_len:
@@ -334,31 +334,41 @@ class MainController:
                         self.main_ui.month_combobox.setCurrentIndex(i)
                         break
 
-    def charge_sub(self):
+    def charge_subscription(self):
         row = self.main_ui.client_table.currentRow()
-        if row == -1:
-            Dialog.info("Error", "Seleccione un cliente en la tabla.")
+
+        if len(self.main_ui.subscription_list) == 0:
+            Dialog.info("Error", "El cliente no esta inscripto en ninguna actividad.")
+            return
+        if self.main_ui.subscription_list.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad en la lista.")
+            return
+        if self.main_ui.month_combobox.currentIndex() == -1:
+            Dialog.info("Error", f"El cliente tiene la actividad "
+                                 f"'{self.main_ui.subscription_list.currentItem().text()}' al día.")
             return
 
-        if self._clients[row].n_subscriptions() == 0:
-            Dialog.info("Error", "El cliente no esta inscripto a ninguna actividad.")
-            return
+        if not self.main_ui.amount_line.valid_value():
+            Dialog.info("Error", f"El monto ingresado no es válido.")
+        else:
+            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+            year, month = self.main_ui.month_combobox.currentData(Qt.UserRole)
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
-        # noinspection PyAttributeOutsideInit
-        self._pre_charge_ui = PreChargeUI(self._clients[row])
-        self._pre_charge_ui.exec_()
+                # noinspection PyTypeChecker
+                transaction = self.transaction_repo.create(
+                    "Cobro", date.today(), self.main_ui.amount_line.value(), self.main_ui.method_combobox.currentText(),
+                    self.security_handler.current_responsible.name,
+                    f"Cobro de actividad '{sub.activity.name}' a '{sub.client.name}'.", sub.client
+                )
+                api.register_subscription_charge(self.subscription_repo, sub, year, month, transaction)
 
-        sub = self._pre_charge_ui.controller.sub
-        if sub is not None:
-            register_sub_charge = functools.partial(api.register_subscription_charge, self.subscription_repo, sub,
-                                                    self._pre_charge_ui.controller.year,
-                                                    self._pre_charge_ui.controller.month)
-            # noinspection PyAttributeOutsideInit
-            self._charge_ui = ChargeUI(
-                self.transaction_repo, self.security_handler, sub.activity.price,
-                String(f"Cobro de actividad {sub.activity.name}."), register_sub_charge, self._clients[row]
-            )
-            self._charge_ui.exec_()
+                self.main_ui.responsible_field.setStyleSheet("")
+                Dialog.info("Éxito", f"El cobro a '{sub.client.name}' por '{sub.activity.name}' fue registrado.")
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def see_charges(self):
         if self.main_ui.client_table.currentRow() == -1:
