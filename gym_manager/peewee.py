@@ -513,6 +513,7 @@ class SqliteTransactionRepo(TransactionRepo):
             without_balance: bool = True, balance_date: date | None = None
     ) -> Generator[Transaction, None, None]:
         transactions_q = TransactionTable.select(TransactionTable, ClientTable.cli_name, ClientTable.dni)
+        transactions_q = transactions_q.order_by(TransactionTable.id.desc())
 
         if without_balance:  # Retrieve transactions that weren't linked to a balance.
             transactions_q = transactions_q.where(TransactionTable.balance.is_null())
