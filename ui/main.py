@@ -227,18 +227,6 @@ class Controller:
         # noinspection PyAttributeOutsideInit
         self.action_ui = ActionUI(self.security_handler)
         self.action_ui.setWindowModality(Qt.ApplicationModal)
-        self.action_ui.show()
-
-    def show_old_charges_ui(self):
-        self.old_charges_ui = OldChargesUI(self.client_repo, self.transaction_repo, self.subscription_repo,
-                                           self.security_handler)
-        self.old_charges_ui.setWindowModality(Qt.ApplicationModal)
-        self.old_charges_ui.show()
-
-    def show_old_extractions_ui(self):
-        self.old_extractions_ui = OldExtractionsUI()
-        self.old_extractions_ui.setWindowModality(Qt.ApplicationModal)
-        self.old_extractions_ui.show()
 
     def close(self):
         if self.backup_fn is not None:
