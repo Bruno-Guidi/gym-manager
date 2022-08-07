@@ -143,8 +143,7 @@ class MainController:
             client = self._clients[row]
 
             subscribeable_activities = itertools.filterfalse(
-                lambda activity: activity.charge_once or client.is_subscribed(activity),
-                self.activities_fn()
+                lambda activity: activity.charge_once or client.is_subscribed(activity), self.activities_fn()
             )
             fill_combobox(self.main_ui.subscribe_combobox, subscribeable_activities,
                           display=lambda activity: activity.name.as_primitive())
