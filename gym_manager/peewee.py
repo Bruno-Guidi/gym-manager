@@ -79,7 +79,7 @@ class SqliteClientRepo(ClientRepo):
         subs = {}
         for sub_record in record.subscriptions:
             subs[sub_record.activity_id] = Subscription(sub_record.when, client,
-                                                        self.activity_repo.get(String(sub_record.activity_id)))
+                                                        self.activity_repo.get(sub_record.activity_id))
         for sub_charge in record.subscriptions_charges:
             year, month = sub_charge.when.year, sub_charge.when.month
             trans_record = sub_charge.transaction
