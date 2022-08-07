@@ -43,7 +43,7 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        # self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_contact)
         # noinspection PyUnresolvedReferences
         # self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
@@ -79,7 +79,7 @@ class MainController:
             pass
             # self.main_ui.description_text.setText(str(self._contacts[row].description))
 
-    def create_ui(self):
+    def create_contact(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.contact_repo, self.client_repo)
         self._create_ui.exec_()
