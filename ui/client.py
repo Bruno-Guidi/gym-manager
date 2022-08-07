@@ -258,6 +258,8 @@ class MainController:
                 self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
                 self.main_ui.subscribe_combobox.addItem(activity.name.as_primitive(), activity)
 
+                self.main_ui.month_combobox.clear()
+
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
             except SecurityError as sec_err:
