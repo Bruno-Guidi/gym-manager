@@ -102,11 +102,12 @@ class AccountingMainUI(QMainWindow):
         # Header layout.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
-        self.header_layout.setAlignment(Qt.AlignCenter)
 
         # Today charges layout.
         self.today_charges_layout = QVBoxLayout()
         self.header_layout.addLayout(self.today_charges_layout)
+        self.today_charges_layout.setAlignment(Qt.AlignTop)
+        self.today_charges_layout.setContentsMargins(0, 20, 0, 0)
 
         self.today_charges_lbl = QLabel(self.widget)
         self.today_charges_layout.addWidget(self.today_charges_lbl)
@@ -119,6 +120,8 @@ class AccountingMainUI(QMainWindow):
         # Today extractions layout.
         self.today_extractions_layout = QVBoxLayout()
         self.header_layout.addLayout(self.today_extractions_layout)
+        self.today_extractions_layout.setAlignment(Qt.AlignTop)
+        self.today_extractions_layout.setContentsMargins(0, 20, 0, 0)
 
         self.today_extractions_lbl = QLabel(self.widget)
         self.today_extractions_layout.addWidget(self.today_extractions_lbl)
@@ -142,11 +145,40 @@ class AccountingMainUI(QMainWindow):
         self.buttons_layout.addWidget(self.history_btn, alignment=Qt.AlignCenter)
         config_btn(self.history_btn, "Historial", font_size=16, extra_width=30)
 
+        # Charge button
+        self.extract_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.extract_btn, alignment=Qt.AlignCenter)
+        config_btn(self.extract_btn, "Extraer")
+
         self.header_layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
 
-        self.extract_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.extract_btn)
-        config_btn(self.extract_btn, "Extraer", font_size=16, extra_width=30)
+        # Extract form.
+        self.extract_form_layout = QGridLayout()
+        self.header_layout.addLayout(self.extract_form_layout)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self.widget)
+        self.extract_form_layout.addWidget(self.responsible_lbl, 0, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self.widget)
+        self.extract_form_layout.addWidget(self.responsible_field, 0, 1)
+        config_line(self.responsible_field, fixed_width=100)
+
+        # Method.
+        self.method_combobox = QComboBox(self)
+        self.extract_form_layout.addWidget(self.method_combobox, 0, 2)
+        config_combobox(self.method_combobox)
+
+        # Amount.
+        self.amount_line = Field(Currency, parent=self, positive=True)
+        self.extract_form_layout.addWidget(self.amount_line, 0, 3)
+        config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
+
+        self.description_text = QTextEdit(self.widget)
+        self.extract_form_layout.addWidget(self.description_text, 1, 0, 1, 4)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+        self.description_text.setFixedHeight(80)
 
         self.layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
