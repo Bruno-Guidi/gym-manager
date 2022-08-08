@@ -127,9 +127,9 @@ class State:
 
 class Booking(abc.ABC):
 
-    def __init__(self, court: str, client: Client, start: time, end: time, transaction: Transaction | None = None):
+    def __init__(self, court: str, client_name: String, start: time, end: time, transaction: Transaction | None = None):
         self.court = court
-        self.client = client
+        self.client_name = client_name
         self.start = start
         self.end = end
         self.transaction = transaction
@@ -179,10 +179,10 @@ class Booking(abc.ABC):
 class TempBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, when: date,
+            self, court: str, client_name: String, start: time, end: time, when: date,
             transaction: Transaction | None = None, is_fixed: bool = False
     ):
-        super().__init__(court, client, start, end, transaction)
+        super().__init__(court, client_name, start, end, transaction)
         self._when = when
         self._is_fixed = is_fixed
 
@@ -221,14 +221,14 @@ class TempBooking(Booking):
 class FixedBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, day_of_week: int, first_when: date,
+            self, court: str, client_name: String, start: time, end: time, day_of_week: int, first_when: date,
             last_when: date | None = None, inactive_dates: list[dict[str, date]] | None = None,
             transaction: Transaction | None = None
     ):
         if day_of_week != first_when.weekday():
             raise OperationalError(f"The [day_of_week={day_of_week}] of the fixed booking is different than the "
                                    f"[day_of_week={first_when.weekday()}] of [first_when={first_when}]")
-        super().__init__(court, client, start, end, transaction)
+        super().__init__(court, client_name, start, end, transaction)
         self.day_of_week = day_of_week
         self.inactive_dates = [] if inactive_dates is None else inactive_dates
         self.first_when = first_when
