@@ -8,7 +8,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox, QMenu, QAction,
-    QButtonGroup, QRadioButton, QTextEdit)
+    QButtonGroup, QRadioButton)
 
 from gym_manager.core.base import String, Currency, TextLike, Number
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
@@ -17,11 +17,10 @@ from gym_manager.stock.core import (
     ItemRepo, Item, create_item, update_item, remove_item, update_item_amount,
     register_item_charge)
 from ui import utils
-from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox, config_checkbox)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, responsible_field
 
 
 class MainController:
@@ -122,12 +121,8 @@ class MainController:
         if Dialog.confirm(f"¿Desea eliminar el ítem '{item.name}'?"):
             remove_item(self.item_repo, item)
 
-            self.items.pop(item.name.as_primitive())
+            self.items.pop(self.main_ui.item_table.currentRow())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
-
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
 
             Dialog.info("Éxito", f"El ítem '{item.name}' fue eliminado correctamente.")
 
@@ -245,6 +240,7 @@ class StockMainUI(QMainWindow):
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
         self.right_layout.setContentsMargins(10, 0, 10, 0)
+        self.right_layout.setAlignment(Qt.AlignCenter)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
@@ -267,17 +263,17 @@ class StockMainUI(QMainWindow):
 
         self.add_stock = QRadioButton("Agregar stock")
         self.action_group.addButton(self.add_stock)
-        self.right_layout.addWidget(self.add_stock)
+        self.right_layout.addWidget(self.add_stock, alignment=Qt.AlignCenter)
         self.add_stock.setFont(font)
 
         self.remove_stock = QRadioButton("Reducir stock")
         self.action_group.addButton(self.remove_stock)
-        self.right_layout.addWidget(self.remove_stock)
+        self.right_layout.addWidget(self.remove_stock, alignment=Qt.AlignCenter)
         self.remove_stock.setFont(font)
 
         self.charge_item = QRadioButton("Cobrar ítem")
         self.action_group.addButton(self.charge_item)
-        self.right_layout.addWidget(self.charge_item)
+        self.right_layout.addWidget(self.charge_item, alignment=Qt.AlignCenter)
         self.charge_item.setFont(font)
 
         self.form_layout = QGridLayout()
@@ -308,9 +304,6 @@ class StockMainUI(QMainWindow):
         self.confirm_btn = QPushButton(self.widget)
         self.form_layout.addWidget(self.confirm_btn, 4, 2, alignment=Qt.AlignCenter)
         config_btn(self.confirm_btn, "Confirmar")
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         self.setFixedSize(self.minimumSizeHint())
 
