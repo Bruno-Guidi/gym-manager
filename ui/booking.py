@@ -66,9 +66,17 @@ class MainController:
         self.main_ui.cancel_btn.clicked.connect(self.cancel_booking)
         # noinspection PyUnresolvedReferences
         self.main_ui.history_btn.clicked.connect(self.cancelled_bookings)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.booking_table.itemSelectionChanged.connect(self.refresh_booking_info)
 
     def refresh_booking_info(self):
-        pass
+        row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
+        if col in self._bookings and row in self._bookings[col]:
+            booking = self._bookings[col][row]
+            self.main_ui.court_line.setText(booking.court)
+            self.main_ui.hour_line.setText(booking.start.strftime("%H:%M"))
+            self.main_ui.client_line.setText(booking.client_name.as_primitive())
+            self.main_ui.amount_line.setText(Currency.fmt(self.booking_system.amount_to_charge(booking), symbol=""))
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
