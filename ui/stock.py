@@ -52,7 +52,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.create_action.triggered.connect(self.create_item)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_item)
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_btn.clicked.connect(self.remove)
         # noinspection PyUnresolvedReferences
@@ -97,30 +97,21 @@ class MainController:
         if self._create_ui.controller.item is not None:
             self._add_item(self._create_ui.controller.item, check_filters=True, check_limit=True)
 
-    def save_changes(self):
+    def edit_item(self):
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un item.")
+            Dialog.info("Error", "Seleccione un item en la tabla.")
             return
 
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value()]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        else:
-            old_name = self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()
-            item = self.items[old_name]
-            # noinspection PyTypeChecker
-            update_item(self.item_repo, item, self.main_ui.name_field.value(), self.main_ui.price_field.value())
+        item = self.items[self.main_ui.item_table.currentRow()]
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.item_repo, item)
+        self._edit_ui.exec_()
 
-            if old_name != item.name.as_primitive():
-                self.items.pop(old_name)
-                self.items[item.name.as_primitive()] = item
-
-            # Updates the ui.
-            row = self.main_ui.item_table.currentRow()
-            fill_cell(self.main_ui.item_table, row, 0, item.name, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int,
-                      increase_row_count=False)
-
-            Dialog.info("Éxito", f"El ítem '{item.name}' fue actualizado correctamente.")
+        # Updates the ui.
+        row = self.main_ui.item_table.currentRow()
+        fill_cell(self.main_ui.item_table, row, 0, item.name, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int,
+                  increase_row_count=False)
 
     def remove(self):
         if self.main_ui.item_table.currentRow() == -1:
@@ -396,6 +387,83 @@ class CreateUI(QDialog):
         self.fixed_checkbox = QCheckBox(self)
         self.form_layout.addWidget(self.fixed_checkbox, 3, 1)
         config_checkbox(self.fixed_checkbox, checked=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, item_repo: ItemRepo, item: Item) -> None:
+        self.edit_ui = edit_ui
+
+        self.item = item
+        self.item_repo = item_repo
+
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_item)
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
+
+    # noinspection PyTypeChecker
+    def edit_item(self):
+        if not all([self.edit_ui.name_field.valid_value(), self.edit_ui.price_field.valid_value()]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            update_item(self.item_repo, self.item, self.edit_ui.name_field.value(), self.edit_ui.price_field.value())
+
+            Dialog.info("Éxito", f"El ítem '{self.item.name}' fue actualizado correctamente.")
+            self.edit_ui.name_field.window().close()
+
+
+class EditUI(QDialog):
+    def __init__(self, item_repo: ItemRepo, item: Item) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = EditController(self, item_repo, item)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Editar ítem")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Nombre*")
+
+        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # Price.
+        self.price_lbl = QLabel(self)
+        self.form_layout.addWidget(self.price_lbl, 1, 0)
+        config_lbl(self.price_lbl, "Precio*")
+
+        self.price_field = Field(Currency, parent=self, positive=True)
+        self.form_layout.addWidget(self.price_field, 1, 1)
+        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
