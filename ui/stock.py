@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from datetime import date
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
@@ -11,12 +12,13 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.core.base import String, Currency, TextLike, Number
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
-from gym_manager.core.security import SecurityHandler
+from gym_manager.core.security import SecurityHandler, SecurityError
 from gym_manager.stock.core import (
     ItemRepo, Item, create_item, update_item, remove_item, update_item_amount,
     register_item_charge)
 from ui import utils
 from ui.accounting import ChargeUI
+from ui.utils import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox, config_checkbox)
 from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
@@ -59,8 +61,6 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.remove_action.triggered.connect(self.remove_item)
         # noinspection PyUnresolvedReferences
-        self.main_ui.item_table.itemSelectionChanged.connect(self.refresh_form)
-        # noinspection PyUnresolvedReferences
         self.main_ui.confirm_btn.clicked.connect(self.execute_action)
 
     def _add_item(self, item: Item, check_filters: bool, check_limit: bool = False):
@@ -81,16 +81,6 @@ class MainController:
 
         for item in self.item_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
             self._add_item(item, check_filters=False)  # Activities are filtered in the repo.
-
-    def refresh_form(self):
-        row = self.main_ui.item_table.currentRow()
-        if row != -1:
-            self.main_ui.name_field.setText(str(self.items[row].name))
-            self.main_ui.price_field.setText(Currency.fmt(self.items[row].price, symbol=''))
-        else:
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
 
     def create_item(self):
         # noinspection PyAttributeOutsideInit
@@ -136,7 +126,7 @@ class MainController:
 
     def _update_item_amount(self, decrease: bool):
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un item.")
+            Dialog.info("Error", "Seleccione un item en la tabla.")
             return
 
         item = self.items[self.main_ui.item_table.currentRow()]
@@ -153,33 +143,46 @@ class MainController:
             self.main_ui.amount_field.clear()
 
     def _charge_item(self):
+        self.main_ui.responsible_field.setStyleSheet("")
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un item.")
+            Dialog.info("Error", "Seleccione un item en la tabla.")
             return
 
         item = self.items[self.main_ui.item_table.currentRow()]
         # noinspection PyTypeChecker
         if not self.main_ui.amount_field.valid_value() or self.main_ui.amount_field.value() > item.amount:
+            self.main_ui.amount_field.setStyleSheet("border: 1px solid red")
             Dialog.info("Error", "La cantidad no es válida.")
-            return
+        else:
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
+                item_amount = self.main_ui.amount_field.value()
+                # noinspection PyTypeChecker
+                create_transaction_fn = functools.partial(
+                    self.transaction_repo.create, "Cobro", date.today(), item.total_price(item_amount.as_primitive()),
+                    self.main_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                    f"Cobro de {self.main_ui.amount_field.value().as_primitive()} '{item.name}', a "
+                    f"{Currency.fmt(item.price)} cada uno."
+                )
 
-        register_charge = functools.partial(register_item_charge, self.item_repo, item,
-                                            self.main_ui.amount_field.value())
-        total = item.total_price(self.main_ui.amount_field.value().as_primitive())
-        # noinspection PyAttributeOutsideInit
-        self._charge_ui = ChargeUI(
-            self.transaction_repo, self.security_handler, total,
-            String(f"Cobro de {self.main_ui.amount_field.value()} '{item.name}' por un total de {Currency.fmt(total)}"),
-            post_charge_fn=register_charge
-        )
-        self._charge_ui.exec_()
+                # noinspection PyTypeChecker
+                register_item_charge(self.item_repo, item, item_amount, create_transaction_fn)
 
-        if self._charge_ui.controller.success:
-            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
-            self.main_ui.amount_field.clear()
+                self.main_ui.responsible_field.setStyleSheet("")
+                Dialog.info("Éxito", f"El cobro de {self.main_ui.amount_field.value().as_primitive()} '{item.name}', a "
+                                     f"{Currency.fmt(item.price)} cada uno, fue registrado.")
+
+                # Updates the ui.
+                fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
+                self.main_ui.amount_field.clear()
+
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def execute_action(self):
-        self.main_ui.action_combobox.currentData(Qt.UserRole)[1]()
+        if self.main_ui.charge_item.isChecked():
+            self._charge_item()
 
 
 class StockMainUI(QMainWindow):
@@ -264,18 +267,13 @@ class StockMainUI(QMainWindow):
         config_lbl(self.amount_lbl, "Cantidad*")
 
         self.amount_field = Field(Number, parent=self.widget, optional=False, min_value=1)
-        self.form_layout.addWidget(self.amount_field, 1, 1, 1, 2)
+        self.form_layout.addWidget(self.amount_field, 1, 1)
         config_line(self.amount_field)
 
         # Method.
         self.method_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.method_combobox, 2, 0)
+        self.form_layout.addWidget(self.method_combobox, 1, 2)
         config_combobox(self.method_combobox)
-
-        # Amount.
-        self.price_line = Field(Currency, parent=self, positive=True)
-        self.form_layout.addWidget(self.price_line, 2, 1, 1, 2)
-        config_line(self.price_line, place_holder="000000,00", alignment=Qt.AlignRight)
 
         # Description
         self.description_text = QTextEdit(self.widget)
