@@ -317,6 +317,7 @@ def test_closeBalance_withCreateExtractionFn():
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(200), "Débito": Currency(100), "Total": Currency(300)}}
     # Then assert that all transactions included in the balance have their balance_date correctly set.
+    transactions.sort(key=lambda transaction: transaction.id, reverse=True)
     assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 4))]
 
     # We are generating and closing the balance of 05/05/2022.
@@ -341,4 +342,5 @@ def test_closeBalance_withCreateExtractionFn():
     assert balance == {"Cobro": {"Total": Currency(0)},
                        "Extracción": {"Efectivo": Currency(1100), "Débito": Currency(100), "Total": Currency(1200)}}
     # Then assert that all transactions included in the balance have their balance_date correctly set.
+    transactions.sort(key=lambda transaction: transaction.id, reverse=True)
     assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 5))]
