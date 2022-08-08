@@ -276,6 +276,8 @@ class CreateController:
             blocks = remaining_blocks(blocks, when)
         fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
 
+        self.create_ui.half_hour_btn.setChecked(True)
+
         # Configs the widgets so they have the same width.
         config_combobox(self.create_ui.block_combobox)
         config_combobox(self.create_ui.court_combobox, fixed_width=self.create_ui.block_combobox.width())
