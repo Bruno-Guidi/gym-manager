@@ -201,15 +201,27 @@ class BookingMainUI(QMainWindow):
         self.top_layout = QHBoxLayout()
         self.layout.addLayout(self.top_layout)
 
-        self.left_layout = QVBoxLayout()
-        self.top_layout.addLayout(self.left_layout)
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.top_layout.addLayout(self.buttons_layout)
+
+        self.create_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.create_btn)
+        config_btn(self.create_btn, "Reservar turno", font_size=16)
+
+        self.cancel_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar turno", font_size=16)
+
+        self.history_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.history_btn)
+        config_btn(self.history_btn, "Ver borrados", font_size=16)
 
         self.top_layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
 
         # Charge form.
         self.charge_form_layout = QGridLayout()
         self.top_layout.addLayout(self.charge_form_layout)
-        self.charge_form_layout.setContentsMargins(50, 0, 50, 0)
 
         # Responsible.
         self.responsible_lbl = QLabel(self.widget)
@@ -263,33 +275,13 @@ class BookingMainUI(QMainWindow):
         self.charge_form_layout.addWidget(self.charge_btn, 1, 3, 2, 3, alignment=Qt.AlignCenter)
         config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
 
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.left_layout.addLayout(self.buttons_layout)
-        self.left_layout.setAlignment(Qt.AlignLeft)
-
-        # self.charge_btn = QPushButton(self.widget)
-        # self.buttons_layout.addWidget(self.charge_btn)
-        # config_btn(self.charge_btn, "Cobrar turno", font_size=16)
-
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, "Reservar turno", font_size=16)
-
-        self.cancel_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar turno", font_size=16)
-
-        self.history_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.history_btn)
-        config_btn(self.history_btn, "Ver borrados", font_size=16)
+        self.layout.addWidget(Separator(vertical=False, parent=self.widget))  # Vertical line.
 
         # Date index.
         self.date_layout = QHBoxLayout()
-        self.left_layout.addLayout(self.date_layout)
+        self.layout.addLayout(self.date_layout)
         config_layout(self.date_layout)
         self.date_layout.setSpacing(0)
-        self.date_layout.setAlignment(Qt.AlignLeft)
 
         self.date_lbl = QLabel(self.widget)
         self.date_layout.addWidget(self.date_lbl)
