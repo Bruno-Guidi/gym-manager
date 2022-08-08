@@ -121,8 +121,6 @@ def main():
 
     backup_fn = functools.partial(create_backup, "gym_manager.db", config_dict["backups_dir"])
 
-    _load_bookings(booking_system)
-
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
                     contact_repo, item_repo, security_handler, enable_tools=config_dict["enable_utility_functions"],
