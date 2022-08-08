@@ -3,9 +3,11 @@ from __future__ import annotations
 import functools
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox, QMenu, QAction)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox, QMenu, QAction,
+    QButtonGroup, QRadioButton, QTextEdit)
 
 from gym_manager.core.base import String, Currency, TextLike, Number
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
@@ -17,7 +19,7 @@ from ui import utils
 from ui.accounting import ChargeUI
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox, config_checkbox)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp, responsible_field
 
 
 class MainController:
@@ -45,8 +47,6 @@ class MainController:
         decrease_stock = ("Reducir stock", functools.partial(self._update_item_amount, True))
         increase_stock = ("Agregar stock", functools.partial(self._update_item_amount, False))
         charge_item = ("Cobrar item", self._charge_item)
-        fill_combobox(self.main_ui.action_combobox, (decrease_stock, increase_stock, charge_item),
-                      display=lambda pair: pair[0])
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
@@ -234,28 +234,62 @@ class StockMainUI(QMainWindow):
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
 
-        # Layout with actions to execute related to stock.
-        self.action_layout = QGridLayout()
-        self.right_layout.addLayout(self.action_layout)
+        # Actions to execute related to stock.
+        self.charge_filter_group = QButtonGroup(self.widget)
+        font = QFont("MS Shell Dlg 2", 14)
 
-        self.action_lbl = QLabel(self.widget)
-        self.action_layout.addWidget(self.action_lbl, 0, 0)
-        config_lbl(self.action_lbl, "Acción")
+        self.add_stock = QRadioButton("Agregar stock")
+        self.charge_filter_group.addButton(self.add_stock)
+        self.right_layout.addWidget(self.add_stock)
+        self.add_stock.setFont(font)
+
+        self.remove_stock = QRadioButton("Reducir stock")
+        self.charge_filter_group.addButton(self.remove_stock)
+        self.right_layout.addWidget(self.remove_stock)
+        self.remove_stock.setFont(font)
+
+        self.charge_item = QRadioButton("Cobrar ítem")
+        self.charge_filter_group.addButton(self.charge_item)
+        self.right_layout.addWidget(self.charge_item)
+        self.charge_item.setFont(font)
+
+        self.form_layout = QGridLayout()
+        self.right_layout.addLayout(self.form_layout)
 
         self.amount_lbl = QLabel(self.widget)
-        self.action_layout.addWidget(self.amount_lbl, 1, 0)
+        self.form_layout.addWidget(self.amount_lbl, 1, 0)
         config_lbl(self.amount_lbl, "Cantidad*")
 
         self.amount_field = Field(Number, parent=self.widget, optional=False, min_value=1)
-        self.action_layout.addWidget(self.amount_field, 1, 1)
+        self.form_layout.addWidget(self.amount_field, 1, 1, 1, 2)
         config_line(self.amount_field)
 
-        self.action_combobox = QComboBox(self.widget)
-        self.action_layout.addWidget(self.action_combobox, 0, 1)
-        config_combobox(self.action_combobox, fixed_width=self.amount_field.width())
+        # Method.
+        self.method_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.method_combobox, 2, 0)
+        config_combobox(self.method_combobox)
+
+        # Amount.
+        self.price_line = Field(Currency, parent=self, positive=True)
+        self.form_layout.addWidget(self.price_line, 2, 1, 1, 2)
+        config_line(self.price_line, place_holder="000000,00", alignment=Qt.AlignRight)
+
+        # Description
+        self.description_text = QTextEdit(self.widget)
+        self.form_layout.addWidget(self.description_text, 3, 0, 1, 3)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+
+        # Responsible
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 4, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self)
+        self.form_layout.addWidget(self.responsible_field, 4, 1)
+        config_line(self.responsible_field, fixed_width=100)
 
         self.confirm_btn = QPushButton(self.widget)
-        self.right_layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
+        self.form_layout.addWidget(self.confirm_btn, 4, 2, alignment=Qt.AlignCenter)
         config_btn(self.confirm_btn, "Confirmar")
 
         # Vertical spacer.
