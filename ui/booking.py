@@ -570,9 +570,7 @@ class HistoryController:
 
         # Configure the filtering widget.
         filters = (ClientLike("client_name", display_name="Nombre cliente",
-                              translate_fun=lambda trans, value: trans.client.cli_name.contains(value)),
-                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-                               translate_fun=lambda trans, value: trans.client.dni == value))
+                              translate_fun=lambda cancelled, value: cancelled.client_name.contains(value)),)
         date_greater_filter = DateGreater(
             "from", display_name="Desde", attr="when",
             translate_fun=lambda cancelled, datetime_: cancelled.cancel_datetime >= datetime_
