@@ -62,6 +62,13 @@ class MainController:
         self.main_ui.remove_action.triggered.connect(self.remove_item)
         # noinspection PyUnresolvedReferences
         self.main_ui.confirm_btn.clicked.connect(self.execute_action)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.action_group.buttonClicked.connect(self.enable_widgets)
+
+    def enable_widgets(self):
+        self.main_ui.method_combobox.setEnabled(
+            self.main_ui.charge_item.isChecked()
+        )
 
     def _add_item(self, item: Item, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.item_table.rowCount() == self.main_ui.page_index.page_len:
