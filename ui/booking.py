@@ -145,33 +145,41 @@ class MainController:
                 self._load_booking(self._create_ui.controller.booking)
 
     def charge_booking(self):
-        row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
-        when = self.main_ui.date_edit.date().toPyDate()
-        if col not in self._bookings or row not in self._bookings[col]:
-            Dialog.info("Error", "No existe un turno en el horario seleccionado.")
-            return
+        self.main_ui.responsible_field.setStyleSheet("")
+        if not self.main_ui.amount_line.valid_value():
+            Dialog.info("Error", f"El monto ingresado no es válido.")
+        else:
+            b = self._bookings[self.main_ui.booking_table.currentColumn()][self.main_ui.booking_table.currentRow()]
+            when = self.main_ui.date_edit.date().toPyDate()
 
-        booking = self._bookings[col][row]
-        if when > date.today() or (when == datetime.now().date() and booking.start > datetime.now().time()):
-            Dialog.info("Error", "No se puede cobrar un turno que todavía no comenzó.")
-            return
-        if booking.was_paid(when):
-            Dialog.info("Error", f"El turno ya fue cobrado.")
-            return
+            if when > date.today() or (when == datetime.now().date() and b.start > datetime.now().time()):
+                Dialog.info("Error", "No se puede cobrar un turno que todavía no comenzó.")
+                return
+            if b.was_paid(when):
+                Dialog.info("Error", f"El turno ya fue cobrado.")
+                return
 
-        register_booking_charge = functools.partial(self.booking_system.register_charge, booking, when)
-        # noinspection PyAttributeOutsideInit
-        self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler,
-                                   self.booking_system.amount_to_charge(booking),
-                                   String(f"Cobro de turno de padel en cancha {booking.court}."),
-                                   register_booking_charge)
-        self._charge_ui.exec_()
-        if self._charge_ui.controller.success:
-            text = (f"{booking.client_name}{' (Fijo)' if booking.is_fixed else ''}"
-                    f"{' (Pago)' if booking.was_paid(when) else ''}")
-            start, end = self.booking_system.block_range(booking.start, booking.end)
-            for i in range(start, end):
-                self.main_ui.booking_table.item(i, col).setText(text)
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
+
+                create_transaction_fn = functools.partial(
+                    self.transaction_repo.create, "Cobro", date.today(), self.main_ui.amount_line.value(),
+                    self.main_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                    f"Cobro de turno de Padel a '{b.client_name}'."
+                )
+                self.booking_system.register_charge(b, when, create_transaction_fn)
+
+                # Updates the ui.
+                text = f"{b.client_name}{' (Fijo)' if b.is_fixed else ''}{' (Pago)' if b.was_paid(when) else ''}"
+                start, end = self.booking_system.block_range(b.start, b.end)
+                for i in range(start, end):
+                    self.main_ui.booking_table.item(i, self.main_ui.booking_table.currentColumn()).setText(text)
+
+                Dialog.info("Éxito", f"El cobro a '{b.client_name}' por el turno fue registrado.")
+
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def cancel_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
