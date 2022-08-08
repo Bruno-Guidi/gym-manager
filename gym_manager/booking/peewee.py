@@ -5,15 +5,15 @@ from typing import Generator
 
 from peewee import (
     Model, CharField, ForeignKeyField, BooleanField, TimeField, IntegerField, prefetch,
-    JOIN, CompositeKey, DateTimeField, DateField)
+    CompositeKey, DateTimeField, DateField)
 from playhouse.sqlite_ext import JSONField
 
 from gym_manager import peewee
 from gym_manager.booking.core import TempBooking, BookingRepo, Booking, FixedBooking, Cancellation
-from gym_manager.core.base import Transaction, String, Number
+from gym_manager.core.base import Transaction, String
 from gym_manager.core.persistence import (
-    ClientRepo, TransactionRepo, FilterValuePair, PersistenceError,
-    ClientView, LRUCache)
+    TransactionRepo, FilterValuePair, PersistenceError,
+    LRUCache)
 from gym_manager.peewee import TransactionTable
 
 logger = logging.getLogger(__name__)
@@ -88,22 +88,14 @@ class FixedBookingKey:
 
 class SqliteBookingRepo(BookingRepo):
 
-    def __init__(
-            self,
-            client_repo: ClientRepo,
-            transaction_repo: TransactionRepo,
-            cache_len: int
-    ) -> None:
+    def __init__(self, transaction_repo: TransactionRepo, cache_len: int) -> None:
         peewee.DATABASE_PROXY.create_tables([BookingTable, FixedBookingTable, CancelledLog])
 
-        self.client_repo = client_repo
         self.transaction_repo = transaction_repo
 
         self.temp_booking_cache = LRUCache(TempBookingKey, TempBooking, max_len=cache_len)
         self.fixed_booking_cache = LRUCache(FixedBookingKey, FixedBooking, max_len=cache_len)
         self.cancellation_cache = LRUCache(int, Cancellation, max_len=int(cache_len / 2))
-        # In the worst case, all bookings in the cache have a different client.
-        self.client_view_cache = LRUCache(int, ClientView, max_len=cache_len)
 
     def add(self, booking: Booking):
         # In both cases, Booking.transaction is ignored, because its supposed that a newly added booking won't have an
