@@ -11,9 +11,9 @@ from PyQt5.QtWidgets import QApplication
 
 from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
-from gym_manager.booking.core import BookingSystem, Duration, BookingRepo
+from gym_manager.booking.core import BookingSystem, BookingRepo
 from gym_manager.contact.peewee import SqliteContactRepo
-from gym_manager.core.base import Currency, String, Activity
+from gym_manager.core.base import Currency, String
 from gym_manager.core.persistence import create_backup
 from gym_manager.core.security import log_responsible, SimpleSecurityHandler, Responsible
 from gym_manager.stock.peewee import SqliteItemRepo
@@ -35,13 +35,13 @@ QCheckBox::indicator::checked {
 def _save_bookings(booking_repo: BookingRepo):
     with open("booking_backup.json", 'w') as file:
         all_fixed = [
-            {"court": fixed_b.court, "client": fixed_b.client.name.as_primitive(),
+            {"court": fixed_b.court, "client": fixed_b.client_name.as_primitive(),
              "start": fixed_b.start.strftime("%H:%M"), "end": fixed_b.end.strftime("%H:%M"),
              "day_of_week": fixed_b.day_of_week, "first_when": fixed_b.first_when.strftime("%d/%m/%Y")}
             for fixed_b in booking_repo.all_fixed()
         ]
         all_temp = [
-            {"court": temp_b.court, "client": temp_b.client.name.as_primitive(),
+            {"court": temp_b.court, "client": temp_b.client_name.as_primitive(),
              "start": temp_b.start.strftime("%H:%M"), "end": temp_b.end.strftime("%H:%M"),
              "when": temp_b.when.strftime("%d/%m/%Y")}
             for temp_b in booking_repo.all_temporal()
@@ -75,7 +75,7 @@ def main():
     else:
         booking_double = activity_repo.create(String("Padel Dobles"), Currency(200.00), String("Precio por media hora"),
                                               charge_once=True, locked=True)
-    booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)
+    booking_repo = booking_peewee.SqliteBookingRepo(transaction_repo, cache_len=128)
     booking_system = BookingSystem(
         booking_repo, courts=(("1", booking_double.price), ("2", booking_double.price), ("3", booking_single.price)),
         start=time(8, 0), end=time(23, 0), minute_step=30
