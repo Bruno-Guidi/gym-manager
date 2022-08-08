@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QApplication
 
 from gym_manager import peewee
 from gym_manager.booking import peewee as booking_peewee
-from gym_manager.booking.core import BookingSystem, Duration
+from gym_manager.booking.core import BookingSystem, Duration, BookingRepo
 from gym_manager.contact.peewee import SqliteContactRepo
 from gym_manager.core.base import Currency, String, Activity
 from gym_manager.core.persistence import create_backup
@@ -30,6 +30,23 @@ QCheckBox::indicator::checked {
     image: url(ui/resources/checkbox_checked.png);
 }
 """
+
+
+def _save_bookings(booking_repo: BookingRepo):
+    with open("booking_backup.json", 'w') as file:
+        all_fixed = [
+            {"court": fixed_b.court, "client": fixed_b.client.name.as_primitive(),
+             "start": fixed_b.start.strftime("%H:%M"), "end": fixed_b.end.strftime("%H:%M"),
+             "day_of_week": fixed_b.day_of_week, "first_when": fixed_b.first_when.strftime("%d/%m/%Y")}
+            for fixed_b in booking_repo.all_fixed()
+        ]
+        all_temp = [
+            {"court": temp_b.court, "client": temp_b.client.name.as_primitive(),
+             "start": temp_b.start.strftime("%H:%M"), "end": temp_b.end.strftime("%H:%M"),
+             "when": temp_b.when.strftime("%d/%m/%Y")}
+            for temp_b in booking_repo.all_temporal()
+        ]
+        json.dump({"fixed": all_fixed, "temp": all_temp}, file)
 
 
 def main():
