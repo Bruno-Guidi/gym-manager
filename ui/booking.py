@@ -112,17 +112,16 @@ class MainController:
     def charge_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
-        if row not in self._bookings or col not in self._bookings[row]:
+        if col not in self._bookings or row not in self._bookings[col]:
             Dialog.info("Error", "No existe un turno en el horario seleccionado.")
             return
 
-        booking = self._bookings[row][col]
+        booking = self._bookings[col][row]
         if when > date.today() or (when == datetime.now().date() and booking.start > datetime.now().time()):
             Dialog.info("Error", "No se puede cobrar un turno que todavía no comenzó.")
             return
         if booking.was_paid(when):
-            Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
-                                 f"'{booking.transaction.id}'")
+            Dialog.info("Error", f"El turno ya fue cobrado.")
             return
 
         register_booking_charge = functools.partial(self.booking_system.register_charge, booking, when)
@@ -134,7 +133,9 @@ class MainController:
         if self._charge_ui.controller.success:
             text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
                     f"{' (Pago)' if booking.was_paid(when) else ''}")
-            self.main_ui.booking_table.item(row, col).setText(text)
+            start, end = self.booking_system.block_range(booking.start, booking.end)
+            for i in range(start, end):
+                self.main_ui.booking_table.item(i, col).setText(text)
 
     def cancel_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
