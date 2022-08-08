@@ -1,18 +1,20 @@
 from __future__ import annotations
 
 import functools
+import math
 from datetime import date, datetime, timedelta
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QTableWidgetItem, QDateEdit, QDialog, QGridLayout, QLabel,
-    QComboBox, QCheckBox, QLineEdit, QDesktopWidget)
+    QComboBox, QCheckBox, QLineEdit, QDesktopWidget, QButtonGroup, QRadioButton)
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
-    remaining_blocks, Booking, subtract_times)
-from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String
+    remaining_blocks, Booking, subtract_times, Duration)
+from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String, Number
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
@@ -274,22 +276,49 @@ class CreateController:
         if not allow_passed_time_bookings:
             blocks = remaining_blocks(blocks, when)
         fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
-        # fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
+
+        self.create_ui.half_hour_btn.setChecked(True)
+        self.enable_other_field()
 
         # Configs the widgets so they have the same width.
         config_combobox(self.create_ui.block_combobox)
         config_combobox(self.create_ui.court_combobox, fixed_width=self.create_ui.block_combobox.width())
-        config_combobox(self.create_ui.duration_combobox, fixed_width=self.create_ui.block_combobox.width())
 
         # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+        # noinspection PyUnresolvedReferences
+        self.create_ui.charge_filter_group.buttonClicked.connect(self.enable_other_field)
+
+    def enable_other_field(self):
+        self.create_ui.other_field.setEnabled(self.create_ui.other_btn.isChecked())
+
+    def _get_duration(self):
+        minutes: int
+        if self.create_ui.half_hour_btn.isChecked():
+            minutes = 30
+        elif self.create_ui.one_hour_btn.isChecked():
+            minutes = 60
+        elif self.create_ui.one_half_hour_btn.isChecked():
+            minutes = 90
+        elif self.create_ui.two_hour_btn.isChecked():
+            minutes = 120
+        else:
+            minutes = self.create_ui.other_field.value().as_primitive()
+            # If the booking duration isn't "n times 30", then add another 30 minutes to it.
+            minutes = 30 * math.ceil(minutes / 30)
+
+        return Duration.from_td(timedelta(minutes=minutes))
 
     def create_booking(self):
         court = self.create_ui.court_combobox.currentData(Qt.UserRole)
         start_block = self.create_ui.block_combobox.currentData(Qt.UserRole)
-        duration = self.create_ui.duration_combobox.currentData(Qt.UserRole)
+
+        if self.create_ui.other_btn.isChecked() and not self.create_ui.other_field.valid_value():
+            Dialog.info("Error", "La duración ingresada para el turno no es válida.")
+            return
+        duration = self._get_duration()
 
         if not self.create_ui.client_field.valid_value():
             Dialog.info("Error", "El campo Cliente no es válido.")
@@ -300,16 +329,12 @@ class CreateController:
                                                        self.create_ui.fixed_checkbox.isChecked()):
             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
         else:
-            try:
-                self.security_handler.current_responsible = self.create_ui.responsible_field.value()
-                # noinspection PyTypeChecker
-                self.booking = self.booking_system.book(court, self.create_ui.client_field.value(),
-                                                        self.create_ui.fixed_checkbox.isChecked(), self.when,
-                                                        start_block.start, duration)
-                Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
-                self.create_ui.client_field.window().close()
-            except SecurityError as sec_err:
-                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
+            # noinspection PyTypeChecker
+            self.booking = self.booking_system.book(court, self.create_ui.client_field.value(),
+                                                    self.create_ui.fixed_checkbox.isChecked(), self.when,
+                                                    start_block.start, duration)
+            Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
+            self.create_ui.client_field.window().close()
 
 
 class CreateUI(QDialog):
@@ -341,41 +366,66 @@ class CreateUI(QDialog):
         config_line(self.client_field, place_holder="Cliente")
 
         self.date_lbl = QLabel(self)
-        self.form_layout.addWidget(self.date_lbl, 1, 0)
+        self.form_layout.addWidget(self.date_lbl, 0, 2)
         config_lbl(self.date_lbl, "Fecha")
 
         self.date_edit = QDateEdit(self)  # Configured in CreateController.
-        self.form_layout.addWidget(self.date_edit, 1, 1)
+        self.form_layout.addWidget(self.date_edit, 0, 3)
 
         self.court_lbl = QLabel(self)
-        self.form_layout.addWidget(self.court_lbl, 2, 0)
+        self.form_layout.addWidget(self.court_lbl, 1, 0)
         config_lbl(self.court_lbl, "Cancha")
 
         self.court_combobox = QComboBox(self)  # The configuration is done in _fill_block_combobox.
-        self.form_layout.addWidget(self.court_combobox, 2, 1)
+        self.form_layout.addWidget(self.court_combobox, 1, 1)
 
         self.hour_lbl = QLabel(self)
-        self.form_layout.addWidget(self.hour_lbl, 3, 0)
+        self.form_layout.addWidget(self.hour_lbl, 1, 2)
         config_lbl(self.hour_lbl, "Hora")
 
         self.block_combobox = QComboBox(self)  # The configuration is done in _fill_block_combobox.
-        self.form_layout.addWidget(self.block_combobox, 3, 1)
+        self.form_layout.addWidget(self.block_combobox, 1, 3)
 
+        # Duration.
         self.duration_lbl = QLabel(self)
         self.form_layout.addWidget(self.duration_lbl, 4, 0)
         config_lbl(self.duration_lbl, "Duración")
 
-        self.duration_combobox = QComboBox(self)  # The configuration is done in _fill_block_combobox.
-        self.form_layout.addWidget(self.duration_combobox, 4, 1)
+        self.duration_layout = QHBoxLayout()
+        self.form_layout.addLayout(self.duration_layout, 4, 1, 1, 3)
+        self.duration_layout.setAlignment(Qt.AlignCenter)
+        self.charge_filter_group = QButtonGroup(self)
 
-        # Responsible.
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 5, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
+        font = QFont("MS Shell Dlg 2", 14)
 
-        self.responsible_field = responsible_field(self)
-        self.form_layout.addWidget(self.responsible_field, 5, 1)
-        config_line(self.responsible_field)
+        self.half_hour_btn = QRadioButton("30m")
+        self.charge_filter_group.addButton(self.half_hour_btn)
+        self.duration_layout.addWidget(self.half_hour_btn)
+        self.half_hour_btn.setFont(font)
+
+        self.one_hour_btn = QRadioButton("1h")
+        self.charge_filter_group.addButton(self.one_hour_btn)
+        self.duration_layout.addWidget(self.one_hour_btn)
+        self.one_hour_btn.setFont(font)
+
+        self.one_half_hour_btn = QRadioButton("1h30")
+        self.charge_filter_group.addButton(self.one_half_hour_btn)
+        self.duration_layout.addWidget(self.one_half_hour_btn)
+        self.one_half_hour_btn.setFont(font)
+
+        self.two_hour_btn = QRadioButton("2h")
+        self.charge_filter_group.addButton(self.two_hour_btn)
+        self.duration_layout.addWidget(self.two_hour_btn)
+        self.two_hour_btn.setFont(font)
+
+        self.other_btn = QRadioButton("Otra")
+        self.charge_filter_group.addButton(self.other_btn)
+        self.duration_layout.addWidget(self.other_btn)
+        self.other_btn.setFont(font)
+
+        self.other_field = Field(Number, parent=self, min_value=1, max_value=601)
+        self.duration_layout.addWidget(self.other_field)
+        config_line(self.other_field, place_holder="Minutos", fixed_width=75)
 
         self.fixed_lbl = QLabel(self)
         self.form_layout.addWidget(self.fixed_lbl, 6, 0)
