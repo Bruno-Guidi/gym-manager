@@ -206,7 +206,7 @@ class BookingMainUI(QMainWindow):
 
         self.history_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.history_btn)
-        config_btn(self.history_btn, "Ver cancelados", font_size=16)
+        config_btn(self.history_btn, "Ver borrados", font_size=16)
 
         # Vertical spacer.
         self.spacer_item = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
