@@ -68,12 +68,12 @@ def main():
     if activity_repo.exists(1):
         booking_single = activity_repo.get(1)
     else:
-        booking_single = activity_repo.create(String("Padel Single"), Currency(100.00), String("d", max_len=10),
+        booking_single = activity_repo.create(String("Padel Single"), Currency(100.00), String("Precio por media hora"),
                                               charge_once=True, locked=True)
     if activity_repo.exists(2):
         booking_double = activity_repo.get(2)
     else:
-        booking_double = activity_repo.create(String("Padel Dobles"), Currency(200.00), String("d", max_len=10),
+        booking_double = activity_repo.create(String("Padel Dobles"), Currency(200.00), String("Precio por media hora"),
                                               charge_once=True, locked=True)
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)
     booking_system = BookingSystem(
