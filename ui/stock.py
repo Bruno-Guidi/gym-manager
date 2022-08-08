@@ -50,7 +50,7 @@ class MainController:
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_item)
         # noinspection PyUnresolvedReferences
         self.main_ui.save_btn.clicked.connect(self.save_changes)
         # noinspection PyUnresolvedReferences
@@ -90,7 +90,7 @@ class MainController:
             self.main_ui.name_field.clear()
             self.main_ui.price_field.clear()
 
-    def create_ui(self):
+    def create_item(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.item_repo)
         self._create_ui.exec_()
