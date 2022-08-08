@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator, TypeAlias
 
 from gym_manager.core.api import CreateTransactionFn
-from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String
+from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String, Currency
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import log_responsible
 
@@ -87,11 +87,14 @@ Cancellation = namedtuple("Cancellation",
 
 
 class Duration:
+    @classmethod
+    def from_td(cls, td: timedelta) -> Duration:
+        return Duration(minutes=0, as_str="", td=td)
 
-    def __init__(self, minutes: int, as_str: str) -> None:
+    def __init__(self, minutes: int, as_str: str, td: timedelta | None = None) -> None:
         self.minutes = minutes
         self.as_str = as_str
-        self.as_timedelta = timedelta(minutes=minutes)
+        self.as_timedelta = timedelta(minutes=minutes) if td is None else td
 
 
 class Block:
@@ -127,9 +130,9 @@ class State:
 
 class Booking(abc.ABC):
 
-    def __init__(self, court: str, client: Client, start: time, end: time, transaction: Transaction | None = None):
+    def __init__(self, court: str, client_name: String, start: time, end: time, transaction: Transaction | None = None):
         self.court = court
-        self.client = client
+        self.client_name = client_name
         self.start = start
         self.end = end
         self.transaction = transaction
@@ -179,10 +182,10 @@ class Booking(abc.ABC):
 class TempBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, when: date,
+            self, court: str, client_name: String, start: time, end: time, when: date,
             transaction: Transaction | None = None, is_fixed: bool = False
     ):
-        super().__init__(court, client, start, end, transaction)
+        super().__init__(court, client_name, start, end, transaction)
         self._when = when
         self._is_fixed = is_fixed
 
@@ -221,14 +224,14 @@ class TempBooking(Booking):
 class FixedBooking(Booking):
 
     def __init__(
-            self, court: str, client: Client, start: time, end: time, day_of_week: int, first_when: date,
+            self, court: str, client_name: String, start: time, end: time, day_of_week: int, first_when: date,
             last_when: date | None = None, inactive_dates: list[dict[str, date]] | None = None,
             transaction: Transaction | None = None
     ):
         if day_of_week != first_when.weekday():
             raise OperationalError(f"The [day_of_week={day_of_week}] of the fixed booking is different than the "
                                    f"[day_of_week={first_when.weekday()}] of [first_when={first_when}]")
-        super().__init__(court, client, start, end, transaction)
+        super().__init__(court, client_name, start, end, transaction)
         self.day_of_week = day_of_week
         self.inactive_dates = [] if inactive_dates is None else inactive_dates
         self.first_when = first_when
@@ -337,14 +340,12 @@ class BookingSystem:
             yield Block(i, block_start, block_end)
 
     def __init__(
-            self, activity: Activity, repo: BookingRepo, durations: tuple[Duration, ...], courts_names: tuple[str, ...],
-            start: time, end: time, minute_step: int
+            self, repo: BookingRepo, courts: tuple[tuple[str, Currency], ...], start: time, end: time, minute_step: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
 
-        self.court_names = courts_names
-        self.durations = durations
+        self._courts = {name: price for name, price in courts}
 
         self.start, self.end = start, end
         self._blocks: dict[time, Block] = {block.start: block for block
@@ -352,9 +353,16 @@ class BookingSystem:
 
         self._bookings: dict[date, list[TempBooking]] = {}
 
-        self.activity = activity
         self.repo = repo
-        self.fixed_booking_handler = FixedBookingHandler(courts_names, self.repo.all_fixed())
+        self.fixed_booking_handler = FixedBookingHandler(self._courts.keys(), self.repo.all_fixed())
+
+    @property
+    def court_names(self) -> Iterable[str]:
+        return self._courts.keys()
+
+    def amount_to_charge(self, booking: Booking) -> Currency:
+        start_block, end_block = self.block_range(booking.start, booking.end)
+        return self._courts[booking.court].multiply_by_scalar(end_block - start_block)
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
@@ -419,7 +427,7 @@ class BookingSystem:
 
     @log_responsible(action_tag="create_booking", to_str=book_description)
     def book(
-            self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
+            self, court: str, client_name: String, is_fixed: bool, when: date, start: time, duration: Duration
     ) -> Booking:
         """Creates a Booking with the given data.
 
@@ -436,10 +444,44 @@ class BookingSystem:
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start, duration).time()
         if is_fixed:
-            booking = FixedBooking(court, client, start, end, when.weekday(), when)
+            booking = FixedBooking(court, client_name, start, end, when.weekday(), when)
             self.fixed_booking_handler.add(booking)
         else:
-            booking = TempBooking(court, client, start, end, when)
+            booking = TempBooking(court, client_name, start, end, when)
+
+        self.repo.add(booking)
+        return booking
+
+    def _get_duration(self, td: timedelta, duration_dict) -> Duration:
+        if td in duration_dict:
+            return duration_dict[td]
+        duration_dict[td] = Duration.from_td(td)
+        return duration_dict[td]
+
+    def book_with_end(
+            self, court: str, client_name: String, is_fixed: bool, when: date, start: time, end: time, duration_dict
+    ) -> Booking:
+        """Creates a Booking with the given data.
+
+        Raises:
+            OperationalError if the booking time is out of range, or if there is no available time for the booking.
+        """
+        duration = self._get_duration(datetime.combine(date.min, end) - datetime.combine(date.min, start),
+                                      duration_dict)
+        if self.out_of_range(start, duration):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
+                                   f"of the range [booking_start={self.start}, booking_end={self.end}].")
+        if not self.booking_available(when, court, start, duration, is_fixed):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] collides "
+                                   f"with existing booking/s.")
+
+        # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
+        # end = combine(date.min, start, duration).time()
+        if is_fixed:
+            booking = FixedBooking(court, client_name, start, end, when.weekday(), when)
+            self.fixed_booking_handler.add(booking)
+        else:
+            booking = TempBooking(court, client_name, start, end, when)
 
         self.repo.add(booking)
         return booking
