@@ -54,7 +54,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.edit_action.triggered.connect(self.edit_item)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
+        self.main_ui.remove_action.triggered.connect(self.remove_item)
         # noinspection PyUnresolvedReferences
         self.main_ui.item_table.itemSelectionChanged.connect(self.refresh_form)
         # noinspection PyUnresolvedReferences
@@ -112,9 +112,9 @@ class MainController:
         fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int,
                   increase_row_count=False)
 
-    def remove(self):
+    def remove_item(self):
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un ítem.")
+            Dialog.info("Error", "Seleccione un ítem en la tabla.")
             return
 
         item = self.items[self.main_ui.item_table.currentRow()]
