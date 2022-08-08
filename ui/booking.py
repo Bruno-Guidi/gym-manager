@@ -51,6 +51,7 @@ class MainController:
         self.allow_passed_time_bookings = allow_passed_time_bookings
 
         fill_combobox(self.main_ui.method_combobox, self.transaction_repo.methods, display=lambda method: method)
+        self.main_ui.charge_btn.setEnabled(False)
 
         self.load_bookings()
 
@@ -79,11 +80,13 @@ class MainController:
             self.main_ui.hour_line.setText(booking.start.strftime("%H:%M"))
             self.main_ui.client_line.setText(booking.client_name.as_primitive())
             self.main_ui.amount_line.setText(Currency.fmt(self.booking_system.amount_to_charge(booking), symbol=""))
+            self.main_ui.charge_btn.setEnabled(True)
         else:
             self.main_ui.court_line.clear()
             self.main_ui.hour_line.clear()
             self.main_ui.client_line.clear()
             self.main_ui.amount_line.clear()
+            self.main_ui.charge_btn.setEnabled(False)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
