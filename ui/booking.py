@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
     remaining_blocks, Booking, subtract_times)
-from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String
+from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
@@ -21,7 +21,7 @@ from ui.utils import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox, new_config_table)
-from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
+from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field, Field
 
 DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
 MONTH_NAMES = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
@@ -282,20 +282,17 @@ class CreateController:
         config_combobox(self.create_ui.duration_combobox, fixed_width=self.create_ui.block_combobox.width())
 
         # noinspection PyUnresolvedReferences
-        self.create_ui.add_client_btn.clicked.connect(self.create_client)
-        # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
 
     def create_booking(self):
-        cli = self.create_ui.client_combobox.currentData(Qt.UserRole)
         court = self.create_ui.court_combobox.currentData(Qt.UserRole)
         start_block = self.create_ui.block_combobox.currentData(Qt.UserRole)
         duration = self.create_ui.duration_combobox.currentData(Qt.UserRole)
 
-        if cli is None:
-            Dialog.info("Error", "Seleccione un cliente.")
+        if not self.create_ui.client_field.valid_value():
+            Dialog.info("Error", "El campo Cliente no es válido.")
         elif self.booking_system.out_of_range(start_block.start, duration):
             Dialog.info("Error", f"El turno debe ser entre las '{self.booking_system.start}' y las "
                                  f"'{self.booking_system.end}'.")
@@ -305,10 +302,12 @@ class CreateController:
         else:
             try:
                 self.security_handler.current_responsible = self.create_ui.responsible_field.value()
-                self.booking = self.booking_system.book(court, cli, self.create_ui.fixed_checkbox.isChecked(),
-                                                        self.when, start_block.start, duration)
+                # noinspection PyTypeChecker
+                self.booking = self.booking_system.book(court, self.create_ui.client_field.value(),
+                                                        self.create_ui.fixed_checkbox.isChecked(), self.when,
+                                                        start_block.start, duration)
                 Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
-                self.create_ui.client_combobox.window().close()
+                self.create_ui.client_field.window().close()
             except SecurityError as sec_err:
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
@@ -328,10 +327,6 @@ class CreateUI(QDialog):
         self.setWindowTitle("Reservar turno")
         self.layout = QVBoxLayout(self)
 
-        # Filtering.
-        self.filter_header = FilterHeader(show_clear_button=False)
-        self.layout.addWidget(self.filter_header)
-
         # Form.
         self.form_layout = QGridLayout()
         self.layout.addLayout(self.form_layout)
@@ -341,13 +336,9 @@ class CreateUI(QDialog):
         self.form_layout.addWidget(self.client_lbl, 0, 0)
         config_lbl(self.client_lbl, "Cliente*")
 
-        self.client_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.client_combobox, 0, 1)
-        config_combobox(self.client_combobox, fixed_width=200)
-
-        self.add_client_btn = QPushButton(self)
-        self.form_layout.addWidget(self.add_client_btn, 0, 2)
-        config_btn(self.add_client_btn, icon_path="ui/resources/plus.png", icon_size=32)
+        self.client_field = Field(String, parent=self, optional=False)
+        self.form_layout.addWidget(self.client_field, 0, 1)
+        config_line(self.client_field, place_holder="Cliente")
 
         self.date_lbl = QLabel(self)
         self.form_layout.addWidget(self.date_lbl, 1, 0)
