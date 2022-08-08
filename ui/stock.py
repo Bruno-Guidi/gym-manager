@@ -29,7 +29,7 @@ class MainController:
         self.item_repo = item_repo
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
-        self.items: dict[str, Item] = {}  # Dict that maps raw items name to the associated activity.
+        self.items: dict[int, Item] = {}  # Dict that maps row number to the item that it displays.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name"),)
@@ -67,8 +67,8 @@ class MainController:
         if check_filters and not self.main_ui.filter_header.passes_filters(item):
             return
 
-        self.items[item.name.as_primitive()] = item
         row = self.main_ui.item_table.rowCount()
+        self.items[row] = item
         fill_cell(self.main_ui.item_table, row, 0, item.name, data_type=str)
         fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int)
         fill_cell(self.main_ui.item_table, row, 2, item.amount, data_type=int)
@@ -77,14 +77,13 @@ class MainController:
         self.main_ui.item_table.setRowCount(0)
 
         for item in self.item_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-            self.items[item.name.as_primitive()] = item
             self._add_item(item, check_filters=False)  # Activities are filtered in the repo.
 
     def refresh_form(self):
-        if self.main_ui.item_table.currentRow() != -1:
-            item_name = self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()
-            self.main_ui.name_field.setText(str(self.items[item_name].name))
-            self.main_ui.price_field.setText(Currency.fmt(self.items[item_name].price, symbol=''))
+        row = self.main_ui.item_table.currentRow()
+        if row != -1:
+            self.main_ui.name_field.setText(str(self.items[row].name))
+            self.main_ui.price_field.setText(Currency.fmt(self.items[row].price, symbol=''))
         else:
             # Clears the form.
             self.main_ui.name_field.clear()
@@ -118,7 +117,7 @@ class MainController:
             Dialog.info("Error", "Seleccione un ítem.")
             return
 
-        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        item = self.items[self.main_ui.item_table.currentRow()]
 
         if Dialog.confirm(f"¿Desea eliminar el ítem '{item.name}'?"):
             remove_item(self.item_repo, item)
@@ -137,7 +136,7 @@ class MainController:
             Dialog.info("Error", "Seleccione un item.")
             return
 
-        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        item = self.items[self.main_ui.item_table.currentRow()]
         # noinspection PyTypeChecker
         if (not self.main_ui.amount_field.valid_value()
                 or (decrease and self.main_ui.amount_field.value() > item.amount)):
@@ -155,7 +154,7 @@ class MainController:
             Dialog.info("Error", "Seleccione un item.")
             return
 
-        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        item = self.items[self.main_ui.item_table.currentRow()]
         # noinspection PyTypeChecker
         if not self.main_ui.amount_field.valid_value() or self.main_ui.amount_field.value() > item.amount:
             Dialog.info("Error", "La cantidad no es válida.")
