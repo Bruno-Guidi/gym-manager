@@ -32,11 +32,15 @@ class MainController:
         self.balance_repo = balance_repo
         self.security_handler = security_handler
 
+        fill_combobox(self.acc_main_ui.method_combobox, self.transaction_repo.methods, display=lambda method: method)
         self._today_transactions: list[Transaction] = [t for t in transaction_repo.all()]
 
         # Calculates charges of the day.
         self.balance, self._today_transactions = api.generate_balance(self._today_transactions)
         self.acc_main_ui.today_charges_line.setText(Currency.fmt(self.balance["Cobro"].get("Total", Currency(0))))
+        self.acc_main_ui.today_extractions_line.setText(
+            Currency.fmt(self.balance["Extracción"].get("Total", Currency(0)))
+        )
 
         # Shows transactions of the day.
         for i, transaction in enumerate(self._today_transactions):
@@ -55,26 +59,72 @@ class MainController:
         self.acc_main_ui.history_btn.clicked.connect(self.balance_history)
 
     def close_balance(self):
-        # noinspection PyAttributeOutsideInit
-        self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.security_handler,
-                                                self.balance, self._today_transactions)
-        self._daily_balance_ui.exec_()
-        if self._daily_balance_ui.controller.closed:
-            self.acc_main_ui.transaction_table.setRowCount(0)
-            self.acc_main_ui.today_charges_line.setText(Currency.fmt(Currency(0)))
+        self.acc_main_ui.responsible_field.setStyleSheet("")
+
+        if not self.acc_main_ui.amount_line.valid_value():
+            Dialog.info("Error", "Hay campos que no son válidos.")
+            return
+
+        today = date.today()
+        if self.balance_repo.balance_done(today):
+            Dialog.info("Error", f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} ya fue cerrada.")
+            return
+
+        try:
+            ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(utils.DATE_FORMAT)}."
+                                f"\nEsta accion no se puede deshacer, todas las transacciones no incluidas en esta caja"
+                                f" diaria se incluiran en la caja del día de mañana."
+                                f"\n¿Desea continuar?")
+
+            if ok:
+                self.security_handler.current_responsible = self.acc_main_ui.responsible_field.value()
+
+                # noinspection PyTypeChecker
+                create_extraction_fn = functools.partial(
+                    self.transaction_repo.create, "Extracción", today, self.acc_main_ui.amount_line.value(),
+                    self.acc_main_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                    description=f"Extracción al cierre de caja diaria del día {today}."
+                )
+                # noinspection PyTypeChecker
+                api.close_balance(self.transaction_repo, self.balance_repo, self.balance, self._today_transactions,
+                                  today, self.security_handler.current_responsible.name, create_extraction_fn)
+
+                self.acc_main_ui.transaction_table.setRowCount(0)
+                self.acc_main_ui.today_charges_line.setText(Currency.fmt(Currency(0)))
+                self.acc_main_ui.today_extractions_line.setText(Currency.fmt(Currency(0)))
+
+                Dialog.info("Éxito",
+                            f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} fue cerrada correctamente")
+        except SecurityError as sec_err:
+            self.acc_main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def extract(self):
-        # noinspection PyAttributeOutsideInit
-        self._extract_ui = ExtractUI(self.transaction_repo, self.security_handler)
-        self._extract_ui.exec_()
-        if self._extract_ui.controller.success:
-            extraction = self._extract_ui.controller.extraction
+        self.acc_main_ui.responsible_field.setStyleSheet("")
+
+        valid_descr, descr = valid_text_value(self.acc_main_ui.description_text, utils.ACTIVITY_DESCR_CHARS)
+        if not all([self.acc_main_ui.amount_line.valid_value(), descr]):
+            Dialog.info("Error", "Hay campos con valores inválidos.")
+            return
+
+        try:
+            self.security_handler.current_responsible = self.acc_main_ui.responsible_field.value()
+            # noinspection PyTypeChecker
+            extraction = api.extract(self.transaction_repo, date.today(), self.acc_main_ui.amount_line.value(),
+                                     self.acc_main_ui.method_combobox.currentData(Qt.UserRole),
+                                     self.security_handler.current_responsible.name, descr)
+
             row = self.acc_main_ui.transaction_table.rowCount()
             fill_cell(self.acc_main_ui.transaction_table, row, 0, extraction.responsible, data_type=str)
             name = extraction.client.name if extraction.client is not None else "-"
             fill_cell(self.acc_main_ui.transaction_table, row, 1, name, data_type=str)
             fill_cell(self.acc_main_ui.transaction_table, row, 2, Currency.fmt(extraction.amount), data_type=int)
             fill_cell(self.acc_main_ui.transaction_table, row, 3, extraction.description, data_type=str)
+
+            Dialog.confirm(f"Extracción registrada correctamente.")
+        except SecurityError as sec_err:
+            self.acc_main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def balance_history(self):
         # noinspection PyAttributeOutsideInit
@@ -99,11 +149,12 @@ class AccountingMainUI(QMainWindow):
         # Header layout.
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
-        self.header_layout.setAlignment(Qt.AlignCenter)
 
         # Today charges layout.
         self.today_charges_layout = QVBoxLayout()
         self.header_layout.addLayout(self.today_charges_layout)
+        self.today_charges_layout.setAlignment(Qt.AlignTop)
+        self.today_charges_layout.setContentsMargins(0, 20, 0, 0)
 
         self.today_charges_lbl = QLabel(self.widget)
         self.today_charges_layout.addWidget(self.today_charges_lbl)
@@ -111,22 +162,70 @@ class AccountingMainUI(QMainWindow):
 
         self.today_charges_line = QLineEdit(self.widget)
         self.today_charges_layout.addWidget(self.today_charges_line)
-        config_line(self.today_charges_line, place_holder="00000,00", enabled=False, alignment=Qt.AlignRight)
+        config_line(self.today_charges_line, place_holder="000000,00", enabled=False, alignment=Qt.AlignRight)
 
-        # Horizontal spacer.
-        self.header_layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+        # Today extractions layout.
+        self.today_extractions_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.today_extractions_layout)
+        self.today_extractions_layout.setAlignment(Qt.AlignTop)
+        self.today_extractions_layout.setContentsMargins(0, 20, 0, 0)
+
+        self.today_extractions_lbl = QLabel(self.widget)
+        self.today_extractions_layout.addWidget(self.today_extractions_lbl)
+        config_lbl(self.today_extractions_lbl, "Extracciones del día")
+
+        self.today_extractions_line = QLineEdit(self.widget)
+        self.today_extractions_layout.addWidget(self.today_extractions_line)
+        config_line(self.today_extractions_line, place_holder="0,00", enabled=False, alignment=Qt.AlignRight)
+
+        self.header_layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
+
+        # Buttons.
+        self.buttons_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.buttons_layout)
 
         self.close_balance_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.close_balance_btn)
+        self.buttons_layout.addWidget(self.close_balance_btn, alignment=Qt.AlignCenter)
         config_btn(self.close_balance_btn, "Cerrar caja", font_size=16, extra_width=30)
 
-        self.extract_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.extract_btn)
-        config_btn(self.extract_btn, "Extraer", font_size=16, extra_width=30)
-
         self.history_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.history_btn)
+        self.buttons_layout.addWidget(self.history_btn, alignment=Qt.AlignCenter)
         config_btn(self.history_btn, "Historial", font_size=16, extra_width=30)
+
+        # Charge button
+        self.extract_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.extract_btn, alignment=Qt.AlignCenter)
+        config_btn(self.extract_btn, "Extraer")
+
+        self.header_layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
+
+        # Extract form.
+        self.extract_form_layout = QGridLayout()
+        self.header_layout.addLayout(self.extract_form_layout)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self.widget)
+        self.extract_form_layout.addWidget(self.responsible_lbl, 0, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self.widget)
+        self.extract_form_layout.addWidget(self.responsible_field, 0, 1)
+        config_line(self.responsible_field, fixed_width=100)
+
+        # Method.
+        self.method_combobox = QComboBox(self)
+        self.extract_form_layout.addWidget(self.method_combobox, 0, 2)
+        config_combobox(self.method_combobox)
+
+        # Amount.
+        self.amount_line = Field(Currency, parent=self, positive=True)
+        self.extract_form_layout.addWidget(self.amount_line, 0, 3)
+        config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
+
+        self.description_text = QTextEdit(self.widget)
+        self.extract_form_layout.addWidget(self.description_text, 1, 0, 1, 4)
+        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
+        self.description_text.setFixedHeight(80)
 
         self.layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
@@ -137,167 +236,14 @@ class AccountingMainUI(QMainWindow):
 
         self.transaction_table = QTableWidget(self.widget)
         self.layout.addWidget(self.transaction_table)
-        new_config_table(self.transaction_table, width=850,
-                         columns={"Responsable": (.22, str), "Cliente": (.25, str), "Monto": (.16, int),
-                                  "Descripción": (.37, str)}, min_rows_to_show=8)
+        new_config_table(self.transaction_table, width=1200,
+                         columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.12, int),
+                                  "Descripción": (.48, str)}, min_rows_to_show=20)
 
         self.setFixedWidth(self.minimumSizeHint().width())
 
-
-class DailyBalanceController:
-    def __init__(
-            self, daily_balance_ui: DailyBalanceUI, balance_repo: BalanceRepo, transaction_repo: TransactionRepo,
-            security_handler: SecurityHandler, balance: Balance, transactions: list[Transaction]
-    ):
-        self.daily_balance_ui = daily_balance_ui
-        self.balance_repo = balance_repo
-        self.transaction_repo = transaction_repo
-        self.security_handler = security_handler
-        self.balance = balance
-        self.transactions = transactions
-
-        self.closed = False
-
-        # Fills line edits.
-        self.daily_balance_ui.cash_line.setText(Currency.fmt(self.balance["Cobro"].get("Efectivo", Currency(0))))
-        self.daily_balance_ui.debit_line.setText(Currency.fmt(self.balance["Cobro"].get("Débito", Currency(0))))
-        self.daily_balance_ui.credit_line.setText(Currency.fmt(self.balance["Cobro"].get("Crédito", Currency(0))))
-
-        # Fills method combobox.
-        fill_combobox(self.daily_balance_ui.method_combobox, transaction_repo.methods, lambda method: method)
-
-        # Sets callbacks
-        # noinspection PyUnresolvedReferences
-        self.daily_balance_ui.confirm_btn.clicked.connect(self.close_balance)
-        # noinspection PyUnresolvedReferences
-        self.daily_balance_ui.cancel_btn.clicked.connect(self.daily_balance_ui.reject)
-
-    def close_balance(self):
-        if not self.daily_balance_ui.extract_field.valid_value():
-            Dialog.info("Error", "Hay campos que no son válidos.")
-            return
-
-        today = date.today()
-        if self.balance_repo.balance_done(today):
-            Dialog.info("Error", f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} ya fue cerrada.")
-            return
-
-        try:
-            ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(utils.DATE_FORMAT)}."
-                                f"\nEsta accion no se puede deshacer, todas las transacciones no incluidas en esta caja"
-                                f" diaria se incluiran en la caja del día de mañana."
-                                f"\n¿Desea continuar?")
-
-            if ok:
-                self.security_handler.current_responsible = self.daily_balance_ui.responsible_field.value()
-
-                # noinspection PyTypeChecker
-                create_extraction_fn = functools.partial(
-                    self.transaction_repo.create, "Extracción", today, self.daily_balance_ui.extract_field.value(),
-                    self.daily_balance_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
-                    description=f"Extracción al cierre de caja diaria del día {today}."
-                )
-                # noinspection PyTypeChecker
-                api.close_balance(self.transaction_repo, self.balance_repo, self.balance, self.transactions, today,
-                                  self.security_handler.current_responsible.name, create_extraction_fn)
-                Dialog.info("Éxito",
-                            f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} fue cerrada correctamente")
-                self.closed = True
-                self.daily_balance_ui.confirm_btn.window().close()
-        except SecurityError as sec_err:
-            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
-
-
-class DailyBalanceUI(QDialog):
-    def __init__(
-            self, balance_repo: BalanceRepo, transaction_repo: TransactionRepo, security_handler: SecurityHandler,
-            balance: Balance, transactions: list[Transaction]
-    ) -> None:
-        super().__init__()
-        self._setup_ui()
-        self.controller = DailyBalanceController(self, balance_repo, transaction_repo, security_handler, balance,
-                                                 transactions)
-
-    def _setup_ui(self):
-        self.setWindowTitle("Cerrar caja diaria")
-        self.layout = QVBoxLayout(self)
-
-        # Form.
-        self.form_layout = QGridLayout()
-        self.layout.addLayout(self.form_layout)
-
-        # Responsible.
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 0, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = responsible_field(self)
-        self.form_layout.addWidget(self.responsible_field, 0, 1)
-        config_line(self.responsible_field)
-
-        # Cash amount.
-        self.cash_lbl = QLabel(self)
-        self.form_layout.addWidget(self.cash_lbl, 1, 0)
-        config_lbl(self.cash_lbl, "Caja Efectivo")
-
-        self.cash_line = QLineEdit(parent=self)
-        self.form_layout.addWidget(self.cash_line, 1, 1)
-        config_line(self.cash_line, enabled=False, alignment=Qt.AlignRight)
-
-        # Debit amount.
-        self.debit_lbl = QLabel(self)
-        self.form_layout.addWidget(self.debit_lbl, 2, 0)
-        config_lbl(self.debit_lbl, "Caja Débito")
-
-        self.debit_line = QLineEdit(parent=self)
-        self.form_layout.addWidget(self.debit_line, 2, 1)
-        config_line(self.debit_line, enabled=False, alignment=Qt.AlignRight)
-
-        # Credit amount.
-        self.credit_lbl = QLabel(self)
-        self.form_layout.addWidget(self.credit_lbl, 3, 0)
-        config_lbl(self.credit_lbl, "Caja Crédito")
-
-        self.credit_line = QLineEdit(parent=self)
-        self.form_layout.addWidget(self.credit_line, 3, 1)
-        config_line(self.credit_line, enabled=False, alignment=Qt.AlignRight)
-
-        # Extracted amount.
-        self.extract_lbl = QLabel(self)
-        self.form_layout.addWidget(self.extract_lbl, 4, 0)
-        config_lbl(self.extract_lbl, "Monto extracción*")
-
-        self.extract_field = Field(Currency, self)
-        self.form_layout.addWidget(self.extract_field, 4, 1)
-        config_line(self.extract_field, place_holder="00000,00", alignment=Qt.AlignRight)
-
-        # Method.
-        self.method_lbl = QLabel(self)
-        self.form_layout.addWidget(self.method_lbl, 5, 0)
-        config_lbl(self.method_lbl, "Método extracción")
-
-        self.method_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.method_combobox, 5, 1)
-        config_combobox(self.method_combobox, fixed_width=self.extract_field.width())
-
-        # Vertical spacer.
-        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
-
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
-
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
-
-        # Adjusts size.
-        self.setFixedSize(self.sizeHint())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
 class BalanceHistoryController:
@@ -451,7 +397,7 @@ class BalanceHistoryUI(QMainWindow):
         self.left_layout.addWidget(self.balance_table)
         new_config_table(self.balance_table, width=500,
                          columns={"Fecha": (.28, bool), "Responsable": (.42, str), "Total": (.3, int)},
-                         min_rows_to_show=5, fix_width=True)
+                         min_rows_to_show=20, fix_width=True)
 
         # Balance detail.
         self.detail_layout = QGridLayout()
@@ -526,9 +472,9 @@ class BalanceHistoryUI(QMainWindow):
         self.transaction_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.transaction_table)
 
-        new_config_table(self.transaction_table, width=700,
-                         columns={"Responsable": (.22, str), "Cliente": (.26, str), "Monto": (.2, int),
-                                  "Descripción": (.32, str)}, min_rows_to_show=0)
+        new_config_table(self.transaction_table, width=1200,
+                         columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.15, int),
+                                  "Descripción": (.45, str)}, min_rows_to_show=0)
 
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
@@ -655,113 +601,6 @@ class ChargeUI(QDialog):
         self.descr_text = QTextEdit(self)
         self.form_layout.addWidget(self.descr_text, 5, 1)
         config_line(self.descr_text, enabled=False)
-
-        # Vertical spacer.
-        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
-
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
-
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
-
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
-
-        # Adjusts size.
-        self.setFixedSize(self.sizeHint())
-
-
-class ExtractController:
-    def __init__(self, extract_ui: ExtractUI, transaction_repo: TransactionRepo, security_handler: SecurityHandler):
-        self.extract_ui = extract_ui
-        self.transaction_repo = transaction_repo
-        self.security_handler = security_handler
-        self.extraction: Transaction | None = None
-        self.success = False
-
-        # Sets ui fields.
-        fill_combobox(self.extract_ui.method_combobox, transaction_repo.methods, display=lambda method: method)
-
-        # Sets callbacks
-        # noinspection PyUnresolvedReferences
-        self.extract_ui.confirm_btn.clicked.connect(self.extract)
-        # noinspection PyUnresolvedReferences
-        self.extract_ui.cancel_btn.clicked.connect(self.extract_ui.reject)
-
-    def extract(self):
-        valid_descr, descr = valid_text_value(self.extract_ui.descr_text, utils.ACTIVITY_DESCR_CHARS)
-        if not all([self.extract_ui.amount_line.valid_value(), descr]):
-            Dialog.info("Error", "El monto ingresado no es válido")
-            return
-
-        try:
-            self.security_handler.current_responsible = self.extract_ui.responsible_field.value()
-            # noinspection PyTypeChecker
-            self.extraction = api.extract(self.transaction_repo, date.today(), self.extract_ui.amount_line.value(),
-                                          self.extract_ui.method_combobox.currentData(Qt.UserRole),
-                                          self.security_handler.current_responsible.name, descr)
-
-            self.success = True
-            Dialog.confirm(f"Extracción registrada correctamente.")
-            self.extract_ui.descr_text.window().close()
-        except SecurityError as sec_err:
-            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
-
-
-class ExtractUI(QDialog):
-    def __init__(self, transaction_repo: TransactionRepo, security_handler: SecurityHandler) -> None:
-        super().__init__()
-        self._setup_ui()
-        self.controller = ExtractController(self, transaction_repo, security_handler)
-
-    def _setup_ui(self):
-        self.setWindowTitle("Registrar extracción")
-        self.layout = QVBoxLayout(self)
-
-        # Form.
-        self.form_layout = QGridLayout()
-        self.layout.addLayout(self.form_layout)
-
-        # Method.
-        self.method_lbl = QLabel(self)
-        self.form_layout.addWidget(self.method_lbl, 1, 0)
-        config_lbl(self.method_lbl, "Método")
-
-        self.method_combobox = QComboBox(self)
-        self.form_layout.addWidget(self.method_combobox, 1, 1)
-        config_combobox(self.method_combobox)
-
-        # Amount.
-        self.amount_lbl = QLabel(self)
-        self.form_layout.addWidget(self.amount_lbl, 2, 0)
-        config_lbl(self.amount_lbl, "Monto*")
-
-        self.amount_line = Field(Currency, parent=self, positive=True)
-        self.form_layout.addWidget(self.amount_line, 2, 1)
-        config_line(self.amount_line, place_holder="00000,00", adjust_to_hint=False)
-
-        # Responsible.
-        self.responsible_lbl = QLabel(self)
-        self.form_layout.addWidget(self.responsible_lbl, 3, 0)
-        config_lbl(self.responsible_lbl, "Responsable")
-
-        self.responsible_field = responsible_field(self)
-        self.form_layout.addWidget(self.responsible_field, 3, 1)
-        config_line(self.responsible_field, adjust_to_hint=False)
-
-        # Description.
-        self.descr_lbl = QLabel(self)
-        self.form_layout.addWidget(self.descr_lbl, 5, 0, alignment=Qt.AlignTop)
-        config_lbl(self.descr_lbl, "Descripción*")
-
-        self.descr_text = QTextEdit(self)
-        self.form_layout.addWidget(self.descr_text, 5, 1)
-        config_line(self.descr_text, place_holder="Descripción")
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
