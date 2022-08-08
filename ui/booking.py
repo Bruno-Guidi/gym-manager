@@ -276,7 +276,7 @@ class CreateController:
         if not allow_passed_time_bookings:
             blocks = remaining_blocks(blocks, when)
         fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
-        fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
+        # fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
         # Configs the widgets so they have the same width.
         config_combobox(self.create_ui.block_combobox)
