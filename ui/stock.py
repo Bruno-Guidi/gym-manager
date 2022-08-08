@@ -44,11 +44,12 @@ class MainController:
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
-        decrease_stock = ("Reducir stock", functools.partial(self._update_item_amount, True))
-        increase_stock = ("Agregar stock", functools.partial(self._update_item_amount, False))
-        charge_item = ("Cobrar item", self._charge_item)
-
         self.main_ui.charge_item.setChecked(True)
+        self._decrease_stock = functools.partial(self._update_item_amount, True)
+        self._increase_stock = functools.partial(self._update_item_amount, False)
+
+        fill_combobox(self.main_ui.method_combobox, self.transaction_repo.methods,
+                      display=lambda method_name: method_name)
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
