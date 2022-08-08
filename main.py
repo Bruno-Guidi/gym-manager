@@ -3,7 +3,7 @@ import json
 import logging
 import sys
 import traceback
-from datetime import time
+from datetime import time, datetime
 from logging import config
 from os import path
 
@@ -47,6 +47,22 @@ def _save_bookings(booking_repo: BookingRepo):
             for temp_b in booking_repo.all_temporal()
         ]
         json.dump({"fixed": all_fixed, "temp": all_temp}, file)
+
+
+def _load_bookings(booking_system: BookingSystem):
+    with open("booking_backup.json", "r") as file:
+        json_dict = json.load(file)
+        for fixed_b in json_dict["fixed"]:
+            start = datetime.strptime(fixed_b["start"], "%H:%M").time()
+            end = datetime.strptime(fixed_b["end"], "%H:%M").time()
+            when = datetime.strptime(fixed_b["first_when"], "%d/%m/%Y").date()
+            booking_system.book_with_td(fixed_b["court"], String(fixed_b["client"]), True, when, start, end)
+
+        for temp_b in json_dict["temp"]:
+            start = datetime.strptime(fixed_b["start"], "%H:%M").time()
+            end = datetime.strptime(fixed_b["end"], "%H:%M").time()
+            when = datetime.strptime(fixed_b["first_when"], "%d/%m/%Y").date()
+            booking_system.book_with_td(fixed_b["court"], String(fixed_b["client"]), False, when, start, end)
 
 
 def main():
@@ -101,6 +117,8 @@ def main():
     log_responsible.config(security_handler)
 
     backup_fn = functools.partial(create_backup, "gym_manager.db", config_dict["backups_dir"])
+
+    # _load_bookings(booking_system)
 
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,

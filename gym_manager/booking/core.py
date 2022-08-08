@@ -449,6 +449,32 @@ class BookingSystem:
         self.repo.add(booking)
         return booking
 
+    def book_with_end(
+            self, court: str, client_name: String, is_fixed: bool, when: date, start: time, end: time
+    ) -> Booking:
+        """Creates a Booking with the given data.
+
+        Raises:
+            OperationalError if the booking time is out of range, or if there is no available time for the booking.
+        """
+        # if self.out_of_range(start, duration):
+        #     raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
+        #                            f"of the range [booking_start={self.start}, booking_end={self.end}].")
+        # if not self.booking_available(when, court, start, duration, is_fixed):
+        #     raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] collides "
+        #                            f"with existing booking/s.")
+
+        # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
+        # end = combine(date.min, start, duration).time()
+        if is_fixed:
+            booking = FixedBooking(court, client_name, start, end, when.weekday(), when)
+            self.fixed_booking_handler.add(booking)
+        else:
+            booking = TempBooking(court, client_name, start, end, when)
+
+        self.repo.add(booking)
+        return booking
+
     @log_responsible(action_tag="cancel_booking", to_str=cancel_description)
     def cancel(
             self, booking: Booking, responsible: String, booking_date: date, definitely_cancelled: bool = True,
