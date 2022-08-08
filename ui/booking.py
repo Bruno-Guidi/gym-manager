@@ -12,10 +12,10 @@ from PyQt5.QtWidgets import (
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
     remaining_blocks, Booking, subtract_times)
-from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
-from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
+from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String
+from gym_manager.core.persistence import FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
-from ui import utils, client
+from ui import utils
 from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
@@ -36,11 +36,10 @@ def timedelta_to_duration_str(td: timedelta) -> str:
 class MainController:
 
     def __init__(
-            self, main_ui: BookingMainUI, client_repo: ClientRepo, transaction_repo: TransactionRepo,
+            self, main_ui: BookingMainUI, transaction_repo: TransactionRepo,
             booking_system: BookingSystem, security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         self.main_ui = main_ui
-        self.client_repo = client_repo
         self.transaction_repo = transaction_repo
         self.booking_system = booking_system
         self.security_handler = security_handler
@@ -116,7 +115,7 @@ class MainController:
             Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
         else:
             # noinspection PyAttributeOutsideInit
-            self._create_ui = CreateUI(self.client_repo, self.booking_system, self.security_handler, when,
+            self._create_ui = CreateUI(self.booking_system, self.security_handler, when,
                                        self.allow_passed_time_bookings)
             self._create_ui.exec_()
             if self._create_ui.controller.booking is not None:
@@ -183,12 +182,12 @@ class MainController:
 class BookingMainUI(QMainWindow):
 
     def __init__(
-            self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem,
+            self, transaction_repo: TransactionRepo, booking_system: BookingSystem,
             security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, transaction_repo, booking_system, security_handler,
+        self.controller = MainController(self, transaction_repo, booking_system, security_handler,
                                          allow_passed_time_bookings)
 
     def _setup_ui(self):
@@ -259,11 +258,10 @@ class BookingMainUI(QMainWindow):
 class CreateController:
 
     def __init__(
-            self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem,
+            self, create_ui: CreateUI, booking_system: BookingSystem,
             security_handler: SecurityHandler, when: date, allow_passed_time_bookings: bool
     ) -> None:
         self.create_ui = create_ui
-        self.client_repo = client_repo
         self.booking_system = booking_system
         self.security_handler = security_handler
         self.when = when
@@ -283,32 +281,12 @@ class CreateController:
         config_combobox(self.create_ui.court_combobox, fixed_width=self.create_ui.block_combobox.width())
         config_combobox(self.create_ui.duration_combobox, fixed_width=self.create_ui.block_combobox.width())
 
-        # Configure the filtering widget.
-        filters = (TextLike("client_name", display_name="Nombre cliente", attr="name",
-                            translate_fun=lambda cli, value: cli.cli_name.contains(value)),
-                   NumberEqual("client_dni", display_name="DNI cliente", attr="dni",
-                               translate_fun=lambda cli, value: cli.dni == value))
-        self.create_ui.filter_header.config(filters, self.fill_client_combobox, allow_empty_filter=False)
-
         # noinspection PyUnresolvedReferences
         self.create_ui.add_client_btn.clicked.connect(self.create_client)
         # noinspection PyUnresolvedReferences
         self.create_ui.confirm_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
-
-    def fill_client_combobox(self, filters: list[FilterValuePair]):
-        fill_combobox(self.create_ui.client_combobox,
-                      self.client_repo.all(page=1, filters=filters),
-                      lambda cli: cli.name.as_primitive())
-
-    def create_client(self):
-        # noinspection PyAttributeOutsideInit
-        self._create_client_ui = client.CreateUI(self.client_repo)
-        self._create_client_ui.exec_()
-        if self._create_client_ui.controller.client is not None:
-            fill_combobox(self.create_ui.client_combobox, (self._create_client_ui.controller.client, ),
-                          lambda cli: cli.name.as_primitive())
 
     def create_booking(self):
         cli = self.create_ui.client_combobox.currentData(Qt.UserRole)
@@ -338,12 +316,12 @@ class CreateController:
 class CreateUI(QDialog):
 
     def __init__(
-            self, client_repo: ClientRepo, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
+            self, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
             allow_passed_time_bookings: bool
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, client_repo, booking_system, security_handler, when,
+        self.controller = CreateController(self, booking_system, security_handler, when,
                                            allow_passed_time_bookings)
 
     def _setup_ui(self):
@@ -625,7 +603,7 @@ class HistoryController:
             fill_cell(self.history_ui.booking_table, row, 3, cancelled.start.strftime('%Hh:%Mm'), bool)
             duration = timedelta_to_duration_str(subtract_times(cancelled.start, cancelled.end))
             fill_cell(self.history_ui.booking_table, row, 4, duration, bool)
-            fill_cell(self.history_ui.booking_table, row, 5, cancelled.client.name, str)
+            fill_cell(self.history_ui.booking_table, row, 5, cancelled.client, str)
             fill_cell(self.history_ui.booking_table, row, 6, cancelled.responsible, str)
             fill_cell(self.history_ui.booking_table, row, 7, DAYS_NAMES[cancelled.when.weekday()], bool)
             fill_cell(self.history_ui.booking_table, row, 8, "Si" if cancelled.is_fixed else "No", bool)
