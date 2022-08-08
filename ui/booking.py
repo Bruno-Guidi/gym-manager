@@ -73,7 +73,7 @@ class MainController:
             start, end = self.booking_system.block_range(booking.start, booking.end)
         for i in range(start, end):
             item = QTableWidgetItem(
-                f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                f"{booking.client_name}{' (Fijo)' if booking.is_fixed else ''}"
                 f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}"
             )
             item.setTextAlignment(Qt.AlignCenter)
@@ -142,10 +142,10 @@ class MainController:
         self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler,
                                    self.booking_system.amount_to_charge(booking),
                                    String(f"Cobro de turno de padel en cancha {booking.court}."),
-                                   register_booking_charge, booking.client)
+                                   register_booking_charge)
         self._charge_ui.exec_()
         if self._charge_ui.controller.success:
-            text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+            text = (f"{booking.client_name}{' (Fijo)' if booking.is_fixed else ''}"
                     f"{' (Pago)' if booking.was_paid(when) else ''}")
             start, end = self.booking_system.block_range(booking.start, booking.end)
             for i in range(start, end):
@@ -450,7 +450,7 @@ class CancelController:
         self.cancelled = False
 
         # Loads booking info.
-        self.cancel_ui.client_line.setText(str(to_cancel.client.name))
+        self.cancel_ui.client_line.setText(str(to_cancel.client_name.as_primitive()))
         self.cancel_ui.court_line.setText(to_cancel.court)
         self.cancel_ui.date_edit.setDate(when)
         self.cancel_ui.start_line.setText(str(to_cancel.start))
