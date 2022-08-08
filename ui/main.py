@@ -110,7 +110,6 @@ class Controller:
         self.main_ui.contact_btn.clicked.connect(self.show_contact_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.stock_btn.clicked.connect(self.show_stock_main_ui)
-
         show_booking_main_ui = functools.partial(self.show_booking_main_ui, allow_passed_time_bookings)
         # noinspection PyUnresolvedReferences
         self.main_ui.bookings_btn.clicked.connect(show_booking_main_ui)
@@ -118,6 +117,8 @@ class Controller:
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.balance_history_action.triggered.connect(self.show_balance_history_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.actions_log_action.triggered.connect(self.show_actions_ui)
 
     def show_config_ui(self):
         def generate_balance():
@@ -212,6 +213,12 @@ class Controller:
         self._balance_history_ui = BalanceHistoryUI(self.balance_repo)
         self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
         self._balance_history_ui.show()
+
+    def show_actions_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._actions_ui = ActionUI(self.security_handler)
+        self._actions_ui.setWindowModality(Qt.ApplicationModal)
+        self._actions_ui.show()
 
     def close(self):
         if self.backup_fn is not None:
