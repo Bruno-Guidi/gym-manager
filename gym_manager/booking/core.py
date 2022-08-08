@@ -359,8 +359,9 @@ class BookingSystem:
     def court_names(self) -> Iterable[str]:
         return self._courts.keys()
 
-    def court_price(self, court: str) -> Currency:
-        return self._courts[court]
+    def amount_to_charge(self, booking: Booking) -> Currency:
+        start_block, end_block = self.block_range(booking.start, booking.end)
+        return self._courts[booking.court].multiply_by_scalar(end_block - start_block)
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
