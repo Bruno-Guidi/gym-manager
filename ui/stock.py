@@ -48,6 +48,8 @@ class MainController:
         increase_stock = ("Agregar stock", functools.partial(self._update_item_amount, False))
         charge_item = ("Cobrar item", self._charge_item)
 
+        self.main_ui.charge_item.setChecked(True)
+
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
         self.main_ui.create_action.triggered.connect(self.create_item)
