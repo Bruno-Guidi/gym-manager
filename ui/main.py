@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from datetime import date, time, timedelta
+from datetime import date, timedelta
 from typing import Callable
 
 from PyQt5 import QtGui
@@ -12,10 +12,10 @@ from PyQt5.QtWidgets import (
     QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox)
 
 from gym_manager import parsing
-from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
+from gym_manager.booking.core import BookingSystem
 from gym_manager.contact.core import ContactRepo
 from gym_manager.core import api
-from gym_manager.core.base import String, Activity, Currency, Number
+from gym_manager.core.base import String, Currency
 from gym_manager.core.persistence import (
     ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo)
 from gym_manager.core.security import SecurityHandler, Responsible
@@ -116,30 +116,8 @@ class Controller:
         self.main_ui.bookings_btn.clicked.connect(show_booking_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.actions_btn.clicked.connect(self.show_action_ui)
-        # noinspection PyUnresolvedReferences
-        # noinspection PyUnresolvedReferences
 
     def show_config_ui(self):
-        def setup():
-            today = date.today()
-            self.security_handler.current_responsible = String("Admin")
-            activity = Activity(String("TestAct"), Currency("2000"), String("descr"))
-            self.activity_repo.create(activity)
-            for i in range(0, 50):
-                client = self.client_repo.create(String(str(i)), today, today, Number(i))
-                sub = api.subscribe(self.subscription_repo, today, client, activity)
-                create_t = functools.partial(self.transaction_repo.create, "Cobro", today, activity.price, "Efectivo",
-                                             String("Admin"), "descr", client)
-                api.register_subscription_charge(self.subscription_repo, sub, create_t)
-
-            client = [c for c in self.client_repo.all(page_len=1)][0]
-            for start in time_range(time(8, 0), time(22, 30), 30):
-                self.booking_system.book("1", client, False, today + ONE_DAY_TD, start, Duration(30, "30m"))
-                self.booking_system.book("2", client, True, today + ONE_DAY_TD, start, Duration(30, "30m"))
-                self.booking_system.book("3", client, False, today + ONE_DAY_TD, start, Duration(30, "30m"))
-
         def generate_balance():
             self.security_handler.current_responsible = String("Admin")
 
@@ -178,9 +156,8 @@ class Controller:
                 self.security_handler.add_responsible(responsible)
 
         # noinspection PyAttributeOutsideInit
-        self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance),
-                                   ("raise exception", raise_exception), ("load backup from old", load_backup_from_old),
-                                   ("add responsible", add_responsible))
+        self._config_ui = ConfigUI(("balances", generate_balance), ("raise exception", raise_exception),
+                                   ("load backup from old", load_backup_from_old), ("add responsible", add_responsible))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
@@ -304,14 +281,6 @@ class MainUI(QMainWindow):
         self.top_grid_layout.addWidget(self.contact_lbl, 1, 2, alignment=Qt.AlignCenter)
         config_lbl(self.contact_lbl, "Agenda", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
-        self.stock_btn = QPushButton(self.widget)
-        self.top_grid_layout.addWidget(self.stock_btn, 0, 3, alignment=Qt.AlignCenter)
-        config_btn(self.stock_btn, icon_path="ui/resources/stock.png", icon_size=96)
-
-        self.stock_lbl = QLabel(self.widget)
-        self.top_grid_layout.addWidget(self.stock_lbl, 1, 3, alignment=Qt.AlignCenter)
-        config_lbl(self.stock_lbl, "Stock", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
-
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
@@ -334,13 +303,13 @@ class MainUI(QMainWindow):
         self.bottom_grid_layout.addWidget(self.accounting_lbl, 1, 1, alignment=Qt.AlignCenter)
         config_lbl(self.accounting_lbl, "Caja diaria", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
-        self.actions_btn = QPushButton(self.widget)
-        self.bottom_grid_layout.addWidget(self.actions_btn, 0, 2, alignment=Qt.AlignCenter)
-        config_btn(self.actions_btn, icon_path="ui/resources/actions.png", icon_size=96)
+        self.stock_btn = QPushButton(self.widget)
+        self.bottom_grid_layout.addWidget(self.stock_btn, 0, 2, alignment=Qt.AlignCenter)
+        config_btn(self.stock_btn, icon_path="ui/resources/stock.png", icon_size=96)
 
-        self.actions_lbl = QLabel(self.widget)
-        self.bottom_grid_layout.addWidget(self.actions_lbl, 1, 2, alignment=Qt.AlignCenter)
-        config_lbl(self.actions_lbl, "Registro", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+        self.stock_lbl = QLabel(self.widget)
+        self.bottom_grid_layout.addWidget(self.stock_lbl, 1, 2, alignment=Qt.AlignCenter)
+        config_lbl(self.stock_lbl, "Stock", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
         # Adjusts size.
         self.setFixedSize(self.sizeHint())
