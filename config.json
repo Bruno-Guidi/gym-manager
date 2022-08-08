@@ -1,5 +1,5 @@
 {
   "enable_utility_functions": false,
   "backups_dir": "E:\\bruno\\projects\\gym_manager\\backups",
-  "allow_passed_time_bookings": true
+  "allow_passed_time_bookings": false
 }
