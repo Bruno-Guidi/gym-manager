@@ -1,0 +1,902 @@
+{
+  "fixed": [
+    {
+      "court": "1",
+      "client": "Mariana",
+      "start": "15:00",
+      "end": "17:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "15:00",
+      "end": "17:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "17:00",
+      "end": "18:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Mariana",
+      "start": "15:00",
+      "end": "17:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Ferreira Claudio",
+      "start": "19:00",
+      "end": "20:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Gimenez Guillerma",
+      "start": "20:00",
+      "end": "21:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Diego Blundo",
+      "start": "21:00",
+      "end": "22:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Julieta 154609269",
+      "start": "18:30",
+      "end": "20:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Gianni Spagnuolo",
+      "start": "20:00",
+      "end": "21:30",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Boris 2494310405",
+      "start": "18:30",
+      "end": "20:00",
+      "day_of_week": 4,
+      "first_when": "05/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "10:00",
+      "end": "12:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "12:00",
+      "end": "14:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "14:00",
+      "end": "15:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Del Valle J Pablo",
+      "start": "15:30",
+      "end": "17:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Franco Martinez",
+      "start": "18:00",
+      "end": "19:30",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "09:00",
+      "end": "10:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Academia menores",
+      "start": "10:00",
+      "end": "12:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Academia menores",
+      "start": "12:00",
+      "end": "14:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Academia menores",
+      "start": "14:00",
+      "end": "15:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "10:00",
+      "end": "12:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "12:00",
+      "end": "14:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "14:00",
+      "end": "15:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Walter Cellia",
+      "start": "15:00",
+      "end": "16:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Sanchez Jose",
+      "start": "17:00",
+      "end": "18:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Vicente 2494537987",
+      "start": "18:00",
+      "end": "19:00",
+      "day_of_week": 5,
+      "first_when": "06/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Mariana",
+      "start": "14:00",
+      "end": "16:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Mariana",
+      "start": "16:00",
+      "end": "17:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Ferreiro Claudio",
+      "start": "18:30",
+      "end": "20:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Orellano Matias",
+      "start": "20:00",
+      "end": "21:30",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "14:00",
+      "end": "16:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "16:00",
+      "end": "17:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:30",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "medina agustin",
+      "start": "18:30",
+      "end": "20:30",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Nu\u00c3\u00b1ez Gerardo",
+      "start": "12:00",
+      "end": "13:30",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Mariana",
+      "start": "14:00",
+      "end": "15:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Priscilla 22974058344",
+      "start": "15:00",
+      "end": "16:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Mariana",
+      "start": "16:00",
+      "end": "17:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Gimenez Fernando",
+      "start": "18:00",
+      "end": "19:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Juan 2494359305",
+      "start": "19:00",
+      "end": "20:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Gianni Spagnuolo",
+      "start": "20:00",
+      "end": "21:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Marcelo 2494313321",
+      "start": "21:00",
+      "end": "22:00",
+      "day_of_week": 0,
+      "first_when": "08/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Mariana",
+      "start": "14:00",
+      "end": "15:00",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Caceta Pablo",
+      "start": "15:00",
+      "end": "16:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Hernan 1154708001",
+      "start": "18:30",
+      "end": "20:00",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Nacho 2494633917",
+      "start": "21:00",
+      "end": "22:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "13:00",
+      "end": "15:00",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "15:00",
+      "end": "17:00",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Claudia Rivero",
+      "start": "18:30",
+      "end": "19:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Vargas 2494583231",
+      "start": "19:30",
+      "end": "21:00",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Julian 2494681409",
+      "start": "21:30",
+      "end": "23:00",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Mariana",
+      "start": "15:00",
+      "end": "16:00",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Zamora 2494282315",
+      "start": "18:30",
+      "end": "19:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Federico 2494674523",
+      "start": "19:30",
+      "end": "20:30",
+      "day_of_week": 1,
+      "first_when": "09/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Miranda Marisa",
+      "start": "14:00",
+      "end": "15:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "15:30",
+      "end": "17:30",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "17:30",
+      "end": "18:30",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Melo Joaquin",
+      "start": "18:30",
+      "end": "20:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Leunda",
+      "start": "20:00",
+      "end": "21:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Juan 2494359305",
+      "start": "21:00",
+      "end": "22:30",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "14:00",
+      "end": "15:30",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "15:30",
+      "end": "17:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Roarte Cristian",
+      "start": "19:30",
+      "end": "21:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Matias 2494218410",
+      "start": "14:30",
+      "end": "15:30",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "15:30",
+      "end": "17:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Maximiliano 2494212060",
+      "start": "19:00",
+      "end": "20:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Errandosoro 2494575898",
+      "start": "20:00",
+      "end": "21:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Mauro 2494659123",
+      "start": "21:00",
+      "end": "22:00",
+      "day_of_week": 2,
+      "first_when": "10/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Mariana",
+      "start": "14:00",
+      "end": "15:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "15:00",
+      "end": "17:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Dadario Marcelo ",
+      "start": "18:00",
+      "end": "19:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Diaz Claudio",
+      "start": "19:00",
+      "end": "20:30",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Bonnat Yenifer",
+      "start": "20:30",
+      "end": "22:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "13:00",
+      "end": "15:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Academia menores",
+      "start": "15:00",
+      "end": "16:30",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Mariana",
+      "start": "16:30",
+      "end": "17:30",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Euge, Paula y Paz",
+      "start": "17:30",
+      "end": "18:30",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Albarracin",
+      "start": "18:30",
+      "end": "20:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Peralta Diego",
+      "start": "20:00",
+      "end": "21:30",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Blanco Lucas",
+      "start": "21:30",
+      "end": "23:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "15:00",
+      "end": "17:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Academia menores",
+      "start": "17:00",
+      "end": "18:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Quinteros 2494377125",
+      "start": "18:00",
+      "end": "19:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Jesus Diaz",
+      "start": "19:00",
+      "end": "20:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Nu\u00f1ez Gerardo",
+      "start": "20:00",
+      "end": "21:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Blanco Lucas",
+      "start": "22:00",
+      "end": "23:00",
+      "day_of_week": 3,
+      "first_when": "11/08/2022"
+    }
+  ],
+  "temp": [
+    {
+      "court": "3",
+      "client": "Pirani Ricardo",
+      "start": "17:00",
+      "end": "18:00",
+      "when": "05/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Walter Alfonzo",
+      "start": "18:00",
+      "end": "19:00",
+      "when": "05/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Iturrat Matias",
+      "start": "22:00",
+      "end": "23:00",
+      "when": "05/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Eugenia 2494051091",
+      "start": "17:00",
+      "end": "18:30",
+      "when": "05/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Mauricio 2494520583",
+      "start": "20:00",
+      "end": "21:30",
+      "when": "05/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Grassano 01128744673",
+      "start": "21:30",
+      "end": "23:00",
+      "when": "05/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Mariana",
+      "start": "08:00",
+      "end": "09:00",
+      "when": "06/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Lumeli",
+      "start": "09:00",
+      "end": "10:00",
+      "when": "06/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Fernando Coronel",
+      "start": "16:00",
+      "end": "17:30",
+      "when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Pedro 2494585772",
+      "start": "09:00",
+      "end": "10:00",
+      "when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Horacio Fierro",
+      "start": "16:00",
+      "end": "17:00",
+      "when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Valentin 2494564819",
+      "start": "19:00",
+      "end": "20:00",
+      "when": "06/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Mazzan Luis",
+      "start": "20:00",
+      "end": "21:30",
+      "when": "06/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Gomez Nacho",
+      "start": "20:00",
+      "end": "21:00",
+      "when": "09/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Martin Rodriguez",
+      "start": "14:00",
+      "end": "15:00",
+      "when": "09/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Axel 2494016760",
+      "start": "20:30",
+      "end": "21:30",
+      "when": "09/08/2022"
+    },
+    {
+      "court": "2",
+      "client": "Camarzana 2494672385",
+      "start": "18:00",
+      "end": "19:30",
+      "when": "10/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Cuesta Santiago",
+      "start": "18:00",
+      "end": "19:00",
+      "when": "10/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Mercedes 1161380795",
+      "start": "11:00",
+      "end": "12:00",
+      "when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Gonzalo 2494313231",
+      "start": "21:00",
+      "end": "22:00",
+      "when": "11/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Marcela Girolami",
+      "start": "19:00",
+      "end": "20:00",
+      "when": "13/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Gonzalo 2494313231",
+      "start": "21:00",
+      "end": "22:00",
+      "when": "18/08/2022"
+    },
+    {
+      "court": "1",
+      "client": "Manuel 2494317624",
+      "start": "20:00",
+      "end": "21:30",
+      "when": "12/08/2022"
+    },
+    {
+      "court": "3",
+      "client": "Costes Mateo",
+      "start": "16:00",
+      "end": "17:00",
+      "when": "09/08/2022"
+    }
+  ]
+}
