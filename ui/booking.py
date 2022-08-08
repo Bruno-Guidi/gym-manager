@@ -24,8 +24,6 @@ from ui.widget_config import (
     config_combobox, config_checkbox, config_line, fill_combobox, new_config_table)
 from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 
-ScheduleColumn: TypeAlias = dict[int, Booking]
-
 DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
 
 
@@ -41,7 +39,7 @@ class MainController:
         self.booking_system = booking_system
         self.security_handler = security_handler
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
-        self._bookings: dict[int, ScheduleColumn] = {}
+        self._bookings: dict[int, dict[int, Booking]] | None = None
 
         self.load_bookings()
 
@@ -65,21 +63,19 @@ class MainController:
     ):
         if start is None or end is None:
             start, end = self.booking_system.block_range(booking.start, booking.end)
-
         for i in range(start, end):
-            item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
-                                    f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}")
+            item = QTableWidgetItem(
+                f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}"
+            )
             item.setTextAlignment(Qt.AlignCenter)
             self.main_ui.booking_table.setItem(i, self._courts[booking.court], item)
 
-        # Saves the booking to be used later if needed.
-        if start not in self._bookings:
-            self._bookings[start] = {}
-        self._bookings[start][self._courts[booking.court]] = booking
+            self._bookings[self._courts[booking.court]][i] = booking  # Saves the booking to be used later if needed.
 
     def load_bookings(self):
         self.main_ui.booking_table.setRowCount(0)  # Clears the table.
-        self._bookings.clear()
+        self._bookings = {court_number: {} for court_number in self._courts.values()}
 
         # Loads the hour column.
         blocks = [block for block in self.booking_system.blocks()]
