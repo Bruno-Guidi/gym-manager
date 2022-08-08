@@ -140,11 +140,11 @@ class MainController:
     def cancel_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
-        if row not in self._bookings or col not in self._bookings[row]:
+        if col not in self._bookings or row not in self._bookings[col]:
             Dialog.info("Error", "No existe un turno en el horario seleccionado.")
             return
 
-        to_cancel = self._bookings[row][col]
+        to_cancel = self._bookings[col][row]
         if when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()):
             Dialog.info("Error", "No se puede cancelar un turno que ya comenzo.")
         elif to_cancel.was_paid(when):
@@ -154,12 +154,10 @@ class MainController:
             self._cancel_ui = CancelUI(self.booking_system, self.security_handler, to_cancel, when)
             self._cancel_ui.exec_()
             if self._cancel_ui.controller.cancelled:
-                self.main_ui.booking_table.takeItem(row, col)
-                _, last_row = self.booking_system.block_range(to_cancel.start, to_cancel.end)
-                for i in range(row, last_row):  # Undo the spanning.
-                    self.main_ui.booking_table.setSpan(i, col, 1, 1)
-
-                self._bookings[row].pop(col)
+                start, end = self.booking_system.block_range(to_cancel.start, to_cancel.end)
+                for i in range(start, end):
+                    self.main_ui.booking_table.takeItem(i, col)
+                    self._bookings[col].pop(i)
 
     def cancelled_bookings(self):
         # noinspection PyAttributeOutsideInit
