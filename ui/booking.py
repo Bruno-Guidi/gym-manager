@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import math
 from datetime import date, datetime, timedelta
 
 from PyQt5.QtCore import Qt
@@ -12,7 +13,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
-    remaining_blocks, Booking, subtract_times)
+    remaining_blocks, Booking, subtract_times, Duration)
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String, Number
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
@@ -277,6 +278,7 @@ class CreateController:
         fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
 
         self.create_ui.half_hour_btn.setChecked(True)
+        self.enable_other_field()
 
         # Configs the widgets so they have the same width.
         config_combobox(self.create_ui.block_combobox)
@@ -286,11 +288,37 @@ class CreateController:
         self.create_ui.confirm_btn.clicked.connect(self.create_booking)
         # noinspection PyUnresolvedReferences
         self.create_ui.cancel_btn.clicked.connect(self.create_ui.reject)
+        # noinspection PyUnresolvedReferences
+        self.create_ui.charge_filter_group.buttonClicked.connect(self.enable_other_field)
+
+    def enable_other_field(self):
+        self.create_ui.other_field.setEnabled(self.create_ui.other_btn.isChecked())
+
+    def _get_duration(self):
+        minutes: int
+        if self.create_ui.half_hour_btn.isChecked():
+            minutes = 30
+        elif self.create_ui.one_hour_btn.isChecked():
+            minutes = 60
+        elif self.create_ui.one_half_hour_btn.isChecked():
+            minutes = 90
+        elif self.create_ui.two_hour_btn.isChecked():
+            minutes = 120
+        else:
+            minutes = self.create_ui.other_field.value().as_primitive()
+            # If the booking duration isn't "n times 30", then add another 30 minutes to it.
+            minutes = 30 * math.ceil(minutes / 30)
+
+        return Duration.from_td(timedelta(minutes=minutes))
 
     def create_booking(self):
         court = self.create_ui.court_combobox.currentData(Qt.UserRole)
         start_block = self.create_ui.block_combobox.currentData(Qt.UserRole)
-        duration = self.create_ui.duration_combobox.currentData(Qt.UserRole)
+
+        if self.create_ui.other_btn.isChecked() and not self.create_ui.other_field.valid_value():
+            Dialog.info("Error", "La duración ingresada para el turno no es válida.")
+            return
+        duration = self._get_duration()
 
         if not self.create_ui.client_field.valid_value():
             Dialog.info("Error", "El campo Cliente no es válido.")
@@ -301,16 +329,12 @@ class CreateController:
                                                        self.create_ui.fixed_checkbox.isChecked()):
             Dialog.info("Error", "El horario solicitado se encuentra ocupado.")
         else:
-            try:
-                self.security_handler.current_responsible = self.create_ui.responsible_field.value()
-                # noinspection PyTypeChecker
-                self.booking = self.booking_system.book(court, self.create_ui.client_field.value(),
-                                                        self.create_ui.fixed_checkbox.isChecked(), self.when,
-                                                        start_block.start, duration)
-                Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
-                self.create_ui.client_field.window().close()
-            except SecurityError as sec_err:
-                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
+            # noinspection PyTypeChecker
+            self.booking = self.booking_system.book(court, self.create_ui.client_field.value(),
+                                                    self.create_ui.fixed_checkbox.isChecked(), self.when,
+                                                    start_block.start, duration)
+            Dialog.info("Éxito", "El turno ha sido reservado correctamente.")
+            self.create_ui.client_field.window().close()
 
 
 class CreateUI(QDialog):
@@ -399,7 +423,7 @@ class CreateUI(QDialog):
         self.duration_layout.addWidget(self.other_btn)
         self.other_btn.setFont(font)
 
-        self.other_field = Field(Number, parent=self, min_value=1, max_value=600)
+        self.other_field = Field(Number, parent=self, min_value=1, max_value=601)
         self.duration_layout.addWidget(self.other_field)
         config_line(self.other_field, place_holder="Minutos", fixed_width=75)
 
