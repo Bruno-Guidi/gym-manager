@@ -193,6 +193,8 @@ class MainController:
     def execute_action(self):
         if self.main_ui.add_stock.isChecked():
             self._increase_stock()
+        if self.main_ui.remove_stock.isChecked():
+            self._decrease_stock()
         if self.main_ui.charge_item.isChecked():
             self._charge_item()
 
@@ -286,11 +288,6 @@ class StockMainUI(QMainWindow):
         self.method_combobox = QComboBox(self)
         self.form_layout.addWidget(self.method_combobox, 1, 2)
         config_combobox(self.method_combobox)
-
-        # Description
-        self.description_text = QTextEdit(self.widget)
-        self.form_layout.addWidget(self.description_text, 3, 0, 1, 3)
-        config_line(self.description_text, place_holder="Descripción", adjust_to_hint=False)
 
         # Responsible
         self.responsible_lbl = QLabel(self)
