@@ -221,11 +221,11 @@ class BookingMainUI(QMainWindow):
 
         self.next_btn = QPushButton(self.widget)
         self.date_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=20)
+        config_btn(self.next_btn, icon_path="ui/resources/up.png", icon_size=20)
 
         self.prev_btn = QPushButton(self.widget)
         self.date_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, icon_path="ui/resources/prev_page.png", icon_size=20)
+        config_btn(self.prev_btn, icon_path="ui/resources/down.png", icon_size=20)
 
         self.date_edit = QDateEdit(self.widget)
         self.date_layout.addWidget(self.date_edit)
