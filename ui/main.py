@@ -21,7 +21,7 @@ from gym_manager.core.persistence import (
 from gym_manager.core.security import SecurityHandler, Responsible
 from gym_manager.stock.core import ItemRepo
 from ui import utils
-from ui.accounting import AccountingMainUI
+from ui.accounting import AccountingMainUI, BalanceHistoryUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
@@ -116,6 +116,8 @@ class Controller:
         self.main_ui.bookings_btn.clicked.connect(show_booking_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.balance_history_action.triggered.connect(self.show_balance_history_ui)
 
     def show_config_ui(self):
         def generate_balance():
@@ -204,6 +206,12 @@ class Controller:
         # noinspection PyAttributeOutsideInit
         self.action_ui = ActionUI(self.security_handler)
         self.action_ui.setWindowModality(Qt.ApplicationModal)
+
+    def show_balance_history_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._balance_history_ui = BalanceHistoryUI(self.balance_repo)
+        self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
+        self._balance_history_ui.show()
 
     def close(self):
         if self.backup_fn is not None:
