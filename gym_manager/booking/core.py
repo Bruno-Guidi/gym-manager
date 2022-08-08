@@ -424,7 +424,7 @@ class BookingSystem:
 
     @log_responsible(action_tag="create_booking", to_str=book_description)
     def book(
-            self, court: str, client: Client, is_fixed: bool, when: date, start: time, duration: Duration
+            self, court: str, client_name: String, is_fixed: bool, when: date, start: time, duration: Duration
     ) -> Booking:
         """Creates a Booking with the given data.
 
@@ -441,10 +441,10 @@ class BookingSystem:
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         end = combine(date.min, start, duration).time()
         if is_fixed:
-            booking = FixedBooking(court, client, start, end, when.weekday(), when)
+            booking = FixedBooking(court, client_name, start, end, when.weekday(), when)
             self.fixed_booking_handler.add(booking)
         else:
-            booking = TempBooking(court, client, start, end, when)
+            booking = TempBooking(court, client_name, start, end, when)
 
         self.repo.add(booking)
         return booking
