@@ -128,20 +128,25 @@ class AccountingMainUI(QMainWindow):
         self.today_extractions_layout.addWidget(self.today_extractions_line)
         config_line(self.today_extractions_line, place_holder="0,00", enabled=False, alignment=Qt.AlignRight)
 
-        # Horizontal spacer.
-        self.header_layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
+        self.header_layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
+
+        # Buttons.
+        self.buttons_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.buttons_layout)
 
         self.close_balance_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.close_balance_btn)
+        self.buttons_layout.addWidget(self.close_balance_btn, alignment=Qt.AlignCenter)
         config_btn(self.close_balance_btn, "Cerrar caja", font_size=16, extra_width=30)
+
+        self.history_btn = QPushButton(self.widget)
+        self.buttons_layout.addWidget(self.history_btn, alignment=Qt.AlignCenter)
+        config_btn(self.history_btn, "Historial", font_size=16, extra_width=30)
+
+        self.header_layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
 
         self.extract_btn = QPushButton(self.widget)
         self.header_layout.addWidget(self.extract_btn)
         config_btn(self.extract_btn, "Extraer", font_size=16, extra_width=30)
-
-        self.history_btn = QPushButton(self.widget)
-        self.header_layout.addWidget(self.history_btn)
-        config_btn(self.history_btn, "Historial", font_size=16, extra_width=30)
 
         self.layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
@@ -152,9 +157,9 @@ class AccountingMainUI(QMainWindow):
 
         self.transaction_table = QTableWidget(self.widget)
         self.layout.addWidget(self.transaction_table)
-        new_config_table(self.transaction_table, width=850,
-                         columns={"Responsable": (.22, str), "Cliente": (.25, str), "Monto": (.16, int),
-                                  "Descripción": (.37, str)}, min_rows_to_show=20)
+        new_config_table(self.transaction_table, width=1200,
+                         columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.12, int),
+                                  "Descripción": (.48, str)}, min_rows_to_show=20)
 
         self.setFixedWidth(self.minimumSizeHint().width())
 
