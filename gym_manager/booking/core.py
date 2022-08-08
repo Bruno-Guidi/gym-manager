@@ -7,7 +7,7 @@ from datetime import date, datetime, time, timedelta
 from typing import Iterable, Generator, TypeAlias
 
 from gym_manager.core.api import CreateTransactionFn
-from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String
+from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String, Currency
 from gym_manager.core.persistence import FilterValuePair
 from gym_manager.core.security import log_responsible
 
@@ -337,13 +337,13 @@ class BookingSystem:
             yield Block(i, block_start, block_end)
 
     def __init__(
-            self, activity: Activity, repo: BookingRepo, durations: tuple[Duration, ...], courts_names: tuple[str, ...],
-            start: time, end: time, minute_step: int
+            self, activity: Activity, repo: BookingRepo, durations: tuple[Duration, ...],
+            courts: tuple[tuple[str, Currency], ...], start: time, end: time, minute_step: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
 
-        self.court_names = courts_names
+        self._courts = {name: price for name, price in courts}
         self.durations = durations
 
         self.start, self.end = start, end
@@ -354,7 +354,14 @@ class BookingSystem:
 
         self.activity = activity
         self.repo = repo
-        self.fixed_booking_handler = FixedBookingHandler(courts_names, self.repo.all_fixed())
+        self.fixed_booking_handler = FixedBookingHandler(self._courts.keys(), self.repo.all_fixed())
+
+    @property
+    def court_names(self) -> Iterable[str]:
+        return self._courts.keys()
+
+    def court_price(self, court: str) -> Currency:
+        return self._courts[court]
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
