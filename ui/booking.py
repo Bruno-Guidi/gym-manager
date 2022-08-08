@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
     remaining_blocks, Booking, subtract_times, Duration)
-from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String, Number
+from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String, Number, Currency
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
@@ -23,7 +23,7 @@ from ui.utils import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_date_edit, fill_cell, config_lbl,
     config_combobox, config_checkbox, config_line, fill_combobox, new_config_table)
-from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field, Field
+from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field, Field, Separator
 
 DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
 MONTH_NAMES = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
@@ -198,13 +198,79 @@ class BookingMainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
 
+        self.top_layout = QHBoxLayout()
+        self.layout.addLayout(self.top_layout)
+
+        self.left_layout = QVBoxLayout()
+        self.top_layout.addLayout(self.left_layout)
+
+        self.top_layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
+
+        # Charge form.
+        self.charge_form_layout = QGridLayout()
+        self.top_layout.addLayout(self.charge_form_layout)
+        self.charge_form_layout.setContentsMargins(50, 0, 50, 0)
+
+        # Responsible.
+        self.responsible_lbl = QLabel(self.widget)
+        self.charge_form_layout.addWidget(self.responsible_lbl, 0, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self.widget)
+        self.charge_form_layout.addWidget(self.responsible_field, 0, 1)
+        config_line(self.responsible_field, fixed_width=100)
+
+        # Court
+        self.court_lbl = QLabel(self.widget)
+        self.charge_form_layout.addWidget(self.court_lbl, 0, 2)
+        config_lbl(self.court_lbl, "Cancha")
+
+        self.court_line = QLineEdit(self.widget)
+        self.charge_form_layout.addWidget(self.court_line, 0, 3)
+        config_line(self.court_line, fixed_width=40)
+
+        # Hour
+        self.hour_lbl = QLabel(self.widget)
+        self.charge_form_layout.addWidget(self.hour_lbl, 0, 4)
+        config_lbl(self.hour_lbl, "Hora")
+
+        self.hour_line = QLineEdit(self.widget)
+        self.charge_form_layout.addWidget(self.hour_line, 0, 5)
+        config_line(self.hour_line, fixed_width=60)
+
+        # Client.
+        self.client_lbl = QLabel(self.widget)
+        self.charge_form_layout.addWidget(self.client_lbl, 1, 0)
+        config_lbl(self.client_lbl, "Cliente")
+
+        self.client_line = QLineEdit(self.widget)
+        self.charge_form_layout.addWidget(self.client_line, 1, 1, 1, 2)
+        config_line(self.client_line)
+        self.client_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        # Method.
+        self.method_combobox = QComboBox(self)
+        self.charge_form_layout.addWidget(self.method_combobox, 2, 0)
+        config_combobox(self.method_combobox)
+
+        # Amount.
+        self.amount_line = Field(Currency, parent=self, positive=True)
+        self.charge_form_layout.addWidget(self.amount_line, 2, 1, 1, 2)
+        config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
+
+        # Charge button
+        self.charge_btn = QPushButton(self.widget)
+        self.charge_form_layout.addWidget(self.charge_btn, 1, 3, 2, 3, alignment=Qt.AlignCenter)
+        config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
+
         # Buttons.
         self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
+        self.left_layout.addLayout(self.buttons_layout)
+        self.left_layout.setAlignment(Qt.AlignLeft)
 
-        self.charge_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.charge_btn)
-        config_btn(self.charge_btn, "Cobrar turno", font_size=16)
+        # self.charge_btn = QPushButton(self.widget)
+        # self.buttons_layout.addWidget(self.charge_btn)
+        # config_btn(self.charge_btn, "Cobrar turno", font_size=16)
 
         self.create_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.create_btn)
@@ -220,9 +286,10 @@ class BookingMainUI(QMainWindow):
 
         # Date index.
         self.date_layout = QHBoxLayout()
-        self.layout.addLayout(self.date_layout)
+        self.left_layout.addLayout(self.date_layout)
         config_layout(self.date_layout)
         self.date_layout.setSpacing(0)
+        self.date_layout.setAlignment(Qt.AlignLeft)
 
         self.date_lbl = QLabel(self.widget)
         self.date_layout.addWidget(self.date_lbl)
