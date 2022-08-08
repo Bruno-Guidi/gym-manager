@@ -242,6 +242,9 @@ class AccountingMainUI(QMainWindow):
 
         self.setFixedWidth(self.minimumSizeHint().width())
 
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+
 
 class BalanceHistoryController:
     ONE_WEEK_TD = ("7 días", timedelta(days=7))
