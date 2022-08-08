@@ -101,7 +101,7 @@ def main():
     # Main window launch.
     window = MainUI(client_repo, activity_repo, subscription_repo, transaction_repo, balance_repo, booking_system,
                     contact_repo, item_repo, security_handler, enable_tools=config_dict["enable_utility_functions"],
-                    backup_fn=backup_fn)
+                    allow_passed_time_bookings=config_dict["allow_passed_time_bookings"], backup_fn=backup_fn)
     window.show()
     app.exec()
 

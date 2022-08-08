@@ -24,16 +24,16 @@ from ui.widget_config import (
     config_combobox, config_checkbox, config_line, fill_combobox, new_config_table)
 from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 
-ScheduleColumn: TypeAlias = dict[int, Booking]
-
 DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
+MONTH_NAMES = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+               9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
 
 
 class MainController:
 
     def __init__(
             self, main_ui: BookingMainUI, client_repo: ClientRepo, transaction_repo: TransactionRepo,
-            booking_system: BookingSystem, security_handler: SecurityHandler
+            booking_system: BookingSystem, security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         self.main_ui = main_ui
         self.client_repo = client_repo
@@ -41,7 +41,9 @@ class MainController:
         self.booking_system = booking_system
         self.security_handler = security_handler
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
-        self._bookings: dict[int, ScheduleColumn] = {}
+        self._bookings: dict[int, dict[int, Booking]] | None = None
+
+        self.allow_passed_time_bookings = allow_passed_time_bookings
 
         self.load_bookings()
 
@@ -65,22 +67,23 @@ class MainController:
     ):
         if start is None or end is None:
             start, end = self.booking_system.block_range(booking.start, booking.end)
+        for i in range(start, end):
+            item = QTableWidgetItem(
+                f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}"
+            )
+            item.setTextAlignment(Qt.AlignCenter)
+            self.main_ui.booking_table.setItem(i, self._courts[booking.court], item)
 
-        item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
-                                f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}")
-        item.setTextAlignment(Qt.AlignCenter)
-        self.main_ui.booking_table.setItem(start, self._courts[booking.court], item)
-        if end - start != 1:
-            self.main_ui.booking_table.setSpan(start, self._courts[booking.court], end - start, 1)
-
-        # Saves the booking to be used later if needed.
-        if start not in self._bookings:
-            self._bookings[start] = {}
-        self._bookings[start][self._courts[booking.court]] = booking
+            self._bookings[self._courts[booking.court]][i] = booking  # Saves the booking to be used later if needed.
 
     def load_bookings(self):
+        date_ = self.main_ui.date_edit.date().toPyDate()
+        config_lbl(self.main_ui.date_lbl, f"{DAYS_NAMES[date_.weekday()]} {date_.day} de {MONTH_NAMES[date_.month]}",
+                   font_size=16, alignment=Qt.AlignRight, fixed_width=225)
+
         self.main_ui.booking_table.setRowCount(0)  # Clears the table.
-        self._bookings.clear()
+        self._bookings = {court_number: {} for court_number in self._courts.values()}
 
         # Loads the hour column.
         blocks = [block for block in self.booking_system.blocks()]
@@ -91,7 +94,7 @@ class MainController:
             self.main_ui.booking_table.setItem(row, 0, item)
 
         # Loads the bookings for the day.
-        for booking, start, end in self.booking_system.bookings(self.main_ui.date_edit.date().toPyDate()):
+        for booking, start, end in self.booking_system.bookings(date_):
             self._load_booking(booking, start, end)
 
     def next_page(self):
@@ -105,11 +108,12 @@ class MainController:
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
         when = self.main_ui.date_edit.date().toPyDate()
-        if when < date.today():
+        if not self.allow_passed_time_bookings and when < date.today():
             Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
         else:
             # noinspection PyAttributeOutsideInit
-            self._create_ui = CreateUI(self.client_repo, self.booking_system, self.security_handler, when)
+            self._create_ui = CreateUI(self.client_repo, self.booking_system, self.security_handler, when,
+                                       self.allow_passed_time_bookings)
             self._create_ui.exec_()
             if self._create_ui.controller.booking is not None:
                 self._load_booking(self._create_ui.controller.booking)
@@ -117,17 +121,16 @@ class MainController:
     def charge_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
-        if row not in self._bookings or col not in self._bookings[row]:
+        if col not in self._bookings or row not in self._bookings[col]:
             Dialog.info("Error", "No existe un turno en el horario seleccionado.")
             return
 
-        booking = self._bookings[row][col]
+        booking = self._bookings[col][row]
         if when > date.today() or (when == datetime.now().date() and booking.start > datetime.now().time()):
             Dialog.info("Error", "No se puede cobrar un turno que todavía no comenzó.")
             return
         if booking.was_paid(when):
-            Dialog.info("Error", f"El turno ya fue cobrado. La transacción asociada es la "
-                                 f"'{booking.transaction.id}'")
+            Dialog.info("Error", f"El turno ya fue cobrado.")
             return
 
         register_booking_charge = functools.partial(self.booking_system.register_charge, booking, when)
@@ -139,16 +142,18 @@ class MainController:
         if self._charge_ui.controller.success:
             text = (f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
                     f"{' (Pago)' if booking.was_paid(when) else ''}")
-            self.main_ui.booking_table.item(row, col).setText(text)
+            start, end = self.booking_system.block_range(booking.start, booking.end)
+            for i in range(start, end):
+                self.main_ui.booking_table.item(i, col).setText(text)
 
     def cancel_booking(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
-        if row not in self._bookings or col not in self._bookings[row]:
+        if col not in self._bookings or row not in self._bookings[col]:
             Dialog.info("Error", "No existe un turno en el horario seleccionado.")
             return
 
-        to_cancel = self._bookings[row][col]
+        to_cancel = self._bookings[col][row]
         if when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()):
             Dialog.info("Error", "No se puede cancelar un turno que ya comenzo.")
         elif to_cancel.was_paid(when):
@@ -158,12 +163,10 @@ class MainController:
             self._cancel_ui = CancelUI(self.booking_system, self.security_handler, to_cancel, when)
             self._cancel_ui.exec_()
             if self._cancel_ui.controller.cancelled:
-                self.main_ui.booking_table.takeItem(row, col)
-                _, last_row = self.booking_system.block_range(to_cancel.start, to_cancel.end)
-                for i in range(row, last_row):  # Undo the spanning.
-                    self.main_ui.booking_table.setSpan(i, col, 1, 1)
-
-                self._bookings[row].pop(col)
+                start, end = self.booking_system.block_range(to_cancel.start, to_cancel.end)
+                for i in range(start, end):
+                    self.main_ui.booking_table.takeItem(i, col)
+                    self._bookings[col].pop(i)
 
     def cancelled_bookings(self):
         # noinspection PyAttributeOutsideInit
@@ -176,11 +179,12 @@ class BookingMainUI(QMainWindow):
 
     def __init__(
             self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem,
-            security_handler: SecurityHandler
+            security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, transaction_repo, booking_system, security_handler)
+        self.controller = MainController(self, client_repo, transaction_repo, booking_system, security_handler,
+                                         allow_passed_time_bookings)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")
@@ -206,36 +210,39 @@ class BookingMainUI(QMainWindow):
 
         self.history_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.history_btn)
-        config_btn(self.history_btn, "Ver cancelados", font_size=16)
-
-        # Vertical spacer.
-        self.spacer_item = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
-        self.layout.addItem(self.spacer_item)
+        config_btn(self.history_btn, "Ver borrados", font_size=16)
 
         # Date index.
         self.date_layout = QHBoxLayout()
         self.layout.addLayout(self.date_layout)
         config_layout(self.date_layout)
+        self.date_layout.setSpacing(0)
 
-        self.prev_btn = QPushButton(self.widget)
-        self.date_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, icon_path="ui/resources/prev_page.png", icon_size=32)
+        self.date_lbl = QLabel(self.widget)
+        self.date_layout.addWidget(self.date_lbl)
 
-        self.date_edit = QDateEdit(self.widget)
-        self.date_layout.addWidget(self.date_edit)
-        config_date_edit(self.date_edit, date.today(), calendar=True)
+        self.date_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
 
         self.next_btn = QPushButton(self.widget)
         self.date_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=32)
+        config_btn(self.next_btn, icon_path="ui/resources/up.png", icon_size=20)
+
+        self.prev_btn = QPushButton(self.widget)
+        self.date_layout.addWidget(self.prev_btn)
+        config_btn(self.prev_btn, icon_path="ui/resources/down.png", icon_size=20)
+
+        self.date_edit = QDateEdit(self.widget)
+        self.date_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today(), calendar=True, font_size=16)
 
         # Booking schedule.
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
 
-        new_config_table(self.booking_table, width=1000, select_whole_row=False,
+        new_config_table(self.booking_table, width=1000, select_whole_row=False, font_size=12,
                          columns={"Hora": (.19, bool), "Cancha 1": (.27, bool), "Cancha 2": (.27, bool),
-                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=10)
+                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=24)
+        self.booking_table.verticalHeader().setDefaultSectionSize(22)
 
         # Adjusts size.
         self.setMaximumWidth(self.widget.sizeHint().width())
@@ -248,7 +255,7 @@ class CreateController:
 
     def __init__(
             self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem,
-            security_handler: SecurityHandler, when: date
+            security_handler: SecurityHandler, when: date, allow_passed_time_bookings: bool
     ) -> None:
         self.create_ui = create_ui
         self.client_repo = client_repo
@@ -260,8 +267,10 @@ class CreateController:
         # Fills some widgets that depend on user/system data.
         config_date_edit(self.create_ui.date_edit, when, calendar=False, enabled=False)
         fill_combobox(self.create_ui.court_combobox, self.booking_system.court_names, lambda court: court)
-        fill_combobox(self.create_ui.block_combobox, remaining_blocks(self.booking_system.blocks(), when),
-                      lambda block: str(block.start))
+        blocks = self.booking_system.blocks()
+        if not allow_passed_time_bookings:
+            blocks = remaining_blocks(blocks, when)
+        fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
         fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
         # Configs the widgets so they have the same width.
@@ -324,11 +333,13 @@ class CreateController:
 class CreateUI(QDialog):
 
     def __init__(
-            self, client_repo: ClientRepo, booking_system: BookingSystem, security_handler: SecurityHandler, when: date
+            self, client_repo: ClientRepo, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
+            allow_passed_time_bookings: bool
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, client_repo, booking_system, security_handler, when)
+        self.controller = CreateController(self, client_repo, booking_system, security_handler, when,
+                                           allow_passed_time_bookings)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
