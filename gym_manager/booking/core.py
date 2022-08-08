@@ -337,8 +337,8 @@ class BookingSystem:
             yield Block(i, block_start, block_end)
 
     def __init__(
-            self, activity: Activity, repo: BookingRepo, durations: tuple[Duration, ...],
-            courts: tuple[tuple[str, Currency], ...], start: time, end: time, minute_step: int
+            self, repo: BookingRepo, durations: tuple[Duration, ...], courts: tuple[tuple[str, Currency], ...],
+            start: time, end: time, minute_step: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
@@ -352,7 +352,6 @@ class BookingSystem:
 
         self._bookings: dict[date, list[TempBooking]] = {}
 
-        self.activity = activity
         self.repo = repo
         self.fixed_booking_handler = FixedBookingHandler(self._courts.keys(), self.repo.all_fixed())
 

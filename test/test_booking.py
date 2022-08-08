@@ -176,7 +176,7 @@ def test_TempBooking_collides():
 def test_BookingSystem_blocks():
     # noinspection PyTypeChecker
     booking_system = BookingSystem(courts=(("1", Currency(0)), ("2", Currency(0))), durations=(), start=time(8, 0),
-                                   end=time(12, 0), minute_step=60, activity=None, repo=MockBookingRepo())
+                                   end=time(12, 0), minute_step=60, repo=MockBookingRepo())
 
     # start is under the booking system start.
     expected = [Block(0, time(8, 0), end=time(9, 0)), Block(1, time(9, 0), end=time(10, 0)),
@@ -194,7 +194,7 @@ def test_BookingSystem_blocks():
 def test_BookingSystem_blockRange():
     # noinspection PyTypeChecker
     booking_system = BookingSystem(courts=(("1", Currency(0)), ("2", Currency(0))), durations=(), start=time(8, 0),
-                                   end=time(12, 0), minute_step=60, activity=None, repo=MockBookingRepo())
+                                   end=time(12, 0), minute_step=60, repo=MockBookingRepo())
 
     # start and end in range.
     assert booking_system.block_range(time(8, 0), time(12, 0)) == (0, 4)
@@ -208,7 +208,7 @@ def test_BookingSystem_blockRange():
 def test_BookingSystem_outOfRange():
     # noinspection PyTypeChecker
     booking_system = BookingSystem(courts=(("1", Currency(0)), ("2", Currency(0))), durations=(), start=time(8, 0),
-                                   end=time(23, 0), minute_step=60, activity=None, repo=MockBookingRepo())
+                                   end=time(23, 0), minute_step=60, repo=MockBookingRepo())
 
     assert not booking_system.out_of_range(time(11, 30), Duration(30, ""))
     assert booking_system.out_of_range(time(22, 0), Duration(90, ""))
@@ -339,7 +339,7 @@ def test_BookingSystem_bookingAvailable():
     dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     booking_repo = MockBookingRepo()
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(dummy_activity, booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
+    booking_system = BookingSystem(booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
                                    durations=(), start=time(8, 0), end=time(18, 0), minute_step=60)
 
     assert booking_system.booking_available(date(2022, 7, 11), "1", time(9, 0), Duration(60, "1h"), is_fixed=False)
@@ -352,7 +352,7 @@ def test_BookingSystem_bookings():
     dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     booking_repo = MockBookingRepo()
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(dummy_activity, booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
+    booking_system = BookingSystem(booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
                                    durations=(), start=time(8, 0), end=time(18, 0), minute_step=60)
 
     # noinspection PyTypeChecker
@@ -409,7 +409,7 @@ def test_integration_registerCharge_fixedBooking():
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
     dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(dummy_activity, booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
+    booking_system = BookingSystem(booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
                                    durations=(), start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
@@ -441,7 +441,7 @@ def test_integration_cancelTemporary_fixedBooking(resp_name):
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
     dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(dummy_activity, booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
+    booking_system = BookingSystem(booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
                                    durations=(), start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
@@ -474,7 +474,7 @@ def test_integration_cancelDefinitely_fixedBooking(resp_name):
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
     dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(dummy_activity, booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
+    booking_system = BookingSystem(booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
                                    durations=(), start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
@@ -506,7 +506,7 @@ def test_integration_cancelDefinitely_tempBooking(resp_name):
     dummy_client = client_repo.create(String("TestCli"), date(2022, 6, 6), date(2000, 1, 1), Number(""))
     dummy_activity = Activity(0, String("TestName"), Currency(100), String("TestDescr"))
     # noinspection PyTypeChecker
-    booking_system = BookingSystem(dummy_activity, booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
+    booking_system = BookingSystem(booking_repo, courts=(("1", Currency(0)), ("2", Currency(0))),
                                    durations=(), start=time(8, 0), end=time(18, 0), minute_step=60)
 
     booking_date = date(2022, 7, 11)
