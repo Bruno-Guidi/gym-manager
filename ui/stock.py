@@ -235,21 +235,21 @@ class StockMainUI(QMainWindow):
         self.left_layout.addWidget(self.page_index)
 
         # Actions to execute related to stock.
-        self.charge_filter_group = QButtonGroup(self.widget)
+        self.action_group = QButtonGroup(self.widget)
         font = QFont("MS Shell Dlg 2", 14)
 
         self.add_stock = QRadioButton("Agregar stock")
-        self.charge_filter_group.addButton(self.add_stock)
+        self.action_group.addButton(self.add_stock)
         self.right_layout.addWidget(self.add_stock)
         self.add_stock.setFont(font)
 
         self.remove_stock = QRadioButton("Reducir stock")
-        self.charge_filter_group.addButton(self.remove_stock)
+        self.action_group.addButton(self.remove_stock)
         self.right_layout.addWidget(self.remove_stock)
         self.remove_stock.setFont(font)
 
         self.charge_item = QRadioButton("Cobrar ítem")
-        self.charge_filter_group.addButton(self.charge_item)
+        self.action_group.addButton(self.charge_item)
         self.right_layout.addWidget(self.charge_item)
         self.charge_item.setFont(font)
 
