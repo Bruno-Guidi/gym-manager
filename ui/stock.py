@@ -168,7 +168,6 @@ class MainController:
                 # noinspection PyTypeChecker
                 register_item_charge(self.item_repo, item, item_amount, create_transaction_fn)
 
-                self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cobro de {self.main_ui.amount_field.value().as_primitive()} '{item.name}', a "
                                      f"{Currency.fmt(item.price)} cada uno, fue registrado.")
 
