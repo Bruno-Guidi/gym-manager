@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import functools
-from datetime import date, datetime
-from typing import TypeAlias
+from datetime import date, datetime, timedelta
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -12,7 +11,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
-    remaining_blocks, Booking, Duration, subtract_times)
+    remaining_blocks, Booking, subtract_times)
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, NumberEqual, String, TextLike
 from gym_manager.core.persistence import ClientRepo, FilterValuePair, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
@@ -27,6 +26,11 @@ from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
 MONTH_NAMES = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
                9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
+
+
+def timedelta_to_duration_str(td: timedelta) -> str:
+    hours, minutes = td.seconds // 3600, (td.seconds // 60) % 60
+    return f"{hours}h{minutes}m"
 
 
 class MainController:
@@ -585,8 +589,6 @@ class HistoryController:
     def __init__(self, history_ui: HistoryUI, booking_system: BookingSystem) -> None:
         self.booking_system = booking_system
         self.history_ui = history_ui
-        self._durations: dict[int, Duration] = {duration.as_timedelta.seconds: duration
-                                                for duration in booking_system.durations}
 
         # Configure the filtering widget.
         filters = (ClientLike("client_name", display_name="Nombre cliente",
@@ -621,8 +623,8 @@ class HistoryController:
             fill_cell(self.history_ui.booking_table, row, 1, cancelled.when.strftime(utils.DATE_FORMAT), bool)
             fill_cell(self.history_ui.booking_table, row, 2, cancelled.court, bool)
             fill_cell(self.history_ui.booking_table, row, 3, cancelled.start.strftime('%Hh:%Mm'), bool)
-            duration = self._durations[subtract_times(cancelled.start, cancelled.end).seconds]
-            fill_cell(self.history_ui.booking_table, row, 4, duration.as_str, bool)
+            duration = timedelta_to_duration_str(subtract_times(cancelled.start, cancelled.end))
+            fill_cell(self.history_ui.booking_table, row, 4, duration, bool)
             fill_cell(self.history_ui.booking_table, row, 5, cancelled.client.name, str)
             fill_cell(self.history_ui.booking_table, row, 6, cancelled.responsible, str)
             fill_cell(self.history_ui.booking_table, row, 7, DAYS_NAMES[cancelled.when.weekday()], bool)
