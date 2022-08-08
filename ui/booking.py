@@ -135,8 +135,9 @@ class MainController:
 
         register_booking_charge = functools.partial(self.booking_system.register_charge, booking, when)
         # noinspection PyAttributeOutsideInit
-        self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler, self.booking_system.activity.price,
-                                   String(f"Cobro de turno de {self.booking_system.activity.name}."),
+        self._charge_ui = ChargeUI(self.transaction_repo, self.security_handler,
+                                   self.booking_system.court_price(booking.court),
+                                   String(f"Cobro de turno de padel en cancha {booking.court}."),
                                    register_booking_charge, booking.client)
         self._charge_ui.exec_()
         if self._charge_ui.controller.success:
