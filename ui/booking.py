@@ -43,6 +43,8 @@ class MainController:
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
         self._bookings: dict[int, dict[int, Booking]] | None = None
 
+        self.allow_passed_time_bookings = allow_passed_time_bookings
+
         self.load_bookings()
 
         # noinspection PyUnresolvedReferences
@@ -106,11 +108,12 @@ class MainController:
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
         when = self.main_ui.date_edit.date().toPyDate()
-        if when < date.today():
+        if not self.allow_passed_time_bookings and when < date.today():
             Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
         else:
             # noinspection PyAttributeOutsideInit
-            self._create_ui = CreateUI(self.client_repo, self.booking_system, self.security_handler, when)
+            self._create_ui = CreateUI(self.client_repo, self.booking_system, self.security_handler, when,
+                                       self.allow_passed_time_bookings)
             self._create_ui.exec_()
             if self._create_ui.controller.booking is not None:
                 self._load_booking(self._create_ui.controller.booking)
@@ -252,7 +255,7 @@ class CreateController:
 
     def __init__(
             self, create_ui: CreateUI, client_repo: ClientRepo, booking_system: BookingSystem,
-            security_handler: SecurityHandler, when: date
+            security_handler: SecurityHandler, when: date, allow_passed_time_bookings: bool
     ) -> None:
         self.create_ui = create_ui
         self.client_repo = client_repo
@@ -264,8 +267,10 @@ class CreateController:
         # Fills some widgets that depend on user/system data.
         config_date_edit(self.create_ui.date_edit, when, calendar=False, enabled=False)
         fill_combobox(self.create_ui.court_combobox, self.booking_system.court_names, lambda court: court)
-        fill_combobox(self.create_ui.block_combobox, remaining_blocks(self.booking_system.blocks(), when),
-                      lambda block: str(block.start))
+        blocks = self.booking_system.blocks()
+        if not allow_passed_time_bookings:
+            blocks = remaining_blocks(blocks, when)
+        fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
         fill_combobox(self.create_ui.duration_combobox, self.booking_system.durations, lambda duration: duration.as_str)
 
         # Configs the widgets so they have the same width.
@@ -328,11 +333,13 @@ class CreateController:
 class CreateUI(QDialog):
 
     def __init__(
-            self, client_repo: ClientRepo, booking_system: BookingSystem, security_handler: SecurityHandler, when: date
+            self, client_repo: ClientRepo, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
+            allow_passed_time_bookings: bool
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = CreateController(self, client_repo, booking_system, security_handler, when)
+        self.controller = CreateController(self, client_repo, booking_system, security_handler, when,
+                                           allow_passed_time_bookings)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
