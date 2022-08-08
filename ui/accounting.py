@@ -37,6 +37,9 @@ class MainController:
         # Calculates charges of the day.
         self.balance, self._today_transactions = api.generate_balance(self._today_transactions)
         self.acc_main_ui.today_charges_line.setText(Currency.fmt(self.balance["Cobro"].get("Total", Currency(0))))
+        self.acc_main_ui.today_extractions_line.setText(
+            Currency.fmt(self.balance["Extracción"].get("Total", Currency(0)))
+        )
 
         # Shows transactions of the day.
         for i, transaction in enumerate(self._today_transactions):
@@ -111,7 +114,19 @@ class AccountingMainUI(QMainWindow):
 
         self.today_charges_line = QLineEdit(self.widget)
         self.today_charges_layout.addWidget(self.today_charges_line)
-        config_line(self.today_charges_line, place_holder="00000,00", enabled=False, alignment=Qt.AlignRight)
+        config_line(self.today_charges_line, place_holder="000000,00", enabled=False, alignment=Qt.AlignRight)
+
+        # Today extractions layout.
+        self.today_extractions_layout = QVBoxLayout()
+        self.header_layout.addLayout(self.today_extractions_layout)
+
+        self.today_extractions_lbl = QLabel(self.widget)
+        self.today_extractions_layout.addWidget(self.today_extractions_lbl)
+        config_lbl(self.today_extractions_lbl, "Extracciones del día")
+
+        self.today_extractions_line = QLineEdit(self.widget)
+        self.today_extractions_layout.addWidget(self.today_extractions_line)
+        config_line(self.today_extractions_line, place_holder="0,00", enabled=False, alignment=Qt.AlignRight)
 
         # Horizontal spacer.
         self.header_layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Minimum, QSizePolicy.Minimum))
