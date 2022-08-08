@@ -67,6 +67,9 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.history_btn.clicked.connect(self.cancelled_bookings)
 
+    def refresh_booking_info(self):
+        pass
+
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
     ):
@@ -239,7 +242,7 @@ class BookingMainUI(QMainWindow):
 
         self.court_line = QLineEdit(self.widget)
         self.charge_form_layout.addWidget(self.court_line, 0, 3)
-        config_line(self.court_line, fixed_width=40)
+        config_line(self.court_line, fixed_width=40, enabled=False)
 
         # Hour
         self.hour_lbl = QLabel(self.widget)
@@ -248,7 +251,7 @@ class BookingMainUI(QMainWindow):
 
         self.hour_line = QLineEdit(self.widget)
         self.charge_form_layout.addWidget(self.hour_line, 0, 5)
-        config_line(self.hour_line, fixed_width=60)
+        config_line(self.hour_line, fixed_width=60, enabled=False)
 
         # Client.
         self.client_lbl = QLabel(self.widget)
@@ -257,7 +260,7 @@ class BookingMainUI(QMainWindow):
 
         self.client_line = QLineEdit(self.widget)
         self.charge_form_layout.addWidget(self.client_line, 1, 1, 1, 2)
-        config_line(self.client_line)
+        config_line(self.client_line, read_only=True)
         self.client_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # Method.
