@@ -50,6 +50,8 @@ class MainController:
 
         self.allow_passed_time_bookings = allow_passed_time_bookings
 
+        fill_combobox(self.main_ui.method_combobox, self.transaction_repo.methods, display=lambda method: method)
+
         self.load_bookings()
 
         # noinspection PyUnresolvedReferences
