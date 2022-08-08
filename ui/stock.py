@@ -5,7 +5,7 @@ import functools
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox, QMenu, QAction)
 
 from gym_manager.core.base import String, Currency, TextLike, Number
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
@@ -203,6 +203,21 @@ class StockMainUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
+
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Items", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar", self)
+        client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar", self)
+        client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar", self)
+        client_menu.addAction(self.remove_action)
 
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
