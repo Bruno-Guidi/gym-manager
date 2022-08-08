@@ -79,6 +79,11 @@ class MainController:
             self.main_ui.hour_line.setText(booking.start.strftime("%H:%M"))
             self.main_ui.client_line.setText(booking.client_name.as_primitive())
             self.main_ui.amount_line.setText(Currency.fmt(self.booking_system.amount_to_charge(booking), symbol=""))
+        else:
+            self.main_ui.court_line.clear()
+            self.main_ui.hour_line.clear()
+            self.main_ui.client_line.clear()
+            self.main_ui.amount_line.clear()
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
