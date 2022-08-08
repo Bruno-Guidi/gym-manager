@@ -52,6 +52,7 @@ class MainController:
 
         fill_combobox(self.main_ui.method_combobox, self.transaction_repo.methods, display=lambda method: method)
         self.main_ui.charge_btn.setEnabled(False)
+        self.main_ui.cancel_btn.setEnabled(False)
 
         self.load_bookings()
 
@@ -81,12 +82,14 @@ class MainController:
             self.main_ui.client_line.setText(booking.client_name.as_primitive())
             self.main_ui.amount_line.setText(Currency.fmt(self.booking_system.amount_to_charge(booking), symbol=""))
             self.main_ui.charge_btn.setEnabled(True)
+            self.main_ui.cancel_btn.setEnabled(True)
         else:
             self.main_ui.court_line.clear()
             self.main_ui.hour_line.clear()
             self.main_ui.client_line.clear()
             self.main_ui.amount_line.clear()
             self.main_ui.charge_btn.setEnabled(False)
+            self.main_ui.cancel_btn.setEnabled(False)
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -240,7 +243,8 @@ class BookingMainUI(QMainWindow):
 
         self.cancel_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar turno", font_size=16)
+        config_btn(self.cancel_btn, "Cancelar turno", font_size=16, icon_path=r"ui/resources/trash_can.png",
+                   icon_size=24)
 
         self.history_btn = QPushButton(self.widget)
         self.buttons_layout.addWidget(self.history_btn)
