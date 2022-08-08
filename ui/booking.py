@@ -250,7 +250,7 @@ class BookingMainUI(QMainWindow):
 
         self.court_line = QLineEdit(self.widget)
         self.charge_form_layout.addWidget(self.court_line, 0, 3)
-        config_line(self.court_line, fixed_width=40, enabled=False)
+        config_line(self.court_line, fixed_width=40, enabled=False, alignment=Qt.AlignCenter)
 
         # Hour
         self.hour_lbl = QLabel(self.widget)
@@ -259,7 +259,7 @@ class BookingMainUI(QMainWindow):
 
         self.hour_line = QLineEdit(self.widget)
         self.charge_form_layout.addWidget(self.hour_line, 0, 5)
-        config_line(self.hour_line, fixed_width=60, enabled=False)
+        config_line(self.hour_line, fixed_width=60, enabled=False, alignment=Qt.AlignCenter)
 
         # Client.
         self.client_lbl = QLabel(self.widget)
