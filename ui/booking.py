@@ -208,10 +208,6 @@ class BookingMainUI(QMainWindow):
         self.buttons_layout.addWidget(self.history_btn)
         config_btn(self.history_btn, "Ver borrados", font_size=16)
 
-        # Vertical spacer.
-        self.spacer_item = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
-        self.layout.addItem(self.spacer_item)
-
         # Date index.
         self.date_layout = QHBoxLayout()
         self.layout.addLayout(self.date_layout)
@@ -233,9 +229,10 @@ class BookingMainUI(QMainWindow):
         self.booking_table = QTableWidget(self.widget)
         self.layout.addWidget(self.booking_table)
 
-        new_config_table(self.booking_table, width=1000, select_whole_row=False,
+        new_config_table(self.booking_table, width=1000, select_whole_row=False, font_size=12,
                          columns={"Hora": (.19, bool), "Cancha 1": (.27, bool), "Cancha 2": (.27, bool),
-                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=10)
+                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=24)
+        self.booking_table.verticalHeader().setDefaultSectionSize(22)
 
         # Adjusts size.
         self.setMaximumWidth(self.widget.sizeHint().width())
