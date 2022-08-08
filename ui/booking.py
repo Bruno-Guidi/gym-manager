@@ -33,7 +33,7 @@ class MainController:
 
     def __init__(
             self, main_ui: BookingMainUI, client_repo: ClientRepo, transaction_repo: TransactionRepo,
-            booking_system: BookingSystem, security_handler: SecurityHandler
+            booking_system: BookingSystem, security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         self.main_ui = main_ui
         self.client_repo = client_repo
@@ -176,11 +176,12 @@ class BookingMainUI(QMainWindow):
 
     def __init__(
             self, client_repo: ClientRepo, transaction_repo: TransactionRepo, booking_system: BookingSystem,
-            security_handler: SecurityHandler
+            security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, client_repo, transaction_repo, booking_system, security_handler)
+        self.controller = MainController(self, client_repo, transaction_repo, booking_system, security_handler,
+                                         allow_passed_time_bookings)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")
