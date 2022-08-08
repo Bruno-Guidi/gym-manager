@@ -121,6 +121,13 @@ class MainController:
             fill_cell(self.acc_main_ui.transaction_table, row, 2, Currency.fmt(extraction.amount), data_type=int)
             fill_cell(self.acc_main_ui.transaction_table, row, 3, extraction.description, data_type=str)
 
+            # Adds the extraction to the transactions of the day and recalculates the balance.
+            self._today_transactions.append(extraction)
+            self.balance, self._today_transactions = api.generate_balance(self._today_transactions)
+            self.acc_main_ui.today_extractions_line.setText(
+                Currency.fmt(self.balance["Extracción"].get("Total", Currency(0)))
+            )
+
             Dialog.confirm(f"Extracción registrada correctamente.")
         except SecurityError as sec_err:
             self.acc_main_ui.responsible_field.setStyleSheet("border: 1px solid red")
