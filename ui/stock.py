@@ -125,6 +125,7 @@ class MainController:
             Dialog.info("Éxito", f"El ítem '{item.name}' fue eliminado correctamente.")
 
     def _update_item_amount(self, decrease: bool):
+        self.main_ui.responsible_field.setStyleSheet("")
         if self.main_ui.item_table.currentRow() == -1:
             Dialog.info("Error", "Seleccione un item en la tabla.")
             return
@@ -134,13 +135,23 @@ class MainController:
         if (not self.main_ui.amount_field.valid_value()
                 or (decrease and self.main_ui.amount_field.value() > item.amount)):
             Dialog.info("Error", "La cantidad no es válida.")
-            return
+        else:
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
-        fn = functools.partial(update_item_amount, self.item_repo, item, self.main_ui.amount_field.value(), decrease)
-        if DialogWithResp.confirm(f"Ingrese el responsable", self.security_handler, fn):
-            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int,
-                      increase_row_count=False)
-            self.main_ui.amount_field.clear()
+                # noinspection PyTypeChecker
+                update_item_amount(self.item_repo, item, self.main_ui.amount_field.value(), decrease)
+
+                fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int,
+                          increase_row_count=False)
+
+                aux = "Eliminados" if decrease else "Agregados"
+                Dialog.info("Éxito", f"{aux} {self.main_ui.amount_field.value().as_primitive()} '{item.name}'.")
+                self.main_ui.amount_field.clear()
+
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def _charge_item(self):
         self.main_ui.responsible_field.setStyleSheet("")
@@ -180,6 +191,8 @@ class MainController:
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def execute_action(self):
+        if self.main_ui.add_stock.isChecked():
+            self._increase_stock()
         if self.main_ui.charge_item.isChecked():
             self._charge_item()
 
