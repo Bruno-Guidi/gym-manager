@@ -68,17 +68,31 @@ class MainController:
             self.acc_main_ui.today_charges_line.setText(Currency.fmt(Currency(0)))
 
     def extract(self):
-        # noinspection PyAttributeOutsideInit
-        self._extract_ui = ExtractUI(self.transaction_repo, self.security_handler)
-        self._extract_ui.exec_()
-        if self._extract_ui.controller.success:
-            extraction = self._extract_ui.controller.extraction
+        self.acc_main_ui.responsible_field.setStyleSheet("")
+
+        valid_descr, descr = valid_text_value(self.acc_main_ui.description_text, utils.ACTIVITY_DESCR_CHARS)
+        if not all([self.acc_main_ui.amount_line.valid_value(), descr]):
+            Dialog.info("Error", "Hay campos con valores inválidos.")
+            return
+
+        try:
+            self.security_handler.current_responsible = self.acc_main_ui.responsible_field.value()
+            # noinspection PyTypeChecker
+            extraction = api.extract(self.transaction_repo, date.today(), self.acc_main_ui.amount_line.value(),
+                                     self.acc_main_ui.method_combobox.currentData(Qt.UserRole),
+                                     self.security_handler.current_responsible.name, descr)
+
             row = self.acc_main_ui.transaction_table.rowCount()
             fill_cell(self.acc_main_ui.transaction_table, row, 0, extraction.responsible, data_type=str)
             name = extraction.client.name if extraction.client is not None else "-"
             fill_cell(self.acc_main_ui.transaction_table, row, 1, name, data_type=str)
             fill_cell(self.acc_main_ui.transaction_table, row, 2, Currency.fmt(extraction.amount), data_type=int)
             fill_cell(self.acc_main_ui.transaction_table, row, 3, extraction.description, data_type=str)
+
+            Dialog.confirm(f"Extracción registrada correctamente.")
+        except SecurityError as sec_err:
+            self.acc_main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def balance_history(self):
         # noinspection PyAttributeOutsideInit
