@@ -32,6 +32,7 @@ class MainController:
         self.balance_repo = balance_repo
         self.security_handler = security_handler
 
+        fill_combobox(self.acc_main_ui.method_combobox, self.transaction_repo.methods, display=lambda method: method)
         self._today_transactions: list[Transaction] = [t for t in transaction_repo.all()]
 
         # Calculates charges of the day.
