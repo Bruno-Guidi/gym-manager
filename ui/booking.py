@@ -25,6 +25,8 @@ from ui.widget_config import (
 from ui.widgets import FilterHeader, PageIndex, Dialog, responsible_field
 
 DAYS_NAMES = {0: "Lun", 1: "Mar", 2: "Mie", 3: "Jue", 4: "Vie", 5: "Sab", 6: "Dom"}
+MONTH_NAMES = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+               9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
 
 
 class MainController:
@@ -74,6 +76,10 @@ class MainController:
             self._bookings[self._courts[booking.court]][i] = booking  # Saves the booking to be used later if needed.
 
     def load_bookings(self):
+        date_ = self.main_ui.date_edit.date().toPyDate()
+        config_lbl(self.main_ui.date_lbl, f"{DAYS_NAMES[date_.weekday()]} {date_.day} de {MONTH_NAMES[date_.month]}",
+                   font_size=16, alignment=Qt.AlignRight, fixed_width=225)
+
         self.main_ui.booking_table.setRowCount(0)  # Clears the table.
         self._bookings = {court_number: {} for court_number in self._courts.values()}
 
@@ -86,7 +92,7 @@ class MainController:
             self.main_ui.booking_table.setItem(row, 0, item)
 
         # Loads the bookings for the day.
-        for booking, start, end in self.booking_system.bookings(self.main_ui.date_edit.date().toPyDate()):
+        for booking, start, end in self.booking_system.bookings(date_):
             self._load_booking(booking, start, end)
 
     def next_page(self):
@@ -206,18 +212,24 @@ class BookingMainUI(QMainWindow):
         self.date_layout = QHBoxLayout()
         self.layout.addLayout(self.date_layout)
         config_layout(self.date_layout)
+        self.date_layout.setSpacing(0)
 
-        self.prev_btn = QPushButton(self.widget)
-        self.date_layout.addWidget(self.prev_btn)
-        config_btn(self.prev_btn, icon_path="ui/resources/prev_page.png", icon_size=32)
+        self.date_lbl = QLabel(self.widget)
+        self.date_layout.addWidget(self.date_lbl)
 
-        self.date_edit = QDateEdit(self.widget)
-        self.date_layout.addWidget(self.date_edit)
-        config_date_edit(self.date_edit, date.today(), calendar=True)
+        self.date_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
 
         self.next_btn = QPushButton(self.widget)
         self.date_layout.addWidget(self.next_btn)
-        config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=32)
+        config_btn(self.next_btn, icon_path="ui/resources/next_page.png", icon_size=20)
+
+        self.prev_btn = QPushButton(self.widget)
+        self.date_layout.addWidget(self.prev_btn)
+        config_btn(self.prev_btn, icon_path="ui/resources/prev_page.png", icon_size=20)
+
+        self.date_edit = QDateEdit(self.widget)
+        self.date_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today(), calendar=True, font_size=16)
 
         # Booking schedule.
         self.booking_table = QTableWidget(self.widget)
