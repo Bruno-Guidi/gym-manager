@@ -87,11 +87,14 @@ Cancellation = namedtuple("Cancellation",
 
 
 class Duration:
+    @classmethod
+    def from_td(cls, td: timedelta) -> Duration:
+        return Duration(minutes=0, as_str="", td=td)
 
-    def __init__(self, minutes: int, as_str: str) -> None:
+    def __init__(self, minutes: int, as_str: str, td: timedelta | None = None) -> None:
         self.minutes = minutes
         self.as_str = as_str
-        self.as_timedelta = timedelta(minutes=minutes)
+        self.as_timedelta = timedelta(minutes=minutes) if td is None else td
 
 
 class Block:
@@ -449,20 +452,28 @@ class BookingSystem:
         self.repo.add(booking)
         return booking
 
+    def _get_duration(self, td: timedelta, duration_dict) -> Duration:
+        if td in duration_dict:
+            return duration_dict[td]
+        duration_dict[td] = Duration.from_td(td)
+        return duration_dict[td]
+
     def book_with_end(
-            self, court: str, client_name: String, is_fixed: bool, when: date, start: time, end: time
+            self, court: str, client_name: String, is_fixed: bool, when: date, start: time, end: time, duration_dict
     ) -> Booking:
         """Creates a Booking with the given data.
 
         Raises:
             OperationalError if the booking time is out of range, or if there is no available time for the booking.
         """
-        # if self.out_of_range(start, duration):
-        #     raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
-        #                            f"of the range [booking_start={self.start}, booking_end={self.end}].")
-        # if not self.booking_available(when, court, start, duration, is_fixed):
-        #     raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] collides "
-        #                            f"with existing booking/s.")
+        duration = self._get_duration(datetime.combine(date.min, end) - datetime.combine(date.min, start),
+                                      duration_dict)
+        if self.out_of_range(start, duration):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] is out "
+                                   f"of the range [booking_start={self.start}, booking_end={self.end}].")
+        if not self.booking_available(when, court, start, duration, is_fixed):
+            raise OperationalError(f"Solicited booking time [start={start}, duration={duration.as_timedelta}] collides "
+                                   f"with existing booking/s.")
 
         # Because the only needed thing is the time, and the date will be discarded, the ClassVar date.min is used.
         # end = combine(date.min, start, duration).time()
