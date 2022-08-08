@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox)
+    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox, QMenu, QAction)
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem
@@ -238,6 +238,21 @@ class MainUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
+
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Listados", self)
+        menu_bar.addMenu(client_menu)
+
+        self.balance_history_action = QAction("&Cajas diarias", self)
+        client_menu.addAction(self.balance_history_action)
+
+        self.activity_charges_action = QAction("&Cobros por actividad", self)
+        client_menu.addAction(self.activity_charges_action)
+
+        self.actions_log_action = QAction("&Registro de acciones", self)
+        client_menu.addAction(self.actions_log_action)
 
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
