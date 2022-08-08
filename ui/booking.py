@@ -66,12 +66,11 @@ class MainController:
         if start is None or end is None:
             start, end = self.booking_system.block_range(booking.start, booking.end)
 
-        item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
-                                f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}")
-        item.setTextAlignment(Qt.AlignCenter)
-        self.main_ui.booking_table.setItem(start, self._courts[booking.court], item)
-        if end - start != 1:
-            self.main_ui.booking_table.setSpan(start, self._courts[booking.court], end - start, 1)
+        for i in range(start, end):
+            item = QTableWidgetItem(f"{booking.client.name}{' (Fijo)' if booking.is_fixed else ''}"
+                                    f"{' (Pago)' if booking.was_paid(self.main_ui.date_edit.date().toPyDate()) else ''}")
+            item.setTextAlignment(Qt.AlignCenter)
+            self.main_ui.booking_table.setItem(i, self._courts[booking.court], item)
 
         # Saves the booking to be used later if needed.
         if start not in self._bookings:
