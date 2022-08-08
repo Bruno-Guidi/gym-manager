@@ -263,7 +263,7 @@ class MainUI(QMainWindow):
         self.balance_history_action = QAction("&Cajas diarias", self)
         client_menu.addAction(self.balance_history_action)
 
-        self.activity_charges_action = QAction("&Cobros por actividad", self)
+        self.activity_charges_action = QAction("&Cuotas pagas por actividad", self)
         client_menu.addAction(self.activity_charges_action)
 
         self.actions_log_action = QAction("&Registro de acciones", self)
