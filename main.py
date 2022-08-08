@@ -77,8 +77,7 @@ def main():
                                               charge_once=True, locked=True)
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)
     booking_system = BookingSystem(
-        booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),
-        courts=(("1", booking_double.price), ("2", booking_double.price), ("3", booking_single.price)),
+        booking_repo, courts=(("1", booking_double.price), ("2", booking_double.price), ("3", booking_single.price)),
         start=time(8, 0), end=time(23, 0), minute_step=30
     )
 
