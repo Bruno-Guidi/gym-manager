@@ -65,16 +65,21 @@ def main():
     balance_repo = peewee.SqliteBalanceRepo(transaction_repo)
 
     # Booking initialization.
-    booking_activity: Activity
     if activity_repo.exists(1):
-        booking_activity = activity_repo.get(1)
+        booking_single = activity_repo.get(1)
     else:
-        booking_activity = activity_repo.create(String("Padel"), Currency(100.00), String("d", max_len=10),
-                                                charge_once=True, locked=True)
+        booking_single = activity_repo.create(String("Padel Single"), Currency(100.00), String("d", max_len=10),
+                                              charge_once=True, locked=True)
+    if activity_repo.exists(2):
+        booking_double = activity_repo.get(2)
+    else:
+        booking_double = activity_repo.create(String("Padel Dobles"), Currency(200.00), String("d", max_len=10),
+                                              charge_once=True, locked=True)
     booking_repo = booking_peewee.SqliteBookingRepo(client_repo, transaction_repo, cache_len=128)
     booking_system = BookingSystem(
-        booking_activity, booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),
-        courts_names=("1", "2", "3"), start=time(8, 0), end=time(23, 0), minute_step=30
+        booking_single, booking_repo, (Duration(60, "1h"), Duration(90, "1h30m"), Duration(120, "2h")),
+        courts=(("1", booking_double.price), ("2", booking_double.price), ("3", booking_single.price)),
+        start=time(8, 0), end=time(23, 0), minute_step=30
     )
 
     # Contact initialization.
