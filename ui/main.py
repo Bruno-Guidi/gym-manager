@@ -332,7 +332,7 @@ class MainUI(QMainWindow):
 
         self.accounting_lbl = QLabel(self.widget)
         self.bottom_grid_layout.addWidget(self.accounting_lbl, 1, 1, alignment=Qt.AlignCenter)
-        config_lbl(self.accounting_lbl, "Contabilidad", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+        config_lbl(self.accounting_lbl, "Caja diaria", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
         self.actions_btn = QPushButton(self.widget)
         self.bottom_grid_layout.addWidget(self.actions_btn, 0, 2, alignment=Qt.AlignCenter)
