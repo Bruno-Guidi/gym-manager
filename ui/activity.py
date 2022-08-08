@@ -136,17 +136,17 @@ class ActivityMainUI(QMainWindow):
         # Menu bar.
         menu_bar = self.menuBar()
 
-        client_menu = QMenu("&Actividades", self)
-        menu_bar.addMenu(client_menu)
+        activity_menu = QMenu("&Actividades", self)
+        menu_bar.addMenu(activity_menu)
 
         self.create_action = QAction("&Agregar", self)
-        client_menu.addAction(self.create_action)
+        activity_menu.addAction(self.create_action)
 
         self.edit_action = QAction("&Editar", self)
-        client_menu.addAction(self.edit_action)
+        activity_menu.addAction(self.edit_action)
 
         self.remove_action = QAction("&Eliminar", self)
-        client_menu.addAction(self.remove_action)
+        activity_menu.addAction(self.remove_action)
 
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)

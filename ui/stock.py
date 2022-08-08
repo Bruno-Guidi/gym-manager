@@ -1,23 +1,26 @@
 from __future__ import annotations
 
 import functools
+from datetime import date
 
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
-    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox)
+    QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox, QCheckBox, QMenu, QAction,
+    QButtonGroup, QRadioButton)
 
 from gym_manager.core.base import String, Currency, TextLike, Number
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo
-from gym_manager.core.security import SecurityHandler
+from gym_manager.core.security import SecurityHandler, SecurityError
 from gym_manager.stock.core import (
     ItemRepo, Item, create_item, update_item, remove_item, update_item_amount,
     register_item_charge)
 from ui import utils
-from ui.accounting import ChargeUI
+from ui.utils import MESSAGE
 from ui.widget_config import (
     config_lbl, config_line, config_btn, fill_cell, new_config_table, config_combobox, fill_combobox, config_checkbox)
-from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, DialogWithResp
+from ui.widgets import Field, Dialog, FilterHeader, PageIndex, Separator, responsible_field
 
 
 class MainController:
@@ -29,7 +32,7 @@ class MainController:
         self.item_repo = item_repo
         self.transaction_repo = transaction_repo
         self.security_handler = security_handler
-        self.items: dict[str, Item] = {}  # Dict that maps raw items name to the associated activity.
+        self.items: dict[int, Item] = {}  # Dict that maps row number to the item that it displays.
 
         # Configure the filtering widget.
         filters = (TextLike("name", display_name="Nombre", attr="name"),)
@@ -42,23 +45,29 @@ class MainController:
         # Fills the table.
         self.main_ui.filter_header.on_search_click()
 
-        decrease_stock = ("Reducir stock", functools.partial(self._update_item_amount, True))
-        increase_stock = ("Agregar stock", functools.partial(self._update_item_amount, False))
-        charge_item = ("Cobrar item", self._charge_item)
-        fill_combobox(self.main_ui.action_combobox, (decrease_stock, increase_stock, charge_item),
-                      display=lambda pair: pair[0])
+        self.main_ui.charge_item.setChecked(True)
+        self._decrease_stock = functools.partial(self._update_item_amount, True)
+        self._increase_stock = functools.partial(self._update_item_amount, False)
+
+        fill_combobox(self.main_ui.method_combobox, self.transaction_repo.methods,
+                      display=lambda method_name: method_name)
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.main_ui.create_btn.clicked.connect(self.create_ui)
+        self.main_ui.create_action.triggered.connect(self.create_item)
         # noinspection PyUnresolvedReferences
-        self.main_ui.save_btn.clicked.connect(self.save_changes)
+        self.main_ui.edit_action.triggered.connect(self.edit_item)
         # noinspection PyUnresolvedReferences
-        self.main_ui.remove_btn.clicked.connect(self.remove)
-        # noinspection PyUnresolvedReferences
-        self.main_ui.item_table.itemSelectionChanged.connect(self.refresh_form)
+        self.main_ui.remove_action.triggered.connect(self.remove_item)
         # noinspection PyUnresolvedReferences
         self.main_ui.confirm_btn.clicked.connect(self.execute_action)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.action_group.buttonClicked.connect(self.enable_widgets)
+
+    def enable_widgets(self):
+        self.main_ui.method_combobox.setEnabled(
+            self.main_ui.charge_item.isChecked()
+        )
 
     def _add_item(self, item: Item, check_filters: bool, check_limit: bool = False):
         if check_limit and self.main_ui.item_table.rowCount() == self.main_ui.page_index.page_len:
@@ -67,8 +76,8 @@ class MainController:
         if check_filters and not self.main_ui.filter_header.passes_filters(item):
             return
 
-        self.items[item.name.as_primitive()] = item
         row = self.main_ui.item_table.rowCount()
+        self.items[row] = item
         fill_cell(self.main_ui.item_table, row, 0, item.name, data_type=str)
         fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int)
         fill_cell(self.main_ui.item_table, row, 2, item.amount, data_type=int)
@@ -77,116 +86,119 @@ class MainController:
         self.main_ui.item_table.setRowCount(0)
 
         for item in self.item_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
-            self.items[item.name.as_primitive()] = item
             self._add_item(item, check_filters=False)  # Activities are filtered in the repo.
 
-    def refresh_form(self):
-        if self.main_ui.item_table.currentRow() != -1:
-            item_name = self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()
-            self.main_ui.name_field.setText(str(self.items[item_name].name))
-            self.main_ui.price_field.setText(Currency.fmt(self.items[item_name].price, symbol=''))
-        else:
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
-
-    def create_ui(self):
+    def create_item(self):
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.item_repo)
         self._create_ui.exec_()
         if self._create_ui.controller.item is not None:
             self._add_item(self._create_ui.controller.item, check_filters=True, check_limit=True)
 
-    def save_changes(self):
+    def edit_item(self):
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un item.")
+            Dialog.info("Error", "Seleccione un item en la tabla.")
             return
 
-        if not all([self.main_ui.name_field.valid_value(), self.main_ui.price_field.valid_value()]):
-            Dialog.info("Error", "Hay datos que no son válidos.")
-        else:
-            old_name = self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()
-            item = self.items[old_name]
-            # noinspection PyTypeChecker
-            update_item(self.item_repo, item, self.main_ui.name_field.value(), self.main_ui.price_field.value())
+        item = self.items[self.main_ui.item_table.currentRow()]
+        # noinspection PyAttributeOutsideInit
+        self._edit_ui = EditUI(self.item_repo, item)
+        self._edit_ui.exec_()
 
-            if old_name != item.name.as_primitive():
-                self.items.pop(old_name)
-                self.items[item.name.as_primitive()] = item
+        # Updates the ui.
+        row = self.main_ui.item_table.currentRow()
+        fill_cell(self.main_ui.item_table, row, 0, item.name, data_type=str, increase_row_count=False)
+        fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int,
+                  increase_row_count=False)
 
-            # Updates the ui.
-            row = self.main_ui.item_table.currentRow()
-            fill_cell(self.main_ui.item_table, row, 0, item.name, data_type=str, increase_row_count=False)
-            fill_cell(self.main_ui.item_table, row, 1, Currency.fmt(item.price), data_type=int,
-                      increase_row_count=False)
-
-            Dialog.info("Éxito", f"El ítem '{item.name}' fue actualizado correctamente.")
-
-    def remove(self):
+    def remove_item(self):
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un ítem.")
+            Dialog.info("Error", "Seleccione un ítem en la tabla.")
             return
 
-        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        item = self.items[self.main_ui.item_table.currentRow()]
 
         if Dialog.confirm(f"¿Desea eliminar el ítem '{item.name}'?"):
             remove_item(self.item_repo, item)
 
-            self.items.pop(item.name.as_primitive())
+            self.items.pop(self.main_ui.item_table.currentRow())
             self.main_ui.filter_header.on_search_click()  # Refreshes the table.
-
-            # Clears the form.
-            self.main_ui.name_field.clear()
-            self.main_ui.price_field.clear()
 
             Dialog.info("Éxito", f"El ítem '{item.name}' fue eliminado correctamente.")
 
     def _update_item_amount(self, decrease: bool):
+        self.main_ui.responsible_field.setStyleSheet("")
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un item.")
+            Dialog.info("Error", "Seleccione un item en la tabla.")
             return
 
-        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        item = self.items[self.main_ui.item_table.currentRow()]
         # noinspection PyTypeChecker
         if (not self.main_ui.amount_field.valid_value()
                 or (decrease and self.main_ui.amount_field.value() > item.amount)):
             Dialog.info("Error", "La cantidad no es válida.")
-            return
+        else:
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
-        fn = functools.partial(update_item_amount, self.item_repo, item, self.main_ui.amount_field.value(), decrease)
-        if DialogWithResp.confirm(f"Ingrese el responsable", self.security_handler, fn):
-            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int,
-                      increase_row_count=False)
-            self.main_ui.amount_field.clear()
+                # noinspection PyTypeChecker
+                update_item_amount(self.item_repo, item, self.main_ui.amount_field.value(), decrease)
+
+                fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int,
+                          increase_row_count=False)
+
+                aux = "Eliminados" if decrease else "Agregados"
+                Dialog.info("Éxito", f"{aux} {self.main_ui.amount_field.value().as_primitive()} '{item.name}'.")
+                self.main_ui.amount_field.clear()
+
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def _charge_item(self):
+        self.main_ui.responsible_field.setStyleSheet("")
         if self.main_ui.item_table.currentRow() == -1:
-            Dialog.info("Error", "Seleccione un item.")
+            Dialog.info("Error", "Seleccione un item en la tabla.")
             return
 
-        item = self.items[self.main_ui.item_table.item(self.main_ui.item_table.currentRow(), 0).text()]
+        item = self.items[self.main_ui.item_table.currentRow()]
         # noinspection PyTypeChecker
         if not self.main_ui.amount_field.valid_value() or self.main_ui.amount_field.value() > item.amount:
+            self.main_ui.amount_field.setStyleSheet("border: 1px solid red")
             Dialog.info("Error", "La cantidad no es válida.")
-            return
+        else:
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
+                item_amount = self.main_ui.amount_field.value()
+                # noinspection PyTypeChecker
+                create_transaction_fn = functools.partial(
+                    self.transaction_repo.create, "Cobro", date.today(), item.total_price(item_amount.as_primitive()),
+                    self.main_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                    f"Cobro de {self.main_ui.amount_field.value().as_primitive()} '{item.name}', a "
+                    f"{Currency.fmt(item.price)} cada uno."
+                )
 
-        register_charge = functools.partial(register_item_charge, self.item_repo, item,
-                                            self.main_ui.amount_field.value())
-        total = item.total_price(self.main_ui.amount_field.value().as_primitive())
-        # noinspection PyAttributeOutsideInit
-        self._charge_ui = ChargeUI(
-            self.transaction_repo, self.security_handler, total,
-            String(f"Cobro de {self.main_ui.amount_field.value()} '{item.name}' por un total de {Currency.fmt(total)}"),
-            post_charge_fn=register_charge
-        )
-        self._charge_ui.exec_()
+                # noinspection PyTypeChecker
+                register_item_charge(self.item_repo, item, item_amount, create_transaction_fn)
 
-        if self._charge_ui.controller.success:
-            fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
-            self.main_ui.amount_field.clear()
+                Dialog.info("Éxito", f"El cobro de {self.main_ui.amount_field.value().as_primitive()} '{item.name}', a "
+                                     f"{Currency.fmt(item.price)} cada uno, fue registrado.")
+
+                # Updates the ui.
+                fill_cell(self.main_ui.item_table, self.main_ui.item_table.currentRow(), 2, item.amount, data_type=int)
+                self.main_ui.amount_field.clear()
+
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def execute_action(self):
-        self.main_ui.action_combobox.currentData(Qt.UserRole)[1]()
+        if self.main_ui.add_stock.isChecked():
+            self._increase_stock()
+        if self.main_ui.remove_stock.isChecked():
+            self._decrease_stock()
+        if self.main_ui.charge_item.isChecked():
+            self._charge_item()
 
 
 class StockMainUI(QMainWindow):
@@ -204,6 +216,21 @@ class StockMainUI(QMainWindow):
         self.setCentralWidget(self.widget)
         self.layout = QHBoxLayout(self.widget)
 
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Items", self)
+        menu_bar.addMenu(client_menu)
+
+        self.create_action = QAction("&Agregar", self)
+        client_menu.addAction(self.create_action)
+
+        self.edit_action = QAction("&Editar", self)
+        client_menu.addAction(self.edit_action)
+
+        self.remove_action = QAction("&Eliminar", self)
+        client_menu.addAction(self.remove_action)
+
         self.left_layout = QVBoxLayout()
         self.layout.addLayout(self.left_layout)
         self.left_layout.setContentsMargins(10, 0, 10, 0)
@@ -213,6 +240,7 @@ class StockMainUI(QMainWindow):
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
         self.right_layout.setContentsMargins(10, 0, 10, 0)
+        self.right_layout.setAlignment(Qt.AlignCenter)
 
         # Filtering.
         self.filter_header = FilterHeader(parent=self.widget)
@@ -229,78 +257,53 @@ class StockMainUI(QMainWindow):
         self.page_index = PageIndex(self.widget)
         self.left_layout.addWidget(self.page_index)
 
-        # Buttons.
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+        # Actions to execute related to stock.
+        self.action_group = QButtonGroup(self.widget)
+        font = QFont("MS Shell Dlg 2", 14)
 
-        self.buttons_layout = QHBoxLayout()
-        self.right_layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setContentsMargins(80, 0, 80, 0)
+        self.add_stock = QRadioButton("Agregar stock")
+        self.action_group.addButton(self.add_stock)
+        self.right_layout.addWidget(self.add_stock, alignment=Qt.AlignCenter)
+        self.add_stock.setFont(font)
 
-        self.create_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.create_btn)
-        config_btn(self.create_btn, icon_path="ui/resources/add.png", icon_size=48)
+        self.remove_stock = QRadioButton("Reducir stock")
+        self.action_group.addButton(self.remove_stock)
+        self.right_layout.addWidget(self.remove_stock, alignment=Qt.AlignCenter)
+        self.remove_stock.setFont(font)
 
-        self.save_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.save_btn)
-        config_btn(self.save_btn, icon_path="ui/resources/save.png", icon_size=48)
+        self.charge_item = QRadioButton("Cobrar ítem")
+        self.action_group.addButton(self.charge_item)
+        self.right_layout.addWidget(self.charge_item, alignment=Qt.AlignCenter)
+        self.charge_item.setFont(font)
 
-        self.remove_btn = QPushButton(self.widget)
-        self.buttons_layout.addWidget(self.remove_btn)
-        config_btn(self.remove_btn, icon_path="ui/resources/remove.png", icon_size=48)
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Item data form.
         self.form_layout = QGridLayout()
         self.right_layout.addLayout(self.form_layout)
 
-        # Name.
-        self.name_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.name_lbl, 0, 0)
-        config_lbl(self.name_lbl, "Nombre*")
-
-        self.name_field = Field(String, self.widget, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
-        self.form_layout.addWidget(self.name_field, 0, 1)
-        config_line(self.name_field, place_holder="Nombre")
-
-        # Price.
-        self.price_lbl = QLabel(self.widget)
-        self.form_layout.addWidget(self.price_lbl, 1, 0)
-        config_lbl(self.price_lbl, "Precio*")
-
-        self.price_field = Field(Currency, self.widget, positive=True)
-        self.form_layout.addWidget(self.price_field, 1, 1)
-        config_line(self.price_field, place_holder="000000,00")
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Layout with actions to execute related to stock.
-        self.action_layout = QGridLayout()
-        self.right_layout.addLayout(self.action_layout)
-
-        self.action_lbl = QLabel(self.widget)
-        self.action_layout.addWidget(self.action_lbl, 0, 0)
-        config_lbl(self.action_lbl, "Acción")
-
         self.amount_lbl = QLabel(self.widget)
-        self.action_layout.addWidget(self.amount_lbl, 1, 0)
+        self.form_layout.addWidget(self.amount_lbl, 1, 0)
         config_lbl(self.amount_lbl, "Cantidad*")
 
         self.amount_field = Field(Number, parent=self.widget, optional=False, min_value=1)
-        self.action_layout.addWidget(self.amount_field, 1, 1)
+        self.form_layout.addWidget(self.amount_field, 1, 1)
         config_line(self.amount_field)
 
-        self.action_combobox = QComboBox(self.widget)
-        self.action_layout.addWidget(self.action_combobox, 0, 1)
-        config_combobox(self.action_combobox, fixed_width=self.amount_field.width())
+        # Method.
+        self.method_combobox = QComboBox(self)
+        self.form_layout.addWidget(self.method_combobox, 1, 2)
+        config_combobox(self.method_combobox)
+
+        # Responsible
+        self.responsible_lbl = QLabel(self)
+        self.form_layout.addWidget(self.responsible_lbl, 4, 0)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_field = responsible_field(self)
+        self.form_layout.addWidget(self.responsible_field, 4, 1)
+        config_line(self.responsible_field, fixed_width=100)
 
         self.confirm_btn = QPushButton(self.widget)
-        self.right_layout.addWidget(self.confirm_btn, alignment=Qt.AlignCenter)
+        self.form_layout.addWidget(self.confirm_btn, 4, 2, alignment=Qt.AlignCenter)
         config_btn(self.confirm_btn, "Confirmar")
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 90, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         self.setFixedSize(self.minimumSizeHint())
 
@@ -381,6 +384,83 @@ class CreateUI(QDialog):
         self.fixed_checkbox = QCheckBox(self)
         self.form_layout.addWidget(self.fixed_checkbox, 3, 1)
         config_checkbox(self.fixed_checkbox, checked=False)
+
+        # Vertical spacer.
+        self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+
+class EditController:
+
+    def __init__(self, edit_ui: EditUI, item_repo: ItemRepo, item: Item) -> None:
+        self.edit_ui = edit_ui
+
+        self.item = item
+        self.item_repo = item_repo
+
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.confirm_btn.clicked.connect(self.edit_item)
+        # noinspection PyUnresolvedReferences
+        self.edit_ui.cancel_btn.clicked.connect(self.edit_ui.reject)
+
+    # noinspection PyTypeChecker
+    def edit_item(self):
+        if not all([self.edit_ui.name_field.valid_value(), self.edit_ui.price_field.valid_value()]):
+            Dialog.info("Error", "Hay datos que no son válidos.")
+        else:
+            update_item(self.item_repo, self.item, self.edit_ui.name_field.value(), self.edit_ui.price_field.value())
+
+            Dialog.info("Éxito", f"El ítem '{self.item.name}' fue actualizado correctamente.")
+            self.edit_ui.name_field.window().close()
+
+
+class EditUI(QDialog):
+    def __init__(self, item_repo: ItemRepo, item: Item) -> None:
+        super().__init__()
+        self._setup_ui()
+        self.controller = EditController(self, item_repo, item)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Editar ítem")
+        self.layout = QVBoxLayout(self)
+
+        # Form.
+        self.form_layout = QGridLayout()
+        self.layout.addLayout(self.form_layout)
+        self.form_layout.setContentsMargins(40, 0, 40, 0)
+
+        # Name.
+        self.name_lbl = QLabel(self)
+        self.form_layout.addWidget(self.name_lbl, 0, 0)
+        config_lbl(self.name_lbl, "Nombre*")
+
+        self.name_field = Field(String, parent=self, max_len=utils.ACTIVITY_NAME_CHARS, optional=False)
+        self.form_layout.addWidget(self.name_field, 0, 1)
+        config_line(self.name_field, place_holder="Nombre", adjust_to_hint=False)
+
+        # Price.
+        self.price_lbl = QLabel(self)
+        self.form_layout.addWidget(self.price_lbl, 1, 0)
+        config_lbl(self.price_lbl, "Precio*")
+
+        self.price_field = Field(Currency, parent=self, positive=True)
+        self.form_layout.addWidget(self.price_field, 1, 1)
+        config_line(self.price_field, place_holder="000000,00", adjust_to_hint=False)
 
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
