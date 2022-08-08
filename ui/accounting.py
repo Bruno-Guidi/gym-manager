@@ -394,7 +394,7 @@ class BalanceHistoryUI(QMainWindow):
         self.left_layout.addWidget(self.balance_table)
         new_config_table(self.balance_table, width=500,
                          columns={"Fecha": (.28, bool), "Responsable": (.42, str), "Total": (.3, int)},
-                         min_rows_to_show=5, fix_width=True)
+                         min_rows_to_show=20, fix_width=True)
 
         # Balance detail.
         self.detail_layout = QGridLayout()
@@ -469,9 +469,9 @@ class BalanceHistoryUI(QMainWindow):
         self.transaction_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.transaction_table)
 
-        new_config_table(self.transaction_table, width=700,
-                         columns={"Responsable": (.22, str), "Cliente": (.26, str), "Monto": (.2, int),
-                                  "Descripción": (.32, str)}, min_rows_to_show=0)
+        new_config_table(self.transaction_table, width=1200,
+                         columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.15, int),
+                                  "Descripción": (.45, str)}, min_rows_to_show=0)
 
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
