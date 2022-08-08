@@ -59,13 +59,45 @@ class MainController:
         self.acc_main_ui.history_btn.clicked.connect(self.balance_history)
 
     def close_balance(self):
-        # noinspection PyAttributeOutsideInit
-        self._daily_balance_ui = DailyBalanceUI(self.balance_repo, self.transaction_repo, self.security_handler,
-                                                self.balance, self._today_transactions)
-        self._daily_balance_ui.exec_()
-        if self._daily_balance_ui.controller.closed:
-            self.acc_main_ui.transaction_table.setRowCount(0)
-            self.acc_main_ui.today_charges_line.setText(Currency.fmt(Currency(0)))
+        self.acc_main_ui.responsible_field.setStyleSheet("")
+
+        if not self.acc_main_ui.amount_line.valid_value():
+            Dialog.info("Error", "Hay campos que no son válidos.")
+            return
+
+        today = date.today()
+        if self.balance_repo.balance_done(today):
+            Dialog.info("Error", f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} ya fue cerrada.")
+            return
+
+        try:
+            ok = Dialog.confirm(f"Esta a punto de cerrar la caja del dia {today.strftime(utils.DATE_FORMAT)}."
+                                f"\nEsta accion no se puede deshacer, todas las transacciones no incluidas en esta caja"
+                                f" diaria se incluiran en la caja del día de mañana."
+                                f"\n¿Desea continuar?")
+
+            if ok:
+                self.security_handler.current_responsible = self.acc_main_ui.responsible_field.value()
+
+                # noinspection PyTypeChecker
+                create_extraction_fn = functools.partial(
+                    self.transaction_repo.create, "Extracción", today, self.acc_main_ui.amount_line.value(),
+                    self.acc_main_ui.method_combobox.currentText(), self.security_handler.current_responsible.name,
+                    description=f"Extracción al cierre de caja diaria del día {today}."
+                )
+                # noinspection PyTypeChecker
+                api.close_balance(self.transaction_repo, self.balance_repo, self.balance, self._today_transactions,
+                                  today, self.security_handler.current_responsible.name, create_extraction_fn)
+
+                self.acc_main_ui.transaction_table.setRowCount(0)
+                self.acc_main_ui.today_charges_line.setText(Currency.fmt(Currency(0)))
+                self.acc_main_ui.today_extractions_line.setText(Currency.fmt(Currency(0)))
+
+                Dialog.info("Éxito",
+                            f"La caja diaria del {today.strftime(utils.DATE_FORMAT)} fue cerrada correctamente")
+        except SecurityError as sec_err:
+            self.acc_main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+            Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def extract(self):
         self.acc_main_ui.responsible_field.setStyleSheet("")
