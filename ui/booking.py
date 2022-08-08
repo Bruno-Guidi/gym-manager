@@ -185,11 +185,9 @@ class MainController:
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def cancel_booking(self):
+        self.main_ui.responsible_field.setStyleSheet("")
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         when = self.main_ui.date_edit.date().toPyDate()
-        if col not in self._bookings or row not in self._bookings[col]:
-            Dialog.info("Error", "No existe un turno en el horario seleccionado.")
-            return
 
         to_cancel = self._bookings[col][row]
         if when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()):
@@ -197,14 +195,30 @@ class MainController:
         elif to_cancel.was_paid(when):
             Dialog.info("Error", "No se puede cancelar un turno que ya cobrado.")
         else:
-            # noinspection PyAttributeOutsideInit
-            self._cancel_ui = CancelUI(self.booking_system, self.security_handler, to_cancel, when)
-            self._cancel_ui.exec_()
-            if self._cancel_ui.controller.cancelled:
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
+                definitely_cancelled = True
+                if to_cancel.is_fixed:
+                    definitely_cancelled = Dialog.confirm("El turno es fijo, ¿Desea cancelarlo definitivamente?",
+                                                          ok_btn_text="Si", cancel_btn_text="No")
+                # noinspection PyTypeChecker
+                self.booking_system.cancel(to_cancel, self.security_handler.current_responsible.name, when,
+                                           definitely_cancelled, datetime.now())
+
                 start, end = self.booking_system.block_range(to_cancel.start, to_cancel.end)
                 for i in range(start, end):
                     self.main_ui.booking_table.takeItem(i, col)
                     self._bookings[col].pop(i)
+
+                self.refresh_booking_info()
+
+                if to_cancel.is_fixed and definitely_cancelled:
+                    Dialog.info("Éxito", "El turno fijo ha sido cancelado correctamente.")
+                else:
+                    Dialog.info("Éxito", "El turno ha sido cancelado correctamente.")
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def cancelled_bookings(self):
         # noinspection PyAttributeOutsideInit
