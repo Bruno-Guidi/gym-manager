@@ -538,6 +538,8 @@ class ChargesController:
                       display=lambda activity: activity.name.as_primitive())
         config_combobox(self.charges_ui.activity_combobox, fixed_width=300)
 
+        self.load_charges()
+
         # noinspection PyUnresolvedReferences
         self.charges_ui.activity_combobox.currentIndexChanged.connect(self.load_charges)
         # noinspection PyUnresolvedReferences
@@ -546,13 +548,19 @@ class ChargesController:
         self.charges_ui.month_spinbox.valueChanged.connect(self.load_charges)
 
     def load_charges(self):
+        self.charges_ui.charge_table.setRowCount(0)
         if self.charges_ui.activity_combobox.currentIndex() == -1:
             Dialog.info("Error", "No hay actividades registradas.")
         else:
             activity = self.charges_ui.activity_combobox.currentData(Qt.UserRole)
             year, month = self.charges_ui.year_spinbox.value(), self.charges_ui.month_spinbox.value()
 
-            print(activity, year, month)
+            for row, charge in enumerate(self.transaction_repo.charges_by_activity(activity, year, month)):
+                name = charge.client.name if charge.client is not None else "-"
+                fill_cell(self.charges_ui.charge_table, row, 0, name, data_type=str)
+                fill_cell(self.charges_ui.charge_table, row, 1, charge.responsible, data_type=str)
+                fill_cell(self.charges_ui.charge_table, row, 2, charge.when.strftime(utils.DATE_FORMAT), data_type=bool)
+                fill_cell(self.charges_ui.charge_table, row, 3, Currency.fmt(charge.amount), data_type=int)
 
 
 class ChargesByMonthUI(QMainWindow):
