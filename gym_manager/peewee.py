@@ -571,9 +571,9 @@ class SqliteTransactionRepo(TransactionRepo):
 
     def charges_by_activity(self, activity: Activity, year: int, month: int) -> Generator[Transaction, None, None]:
         charges_q = SubscriptionCharge.select(TransactionTable).join(TransactionTable)
-        charges_q = charges_q.where(SubscriptionCharge.when.year == year, SubscriptionCharge.when.month == month)
+        charges_q = charges_q.where(SubscriptionCharge.when.year == year, SubscriptionCharge.when.month == month,
+                                    SubscriptionCharge.activity_id == activity.id)
         charges_q = charges_q.order_by(TransactionTable.id.desc())
-
         for record in charges_q:
             client_record, client = record.client, None
             if client_record is not None:
