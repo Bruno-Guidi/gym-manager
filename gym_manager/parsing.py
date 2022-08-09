@@ -173,7 +173,7 @@ def _register_subscription_charging(
         "inner join actividad a on p.id_actividad = a.id "
         "inner join cliente c on p.id_cliente = c.id "
         "inner join usuario u on p.id_usuario = u.id "
-        "where p.fecha >= (?) and p.fecha <= (?) and "
+        "where p.fecha >= (?) and p.fecha <= (?)"
         "group by p.id_cliente, p.id_actividad, strftime('%m-%Y', p.fecha)", (since, to)
     ))
 
