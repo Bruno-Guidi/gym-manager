@@ -8,7 +8,7 @@ from typing import Iterable, Generator, TypeAlias
 
 from gym_manager.core.api import CreateTransactionFn
 from gym_manager.core.base import Client, Activity, Transaction, OperationalError, String, Currency
-from gym_manager.core.persistence import FilterValuePair
+from gym_manager.core.persistence import FilterValuePair, ActivityRepo
 from gym_manager.core.security import log_responsible
 
 BOOKING_TO_HAPPEN, BOOKING_CANCELLED, BOOKING_PAID = "To happen", "Cancelled", "Paid"
@@ -511,6 +511,10 @@ class BookingSystem:
         self.repo.charge(booking, transaction)
 
         return booking
+
+    def update_prices(self, activity_repo: ActivityRepo):
+        for court, activity in self._courts.items():
+            self._courts[court] = activity_repo.get(activity.id)
 
 
 class BookingRepo(abc.ABC):
