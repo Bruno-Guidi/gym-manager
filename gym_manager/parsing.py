@@ -1,7 +1,8 @@
 import json
+import logging
 import os
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from sqlite3 import Connection
 
 from gym_manager.booking.core import BookingSystem
@@ -219,19 +220,28 @@ def parse(
 
 
 def load_bookings(booking_system: BookingSystem, path: str):
+    logger = logging.getLogger(__name__)
+
     with open(path, "r") as file:
         json_dict = json.load(file)
         duration_dict = {}
+        today, one_week_td = date.today(), timedelta(weeks=1)
         for fixed_b in json_dict["fixed"]:
+            when = datetime.strptime(fixed_b["first_when"], "%d/%m/%Y").date()
+            if when < today:
+                logger.getChild(__name__).info(f"Moved booking on ({when}, {fixed_b['court']}, {start}) to "
+                                               f"{when + one_week_td}")
+                when = when + one_week_td
             start = datetime.strptime(fixed_b["start"], "%H:%M").time()
             end = datetime.strptime(fixed_b["end"], "%H:%M").time()
-            when = datetime.strptime(fixed_b["first_when"], "%d/%m/%Y").date()
             booking_system.book_with_end(fixed_b["court"], String(fixed_b["client"]), True, when, start, end,
                                          duration_dict)
 
         for temp_b in json_dict["temp"]:
+            when = datetime.strptime(temp_b["when"], "%d/%m/%Y").date()
             start = datetime.strptime(temp_b["start"], "%H:%M").time()
             end = datetime.strptime(temp_b["end"], "%H:%M").time()
-            when = datetime.strptime(temp_b["when"], "%d/%m/%Y").date()
-            booking_system.book_with_end(temp_b["court"], String(temp_b["client"]), False, when, start, end,
-                                         duration_dict)
+            if when >= today:
+                booking_system.book_with_end(temp_b["court"], String(temp_b["client"]), False, when, start, end,
+                                             duration_dict)
+            logger.getChild(__name__).info(f"Discarded booking on ({when}, {fixed_b['court']}, {start})")
