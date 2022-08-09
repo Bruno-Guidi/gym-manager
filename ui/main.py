@@ -570,6 +570,7 @@ class ChargesByMonthUI(QMainWindow):
 
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
+        self.header_layout.setAlignment(Qt.AlignCenter)
 
         self.activity_combobox = QComboBox(self.widget)  # The configuration is done in the controller.
         self.header_layout.addWidget(self.activity_combobox)
@@ -594,5 +595,9 @@ class ChargesByMonthUI(QMainWindow):
         new_config_table(self.charge_table, width=1000, min_rows_to_show=20, fix_width=True,
                          columns={"Cliente": (.33, str), "Responsable": (.32, str), "Fecha pago": (.15, bool),
                                   "Monto": (.2, int)})
+
+        self.setMaximumWidth(self.minimumWidth())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
