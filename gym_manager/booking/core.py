@@ -340,7 +340,7 @@ class BookingSystem:
             yield Block(i, block_start, block_end)
 
     def __init__(
-            self, repo: BookingRepo, courts: tuple[tuple[str, Currency], ...], start: time, end: time, minute_step: int
+            self, repo: BookingRepo, courts: tuple[tuple[str, Activity], ...], start: time, end: time, minute_step: int
     ) -> None:
         if end < start:
             raise ValueError(f"End time [end={end}] cannot be lesser than start time [start={start}]")
@@ -362,7 +362,7 @@ class BookingSystem:
 
     def amount_to_charge(self, booking: Booking) -> Currency:
         start_block, end_block = self.block_range(booking.start, booking.end)
-        return self._courts[booking.court].multiply_by_scalar(end_block - start_block)
+        return self._courts[booking.court].price.multiply_by_scalar(end_block - start_block)
 
     def blocks(self, start: time | None = None) -> Iterable[Block]:
         """Yields booking blocks. If *start* is given, then discard all blocks whose start time is lesser than *start*.
