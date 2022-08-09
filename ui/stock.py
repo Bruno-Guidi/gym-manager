@@ -413,6 +413,9 @@ class EditController:
         self.item = item
         self.item_repo = item_repo
 
+        self.edit_ui.name_field.setText(item.name.as_primitive())
+        self.edit_ui.price_field.setText(Currency.fmt(item.price, symbol=""))
+
         # noinspection PyUnresolvedReferences
         self.edit_ui.confirm_btn.clicked.connect(self.edit_item)
         # noinspection PyUnresolvedReferences
