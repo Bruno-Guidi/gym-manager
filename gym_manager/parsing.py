@@ -209,7 +209,7 @@ def parse(
     # This balance is created so the transactions parsed are not included in the daily balance of the day when the
     # parsing is done.
     balance_repo.add(date.min, String("Admin"), {})
-    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, date(2022, 7, 25))  # ToDo change to date.today()
+    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, date.today())
 
     conn.close()
 
