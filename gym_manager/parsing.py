@@ -228,12 +228,12 @@ def load_bookings(booking_system: BookingSystem, path: str):
         today, one_week_td = date.today(), timedelta(weeks=1)
         for fixed_b in json_dict["fixed"]:
             when = datetime.strptime(fixed_b["first_when"], "%d/%m/%Y").date()
+            start = datetime.strptime(fixed_b["start"], "%H:%M").time()
+            end = datetime.strptime(fixed_b["end"], "%H:%M").time()
             if when < today:
                 logger.getChild(__name__).info(f"Moved booking on ({when}, {fixed_b['court']}, {start}) to "
                                                f"{when + one_week_td}")
                 when = when + one_week_td
-            start = datetime.strptime(fixed_b["start"], "%H:%M").time()
-            end = datetime.strptime(fixed_b["end"], "%H:%M").time()
             booking_system.book_with_end(fixed_b["court"], String(fixed_b["client"]), True, when, start, end,
                                          duration_dict)
 
@@ -244,4 +244,5 @@ def load_bookings(booking_system: BookingSystem, path: str):
             if when >= today:
                 booking_system.book_with_end(temp_b["court"], String(temp_b["client"]), False, when, start, end,
                                              duration_dict)
-            logger.getChild(__name__).info(f"Discarded booking on ({when}, {fixed_b['court']}, {start})")
+            else:
+                logger.getChild(__name__).info(f"Discarded booking on ({when}, {fixed_b['court']}, {start})")
