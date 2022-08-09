@@ -71,6 +71,48 @@ class LoadBackupFromOld(QDialog):
         self.line_edit.window().close()
 
 
+class ResponsibleUI(QDialog):
+    def __init__(self):
+        super().__init__()
+        self._setup_ui()
+
+        self.responsible_list: list[Responsible] = []
+
+        # noinspection PyUnresolvedReferences
+        self.confirm_btn.clicked.connect(self.parse_responsible)
+        # noinspection PyUnresolvedReferences
+        self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self):
+        self.layout = QVBoxLayout(self)
+
+        self.responsible_text = QTextEdit(self)
+        config_line(self.responsible_text, place_holder="RespName:code\nRespName:code")
+        self.layout.addWidget(self.responsible_text)
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+    def parse_responsible(self):
+        for name_code in self.responsible_text.toPlainText().split("\n"):
+            name, code = name_code.split(":")
+            self.responsible_list.append(Responsible(String(name), String(code)))
+        self.confirm_btn.window().close()
+
+
 class Controller:
     def __init__(
             self,
@@ -474,45 +516,3 @@ class ActionUI(QMainWindow):
 
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
-
-
-class ResponsibleUI(QDialog):
-    def __init__(self):
-        super().__init__()
-        self._setup_ui()
-
-        self.responsible_list: list[Responsible] = []
-
-        # noinspection PyUnresolvedReferences
-        self.confirm_btn.clicked.connect(self.parse_responsible)
-        # noinspection PyUnresolvedReferences
-        self.cancel_btn.clicked.connect(self.reject)
-
-    def _setup_ui(self):
-        self.layout = QVBoxLayout(self)
-
-        self.responsible_text = QTextEdit(self)
-        config_line(self.responsible_text, place_holder="RespName:code\nRespName:code")
-        self.layout.addWidget(self.responsible_text)
-
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
-
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
-
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
-
-        # Adjusts size.
-        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
-
-    def parse_responsible(self):
-        for name_code in self.responsible_text.toPlainText().split("\n"):
-            name, code = name_code.split(":")
-            self.responsible_list.append(Responsible(String(name), String(code)))
-        self.confirm_btn.window().close()
