@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import functools
-from datetime import date, time, timedelta
+import itertools
+from datetime import date, timedelta
 from typing import Callable
 
 from PyQt5 import QtGui
@@ -9,19 +10,19 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox)
+    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox, QMenu, QAction, QSpinBox)
 
 from gym_manager import parsing
-from gym_manager.booking.core import BookingSystem, ONE_DAY_TD, time_range, Duration
+from gym_manager.booking.core import BookingSystem
 from gym_manager.contact.core import ContactRepo
 from gym_manager.core import api
-from gym_manager.core.base import String, Activity, Currency, Number
+from gym_manager.core.base import String, Currency
 from gym_manager.core.persistence import (
     ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo)
 from gym_manager.core.security import SecurityHandler, Responsible
 from gym_manager.stock.core import ItemRepo
 from ui import utils
-from ui.accounting import AccountingMainUI
+from ui.accounting import AccountingMainUI, BalanceHistoryUI
 from ui.activity import ActivityMainUI
 from ui.booking import BookingMainUI
 from ui.client import ClientMainUI
@@ -29,8 +30,8 @@ from ui.contact import ContactMainUI
 from ui.stock import StockMainUI
 from ui.widget_config import (
     config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
-    config_combobox, fill_combobox, config_checkbox)
-from ui.widgets import PageIndex
+    config_combobox, fill_combobox, config_checkbox, config_widget)
+from ui.widgets import PageIndex, Dialog
 
 
 class LoadBackupFromOld(QDialog):
@@ -69,6 +70,48 @@ class LoadBackupFromOld(QDialog):
         self.path = self.line_edit.text()
         self.since = self.since_date_edit.date().toPyDate()
         self.line_edit.window().close()
+
+
+class ResponsibleUI(QDialog):
+    def __init__(self):
+        super().__init__()
+        self._setup_ui()
+
+        self.responsible_list: list[Responsible] = []
+
+        # noinspection PyUnresolvedReferences
+        self.confirm_btn.clicked.connect(self.parse_responsible)
+        # noinspection PyUnresolvedReferences
+        self.cancel_btn.clicked.connect(self.reject)
+
+    def _setup_ui(self):
+        self.layout = QVBoxLayout(self)
+
+        self.responsible_text = QTextEdit(self)
+        config_line(self.responsible_text, place_holder="RespName:code\nRespName:code")
+        self.layout.addWidget(self.responsible_text)
+
+        # Buttons.
+        self.buttons_layout = QHBoxLayout()
+        self.layout.addLayout(self.buttons_layout)
+        self.buttons_layout.setAlignment(Qt.AlignRight)
+
+        self.confirm_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.confirm_btn)
+        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+
+        self.cancel_btn = QPushButton(self)
+        self.buttons_layout.addWidget(self.cancel_btn)
+        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+
+        # Adjusts size.
+        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+
+    def parse_responsible(self):
+        for name_code in self.responsible_text.toPlainText().split("\n"):
+            name, code = name_code.split(":")
+            self.responsible_list.append(Responsible(String(name), String(code)))
+        self.confirm_btn.window().close()
 
 
 class Controller:
@@ -110,36 +153,19 @@ class Controller:
         self.main_ui.contact_btn.clicked.connect(self.show_contact_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.stock_btn.clicked.connect(self.show_stock_main_ui)
-
         show_booking_main_ui = functools.partial(self.show_booking_main_ui, allow_passed_time_bookings)
         # noinspection PyUnresolvedReferences
         self.main_ui.bookings_btn.clicked.connect(show_booking_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.accounting_btn.clicked.connect(self.show_accounting_main_ui)
         # noinspection PyUnresolvedReferences
-        self.main_ui.actions_btn.clicked.connect(self.show_action_ui)
+        self.main_ui.balance_history_action.triggered.connect(self.show_balance_history_ui)
         # noinspection PyUnresolvedReferences
+        self.main_ui.actions_log_action.triggered.connect(self.show_actions_ui)
         # noinspection PyUnresolvedReferences
+        self.main_ui.activity_charges_action.triggered.connect(self.show_charges_by_month_ui)
 
     def show_config_ui(self):
-        def setup():
-            today = date.today()
-            self.security_handler.current_responsible = String("Admin")
-            activity = Activity(String("TestAct"), Currency("2000"), String("descr"))
-            self.activity_repo.create(activity)
-            for i in range(0, 50):
-                client = self.client_repo.create(String(str(i)), today, today, Number(i))
-                sub = api.subscribe(self.subscription_repo, today, client, activity)
-                create_t = functools.partial(self.transaction_repo.create, "Cobro", today, activity.price, "Efectivo",
-                                             String("Admin"), "descr", client)
-                api.register_subscription_charge(self.subscription_repo, sub, create_t)
-
-            client = [c for c in self.client_repo.all(page_len=1)][0]
-            for start in time_range(time(8, 0), time(22, 30), 30):
-                self.booking_system.book("1", client, False, today + ONE_DAY_TD, start, Duration(30, "30m"))
-                self.booking_system.book("2", client, True, today + ONE_DAY_TD, start, Duration(30, "30m"))
-                self.booking_system.book("3", client, False, today + ONE_DAY_TD, start, Duration(30, "30m"))
-
         def generate_balance():
             self.security_handler.current_responsible = String("Admin")
 
@@ -178,9 +204,8 @@ class Controller:
                 self.security_handler.add_responsible(responsible)
 
         # noinspection PyAttributeOutsideInit
-        self._config_ui = ConfigUI(("setup", setup), ("balances", generate_balance),
-                                   ("raise exception", raise_exception), ("load backup from old", load_backup_from_old),
-                                   ("add responsible", add_responsible))
+        self._config_ui = ConfigUI(("balances", generate_balance), ("raise exception", raise_exception),
+                                   ("load backup from old", load_backup_from_old), ("add responsible", add_responsible))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
@@ -228,6 +253,24 @@ class Controller:
         self.action_ui = ActionUI(self.security_handler)
         self.action_ui.setWindowModality(Qt.ApplicationModal)
 
+    def show_balance_history_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._balance_history_ui = BalanceHistoryUI(self.balance_repo)
+        self._balance_history_ui.setWindowModality(Qt.ApplicationModal)
+        self._balance_history_ui.show()
+
+    def show_actions_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._actions_ui = ActionUI(self.security_handler)
+        self._actions_ui.setWindowModality(Qt.ApplicationModal)
+        self._actions_ui.show()
+
+    def show_charges_by_month_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._charges_ui = ChargesByMonthUI(self.activity_repo, self.transaction_repo)
+        self._charges_ui.setWindowModality(Qt.ApplicationModal)
+        self._charges_ui.show()
+
     def close(self):
         if self.backup_fn is not None:
             self.backup_fn()
@@ -261,6 +304,21 @@ class MainUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
+
+        # Menu bar.
+        menu_bar = self.menuBar()
+
+        client_menu = QMenu("&Listados", self)
+        menu_bar.addMenu(client_menu)
+
+        self.balance_history_action = QAction("&Cajas diarias", self)
+        client_menu.addAction(self.balance_history_action)
+
+        self.activity_charges_action = QAction("&Cuotas pagas por actividad", self)
+        client_menu.addAction(self.activity_charges_action)
+
+        self.actions_log_action = QAction("&Registro de acciones", self)
+        client_menu.addAction(self.actions_log_action)
 
         self.header_layout = QHBoxLayout()
         self.layout.addLayout(self.header_layout)
@@ -304,14 +362,6 @@ class MainUI(QMainWindow):
         self.top_grid_layout.addWidget(self.contact_lbl, 1, 2, alignment=Qt.AlignCenter)
         config_lbl(self.contact_lbl, "Agenda", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
-        self.stock_btn = QPushButton(self.widget)
-        self.top_grid_layout.addWidget(self.stock_btn, 0, 3, alignment=Qt.AlignCenter)
-        config_btn(self.stock_btn, icon_path="ui/resources/stock.png", icon_size=96)
-
-        self.stock_lbl = QLabel(self.widget)
-        self.top_grid_layout.addWidget(self.stock_lbl, 1, 3, alignment=Qt.AlignCenter)
-        config_lbl(self.stock_lbl, "Stock", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
-
         # Vertical spacer.
         self.layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
@@ -332,15 +382,15 @@ class MainUI(QMainWindow):
 
         self.accounting_lbl = QLabel(self.widget)
         self.bottom_grid_layout.addWidget(self.accounting_lbl, 1, 1, alignment=Qt.AlignCenter)
-        config_lbl(self.accounting_lbl, "Contabilidad", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+        config_lbl(self.accounting_lbl, "Caja diaria", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
-        self.actions_btn = QPushButton(self.widget)
-        self.bottom_grid_layout.addWidget(self.actions_btn, 0, 2, alignment=Qt.AlignCenter)
-        config_btn(self.actions_btn, icon_path="ui/resources/actions.png", icon_size=96)
+        self.stock_btn = QPushButton(self.widget)
+        self.bottom_grid_layout.addWidget(self.stock_btn, 0, 2, alignment=Qt.AlignCenter)
+        config_btn(self.stock_btn, icon_path="ui/resources/stock.png", icon_size=96)
 
-        self.actions_lbl = QLabel(self.widget)
-        self.bottom_grid_layout.addWidget(self.actions_lbl, 1, 2, alignment=Qt.AlignCenter)
-        config_lbl(self.actions_lbl, "Registro", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
+        self.stock_lbl = QLabel(self.widget)
+        self.bottom_grid_layout.addWidget(self.stock_lbl, 1, 2, alignment=Qt.AlignCenter)
+        config_lbl(self.stock_lbl, "Stock", font_size=18, fixed_width=200, alignment=Qt.AlignCenter)
 
         # Adjusts size.
         self.setFixedSize(self.sizeHint())
@@ -477,43 +527,85 @@ class ActionUI(QMainWindow):
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
 
-class ResponsibleUI(QDialog):
-    def __init__(self):
+class ChargesController:
+    def __init__(self, charges_ui: ChargesByMonthUI, activity_repo: ActivityRepo, transaction_repo: TransactionRepo):
+        self.charges_ui = charges_ui
+        self.activity_repo = activity_repo
+        self.transaction_repo = transaction_repo
+
+        fill_combobox(self.charges_ui.activity_combobox,
+                      itertools.filterfalse(lambda activity: activity.charge_once, self.activity_repo.all()),
+                      display=lambda activity: activity.name.as_primitive())
+        config_combobox(self.charges_ui.activity_combobox, fixed_width=300)
+
+        self.load_charges()
+
+        # noinspection PyUnresolvedReferences
+        self.charges_ui.activity_combobox.currentIndexChanged.connect(self.load_charges)
+        # noinspection PyUnresolvedReferences
+        self.charges_ui.year_spinbox.valueChanged.connect(self.load_charges)
+        # noinspection PyUnresolvedReferences
+        self.charges_ui.month_spinbox.valueChanged.connect(self.load_charges)
+
+    def load_charges(self):
+        self.charges_ui.charge_table.setRowCount(0)
+        if self.charges_ui.activity_combobox.currentIndex() == -1:
+            Dialog.info("Error", "No hay actividades registradas.")
+        else:
+            activity = self.charges_ui.activity_combobox.currentData(Qt.UserRole)
+            year, month = self.charges_ui.year_spinbox.value(), self.charges_ui.month_spinbox.value()
+
+            for row, charge in enumerate(self.transaction_repo.charges_by_activity(activity, year, month)):
+                name = charge.client.name if charge.client is not None else "-"
+                fill_cell(self.charges_ui.charge_table, row, 0, name, data_type=str)
+                fill_cell(self.charges_ui.charge_table, row, 1, charge.responsible, data_type=str)
+                fill_cell(self.charges_ui.charge_table, row, 2, charge.when.strftime(utils.DATE_FORMAT), data_type=bool)
+                fill_cell(self.charges_ui.charge_table, row, 3, Currency.fmt(charge.amount), data_type=int)
+
+
+class ChargesByMonthUI(QMainWindow):
+    def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo):
         super().__init__()
         self._setup_ui()
 
-        self.responsible_list: list[Responsible] = []
-
-        # noinspection PyUnresolvedReferences
-        self.confirm_btn.clicked.connect(self.parse_responsible)
-        # noinspection PyUnresolvedReferences
-        self.cancel_btn.clicked.connect(self.reject)
+        self.controller = ChargesController(self, activity_repo, transaction_repo)
 
     def _setup_ui(self):
-        self.layout = QVBoxLayout(self)
+        self.setWindowTitle("Pagos por mes")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
 
-        self.responsible_text = QTextEdit(self)
-        config_line(self.responsible_text, place_holder="RespName:code\nRespName:code")
-        self.layout.addWidget(self.responsible_text)
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+        self.header_layout.setAlignment(Qt.AlignCenter)
 
-        # Buttons.
-        self.buttons_layout = QHBoxLayout()
-        self.layout.addLayout(self.buttons_layout)
-        self.buttons_layout.setAlignment(Qt.AlignRight)
+        self.activity_combobox = QComboBox(self.widget)  # The configuration is done in the controller.
+        self.header_layout.addWidget(self.activity_combobox)
 
-        self.confirm_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.confirm_btn)
-        config_btn(self.confirm_btn, "Confirmar", extra_width=20)
+        self.year_spinbox = QSpinBox(self.widget)
+        self.header_layout.addWidget(self.year_spinbox)
+        config_widget(self.year_spinbox, fixed_width=70)
+        self.year_spinbox.setMinimum(1)
+        self.year_spinbox.setMaximum(9999)
+        self.year_spinbox.setValue(date.today().year)
 
-        self.cancel_btn = QPushButton(self)
-        self.buttons_layout.addWidget(self.cancel_btn)
-        config_btn(self.cancel_btn, "Cancelar", extra_width=20)
+        self.month_spinbox = QSpinBox(self.widget)
+        self.header_layout.addWidget(self.month_spinbox)
+        config_widget(self.month_spinbox, fixed_width=45)
+        self.month_spinbox.setMinimum(1)
+        self.month_spinbox.setMaximum(12)
+        self.month_spinbox.setValue(date.today().month)
 
-        # Adjusts size.
-        self.setMaximumSize(self.minimumWidth(), self.minimumHeight())
+        # Charges table
+        self.charge_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.charge_table)
+        new_config_table(self.charge_table, width=1000, min_rows_to_show=20, fix_width=True,
+                         columns={"Cliente": (.33, str), "Responsable": (.32, str), "Fecha pago": (.15, bool),
+                                  "Monto": (.2, int)})
 
-    def parse_responsible(self):
-        for name_code in self.responsible_text.toPlainText().split("\n"):
-            name, code = name_code.split(":")
-            self.responsible_list.append(Responsible(String(name), String(code)))
-        self.confirm_btn.window().close()
+        self.setMaximumWidth(self.minimumWidth())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+
+

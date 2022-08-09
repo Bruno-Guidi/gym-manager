@@ -569,6 +569,23 @@ class SqliteTransactionRepo(TransactionRepo):
                                    TransactionTable.description]
                 ).execute()
 
+    def charges_by_activity(self, activity: Activity, year: int, month: int) -> Generator[Transaction, None, None]:
+        charges_q = TransactionTable.select().join(SubscriptionCharge)
+        charges_q = charges_q.where(SubscriptionCharge.when.year == year, SubscriptionCharge.when.month == month,
+                                    SubscriptionCharge.activity_id == activity.id)
+        charges_q = charges_q.order_by(TransactionTable.id.desc())
+        for record in prefetch(charges_q, ClientTable):
+            client_record, client = record.client, None
+            if client_record is not None:
+                if client_record.id in self.client_view_cache:
+                    client = self.client_view_cache[client_record.id]
+                else:
+                    client = ClientView(client_record.id, String(client_record.cli_name),
+                                        created_by="SqliteTransactionRepo.charges_by_activity",
+                                        dni=Number(client_record.dni if client_record.dni is not None else ""))
+            yield self.from_data(record.id, record.type, record.when, record.amount, record.method, record.responsible,
+                                 record.description, client, record.balance)
+
 
 class SubscriptionTable(Model):
     when = DateField()
