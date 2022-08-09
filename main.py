@@ -49,25 +49,6 @@ def _save_bookings(booking_repo: BookingRepo):
         json.dump({"fixed": all_fixed, "temp": all_temp}, file)
 
 
-def _load_bookings(booking_system: BookingSystem):
-    with open("booking_backup.json", "r") as file:
-        json_dict = json.load(file)
-        duration_dict = {}
-        for fixed_b in json_dict["fixed"]:
-            start = datetime.strptime(fixed_b["start"], "%H:%M").time()
-            end = datetime.strptime(fixed_b["end"], "%H:%M").time()
-            when = datetime.strptime(fixed_b["first_when"], "%d/%m/%Y").date()
-            booking_system.book_with_end(fixed_b["court"], String(fixed_b["client"]), True, when, start, end,
-                                         duration_dict)
-
-        for temp_b in json_dict["temp"]:
-            start = datetime.strptime(temp_b["start"], "%H:%M").time()
-            end = datetime.strptime(temp_b["end"], "%H:%M").time()
-            when = datetime.strptime(temp_b["when"], "%d/%m/%Y").date()
-            booking_system.book_with_end(temp_b["court"], String(temp_b["client"]), False, when, start, end,
-                                         duration_dict)
-
-
 def main():
     with open(path.join(path.dirname(path.abspath(__file__)), 'config.json')) as config_file:
         config_dict = json.load(config_file)

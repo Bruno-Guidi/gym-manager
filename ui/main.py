@@ -40,6 +40,7 @@ class LoadBackupFromOld(QDialog):
 
         self.confirmed = False
         self.path = ""
+        self.booking_path = ""
         self.since = date.today()
 
         self.layout = QVBoxLayout(self)
@@ -47,6 +48,10 @@ class LoadBackupFromOld(QDialog):
         self.line_edit = QLineEdit(self)
         self.layout.addWidget(self.line_edit)
         config_line(self.line_edit, place_holder="Path")
+
+        self.booking_line_edit = QLineEdit(self)
+        self.layout.addWidget(self.booking_line_edit)
+        config_line(self.booking_line_edit, place_holder="Booking json path")
 
         self.since_layout = QHBoxLayout()
         self.layout.addLayout(self.since_layout)
@@ -68,6 +73,7 @@ class LoadBackupFromOld(QDialog):
     def ok_clicked(self):
         self.confirmed = True
         self.path = self.line_edit.text()
+        self.booking_path = self.booking_line_edit.text()
         self.since = self.since_date_edit.date().toPyDate()
         self.line_edit.window().close()
 
@@ -196,6 +202,8 @@ class Controller:
                 parsing.parse(self.activity_repo, self.client_repo, self.subscription_repo, self.transaction_repo,
                               self.balance_repo, since=self._backup_ui.since, backup_path=self._backup_ui.path,
                               contact_repo=self.contact_repo)
+                if len(self._backup_ui.booking_path) != 0:
+                    parsing.load_bookings(self.booking_system, self._backup_ui.booking_path)
 
         def add_responsible():
             self._responsible_ui = ResponsibleUI()
