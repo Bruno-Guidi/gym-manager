@@ -251,8 +251,8 @@ class Controller:
 
     # noinspection PyAttributeOutsideInit
     def show_booking_main_ui(self, allow_passed_time_bookings: bool = False):
-        self.booking_main_ui = BookingMainUI(self.transaction_repo, self.booking_system, self.security_handler,
-                                             allow_passed_time_bookings)
+        self.booking_main_ui = BookingMainUI(self.transaction_repo, self.booking_system, self.activity_repo,
+                                             self.security_handler, allow_passed_time_bookings)
         self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
         self.booking_main_ui.show()
 

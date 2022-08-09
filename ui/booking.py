@@ -15,7 +15,7 @@ from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
     remaining_blocks, Booking, subtract_times, Duration)
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String, Number, Currency
-from gym_manager.core.persistence import FilterValuePair, TransactionRepo
+from gym_manager.core.persistence import FilterValuePair, TransactionRepo, ActivityRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
 from ui.accounting import ChargeUI
@@ -38,11 +38,12 @@ def timedelta_to_duration_str(td: timedelta) -> str:
 class MainController:
 
     def __init__(
-            self, main_ui: BookingMainUI, transaction_repo: TransactionRepo,
+            self, main_ui: BookingMainUI, transaction_repo: TransactionRepo, activity_repo: ActivityRepo,
             booking_system: BookingSystem, security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         self.main_ui = main_ui
         self.transaction_repo = transaction_repo
+        self.activity_repo = activity_repo
         self.booking_system = booking_system
         self.security_handler = security_handler
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
@@ -76,6 +77,7 @@ class MainController:
     def refresh_booking_info(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         if col in self._bookings and row in self._bookings[col]:
+            # self.booking_system.update_prices()
             booking = self._bookings[col][row]
             self.main_ui.court_line.setText(booking.court)
             self.main_ui.hour_line.setText(booking.start.strftime("%H:%M"))
@@ -230,12 +232,12 @@ class MainController:
 class BookingMainUI(QMainWindow):
 
     def __init__(
-            self, transaction_repo: TransactionRepo, booking_system: BookingSystem,
+            self, transaction_repo: TransactionRepo, booking_system: BookingSystem, activity_repo: ActivityRepo,
             security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
     ) -> None:
         super().__init__()
         self._setup_ui()
-        self.controller = MainController(self, transaction_repo, booking_system, security_handler,
+        self.controller = MainController(self, transaction_repo, activity_repo, booking_system, security_handler,
                                          allow_passed_time_bookings)
 
     def _setup_ui(self):
