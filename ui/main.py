@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import itertools
 from datetime import date, timedelta
 from typing import Callable
 
@@ -30,7 +31,7 @@ from ui.stock import StockMainUI
 from ui.widget_config import (
     config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
     config_combobox, fill_combobox, config_checkbox, config_widget)
-from ui.widgets import PageIndex
+from ui.widgets import PageIndex, Dialog
 
 
 class LoadBackupFromOld(QDialog):
@@ -266,7 +267,7 @@ class Controller:
 
     def show_charges_by_month_ui(self):
         # noinspection PyAttributeOutsideInit
-        self._charges_ui = ChargesByMonthUI(self.transaction_repo)
+        self._charges_ui = ChargesByMonthUI(self.activity_repo, self.transaction_repo)
         self._charges_ui.setWindowModality(Qt.ApplicationModal)
         self._charges_ui.show()
 
@@ -527,17 +528,39 @@ class ActionUI(QMainWindow):
 
 
 class ChargesController:
-    def __init__(self, charges_ui: ChargesByMonthUI, transaction_repo: TransactionRepo):
+    def __init__(self, charges_ui: ChargesByMonthUI, activity_repo: ActivityRepo, transaction_repo: TransactionRepo):
         self.charges_ui = charges_ui
+        self.activity_repo = activity_repo
         self.transaction_repo = transaction_repo
+
+        fill_combobox(self.charges_ui.activity_combobox,
+                      itertools.filterfalse(lambda activity: activity.charge_once, self.activity_repo.all()),
+                      display=lambda activity: activity.name.as_primitive())
+        config_combobox(self.charges_ui.activity_combobox, fixed_width=300)
+
+        # noinspection PyUnresolvedReferences
+        self.charges_ui.activity_combobox.currentIndexChanged.connect(self.load_charges)
+        # noinspection PyUnresolvedReferences
+        self.charges_ui.year_spinbox.valueChanged.connect(self.load_charges)
+        # noinspection PyUnresolvedReferences
+        self.charges_ui.month_spinbox.valueChanged.connect(self.load_charges)
+
+    def load_charges(self):
+        if self.charges_ui.activity_combobox.currentIndex() == -1:
+            Dialog.info("Error", "No hay actividades registradas.")
+        else:
+            activity = self.charges_ui.activity_combobox.currentData(Qt.UserRole)
+            year, month = self.charges_ui.year_spinbox.value(), self.charges_ui.month_spinbox.value()
+
+            print(activity, year, month)
 
 
 class ChargesByMonthUI(QMainWindow):
-    def __init__(self, transaction_repo: TransactionRepo):
+    def __init__(self, activity_repo: ActivityRepo, transaction_repo: TransactionRepo):
         super().__init__()
         self._setup_ui()
 
-        self.controller = ChargesController(self, transaction_repo)
+        self.controller = ChargesController(self, activity_repo, transaction_repo)
 
     def _setup_ui(self):
         self.setWindowTitle("Pagos por mes")
