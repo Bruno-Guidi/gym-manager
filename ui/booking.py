@@ -77,7 +77,7 @@ class MainController:
     def refresh_booking_info(self):
         row, col = self.main_ui.booking_table.currentRow(), self.main_ui.booking_table.currentColumn()
         if col in self._bookings and row in self._bookings[col]:
-            # self.booking_system.update_prices()
+            self.booking_system.update_prices(self.activity_repo)
             booking = self._bookings[col][row]
             self.main_ui.court_line.setText(booking.court)
             self.main_ui.hour_line.setText(booking.start.strftime("%H:%M"))
