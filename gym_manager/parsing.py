@@ -166,12 +166,13 @@ def _register_subscription_charging(
     """
     to = str(to)
     charges = (raw for raw in conn.execute(
-        "select p.id_cliente, p.fecha, p.importe, p.id_actividad, c.nombre, a.descripcion, u.usuario "
+        "select p.id_cliente, max(p.fecha), sum(p.importe), p.id_actividad, c.nombre, a.descripcion, u.usuario "
         "from pago p "
         "inner join actividad a on p.id_actividad = a.id "
         "inner join cliente c on p.id_cliente = c.id "
         "inner join usuario u on p.id_usuario = u.id "
-        "where p.fecha >= (?) and p.fecha <= (?) ", (since, to)
+        "where p.fecha >= (?) and p.fecha <= (?) and "
+        "group by p.id_cliente, p.id_actividad, strftime('%m-%Y', p.fecha)", (since, to)
     ))
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
