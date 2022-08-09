@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox, QMenu, QAction)
+    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox, QMenu, QAction, QSpinBox)
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem
@@ -29,7 +29,7 @@ from ui.contact import ContactMainUI
 from ui.stock import StockMainUI
 from ui.widget_config import (
     config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
-    config_combobox, fill_combobox, config_checkbox)
+    config_combobox, fill_combobox, config_checkbox, config_widget)
 from ui.widgets import PageIndex
 
 
@@ -161,6 +161,8 @@ class Controller:
         self.main_ui.balance_history_action.triggered.connect(self.show_balance_history_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.actions_log_action.triggered.connect(self.show_actions_ui)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.activity_charges_action.triggered.connect(self.show_charges_by_month_ui)
 
     def show_config_ui(self):
         def generate_balance():
@@ -261,6 +263,12 @@ class Controller:
         self._actions_ui = ActionUI(self.security_handler)
         self._actions_ui.setWindowModality(Qt.ApplicationModal)
         self._actions_ui.show()
+
+    def show_charges_by_month_ui(self):
+        # noinspection PyAttributeOutsideInit
+        self._charges_ui = ChargesByMonthUI(self.transaction_repo)
+        self._charges_ui.setWindowModality(Qt.ApplicationModal)
+        self._charges_ui.show()
 
     def close(self):
         if self.backup_fn is not None:
@@ -516,3 +524,52 @@ class ActionUI(QMainWindow):
 
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+
+
+class ChargesController:
+    def __init__(self, charges_ui: ChargesByMonthUI, transaction_repo: TransactionRepo):
+        self.charges_ui = charges_ui
+        self.transaction_repo = transaction_repo
+
+
+class ChargesByMonthUI(QMainWindow):
+    def __init__(self, transaction_repo: TransactionRepo):
+        super().__init__()
+        self._setup_ui()
+
+        self.controller = ChargesController(self, transaction_repo)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Pagos por mes")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+
+        self.activity_combobox = QComboBox(self.widget)  # The configuration is done in the controller.
+        self.header_layout.addWidget(self.activity_combobox)
+
+        self.year_spinbox = QSpinBox(self.widget)
+        self.header_layout.addWidget(self.year_spinbox)
+        config_widget(self.year_spinbox, fixed_width=70)
+        self.year_spinbox.setMinimum(1)
+        self.year_spinbox.setMaximum(9999)
+        self.year_spinbox.setValue(date.today().year)
+
+        self.month_spinbox = QSpinBox(self.widget)
+        self.header_layout.addWidget(self.month_spinbox)
+        config_widget(self.month_spinbox, fixed_width=45)
+        self.month_spinbox.setMinimum(1)
+        self.month_spinbox.setMaximum(12)
+        self.month_spinbox.setValue(date.today().month)
+
+        # Charges table
+        self.charge_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.charge_table)
+        new_config_table(self.charge_table, width=1000, min_rows_to_show=20, fix_width=True,
+                         columns={"Cliente": (.33, str), "Responsable": (.32, str), "Fecha pago": (.15, bool),
+                                  "Monto": (.2, int)})
+
+
