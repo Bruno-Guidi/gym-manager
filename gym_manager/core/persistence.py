@@ -323,6 +323,10 @@ class TransactionRepo(abc.ABC):
         """
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def charges_by_activity(self, activity: Activity, year: int, month: int) -> Generator[Transaction, None, None]:
+        raise NotImplementedError
+
 
 class BalanceRepo(abc.ABC):
     def balance_done(self, when: date) -> bool:
