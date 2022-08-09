@@ -166,17 +166,19 @@ def _register_subscription_charging(
     """
     to = str(to)
     charges = (raw for raw in conn.execute(
-        "select p.id_cliente, p.fecha, p.importe, p.id_actividad, c.nombre, a.descripcion "
+        "select p.id_cliente, max(p.fecha), sum(p.importe), p.id_actividad, c.nombre, a.descripcion, u.usuario "
         "from pago p "
         "inner join actividad a on p.id_actividad = a.id "
         "inner join cliente c on p.id_cliente = c.id "
-        "where p.fecha >= (?) and p.fecha <= (?) ", (since, to)
+        "inner join usuario u on p.id_usuario = u.id "
+        "where p.fecha >= (?) and p.fecha <= (?) and "
+        "group by p.id_cliente, p.id_actividad, strftime('%m-%Y', p.fecha)", (since, to)
     ))
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
     # parsing is done.
     sub_charges = ((raw[1], raw[0], raw[3],
-                    transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo", "Admin",
+                    transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo", raw[6],
                                               f"Cobro por '{raw[5]}' a cliente '{raw[4]}' en app vieja",
                                               date.min if raw[1] != to else None)))
                    for raw in charges)
@@ -207,7 +209,7 @@ def parse(
     # This balance is created so the transactions parsed are not included in the daily balance of the day when the
     # parsing is done.
     balance_repo.add(date.min, String("Admin"), {})
-    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, date(2022, 7, 25))  # ToDo change to date.today()
+    _register_subscription_charging(conn, subscription_repo, transaction_repo, since, date.today())
 
     conn.close()
 
