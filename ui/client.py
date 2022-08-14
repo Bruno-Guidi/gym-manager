@@ -424,7 +424,7 @@ class ClientMainUI(QMainWindow):
         # Clients.
         self.client_table = QTableWidget(self.widget)
         self.left_layout.addWidget(self.client_table)
-        new_config_table(self.client_table, width=600, allow_resizing=False, min_rows_to_show=10,
+        new_config_table(self.client_table, width=600, allow_resizing=False, min_rows_to_show=6,
                          columns={"Nombre": (.4, str), "DNI": (.2, int), "Ingreso": (.2, bool), "Edad": (.2, int)})
 
         # Index.
@@ -475,7 +475,7 @@ class ClientMainUI(QMainWindow):
 
         self.subscription_list = QListWidget(self.widget)
         self.right_layout.addWidget(self.subscription_list)
-        self.subscription_list.setFixedHeight(150)
+        self.subscription_list.setFixedHeight(100)
 
         self.cancel_btn = QPushButton(self.widget)
         self.right_layout.addWidget(self.cancel_btn)
@@ -555,9 +555,6 @@ class ClientMainUI(QMainWindow):
         self.charge_btn = QPushButton(self.widget)
         self.charge_form_layout.addWidget(self.charge_btn, 0, 2, 2, 1, alignment=Qt.AlignCenter)
         config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
-
-        # Vertical spacer.
-        self.right_layout.addSpacerItem(QSpacerItem(20, 50, QSizePolicy.Minimum, QSizePolicy.MinimumExpanding))
 
         self.setFixedSize(self.minimumSizeHint())
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
