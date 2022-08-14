@@ -178,6 +178,8 @@ class MainController:
         fill_cell(self.main_ui.client_table, row, 3, client.age(), data_type=int, increase_row_count=False)
 
     def remove_client(self):
+        self.main_ui.responsible_field.setStyleSheet("")
+
         row = self.main_ui.client_table.currentRow()
         if row == -1:
             Dialog.info("Error", "Seleccione un cliente en la tabla.")
@@ -186,18 +188,25 @@ class MainController:
         client = self._clients[row]
 
         if Dialog.confirm(f"¿Desea eliminar el cliente '{client.name}'? (Sus pagos NO seran eliminados)"):
-            self.client_repo.remove(client)
-            remove_contact_by_client(self.contact_repo, client)
+            try:
+                self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
-            self._clients.pop(row)
-            self.main_ui.filter_header.on_search_click()  # Refreshes the table.
+                self.client_repo.remove(client)
+                remove_contact_by_client(self.contact_repo, client)
 
-            # Clears the subscriptions table.
-            self.main_ui.subscription_list.clear()
+                self._clients.pop(row)
+                self.main_ui.filter_header.on_search_click()  # Refreshes the table.
 
-            Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
+                # Clears the subscriptions table.
+                self.main_ui.subscription_list.clear()
 
-            self._enable_subscribe()
+                Dialog.info("Éxito", f"El cliente '{client.name}' fue eliminado correctamente.")
+
+                self._enable_subscribe()
+            except SecurityError as sec_err:
+                self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
+                Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
+
 
     def fill_subscription_list(self):
         row = self.main_ui.client_table.currentRow()
