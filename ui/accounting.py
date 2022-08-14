@@ -245,7 +245,7 @@ class AccountingMainUI(QMainWindow):
         self.layout.addWidget(self.transaction_table)
         new_config_table(self.transaction_table, width=1200,
                          columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.12, int),
-                                  "Descripción": (.48, str)}, min_rows_to_show=20)
+                                  "Descripción": (.48, str)}, min_rows_to_show=15)
 
         self.setFixedWidth(self.minimumSizeHint().width())
 
