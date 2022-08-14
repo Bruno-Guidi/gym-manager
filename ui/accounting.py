@@ -7,7 +7,7 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit, QDialog,
-    QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QCheckBox, QDateEdit, QDesktopWidget)
+    QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QDesktopWidget)
 
 from gym_manager.core import api
 from gym_manager.core.api import CreateTransactionFn
@@ -16,9 +16,8 @@ from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
 from ui.utils import MESSAGE
-from ui.widget_config import (
-    config_lbl, config_btn, config_line, fill_cell, config_combobox,
-    fill_combobox, config_checkbox, config_date_edit, new_config_table)
+from ui.widget_config import (config_lbl, config_btn, config_line, fill_cell, config_combobox, fill_combobox,
+                              new_config_table)
 from ui.widgets import Separator, Field, Dialog, responsible_field, valid_text_value
 
 
@@ -262,42 +261,12 @@ class BalanceHistoryController:
         self.history_ui = history_ui
         self.balance_repo = balance_repo
 
-        self.updated_date_checkbox()
-
-        fill_combobox(self.history_ui.last_n_combobox, (self.ONE_WEEK_TD, self.TWO_WEEK_TD, self.ONE_MONTH_TD),
-                      display=lambda pair: pair[0])
-
         self._transactions: dict[int, list[Transaction]] = {}
         self._balances: dict[int, Balance] = {}
-        self.load_last_n_balances()
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
-        self.history_ui.last_n_checkbox.stateChanged.connect(self.updated_date_checkbox)
-        # noinspection PyUnresolvedReferences
-        self.history_ui.date_checkbox.stateChanged.connect(self.update_last_n_checkbox)
-        # noinspection PyUnresolvedReferences
-        self.history_ui.last_n_combobox.currentIndexChanged.connect(self.load_last_n_balances)
-        # noinspection PyUnresolvedReferences
-        self.history_ui.date_edit.dateChanged.connect(self.load_date_balance)
-        # noinspection PyUnresolvedReferences
         self.history_ui.balance_table.itemSelectionChanged.connect(self.refresh_balance_info)
-
-    def update_last_n_checkbox(self):
-        """Callback called when the state of date_checkbox changes.
-        """
-        self.history_ui.last_n_checkbox.setChecked(not self.history_ui.date_checkbox.isChecked())
-        self.history_ui.last_n_combobox.setEnabled(not self.history_ui.date_checkbox.isChecked())
-        if self.history_ui.last_n_checkbox.isChecked():
-            self.load_last_n_balances()
-
-    def updated_date_checkbox(self):
-        """Callback called when the state of last_n_checkbox changes.
-        """
-        self.history_ui.date_checkbox.setChecked(not self.history_ui.last_n_checkbox.isChecked())
-        self.history_ui.date_edit.setEnabled(not self.history_ui.last_n_checkbox.isChecked())
-        if self.history_ui.date_checkbox.isChecked():
-            self.load_date_balance()
 
     def _load_balance_table(self, from_date: date, to_date: date):
         self.history_ui.balance_table.setRowCount(0)
@@ -313,14 +282,6 @@ class BalanceHistoryController:
 
         if self.history_ui.balance_table.rowCount() != 0:
             self.history_ui.balance_table.selectRow(1)
-
-    def load_last_n_balances(self):
-        td = self.history_ui.last_n_combobox.currentData(Qt.UserRole)[1]
-        self._load_balance_table(from_date=date.today() - td, to_date=date.today())
-
-    def load_date_balance(self):
-        when = self.history_ui.date_edit.date().toPyDate()
-        self._load_balance_table(from_date=when, to_date=when)
 
     def refresh_balance_info(self):
         if self.history_ui.balance_table.currentRow() != -1:
@@ -355,27 +316,6 @@ class BalanceHistoryUI(QMainWindow):
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
-
-        # Filters.
-        self.filters_layout = QGridLayout()
-        self.left_layout.addLayout(self.filters_layout)
-        self.filters_layout.setAlignment(Qt.AlignCenter)
-
-        self.last_n_checkbox = QCheckBox(self.widget)
-        self.filters_layout.addWidget(self.last_n_checkbox, 0, 0)
-        config_checkbox(self.last_n_checkbox, "Últimos", checked=True, layout_dir=Qt.LayoutDirection.LeftToRight)
-
-        self.date_checkbox = QCheckBox(self.widget)
-        self.filters_layout.addWidget(self.date_checkbox, 1, 0)
-        config_checkbox(self.date_checkbox, "Fecha", checked=False, layout_dir=Qt.LayoutDirection.LeftToRight)
-
-        self.date_edit = QDateEdit(self.widget)
-        self.filters_layout.addWidget(self.date_edit, 1, 1)
-        config_date_edit(self.date_edit, date.today(), calendar=True)
-
-        self.last_n_combobox = QComboBox(self.widget)
-        self.filters_layout.addWidget(self.last_n_combobox, 0, 1)
-        config_combobox(self.last_n_combobox, extra_width=20, fixed_width=self.date_edit.width())
 
         # Balances.
         self.balance_table = QTableWidget(self.widget)
