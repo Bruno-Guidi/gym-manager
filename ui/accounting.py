@@ -303,23 +303,15 @@ class BalanceHistoryUI(QMainWindow):
         self.setWindowTitle("Historial de cajas diarias")
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
-        self.layout = QHBoxLayout(self.widget)
-
-        self.left_layout = QVBoxLayout()
-        self.layout.addLayout(self.left_layout)
-
-        self.layout.addWidget(Separator(vertical=True, parent=self.widget))  # Vertical line.
-
-        self.right_layout = QVBoxLayout()
-        self.layout.addLayout(self.right_layout)
+        self.layout = QVBoxLayout(self.widget)
 
         # Transactions of the balance.
         self.transactions_lbl = QLabel(self.widget)
-        self.right_layout.addWidget(self.transactions_lbl)
+        self.layout.addWidget(self.transactions_lbl)
         config_lbl(self.transactions_lbl, "Transacciones", font_size=16)
 
         self.transaction_table = QTableWidget(self.widget)
-        self.right_layout.addWidget(self.transaction_table)
+        self.layout.addWidget(self.transaction_table)
 
         new_config_table(self.transaction_table, width=1200,
                          columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.15, int),
