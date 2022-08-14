@@ -117,6 +117,10 @@ class SecurityHandler(abc.ABC):
     def add_responsible(self, responsible: Responsible):
         raise NotImplementedError
 
+    @abc.abstractmethod
+    def all_responsible(self) -> Iterable[Responsible]:
+        raise NotImplementedError
+
     @property
     @abc.abstractmethod
     def current_responsible(self) -> Responsible:
@@ -189,6 +193,9 @@ class SimpleSecurityHandler(SecurityHandler):
         self.security_repo.add_responsible(responsible)
         self._responsible_dict[responsible.code] = responsible
         self._responsible_dict[responsible.name] = responsible
+
+    def all_responsible(self) -> Iterable[Responsible]:
+        yield from self.security_repo.responsible()
 
     @property
     def current_responsible(self) -> Responsible:
