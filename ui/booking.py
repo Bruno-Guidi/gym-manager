@@ -287,17 +287,17 @@ class BookingMainUI(QMainWindow):
 
         # Method.
         self.method_combobox = QComboBox(self)
-        self.charge_form_layout.addWidget(self.method_combobox, 2, 0)
+        self.charge_form_layout.addWidget(self.method_combobox, 1, 0)
         config_combobox(self.method_combobox)
 
         # Amount.
         self.amount_line = Field(Currency, parent=self, positive=True)
-        self.charge_form_layout.addWidget(self.amount_line, 2, 1, 1, 2)
+        self.charge_form_layout.addWidget(self.amount_line, 1, 1)
         config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
 
         # Charge button
         self.charge_btn = QPushButton(self.widget)
-        self.charge_form_layout.addWidget(self.charge_btn, 1, 3, 2, 3, alignment=Qt.AlignCenter)
+        self.charge_form_layout.addWidget(self.charge_btn, 0, 2, 2, 1)
         config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
 
         self.layout.addWidget(Separator(vertical=False, parent=self.widget))  # Vertical line.
