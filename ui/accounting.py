@@ -265,12 +265,8 @@ class BalanceHistoryController:
         self._balances: dict[int, Balance] = {}
 
         # Sets callbacks.
-        # noinspection PyUnresolvedReferences
-        self.history_ui.balance_table.itemSelectionChanged.connect(self.refresh_balance_info)
 
     def _load_balance_table(self, from_date: date, to_date: date):
-        self.history_ui.balance_table.setRowCount(0)
-
         for when, responsible, balance, transactions in self.balance_repo.all(from_date, to_date):
             row_count = self.history_ui.balance_table.rowCount()
             self._transactions[row_count] = transactions
@@ -316,13 +312,6 @@ class BalanceHistoryUI(QMainWindow):
 
         self.right_layout = QVBoxLayout()
         self.layout.addLayout(self.right_layout)
-
-        # Balances.
-        self.balance_table = QTableWidget(self.widget)
-        self.left_layout.addWidget(self.balance_table)
-        new_config_table(self.balance_table, width=500,
-                         columns={"Fecha": (.28, bool), "Responsable": (.42, str), "Total": (.3, int)},
-                         min_rows_to_show=20, fix_width=True)
 
         # Transactions of the balance.
         self.transactions_lbl = QLabel(self.widget)
