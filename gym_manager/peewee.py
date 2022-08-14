@@ -15,7 +15,7 @@ from gym_manager.core.base import (
 from gym_manager.core.persistence import (
     ClientRepo, ActivityRepo, TransactionRepo, SubscriptionRepo, LRUCache,
     BalanceRepo, FilterValuePair, PersistenceError, ClientView)
-from gym_manager.core.security import SecurityRepo, Responsible, Action
+from gym_manager.core.security import SecurityRepo, Responsible, Action, log_responsible
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +138,7 @@ class SqliteClientRepo(ClientRepo):
 
         return client
 
+    @log_responsible("remove_client", lambda client: f"Eliminado cliente '{client.name}'.")
     def remove(self, client: Client):
         """Marks the given *client* as inactive, and delete its subscriptions.
         """
