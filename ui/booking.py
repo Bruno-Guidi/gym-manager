@@ -48,6 +48,7 @@ class MainController:
         self.security_handler = security_handler
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
         self._bookings: dict[int, dict[int, Booking]] | None = None
+        self._blocks = {i: block for i, block in enumerate(booking_system.blocks())}
 
         self.allow_passed_time_bookings = allow_passed_time_bookings
 
@@ -117,9 +118,8 @@ class MainController:
         self._bookings = {court_number: {} for court_number in self._courts.values()}
 
         # Loads the hour column.
-        blocks = [block for block in self.booking_system.blocks()]
-        self.main_ui.booking_table.setRowCount(len(blocks))
-        for row, block in enumerate(blocks):
+        self.main_ui.booking_table.setRowCount(len(self._blocks))
+        for row, block in self._blocks.items():
             item = QTableWidgetItem(block.str_range)
             item.setTextAlignment(Qt.AlignCenter)
             self.main_ui.booking_table.setItem(row, 0, item)
