@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 from datetime import date, timedelta
-from typing import Callable
+from typing import Callable, ClassVar
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
@@ -254,9 +254,7 @@ class AccountingMainUI(QMainWindow):
 
 
 class BalanceHistoryController:
-    ONE_WEEK_TD = ("7 días", timedelta(days=7))
-    TWO_WEEK_TD = ("14 días", timedelta(days=14))
-    ONE_MONTH_TD = ("30 días", timedelta(days=30))
+    ONE_DAY_TD: ClassVar[timedelta] = timedelta(days=1)
 
     def __init__(self, history_ui: BalanceHistoryUI, balance_repo: BalanceRepo):
         self.history_ui = history_ui
@@ -265,32 +263,28 @@ class BalanceHistoryController:
         self._transactions: dict[int, list[Transaction]] = {}
         self._balances: dict[int, Balance] = {}
 
+        # Loads the balance of yesterday.
+        self._load_balance(date.today() - self.ONE_DAY_TD)
+
         # Sets callbacks.
+        # noinspection PyUnresolvedReferences
+        self.history_ui.date_edit.dateChanged.connect(self.refresh_balance_info)
 
-    def _load_balance_table(self, from_date: date, to_date: date):
-        for when, responsible, balance, transactions in self.balance_repo.all(from_date, to_date):
-            row_count = self.history_ui.balance_table.rowCount()
-            self._transactions[row_count] = transactions
-            self._balances[row_count] = balance
-            fill_cell(self.history_ui.balance_table, row_count, 0, when, data_type=int)
-            fill_cell(self.history_ui.balance_table, row_count, 1, responsible, data_type=str)
+    def _load_balance(self, when: date):
+        for _, responsible, balance, transactions in self.balance_repo.all(from_date=when, to_date=when):
+            self.history_ui.responsible_line.setText(responsible.as_primitive())
             total = balance["Cobro"].get("Total") - balance["Extracción"].get("Total")
-            fill_cell(self.history_ui.balance_table, row_count, 2, Currency.fmt(total), data_type=int)
+            self.history_ui.total_line.setText(Currency.fmt(total))
 
-        if self.history_ui.balance_table.rowCount() != 0:
-            self.history_ui.balance_table.selectRow(1)
-
-    def refresh_balance_info(self):
-        if self.history_ui.balance_table.currentRow() != -1:
-            # Loads transactions of the selected daily balance.
-            self.history_ui.transaction_table.setRowCount(0)
-            transactions = self._transactions[self.history_ui.balance_table.currentRow()]
             for i, transaction in enumerate(transactions):
                 fill_cell(self.history_ui.transaction_table, i, 0, transaction.responsible, data_type=str)
                 name = transaction.client.name if transaction.client is not None else "-"
                 fill_cell(self.history_ui.transaction_table, i, 1, name, data_type=str)
                 fill_cell(self.history_ui.transaction_table, i, 2, Currency.fmt(transaction.amount), data_type=int)
                 fill_cell(self.history_ui.transaction_table, i, 3, transaction.description, data_type=str)
+
+    def refresh_balance_info(self):
+        self._load_balance(self.history_ui.date_edit.date().toPyDate())
 
 
 class BalanceHistoryUI(QMainWindow):
