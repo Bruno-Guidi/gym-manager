@@ -138,16 +138,25 @@ class MainController:
 
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
-        when = self.main_ui.date_edit.date().toPyDate()
-        if not self.allow_passed_time_bookings and when < date.today():
-            Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
-        else:
-            # noinspection PyAttributeOutsideInit
-            self._create_ui = CreateUI(self.booking_system, self.security_handler, when,
-                                       self.allow_passed_time_bookings)
-            self._create_ui.exec_()
-            if self._create_ui.controller.booking is not None:
-                self._load_booking(self._create_ui.controller.booking)
+        when, today = self.main_ui.date_edit.date().toPyDate(), date.today()
+        block: Block | None = None
+        if self.main_ui.booking_table.currentRow() != -1:
+            block = self._blocks[self.main_ui.booking_table.currentRow()]
+
+        if not self.allow_passed_time_bookings:
+            if when < today:
+                Dialog.info("Error", "No se puede reservar un turno para un día previo al actual.")
+                return
+            if when == today and block is not None and block.start < datetime.now().time():
+                Dialog.info("Error", "No se puede reservar un turno para una hora que ya pasó.")
+                return
+
+        # noinspection PyAttributeOutsideInit
+        self._create_ui = CreateUI(self.booking_system, self.security_handler, when,
+                                   self.allow_passed_time_bookings, block)
+        self._create_ui.exec_()
+        if self._create_ui.controller.booking is not None:
+            self._load_booking(self._create_ui.controller.booking)
 
     def charge_booking(self):
         self.main_ui.responsible_field.setStyleSheet("")
