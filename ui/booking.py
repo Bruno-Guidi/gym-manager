@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
-    remaining_blocks, Booking, subtract_times, Duration)
+    remaining_blocks, Booking, subtract_times, Duration, Block)
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String, Number, Currency
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo, ActivityRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
@@ -368,8 +368,8 @@ class BookingMainUI(QMainWindow):
 class CreateController:
 
     def __init__(
-            self, create_ui: CreateUI, booking_system: BookingSystem,
-            security_handler: SecurityHandler, when: date, allow_passed_time_bookings: bool
+            self, create_ui: CreateUI, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
+            allow_passed_time_bookings: bool, selected_block: Block | None = None
     ) -> None:
         self.create_ui = create_ui
         self.booking_system = booking_system
@@ -380,10 +380,17 @@ class CreateController:
         # Fills some widgets that depend on user/system data.
         config_date_edit(self.create_ui.date_edit, when, calendar=False, enabled=False)
         fill_combobox(self.create_ui.court_combobox, self.booking_system.court_names, lambda court: court)
+
         blocks = self.booking_system.blocks()
         if not allow_passed_time_bookings:
             blocks = remaining_blocks(blocks, when)
         fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
+        # The item in the combobox will be the selected block in BookingMainUI, if one block was selected.
+        if selected_block is not None:
+            for i in range(len(self.create_ui.block_combobox)):
+                if selected_block == self.create_ui.block_combobox.itemData(i, Qt.UserRole):
+                    self.create_ui.block_combobox.setCurrentIndex(i)
+                    break
 
         self.create_ui.half_hour_btn.setChecked(True)
         self.enable_other_field()
@@ -449,12 +456,12 @@ class CreateUI(QDialog):
 
     def __init__(
             self, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
-            allow_passed_time_bookings: bool
+            allow_passed_time_bookings: bool, selected_block: Block | None = None
     ) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = CreateController(self, booking_system, security_handler, when,
-                                           allow_passed_time_bookings)
+                                           allow_passed_time_bookings, selected_block)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
