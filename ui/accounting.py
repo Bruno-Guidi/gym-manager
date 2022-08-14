@@ -245,7 +245,7 @@ class AccountingMainUI(QMainWindow):
         self.layout.addWidget(self.transaction_table)
         new_config_table(self.transaction_table, width=1200,
                          columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.12, int),
-                                  "Descripción": (.48, str)}, min_rows_to_show=15)
+                                  "Descripción": (.48, str)}, min_rows_to_show=13)
 
         self.setFixedWidth(self.minimumSizeHint().width())
 
@@ -349,7 +349,7 @@ class BalanceHistoryUI(QMainWindow):
 
         new_config_table(self.transaction_table, width=1200,
                          columns={"Responsable": (.2, str), "Cliente": (.2, str), "Monto": (.15, int),
-                                  "Descripción": (.45, str)}, min_rows_to_show=0)
+                                  "Descripción": (.45, str)}, min_rows_to_show=16)
 
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
