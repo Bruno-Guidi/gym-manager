@@ -343,7 +343,7 @@ class BookingMainUI(QMainWindow):
 
         new_config_table(self.booking_table, width=1000, select_whole_row=False, font_size=12,
                          columns={"Hora": (.19, bool), "Cancha 1": (.27, bool), "Cancha 2": (.27, bool),
-                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=24)
+                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=18)
         self.booking_table.verticalHeader().setDefaultSectionSize(22)
 
         # Adjusts size.
