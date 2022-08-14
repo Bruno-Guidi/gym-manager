@@ -6,7 +6,7 @@ MESSAGE: dict[int, str] = {
     SecurityError.UNREGISTERED_ACTION: "La acción que esta queriendo ejecutar no esta registrada.",
 }
 
-ACTIVITY_NAME_CHARS = 20
+ACTIVITY_NAME_CHARS = 50
 ACTIVITY_DESCR_CHARS = 1024
 
 DATE_FORMAT, DATE_TIME_FORMAT = "%d/%m/%Y", "%d/%m/%Y - %H:%M"
