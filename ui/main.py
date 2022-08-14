@@ -551,9 +551,7 @@ class ChargesController:
         # noinspection PyUnresolvedReferences
         self.charges_ui.activity_combobox.currentIndexChanged.connect(self.load_charges)
         # noinspection PyUnresolvedReferences
-        self.charges_ui.year_spinbox.valueChanged.connect(self.load_charges)
-        # noinspection PyUnresolvedReferences
-        self.charges_ui.month_spinbox.valueChanged.connect(self.load_charges)
+        self.charges_ui.date_edit.dateChanged.connect(self.load_charges)
 
     def load_charges(self):
         self.charges_ui.charge_table.setRowCount(0)
@@ -561,9 +559,10 @@ class ChargesController:
             Dialog.info("Error", "No hay actividades registradas.")
         else:
             activity = self.charges_ui.activity_combobox.currentData(Qt.UserRole)
-            year, month = self.charges_ui.year_spinbox.value(), self.charges_ui.month_spinbox.value()
 
-            for row, charge in enumerate(self.transaction_repo.charges_by_activity(activity, year, month)):
+            for row, charge in enumerate(
+                    self.transaction_repo.charges_by_activity(activity, self.charges_ui.date_edit.date().toPyDate())
+            ):
                 name = charge.client.name if charge.client is not None else "-"
                 fill_cell(self.charges_ui.charge_table, row, 0, name, data_type=str)
                 fill_cell(self.charges_ui.charge_table, row, 1, charge.responsible, data_type=str)
@@ -591,19 +590,9 @@ class ChargesByMonthUI(QMainWindow):
         self.activity_combobox = QComboBox(self.widget)  # The configuration is done in the controller.
         self.header_layout.addWidget(self.activity_combobox)
 
-        self.year_spinbox = QSpinBox(self.widget)
-        self.header_layout.addWidget(self.year_spinbox)
-        config_widget(self.year_spinbox, fixed_width=70)
-        self.year_spinbox.setMinimum(1)
-        self.year_spinbox.setMaximum(9999)
-        self.year_spinbox.setValue(date.today().year)
-
-        self.month_spinbox = QSpinBox(self.widget)
-        self.header_layout.addWidget(self.month_spinbox)
-        config_widget(self.month_spinbox, fixed_width=45)
-        self.month_spinbox.setMinimum(1)
-        self.month_spinbox.setMaximum(12)
-        self.month_spinbox.setValue(date.today().month)
+        self.date_edit = QDateEdit(self.widget)
+        self.header_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today(), calendar=True)
 
         # Charges table
         self.charge_table = QTableWidget(self.widget)
