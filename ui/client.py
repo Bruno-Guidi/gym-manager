@@ -207,7 +207,6 @@ class MainController:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
-
     def fill_subscription_list(self):
         row = self.main_ui.client_table.currentRow()
         if row == -1:
@@ -418,7 +417,7 @@ class ClientMainUI(QMainWindow):
         self.right_layout.setAlignment(Qt.AlignCenter)
 
         # Filtering.
-        self.filter_header = FilterHeader(parent=self.widget)
+        self.filter_header = FilterHeader(parent=self.widget, detect_text_change=True)
         self.left_layout.addWidget(self.filter_header)
 
         # Clients.
