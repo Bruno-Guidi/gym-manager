@@ -74,7 +74,7 @@ class MockTransactionRepo(TransactionRepo):
     def bind_to_balance(self, transaction: Transaction, balance_date: date):
         pass
 
-    def charges_by_activity(self, activity: Activity, year: int, month: int) -> Generator[Transaction, None, None]:
+    def charges_by_activity(self, activity: Activity, when: date) -> Generator[Transaction, None, None]:
         pass
 
 

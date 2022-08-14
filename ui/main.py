@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import itertools
-from datetime import date, timedelta
+from datetime import date
 from typing import Callable
 
 from PyQt5 import QtGui
@@ -10,12 +10,11 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QLabel, QPushButton, QGridLayout,
     QSpacerItem, QSizePolicy, QHBoxLayout, QListWidget, QListWidgetItem, QTableWidget, QDesktopWidget, QLineEdit,
-    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox, QMenu, QAction, QSpinBox)
+    QDialog, QDateEdit, QTextEdit, QComboBox, QCheckBox, QMenu, QAction)
 
 from gym_manager import parsing
 from gym_manager.booking.core import BookingSystem
 from gym_manager.contact.core import ContactRepo
-from gym_manager.core import api
 from gym_manager.core.base import String, Currency
 from gym_manager.core.persistence import (
     ActivityRepo, ClientRepo, SubscriptionRepo, BalanceRepo, TransactionRepo)
@@ -30,7 +29,7 @@ from ui.contact import ContactMainUI
 from ui.stock import StockMainUI
 from ui.widget_config import (
     config_lbl, config_btn, fill_cell, new_config_table, config_line, config_date_edit,
-    config_combobox, fill_combobox, config_checkbox, config_widget)
+    config_combobox, fill_combobox, config_checkbox)
 from ui.widgets import PageIndex, Dialog
 
 
@@ -172,24 +171,6 @@ class Controller:
         self.main_ui.activity_charges_action.triggered.connect(self.show_charges_by_month_ui)
 
     def show_config_ui(self):
-        def generate_balance():
-            self.security_handler.current_responsible = String("Admin")
-
-            def _aux(i):
-                when = date.today() - timedelta(days=i)
-                self.transaction_repo.create("Extracción", when, Currency(100), "Efectivo", String("TestResp"), "TestDescr")
-                self.transaction_repo.create("Extracción", when, Currency(150), "Efectivo", String("TestResp"), "TestDescr")
-                self.transaction_repo.create("Extracción", when, Currency(350), "Efectivo", String("TestResp"), "TestDescr")
-                self.transaction_repo.create("Extracción", when, Currency(150), "Efectivo", String("TestResp"), "TestDescr")
-                self.transaction_repo.create("Extracción", when, Currency(350), "Efectivo", String("TestResp"), "TestDescr")
-
-                balance, transactions = api.generate_balance(self.transaction_repo.all())
-                api.close_balance(self.transaction_repo, self.balance_repo, balance, transactions, when, String("TestResp"),
-                                  functools.partial(self.transaction_repo.create, "Extracción", when, Currency(100),
-                                                    "Débito", String("Admin"), "TestDescr"))
-
-            for x in range(32, 0, -1):
-                _aux(x)
 
         def raise_exception():
             raise ValueError("This is a test exception to see if the error is logged.")
@@ -212,8 +193,8 @@ class Controller:
                 self.security_handler.add_responsible(responsible)
 
         # noinspection PyAttributeOutsideInit
-        self._config_ui = ConfigUI(("balances", generate_balance), ("raise exception", raise_exception),
-                                   ("load backup from old", load_backup_from_old), ("add responsible", add_responsible))
+        self._config_ui = ConfigUI(("raise exception", raise_exception), ("load backup from old", load_backup_from_old),
+                                   ("add responsible", add_responsible))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
@@ -551,9 +532,7 @@ class ChargesController:
         # noinspection PyUnresolvedReferences
         self.charges_ui.activity_combobox.currentIndexChanged.connect(self.load_charges)
         # noinspection PyUnresolvedReferences
-        self.charges_ui.year_spinbox.valueChanged.connect(self.load_charges)
-        # noinspection PyUnresolvedReferences
-        self.charges_ui.month_spinbox.valueChanged.connect(self.load_charges)
+        self.charges_ui.date_edit.dateChanged.connect(self.load_charges)
 
     def load_charges(self):
         self.charges_ui.charge_table.setRowCount(0)
@@ -561,14 +540,18 @@ class ChargesController:
             Dialog.info("Error", "No hay actividades registradas.")
         else:
             activity = self.charges_ui.activity_combobox.currentData(Qt.UserRole)
-            year, month = self.charges_ui.year_spinbox.value(), self.charges_ui.month_spinbox.value()
 
-            for row, charge in enumerate(self.transaction_repo.charges_by_activity(activity, year, month)):
+            total = Currency(0)
+            for row, charge in enumerate(
+                    self.transaction_repo.charges_by_activity(activity, self.charges_ui.date_edit.date().toPyDate())
+            ):
                 name = charge.client.name if charge.client is not None else "-"
                 fill_cell(self.charges_ui.charge_table, row, 0, name, data_type=str)
                 fill_cell(self.charges_ui.charge_table, row, 1, charge.responsible, data_type=str)
-                fill_cell(self.charges_ui.charge_table, row, 2, charge.when.strftime(utils.DATE_FORMAT), data_type=bool)
-                fill_cell(self.charges_ui.charge_table, row, 3, Currency.fmt(charge.amount), data_type=int)
+                fill_cell(self.charges_ui.charge_table, row, 2, Currency.fmt(charge.amount), data_type=int)
+                total.increase(charge.amount)
+
+            self.charges_ui.total_line.setText(Currency.fmt(total))
 
 
 class ChargesByMonthUI(QMainWindow):
@@ -591,29 +574,24 @@ class ChargesByMonthUI(QMainWindow):
         self.activity_combobox = QComboBox(self.widget)  # The configuration is done in the controller.
         self.header_layout.addWidget(self.activity_combobox)
 
-        self.year_spinbox = QSpinBox(self.widget)
-        self.header_layout.addWidget(self.year_spinbox)
-        config_widget(self.year_spinbox, fixed_width=70)
-        self.year_spinbox.setMinimum(1)
-        self.year_spinbox.setMaximum(9999)
-        self.year_spinbox.setValue(date.today().year)
+        self.date_edit = QDateEdit(self.widget)
+        self.header_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today(), calendar=True)
 
-        self.month_spinbox = QSpinBox(self.widget)
-        self.header_layout.addWidget(self.month_spinbox)
-        config_widget(self.month_spinbox, fixed_width=45)
-        self.month_spinbox.setMinimum(1)
-        self.month_spinbox.setMaximum(12)
-        self.month_spinbox.setValue(date.today().month)
+        self.total_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.total_lbl)
+        config_lbl(self.total_lbl, "Total del día")
+
+        self.total_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.total_line)
+        config_line(self.total_line, enabled=False, alignment=Qt.AlignRight)
 
         # Charges table
         self.charge_table = QTableWidget(self.widget)
         self.layout.addWidget(self.charge_table)
         new_config_table(self.charge_table, width=1000, min_rows_to_show=20, fix_width=True,
-                         columns={"Cliente": (.33, str), "Responsable": (.32, str), "Fecha pago": (.15, bool),
-                                  "Monto": (.2, int)})
+                         columns={"Cliente": (.38, str), "Responsable": (.37, str), "Monto": (.25, int)})
 
         self.setMaximumWidth(self.minimumWidth())
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
-
-
