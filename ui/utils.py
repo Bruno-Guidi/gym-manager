@@ -9,7 +9,7 @@ MESSAGE: dict[int, str] = {
 ACTIVITY_NAME_CHARS = 50
 ACTIVITY_DESCR_CHARS = 1024
 
-DATE_FORMAT, DATE_TIME_FORMAT = "%d/%m/%Y", "%d/%m/%Y - %H:%M"
+DATE_FORMAT, DATE_TIME_FORMAT, TIME_FORMAT = "%d/%m/%Y", "%d/%m/%Y - %H:%M", "%H:%M"
 
 CLIENT_MIN_DNI, CLIENT_MAX_DNI = 0, 100_000_000
 CLIENT_NAME_CHARS = 30
@@ -26,5 +26,6 @@ ACTION_NAMES = {
     "Cobrar turno": "charge_booking",
     "Actualizar stock ítem": "update_item_amount",
     "Cobrar ítem": "register_item_charge",
-    "Extraer de caja": "extract"
+    "Extraer de caja": "extract",
+    "Eliminar cliente": "remove_client"
 }

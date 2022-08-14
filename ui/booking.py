@@ -9,7 +9,7 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QTableWidgetItem, QDateEdit, QDialog, QGridLayout, QLabel,
-    QComboBox, QCheckBox, QLineEdit, QDesktopWidget, QButtonGroup, QRadioButton)
+    QComboBox, QCheckBox, QDesktopWidget, QButtonGroup, QRadioButton)
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
@@ -80,19 +80,18 @@ class MainController:
         if col in self._bookings and row in self._bookings[col]:
             self.booking_system.update_prices(self.activity_repo)
             booking = self._bookings[col][row]
-            self.main_ui.court_line.setText(booking.court)
-            self.main_ui.hour_line.setText(booking.start.strftime("%H:%M"))
-            self.main_ui.client_line.setText(booking.client_name.as_primitive())
             self.main_ui.amount_line.setText(Currency.fmt(self.booking_system.amount_to_charge(booking), symbol=""))
             self.main_ui.charge_btn.setEnabled(True)
             self.main_ui.cancel_btn.setEnabled(True)
         else:
-            self.main_ui.court_line.clear()
-            self.main_ui.hour_line.clear()
-            self.main_ui.client_line.clear()
             self.main_ui.amount_line.clear()
             self.main_ui.charge_btn.setEnabled(False)
             self.main_ui.cancel_btn.setEnabled(False)
+
+        if row != -1 and col != -1:
+            self.main_ui.court_hour_lbl.setText(f"Cancha {col} {self._blocks[row].start.strftime(utils.TIME_FORMAT)}")
+        else:
+            self.main_ui.court_hour_lbl.setText("")
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -291,47 +290,19 @@ class BookingMainUI(QMainWindow):
         self.charge_form_layout.addWidget(self.responsible_field, 0, 1)
         config_line(self.responsible_field, fixed_width=100)
 
-        # Court
-        self.court_lbl = QLabel(self.widget)
-        self.charge_form_layout.addWidget(self.court_lbl, 0, 2)
-        config_lbl(self.court_lbl, "Cancha")
-
-        self.court_line = QLineEdit(self.widget)
-        self.charge_form_layout.addWidget(self.court_line, 0, 3)
-        config_line(self.court_line, fixed_width=40, enabled=False, alignment=Qt.AlignCenter)
-
-        # Hour
-        self.hour_lbl = QLabel(self.widget)
-        self.charge_form_layout.addWidget(self.hour_lbl, 0, 4)
-        config_lbl(self.hour_lbl, "Hora")
-
-        self.hour_line = QLineEdit(self.widget)
-        self.charge_form_layout.addWidget(self.hour_line, 0, 5)
-        config_line(self.hour_line, fixed_width=60, enabled=False, alignment=Qt.AlignCenter)
-
-        # Client.
-        self.client_lbl = QLabel(self.widget)
-        self.charge_form_layout.addWidget(self.client_lbl, 1, 0)
-        config_lbl(self.client_lbl, "Cliente")
-
-        self.client_line = QLineEdit(self.widget)
-        self.charge_form_layout.addWidget(self.client_line, 1, 1, 1, 2)
-        config_line(self.client_line, read_only=True)
-        self.client_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-
         # Method.
         self.method_combobox = QComboBox(self)
-        self.charge_form_layout.addWidget(self.method_combobox, 2, 0)
+        self.charge_form_layout.addWidget(self.method_combobox, 1, 0)
         config_combobox(self.method_combobox)
 
         # Amount.
         self.amount_line = Field(Currency, parent=self, positive=True)
-        self.charge_form_layout.addWidget(self.amount_line, 2, 1, 1, 2)
+        self.charge_form_layout.addWidget(self.amount_line, 1, 1)
         config_line(self.amount_line, place_holder="000000,00", alignment=Qt.AlignRight)
 
         # Charge button
         self.charge_btn = QPushButton(self.widget)
-        self.charge_form_layout.addWidget(self.charge_btn, 1, 3, 2, 3, alignment=Qt.AlignCenter)
+        self.charge_form_layout.addWidget(self.charge_btn, 0, 2, 2, 1)
         config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
 
         self.layout.addWidget(Separator(vertical=False, parent=self.widget))  # Vertical line.
@@ -344,6 +315,13 @@ class BookingMainUI(QMainWindow):
 
         self.date_lbl = QLabel(self.widget)
         self.date_layout.addWidget(self.date_lbl)
+
+        self.date_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+        self.court_hour_lbl = QLabel(self.widget)
+        self.date_layout.addWidget(self.court_hour_lbl)
+        config_lbl(self.court_hour_lbl, "Cancha X HH:MM", font_size=16)
+        self.court_hour_lbl.setText("")
 
         self.date_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
 
@@ -365,7 +343,7 @@ class BookingMainUI(QMainWindow):
 
         new_config_table(self.booking_table, width=1000, select_whole_row=False, font_size=12,
                          columns={"Hora": (.19, bool), "Cancha 1": (.27, bool), "Cancha 2": (.27, bool),
-                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=24)
+                                  "Cancha 3 (Singles)": (.27, bool)}, min_rows_to_show=18)
         self.booking_table.verticalHeader().setDefaultSectionSize(22)
 
         # Adjusts size.
