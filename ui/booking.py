@@ -13,12 +13,11 @@ from PyQt5.QtWidgets import (
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
-    remaining_blocks, Booking, subtract_times, Duration)
+    remaining_blocks, Booking, subtract_times, Duration, Block)
 from gym_manager.core.base import DateGreater, DateLesser, ClientLike, String, Number, Currency
 from gym_manager.core.persistence import FilterValuePair, TransactionRepo, ActivityRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
-from ui.accounting import ChargeUI
 from ui.utils import MESSAGE
 from ui.widget_config import (
     config_layout, config_btn, config_date_edit, fill_cell, config_lbl,
@@ -48,6 +47,7 @@ class MainController:
         self.security_handler = security_handler
         self._courts = {name: number + 1 for number, name in enumerate(booking_system.court_names)}
         self._bookings: dict[int, dict[int, Booking]] | None = None
+        self._blocks = {i: block for i, block in enumerate(booking_system.blocks())}
 
         self.allow_passed_time_bookings = allow_passed_time_bookings
 
@@ -117,9 +117,8 @@ class MainController:
         self._bookings = {court_number: {} for court_number in self._courts.values()}
 
         # Loads the hour column.
-        blocks = [block for block in self.booking_system.blocks()]
-        self.main_ui.booking_table.setRowCount(len(blocks))
-        for row, block in enumerate(blocks):
+        self.main_ui.booking_table.setRowCount(len(self._blocks))
+        for row, block in self._blocks.items():
             item = QTableWidgetItem(block.str_range)
             item.setTextAlignment(Qt.AlignCenter)
             self.main_ui.booking_table.setItem(row, 0, item)
@@ -138,16 +137,25 @@ class MainController:
 
     def create_booking(self):
         # noinspection PyAttributeOutsideInit
-        when = self.main_ui.date_edit.date().toPyDate()
-        if not self.allow_passed_time_bookings and when < date.today():
-            Dialog.info("Error", "No se puede reservar turnos en un día previo al actual.")
-        else:
-            # noinspection PyAttributeOutsideInit
-            self._create_ui = CreateUI(self.booking_system, self.security_handler, when,
-                                       self.allow_passed_time_bookings)
-            self._create_ui.exec_()
-            if self._create_ui.controller.booking is not None:
-                self._load_booking(self._create_ui.controller.booking)
+        when, today = self.main_ui.date_edit.date().toPyDate(), date.today()
+        block: Block | None = None
+        if self.main_ui.booking_table.currentRow() != -1:
+            block = self._blocks[self.main_ui.booking_table.currentRow()]
+
+        if not self.allow_passed_time_bookings:
+            if when < today:
+                Dialog.info("Error", "No se puede reservar un turno para un día previo al actual.")
+                return
+            if when == today and block is not None and block.start < datetime.now().time():
+                Dialog.info("Error", "No se puede reservar un turno para una hora que ya pasó.")
+                return
+
+        # noinspection PyAttributeOutsideInit
+        self._create_ui = CreateUI(self.booking_system, self.security_handler, when,
+                                   self.allow_passed_time_bookings, block)
+        self._create_ui.exec_()
+        if self._create_ui.controller.booking is not None:
+            self._load_booking(self._create_ui.controller.booking)
 
     def charge_booking(self):
         self.main_ui.responsible_field.setStyleSheet("")
@@ -368,8 +376,8 @@ class BookingMainUI(QMainWindow):
 class CreateController:
 
     def __init__(
-            self, create_ui: CreateUI, booking_system: BookingSystem,
-            security_handler: SecurityHandler, when: date, allow_passed_time_bookings: bool
+            self, create_ui: CreateUI, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
+            allow_passed_time_bookings: bool, selected_block: Block | None = None
     ) -> None:
         self.create_ui = create_ui
         self.booking_system = booking_system
@@ -380,10 +388,17 @@ class CreateController:
         # Fills some widgets that depend on user/system data.
         config_date_edit(self.create_ui.date_edit, when, calendar=False, enabled=False)
         fill_combobox(self.create_ui.court_combobox, self.booking_system.court_names, lambda court: court)
+
         blocks = self.booking_system.blocks()
         if not allow_passed_time_bookings:
             blocks = remaining_blocks(blocks, when)
         fill_combobox(self.create_ui.block_combobox, blocks, display=lambda block: str(block.start))
+        # The item in the combobox will be the selected block in BookingMainUI, if one block was selected.
+        if selected_block is not None:
+            for i in range(len(self.create_ui.block_combobox)):
+                if selected_block == self.create_ui.block_combobox.itemData(i, Qt.UserRole):
+                    self.create_ui.block_combobox.setCurrentIndex(i)
+                    break
 
         self.create_ui.half_hour_btn.setChecked(True)
         self.enable_other_field()
@@ -449,12 +464,12 @@ class CreateUI(QDialog):
 
     def __init__(
             self, booking_system: BookingSystem, security_handler: SecurityHandler, when: date,
-            allow_passed_time_bookings: bool
+            allow_passed_time_bookings: bool, selected_block: Block | None = None
     ) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = CreateController(self, booking_system, security_handler, when,
-                                           allow_passed_time_bookings)
+                                           allow_passed_time_bookings, selected_block)
 
     def _setup_ui(self):
         self.setWindowTitle("Reservar turno")
