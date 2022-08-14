@@ -334,28 +334,6 @@ class BalanceHistoryController:
                 fill_cell(self.history_ui.transaction_table, i, 2, Currency.fmt(transaction.amount), data_type=int)
                 fill_cell(self.history_ui.transaction_table, i, 3, transaction.description, data_type=str)
 
-            # Loads balance detail.
-            balance = self._balances[self.history_ui.balance_table.currentRow()]
-            charges, extractions = balance["Cobro"], balance["Extracción"]
-
-            config_lbl(self.history_ui.c_cash_lbl, Currency.fmt(charges.get("Efectivo", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-            config_lbl(self.history_ui.c_debit_lbl, Currency.fmt(charges.get("Débito", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-            config_lbl(self.history_ui.c_credit_lbl, Currency.fmt(charges.get("Crédito", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-            config_lbl(self.history_ui.c_total_lbl, Currency.fmt(charges.get("Total", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-
-            config_lbl(self.history_ui.e_cash_lbl, Currency.fmt(extractions.get("Efectivo", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-            config_lbl(self.history_ui.e_debit_lbl, Currency.fmt(extractions.get("Débito", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-            config_lbl(self.history_ui.e_credit_lbl, Currency.fmt(extractions.get("Crédito", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-            config_lbl(self.history_ui.e_total_lbl, Currency.fmt(extractions.get("Total", Currency(0))),
-                       alignment=Qt.AlignRight, fixed_width=110)
-
 
 class BalanceHistoryUI(QMainWindow):
     def __init__(self, balance_repo: BalanceRepo):
@@ -405,71 +383,6 @@ class BalanceHistoryUI(QMainWindow):
         new_config_table(self.balance_table, width=500,
                          columns={"Fecha": (.28, bool), "Responsable": (.42, str), "Total": (.3, int)},
                          min_rows_to_show=20, fix_width=True)
-
-        # Balance detail.
-        self.detail_layout = QGridLayout()
-        self.right_layout.addLayout(self.detail_layout)
-        self.detail_layout.setAlignment(Qt.AlignCenter)
-
-        self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
-
-        # Balance date label.
-        self.detail_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.detail_lbl, 0, 0, 1, 5)
-        config_lbl(self.detail_lbl, "Detalle", font_size=18)
-
-        # Detailed balance layout.
-        self.method_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.method_lbl, 1, 0)
-        config_lbl(self.method_lbl, "Método")
-
-        self.cash_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.cash_lbl, 1, 1, alignment=Qt.AlignCenter)
-        config_lbl(self.cash_lbl, "Efectivo", alignment=Qt.AlignRight, fixed_width=110)
-
-        self.debit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.debit_lbl, 1, 2, alignment=Qt.AlignCenter)
-        config_lbl(self.debit_lbl, "Débito", alignment=Qt.AlignRight, fixed_width=110)
-
-        self.credit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.credit_lbl, 1, 3, alignment=Qt.AlignCenter)
-        config_lbl(self.credit_lbl, "Crédito", alignment=Qt.AlignRight, fixed_width=110)
-
-        self.total_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.total_lbl, 1, 4, alignment=Qt.AlignCenter)
-        config_lbl(self.total_lbl, "TOTAL", alignment=Qt.AlignRight, fixed_width=110)
-
-        self.charges_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.charges_lbl, 2, 0)
-        config_lbl(self.charges_lbl, "Cobros")
-
-        self.c_cash_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_cash_lbl, 2, 1, alignment=Qt.AlignRight)
-
-        self.c_debit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_debit_lbl, 2, 2, alignment=Qt.AlignRight)
-
-        self.c_credit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_credit_lbl, 2, 3, alignment=Qt.AlignRight)
-
-        self.c_total_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.c_total_lbl, 2, 4, alignment=Qt.AlignRight)
-
-        self.extractions_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.extractions_lbl, 3, 0)
-        config_lbl(self.extractions_lbl, "Extracciones")
-
-        self.e_cash_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_cash_lbl, 3, 1, alignment=Qt.AlignRight)
-
-        self.e_debit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_debit_lbl, 3, 2, alignment=Qt.AlignRight)
-
-        self.e_credit_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_credit_lbl, 3, 3, alignment=Qt.AlignRight)
-
-        self.e_total_lbl = QLabel(self.widget)
-        self.detail_layout.addWidget(self.e_total_lbl, 3, 4, alignment=Qt.AlignRight)
 
         # Transactions of the balance.
         self.transactions_lbl = QLabel(self.widget)
