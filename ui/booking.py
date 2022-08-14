@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import math
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
@@ -87,6 +87,11 @@ class MainController:
             self.main_ui.amount_line.clear()
             self.main_ui.charge_btn.setEnabled(False)
             self.main_ui.cancel_btn.setEnabled(False)
+
+        if row != -1 and col != -1:
+            self.main_ui.court_hour_lbl.setText(f"Cancha {col}, {self._blocks[row].start.strftime(utils.TIME_FORMAT)}")
+        else:
+            self.main_ui.court_hour_lbl.setText("")
 
     def _load_booking(
             self, booking: Booking, start: int | None = None, end: int | None = None
@@ -307,6 +312,11 @@ class BookingMainUI(QMainWindow):
         self.layout.addLayout(self.date_layout)
         config_layout(self.date_layout)
         self.date_layout.setSpacing(0)
+
+        self.court_hour_lbl = QLabel(self.widget)
+        self.date_layout.addWidget(self.court_hour_lbl)
+        config_lbl(self.court_hour_lbl, "Cancha X, HH:MM", font_size=16)
+        self.court_hour_lbl.setText("")
 
         self.date_lbl = QLabel(self.widget)
         self.date_layout.addWidget(self.date_lbl)
