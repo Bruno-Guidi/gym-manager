@@ -589,7 +589,7 @@ class ChargesByMonthUI(QMainWindow):
         # Charges table
         self.charge_table = QTableWidget(self.widget)
         self.layout.addWidget(self.charge_table)
-        new_config_table(self.charge_table, width=1000, min_rows_to_show=20, fix_width=True,
+        new_config_table(self.charge_table, width=1000, min_rows_to_show=18, fix_width=True,
                          columns={"Cliente": (.38, str), "Responsable": (.37, str), "Monto": (.25, int)})
 
         self.setMaximumWidth(self.minimumWidth())
