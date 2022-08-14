@@ -7,7 +7,7 @@ from typing import Callable
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QLabel, QGridLayout, QPushButton, QLineEdit, QDialog,
-    QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QDesktopWidget)
+    QComboBox, QTextEdit, QSpacerItem, QSizePolicy, QDesktopWidget, QDateEdit)
 
 from gym_manager.core import api
 from gym_manager.core.api import CreateTransactionFn
@@ -16,8 +16,9 @@ from gym_manager.core.persistence import TransactionRepo, BalanceRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
 from ui.utils import MESSAGE
-from ui.widget_config import (config_lbl, config_btn, config_line, fill_cell, config_combobox, fill_combobox,
-                              new_config_table)
+from ui.widget_config import (
+    config_lbl, config_btn, config_line, fill_cell, config_combobox, fill_combobox,
+    new_config_table, config_date_edit)
 from ui.widgets import Separator, Field, Dialog, responsible_field, valid_text_value
 
 
@@ -304,6 +305,44 @@ class BalanceHistoryUI(QMainWindow):
         self.widget = QWidget()
         self.setCentralWidget(self.widget)
         self.layout = QVBoxLayout(self.widget)
+
+        # Header layout.
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+        self.header_layout.setAlignment(Qt.AlignCenter)
+
+        # Balance date.
+        self.date_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.date_lbl)
+        config_lbl(self.date_lbl, "Fecha")
+
+        self.date_edit = QDateEdit(self.widget)
+        self.header_layout.addWidget(self.date_edit)
+        config_date_edit(self.date_edit, date.today(), calendar=True)
+
+        # Horizontal spacer.
+        self.header_layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+        # Balance responsible.
+        self.responsible_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.responsible_lbl)
+        config_lbl(self.responsible_lbl, "Responsable")
+
+        self.responsible_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.responsible_line)
+        config_line(self.responsible_line, enabled=False)
+
+        # Horizontal spacer.
+        self.header_layout.addSpacerItem(QSpacerItem(30, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+        # Balance total
+        self.total_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.total_lbl)
+        config_lbl(self.total_lbl, "Total")
+
+        self.total_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.total_line)
+        config_line(self.total_line, enabled=False)
 
         # Transactions of the balance.
         self.transactions_lbl = QLabel(self.widget)
