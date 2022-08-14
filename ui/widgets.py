@@ -85,6 +85,7 @@ class FilterHeader(QWidget):
             date_greater_filtering: bool = False,
             date_lesser_filtering: bool = False,
             show_clear_button: bool = True,
+            detect_text_change: bool = False,
             parent: QWidget | None = None
     ):
         super().__init__(parent)
@@ -109,6 +110,9 @@ class FilterHeader(QWidget):
         if date_lesser_filtering:
             # noinspection PyUnresolvedReferences
             self.to_date_edit.dateChanged.connect(self.on_search_click)
+        if detect_text_change:
+            # noinspection PyUnresolvedReferences
+            self.filter_line_edit.textChanged.connect(self.on_search_click)
 
     def _setup_ui(self, date_greater_filtering: bool, date_lesser_filtering: bool, show_clear_button: bool):
         self.layout = QHBoxLayout(self)

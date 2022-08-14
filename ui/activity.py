@@ -160,7 +160,7 @@ class ActivityMainUI(QMainWindow):
         self.right_layout.setAlignment(Qt.AlignTop)
 
         # Filtering.
-        self.filter_header = FilterHeader(parent=self.widget)
+        self.filter_header = FilterHeader(parent=self.widget, detect_text_change=True)
         self.left_layout.addWidget(self.filter_header)
 
         # Activities.
