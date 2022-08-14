@@ -89,7 +89,7 @@ class MainController:
             self.main_ui.cancel_btn.setEnabled(False)
 
         if row != -1 and col != -1:
-            self.main_ui.court_hour_lbl.setText(f"Cancha {col}, {self._blocks[row].start.strftime(utils.TIME_FORMAT)}")
+            self.main_ui.court_hour_lbl.setText(f"Cancha {col} {self._blocks[row].start.strftime(utils.TIME_FORMAT)}")
         else:
             self.main_ui.court_hour_lbl.setText("")
 
@@ -313,13 +313,15 @@ class BookingMainUI(QMainWindow):
         config_layout(self.date_layout)
         self.date_layout.setSpacing(0)
 
-        self.court_hour_lbl = QLabel(self.widget)
-        self.date_layout.addWidget(self.court_hour_lbl)
-        config_lbl(self.court_hour_lbl, "Cancha X, HH:MM", font_size=16)
-        self.court_hour_lbl.setText("")
-
         self.date_lbl = QLabel(self.widget)
         self.date_layout.addWidget(self.date_lbl)
+
+        self.date_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
+
+        self.court_hour_lbl = QLabel(self.widget)
+        self.date_layout.addWidget(self.court_hour_lbl)
+        config_lbl(self.court_hour_lbl, "Cancha X HH:MM", font_size=16)
+        self.court_hour_lbl.setText("")
 
         self.date_layout.addSpacerItem(QSpacerItem(20, 10, QSizePolicy.Fixed, QSizePolicy.Fixed))
 
