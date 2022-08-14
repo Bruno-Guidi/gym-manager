@@ -132,7 +132,7 @@ class Controller:
             contact_repo: ContactRepo,
             item_repo: ItemRepo,
             security_handler: SecurityHandler,
-            allow_passed_time_bookings: bool = False,
+            allow_passed_time_modifications: bool = False,
             backup_fn: Callable = None
     ):
         self.main_ui = main_ui
@@ -158,7 +158,7 @@ class Controller:
         self.main_ui.contact_btn.clicked.connect(self.show_contact_main_ui)
         # noinspection PyUnresolvedReferences
         self.main_ui.stock_btn.clicked.connect(self.show_stock_main_ui)
-        show_booking_main_ui = functools.partial(self.show_booking_main_ui, allow_passed_time_bookings)
+        show_booking_main_ui = functools.partial(self.show_booking_main_ui, allow_passed_time_modifications)
         # noinspection PyUnresolvedReferences
         self.main_ui.bookings_btn.clicked.connect(show_booking_main_ui)
         # noinspection PyUnresolvedReferences
@@ -231,9 +231,9 @@ class Controller:
         self.accounting_main_ui.show()
 
     # noinspection PyAttributeOutsideInit
-    def show_booking_main_ui(self, allow_passed_time_bookings: bool = False):
+    def show_booking_main_ui(self, allow_passed_time_modifications: bool = False):
         self.booking_main_ui = BookingMainUI(self.transaction_repo, self.booking_system, self.activity_repo,
-                                             self.security_handler, allow_passed_time_bookings)
+                                             self.security_handler, allow_passed_time_modifications)
         self.booking_main_ui.setWindowModality(Qt.ApplicationModal)
         self.booking_main_ui.show()
 
@@ -278,14 +278,14 @@ class MainUI(QMainWindow):
             item_repo: ItemRepo,
             security_handler: SecurityHandler,
             enable_tools: bool = False,
-            allow_passed_time_bookings: bool = False,
+            allow_passed_time_modifications: bool = False,
             backup_fn: Callable = None
     ):
         super().__init__()
         self._setup_ui(enable_tools)
         self.controller = Controller(self, client_repo, activity_repo, subscription_repo, transaction_repo,
                                      balance_repo, booking_system, contact_repo, item_repo, security_handler,
-                                     allow_passed_time_bookings, backup_fn)
+                                     allow_passed_time_modifications, backup_fn)
 
     def _setup_ui(self, enable_tools: bool):
         self.setWindowTitle("Gestor La Cascada")

@@ -38,7 +38,8 @@ class MainController:
 
     def __init__(
             self, main_ui: BookingMainUI, transaction_repo: TransactionRepo, activity_repo: ActivityRepo,
-            booking_system: BookingSystem, security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
+            booking_system: BookingSystem, security_handler: SecurityHandler,
+            allow_passed_time_modifications: bool = False
     ) -> None:
         self.main_ui = main_ui
         self.transaction_repo = transaction_repo
@@ -49,7 +50,7 @@ class MainController:
         self._bookings: dict[int, dict[int, Booking]] | None = None
         self._blocks = {i: block for i, block in enumerate(booking_system.blocks())}
 
-        self.allow_passed_time_bookings = allow_passed_time_bookings
+        self.allow_passed_time_modifications = allow_passed_time_modifications
 
         fill_combobox(self.main_ui.method_combobox, self.transaction_repo.methods, display=lambda method: method)
         self.main_ui.charge_btn.setEnabled(False)
@@ -142,7 +143,7 @@ class MainController:
         if self.main_ui.booking_table.currentRow() != -1:
             block = self._blocks[self.main_ui.booking_table.currentRow()]
 
-        if not self.allow_passed_time_bookings:
+        if not self.allow_passed_time_modifications:
             if when < today:
                 Dialog.info("Error", "No se puede reservar un turno para un día previo al actual.")
                 return
@@ -152,7 +153,7 @@ class MainController:
 
         # noinspection PyAttributeOutsideInit
         self._create_ui = CreateUI(self.booking_system, self.security_handler, when,
-                                   self.allow_passed_time_bookings, block)
+                                   self.allow_passed_time_modifications, block)
         self._create_ui.exec_()
         if self._create_ui.controller.booking is not None:
             self._load_booking(self._create_ui.controller.booking)
@@ -241,12 +242,12 @@ class BookingMainUI(QMainWindow):
 
     def __init__(
             self, transaction_repo: TransactionRepo, booking_system: BookingSystem, activity_repo: ActivityRepo,
-            security_handler: SecurityHandler, allow_passed_time_bookings: bool = False
+            security_handler: SecurityHandler, allow_passed_time_modifications: bool = False
     ) -> None:
         super().__init__()
         self._setup_ui()
         self.controller = MainController(self, transaction_repo, activity_repo, booking_system, security_handler,
-                                         allow_passed_time_bookings)
+                                         allow_passed_time_modifications)
 
     def _setup_ui(self):
         self.setWindowTitle("Padel")
