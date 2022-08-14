@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import functools
 import math
-from datetime import date, datetime, timedelta, time
+from datetime import date, datetime, timedelta
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QSpacerItem,
     QSizePolicy, QTableWidget, QTableWidgetItem, QDateEdit, QDialog, QGridLayout, QLabel,
-    QComboBox, QCheckBox, QLineEdit, QDesktopWidget, QButtonGroup, QRadioButton)
+    QComboBox, QCheckBox, QDesktopWidget, QButtonGroup, QRadioButton)
 
 from gym_manager.booking.core import (
     BookingSystem, ONE_DAY_TD,
