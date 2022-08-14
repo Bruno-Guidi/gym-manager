@@ -560,6 +560,7 @@ class ChargesController:
         else:
             activity = self.charges_ui.activity_combobox.currentData(Qt.UserRole)
 
+            total = Currency(0)
             for row, charge in enumerate(
                     self.transaction_repo.charges_by_activity(activity, self.charges_ui.date_edit.date().toPyDate())
             ):
@@ -568,6 +569,9 @@ class ChargesController:
                 fill_cell(self.charges_ui.charge_table, row, 1, charge.responsible, data_type=str)
                 fill_cell(self.charges_ui.charge_table, row, 2, charge.when.strftime(utils.DATE_FORMAT), data_type=bool)
                 fill_cell(self.charges_ui.charge_table, row, 3, Currency.fmt(charge.amount), data_type=int)
+                total.increase(charge.amount)
+
+            self.charges_ui.total_line.setText(Currency.fmt(total))
 
 
 class ChargesByMonthUI(QMainWindow):
@@ -593,6 +597,14 @@ class ChargesByMonthUI(QMainWindow):
         self.date_edit = QDateEdit(self.widget)
         self.header_layout.addWidget(self.date_edit)
         config_date_edit(self.date_edit, date.today(), calendar=True)
+
+        self.total_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.total_lbl)
+        config_lbl(self.total_lbl, "Total del día")
+
+        self.total_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.total_line)
+        config_line(self.total_line, enabled=False, alignment=Qt.AlignRight)
 
         # Charges table
         self.charge_table = QTableWidget(self.widget)
