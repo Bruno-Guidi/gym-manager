@@ -80,16 +80,10 @@ class MainController:
         if col in self._bookings and row in self._bookings[col]:
             self.booking_system.update_prices(self.activity_repo)
             booking = self._bookings[col][row]
-            self.main_ui.court_line.setText(booking.court)
-            self.main_ui.hour_line.setText(booking.start.strftime("%H:%M"))
-            self.main_ui.client_line.setText(booking.client_name.as_primitive())
             self.main_ui.amount_line.setText(Currency.fmt(self.booking_system.amount_to_charge(booking), symbol=""))
             self.main_ui.charge_btn.setEnabled(True)
             self.main_ui.cancel_btn.setEnabled(True)
         else:
-            self.main_ui.court_line.clear()
-            self.main_ui.hour_line.clear()
-            self.main_ui.client_line.clear()
             self.main_ui.amount_line.clear()
             self.main_ui.charge_btn.setEnabled(False)
             self.main_ui.cancel_btn.setEnabled(False)
@@ -290,34 +284,6 @@ class BookingMainUI(QMainWindow):
         self.responsible_field = responsible_field(self.widget)
         self.charge_form_layout.addWidget(self.responsible_field, 0, 1)
         config_line(self.responsible_field, fixed_width=100)
-
-        # Court
-        self.court_lbl = QLabel(self.widget)
-        self.charge_form_layout.addWidget(self.court_lbl, 0, 2)
-        config_lbl(self.court_lbl, "Cancha")
-
-        self.court_line = QLineEdit(self.widget)
-        self.charge_form_layout.addWidget(self.court_line, 0, 3)
-        config_line(self.court_line, fixed_width=40, enabled=False, alignment=Qt.AlignCenter)
-
-        # Hour
-        self.hour_lbl = QLabel(self.widget)
-        self.charge_form_layout.addWidget(self.hour_lbl, 0, 4)
-        config_lbl(self.hour_lbl, "Hora")
-
-        self.hour_line = QLineEdit(self.widget)
-        self.charge_form_layout.addWidget(self.hour_line, 0, 5)
-        config_line(self.hour_line, fixed_width=60, enabled=False, alignment=Qt.AlignCenter)
-
-        # Client.
-        self.client_lbl = QLabel(self.widget)
-        self.charge_form_layout.addWidget(self.client_lbl, 1, 0)
-        config_lbl(self.client_lbl, "Cliente")
-
-        self.client_line = QLineEdit(self.widget)
-        self.charge_form_layout.addWidget(self.client_line, 1, 1, 1, 2)
-        config_line(self.client_line, read_only=True)
-        self.client_line.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # Method.
         self.method_combobox = QComboBox(self)
