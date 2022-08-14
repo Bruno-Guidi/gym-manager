@@ -265,6 +265,7 @@ class BalanceHistoryController:
 
         # Loads the balance of yesterday.
         self._load_balance(date.today() - self.ONE_DAY_TD)
+        self.history_ui.date_edit.setDate(date.today() - self.ONE_DAY_TD)
 
         # Sets callbacks.
         # noinspection PyUnresolvedReferences
