@@ -24,6 +24,9 @@ class MockSecurityHandler(SecurityHandler):
     def add_responsible(self, responsible: Responsible):
         pass
 
+    def all_responsible(self) -> Iterable[Responsible]:
+        yield from []
+
     @property
     def current_responsible(self) -> Responsible:
         return Responsible(String("DefaultResp"), String("DefaultCode"))
