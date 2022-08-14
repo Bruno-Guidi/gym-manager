@@ -324,7 +324,7 @@ class TransactionRepo(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def charges_by_activity(self, activity: Activity, year: int, month: int) -> Generator[Transaction, None, None]:
+    def charges_by_activity(self, activity: Activity, when: date) -> Generator[Transaction, None, None]:
         raise NotImplementedError
 
 
