@@ -506,7 +506,7 @@ class ActionUI(QMainWindow):
         self.layout.addWidget(self.action_table)
         new_config_table(self.action_table, width=900,
                          columns={"Fecha": (.25, bool), "Responsable": (.25, bool), "Acción": (.5, bool)},
-                         min_rows_to_show=10)
+                         min_rows_to_show=16)
 
         # Index.
         self.page_index = PageIndex(self)
