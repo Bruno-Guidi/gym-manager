@@ -192,9 +192,14 @@ class Controller:
             for responsible in self._responsible_ui.responsible_list:
                 self.security_handler.add_responsible(responsible)
 
+        def log_responsible():
+            text = "\n".join(map(lambda resp: f"{resp.name}:{resp.code}", self.security_handler.all_responsible()))
+            with open("responsible.txt", "w") as file:
+                file.write(text)
+
         # noinspection PyAttributeOutsideInit
         self._config_ui = ConfigUI(("raise exception", raise_exception), ("load backup from old", load_backup_from_old),
-                                   ("add responsible", add_responsible))
+                                   ("add responsible", add_responsible), ("log responsible", log_responsible))
         self._config_ui.setWindowModality(Qt.ApplicationModal)
         self._config_ui.show()
 
