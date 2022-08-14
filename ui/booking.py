@@ -201,7 +201,8 @@ class MainController:
         when = self.main_ui.date_edit.date().toPyDate()
 
         to_cancel = self._bookings[col][row]
-        if when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()):
+        if (not self.allow_passed_time_modifications and
+                (when < date.today() or (when == datetime.now().date() and to_cancel.start < datetime.now().time()))):
             Dialog.info("Error", "No se puede cancelar un turno que ya comenzo.")
         elif to_cancel.was_paid(when):
             Dialog.info("Error", "No se puede cancelar un turno que ya cobrado.")
