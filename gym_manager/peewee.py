@@ -174,7 +174,7 @@ class SqliteClientRepo(ClientRepo):
             subs[sub_record.activity_id] = Subscription(sub_record.when, client,
                                                         self.activity_repo.get(sub_record.activity_id))
         for sub_charge in subscriptions_charges:
-            year, month = sub_charge.when.year, sub_charge.when.month
+            year, month = sub_charge.year, sub_charge.month
             trans_record = sub_charge.transaction
             subs[sub_charge.activity_id].add_transaction(
                 year, month, self.transaction_repo.from_data(
@@ -648,7 +648,8 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         """
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_charges, 1024):
-                SubscriptionCharge.insert_many(batch, fields=[SubscriptionCharge.when, SubscriptionCharge.client_id,
+                SubscriptionCharge.insert_many(batch, fields=[SubscriptionCharge.year, SubscriptionCharge.month,
+                                                              SubscriptionCharge.client_id,
                                                               SubscriptionCharge.activity_id,
                                                               SubscriptionCharge.transaction_id]).execute()
 
