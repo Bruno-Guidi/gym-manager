@@ -647,6 +647,8 @@ class DetailUI(QMainWindow):
                          columns={"Responsable": (.4, str), "Mes": (.15, bool), "Fecha": (.2, bool),
                                   "Monto": (.25, int)})
 
+        self.setFixedSize(self.sizeHint())
+
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
