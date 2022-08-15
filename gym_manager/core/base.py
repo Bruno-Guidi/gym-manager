@@ -419,7 +419,7 @@ class Subscription:
     def is_charged(self, year: int, month: int):
         """Checks if the subscription has a registered charge in the *month* and *year*.
         """
-        return (year, month) in self._transactions
+        return len(self._transactions[year, month]) > 0
 
 
 @dataclass
