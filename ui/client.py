@@ -108,6 +108,7 @@ class MainController:
         self.main_ui.all_charges.setEnabled(sub_selected)
         self.main_ui.only_paid_charges.setEnabled(sub_selected)
         self.main_ui.only_unpaid_charges.setEnabled(sub_selected)
+        self.main_ui.detail_btn.setEnabled(sub_selected)
 
         self.main_ui.method_combobox.setEnabled(client_selected)
         self.main_ui.amount_line.setEnabled(client_selected)
@@ -496,6 +497,10 @@ class ClientMainUI(QMainWindow):
         config_widget(self.year_spinbox, fixed_width=70)
         self.year_spinbox.setMaximum(9999)
         self.year_spinbox.setValue(date.today().year)
+
+        self.detail_btn = QPushButton(self.widget)
+        self.charges_info_layout.addWidget(self.detail_btn)
+        config_btn(self.detail_btn, "Ver detalle")
 
         # Charges filtering.
         self.charge_filter_layout = QHBoxLayout()
