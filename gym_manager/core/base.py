@@ -421,12 +421,6 @@ class Subscription:
         """
         return (year, month) in self._transactions
 
-    def unpaid_months(self, reference_date: date) -> Iterable[int, int]:
-        for year in range(self.when.year, reference_date.year + 1):
-            for month in range(*from_month_to_month(self.when, year, reference_date)):
-                if not self.is_charged(year, month):
-                    yield year, month
-
 
 @dataclass
 class Transaction:
