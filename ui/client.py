@@ -308,7 +308,7 @@ class MainController:
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
             fill_combobox(self.main_ui.month_combobox, year_month_iterator(sub.when, date.today()),
-                          display=lambda year_month: f"{year_month[0]}/{year_month[1]}")
+                          display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
         if self.main_ui.subscription_list.currentItem() is None:
             self.main_ui.month_combobox.clear()
 
