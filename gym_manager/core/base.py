@@ -396,12 +396,10 @@ class Subscription:
     _transactions: dict[tuple[int, int], list[Transaction]] = field(default_factory=defaultdict_list, compare=False,
                                                                     init=False)
 
-    def transactions(self):
-        for year_month, transaction in self._transactions:
-            yield *year_month, transaction
-
-    def transaction(self, year: int, month: int) -> list[Transaction]:
-        return self._transactions.get((year, month), None)
+    def transactions(self, year: int):
+        for month in range(1, 12):
+            for transaction in self._transactions[(year, month)]:
+                yield month, transaction
 
     def add_transaction(self, year: int, month: int, transaction: Transaction):
         self._transactions[(year, month)].append(transaction)
