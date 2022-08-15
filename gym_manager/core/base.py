@@ -418,6 +418,10 @@ class Subscription:
             amount.increase(transaction.amount)
         return amount
 
+    def last_transaction(self, year: int, month: int) -> Transaction:
+        _transactions = sorted(self._transactions[(year, month)], key=lambda transaction: transaction.id)
+        return _transactions[-1]
+
     def is_charged(self, year: int, month: int):
         """Checks if the subscription has a registered charge in the *month* and *year*.
         """
