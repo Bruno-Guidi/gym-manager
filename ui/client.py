@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox,
     QDateEdit, QListWidget, QListWidgetItem, QAction, QMenu, QButtonGroup, QRadioButton,
-    QSpinBox, QDesktopWidget)
+    QSpinBox, QDesktopWidget, QLineEdit)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
@@ -93,6 +93,8 @@ class MainController:
         self.main_ui.charge_table.itemSelectionChanged.connect(self.set_unpaid_month)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_subscription)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.detail_btn.clicked.connect(self.see_charges_detail)
 
     def _enable_subscribe(self):
         client_selected = self.main_ui.client_table.currentRow() != -1
@@ -363,6 +365,12 @@ class MainController:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
+    def see_charges_detail(self):
+        # noinspection PyAttributeOutsideInit
+        self._detail_ui = DetailUI(None, None)
+        self._detail_ui.setWindowModality(Qt.ApplicationModal)
+        self._detail_ui.show()
+
 
 class ClientMainUI(QMainWindow):
 
@@ -561,6 +569,65 @@ class ClientMainUI(QMainWindow):
         config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
 
         self.setFixedSize(self.minimumSizeHint())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+
+
+class DetailUI(QMainWindow):
+    def __init__(self, subscription: Subscription, year: int):
+        super().__init__()
+        self.subscription = subscription
+        self.year = year
+        self._setup_ui()
+
+    def _setup_ui(self):
+        self.setWindowTitle("Detalle cobros")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        self.charges_lbl = QLabel(self.widget)
+        self.layout.addWidget(self.charges_lbl)
+        config_lbl(self.charges_lbl, "Cobros", font_size=16)
+
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+        self.header_layout.setAlignment(Qt.AlignLeft)
+
+        # Client.
+        self.client_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.client_lbl)
+        config_lbl(self.client_lbl, "Cliente")
+
+        self.client_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.client_line)
+        config_line(self.client_line, read_only=True)
+
+        # Activity.
+        self.activity_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.activity_lbl)
+        config_lbl(self.activity_lbl, "Actividad")
+
+        self.activity_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.activity_line)
+        config_line(self.activity_line, read_only=True)
+
+        # Year.
+        self.year_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.year_lbl)
+        config_lbl(self.year_lbl, "Año")
+
+        self.year_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.year_line)
+        config_line(self.year_line, enabled=False, fixed_width=80)
+
+        # Charges.
+        self.charges_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.charges_table)
+
+        new_config_table(self.charges_table, width=800, min_rows_to_show=10,
+                         columns={"Responsable": (.5, str), "Fecha": (.2, bool), "Monto": (.3, int)})
+
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 
