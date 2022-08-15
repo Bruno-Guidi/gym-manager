@@ -82,7 +82,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.subscription_list.currentItemChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
-        self.main_ui.subscription_list.itemPressed.connect(self.fill_unpaid_months)
+        self.main_ui.subscription_list.itemPressed.connect(self.fill_months_to_charge)
         # noinspection PyUnresolvedReferences
         self.main_ui.year_spinbox.valueChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
@@ -266,7 +266,7 @@ class MainController:
                 self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
                 self.main_ui.subscribe_combobox.addItem(activity.name.as_primitive(), activity)
 
-                self.fill_unpaid_months()
+                self.fill_months_to_charge()
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
@@ -304,7 +304,7 @@ class MainController:
 
         self._enable_subscribe()
 
-    def fill_unpaid_months(self):
+    def fill_months_to_charge(self):
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
             fill_combobox(self.main_ui.month_combobox, year_month_iterator(sub.when, date.today()),
@@ -353,7 +353,7 @@ class MainController:
 
                 # Updates the ui.
                 self.fill_charge_table()
-                self.fill_unpaid_months()
+                self.fill_months_to_charge()
 
             except SecurityError as sec_err:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
