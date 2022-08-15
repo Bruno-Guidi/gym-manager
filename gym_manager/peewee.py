@@ -599,6 +599,7 @@ class SubscriptionTable(Model):
 
 
 class SubscriptionCharge(Model):
+    id = IntegerField(primary_key=True)
     when = DateField()
     client = ForeignKeyField(ClientTable, backref="subscriptions_charges", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="subscriptions_charges", on_delete="CASCADE")
@@ -606,7 +607,6 @@ class SubscriptionCharge(Model):
 
     class Meta:
         database = DATABASE_PROXY
-        primary_key = CompositeKey("when", "client", "activity")
 
 
 class SqliteSubscriptionRepo(SubscriptionRepo):
