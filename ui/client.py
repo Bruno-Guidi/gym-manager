@@ -366,8 +366,18 @@ class MainController:
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
 
     def see_charges_detail(self):
+        if len(self.main_ui.subscription_list) == 0:
+            Dialog.info("Error", "El cliente no esta inscripto en ninguna actividad.")
+            return
+        if self.main_ui.subscription_list.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad en la lista.")
+            return
+
+        sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+        year = self.main_ui.year_spinbox.value()
+
         # noinspection PyAttributeOutsideInit
-        self._detail_ui = DetailUI(None, None)
+        self._detail_ui = DetailUI(sub, year)
         self._detail_ui.setWindowModality(Qt.ApplicationModal)
         self._detail_ui.show()
 
@@ -576,9 +586,17 @@ class ClientMainUI(QMainWindow):
 class DetailUI(QMainWindow):
     def __init__(self, subscription: Subscription, year: int):
         super().__init__()
-        self.subscription = subscription
-        self.year = year
         self._setup_ui()
+
+        self.client_line.setText(subscription.client.name.as_primitive())
+        self.activity_line.setText(subscription.activity.name.as_primitive())
+        self.year_line.setText(str(year))
+
+        for row, (month, charge) in enumerate(subscription.transactions(year)):
+            fill_cell(self.charges_table, row, 0, charge.responsible, data_type=str)
+            fill_cell(self.charges_table, row, 1, f"{month}/{year}", data_type=bool)
+            fill_cell(self.charges_table, row, 2, charge.when, data_type=bool)
+            fill_cell(self.charges_table, row, 3, Currency.fmt(charge.amount), data_type=int)
 
     def _setup_ui(self):
         self.setWindowTitle("Detalle cobros")
