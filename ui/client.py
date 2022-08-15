@@ -132,6 +132,9 @@ class MainController:
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
         self._clients.clear()
+        self._subscriptions.clear()
+        self.main_ui.subscription_list.clear()
+        self.main_ui.charge_table.setRowCount(0)
 
         self.main_ui.page_index.total_len = self.client_repo.count(filters)
         for client in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
@@ -325,16 +328,17 @@ class MainController:
         if self.main_ui.subscription_list.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad en la lista.")
             return
-        if self.main_ui.month_combobox.currentIndex() == -1:
-            Dialog.info("Error", f"El cliente tiene la actividad "
-                                 f"'{self.main_ui.subscription_list.currentItem().text()}' al día.")
+
+        sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+        year, month = self.main_ui.month_combobox.currentData(Qt.UserRole)
+        if sub.is_charged(year, month) and not Dialog.confirm(f"Ya hay al menos un cobro registrado por la actividad "
+                                                              f"{self.main_ui.subscription_list.currentItem().text()}."
+                                                              f" ¿Desea continuar?"):
             return
 
         if not self.main_ui.amount_line.valid_value():
             Dialog.info("Error", f"El monto ingresado no es válido.")
         else:
-            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
-            year, month = self.main_ui.month_combobox.currentData(Qt.UserRole)
             try:
                 self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
