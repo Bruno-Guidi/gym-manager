@@ -315,13 +315,10 @@ class MainController:
     def set_unpaid_month(self):
         if self.main_ui.charge_table.currentRow() != -1:
             month_year_str = self.main_ui.charge_table.item(self.main_ui.charge_table.currentRow(), 0).text()
-            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
-            month, year = month_year_str.split("/")
-            if not sub.is_charged(int(year), int(month)):
-                for i in range(len(self.main_ui.month_combobox)):
-                    if self.main_ui.month_combobox.itemText(i) == month_year_str:
-                        self.main_ui.month_combobox.setCurrentIndex(i)
-                        break
+            for i in range(len(self.main_ui.month_combobox)):
+                if self.main_ui.month_combobox.itemText(i) == month_year_str:
+                    self.main_ui.month_combobox.setCurrentIndex(i)
+                    break
 
     def charge_subscription(self):
         if len(self.main_ui.subscription_list) == 0:
