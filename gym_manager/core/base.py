@@ -48,18 +48,6 @@ def year_month_iterator(start_date: date, reference_date: date) -> Iterable[int,
             yield year, month
 
 
-def month_range(from_: date, to: date):
-    from_m, from_y = from_.month, from_.year
-    while from_ < to:
-        yield from_.month, from_.year
-
-        if from_m == 12:
-            from_m, from_y = 0, from_y + 1
-        from_m += 1
-
-        from_ = date(from_y, from_m, from_.day)
-
-
 class OperationalError(Exception):
     """Exception raised when there is an error while doing a system operation.
     """

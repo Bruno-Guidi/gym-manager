@@ -95,15 +95,3 @@ def test_base_Client_age():
 
     assert client.age(reference_date=date(2022, 7, 11)) == 24
 
-
-def test_base_monthRange():
-    expected = [(12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022), (8, 2022),
-                (9, 2022), (10, 2022), (11, 2022), ]
-    assert expected == [month_year for month_year in month_range(date(2021, 12, 1), date(2022, 12, 1))]
-
-    expected = [(11, 2021), (12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022),
-                (8, 2022), (9, 2022), (10, 2022)]
-    assert expected == [month_year for month_year in month_range(date(2021, 11, 1), date(2022, 11, 1))]
-
-    assert [] == [month_year for month_year in month_range(date(2021, 11, 1), date(2021, 11, 1))]
-
