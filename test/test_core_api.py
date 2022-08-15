@@ -6,7 +6,7 @@ import pytest
 
 from gym_manager import peewee
 from gym_manager.core import api
-from gym_manager.core.api import close_balance, generate_balance
+from gym_manager.core.api import close_balance, generate_balance, subscribe, register_subscription_charge
 from gym_manager.core.base import (
     Client, Number, String, Activity, Currency, Subscription, OperationalError,
     Transaction, InvalidDate)
@@ -347,3 +347,59 @@ def test_closeBalance_withCreateExtractionFn():
     # Then assert that all transactions included in the balance have their balance_date correctly set.
     transactions.sort(key=lambda transaction: transaction.id, reverse=True)
     assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 5))]
+
+
+def test_registerSubscriptionCharge_firstChargeOfMonth():
+    # Repos setup.
+    log_responsible.config(MockSecurityHandler())
+    peewee.create_database(":memory:")
+
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # Data setup.
+    client = client_repo.create(String("name"), date(2020, 1, 1), date(1990, 1, 1), Number(1))
+    activity = activity_repo.create(String("activity"), Currency(1), String("descr"))
+
+    _date = date(2022, 12, 5)
+
+    sub: Subscription = subscribe(subscription_repo, _date, client, activity)
+
+    create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(1), "method",
+                                           String("resp"), "descr", client)
+    register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+
+    # Checks
+    assert sub.charged_amount(2022, 12) == Currency(1)
+
+
+def test_registerSubscriptionCharge_secondChargeOfMonth():
+    # Repos setup.
+    log_responsible.config(MockSecurityHandler())
+    peewee.create_database(":memory:")
+
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # Data setup.
+    client = client_repo.create(String("name"), date(2020, 1, 1), date(1990, 1, 1), Number(1))
+    activity = activity_repo.create(String("activity"), Currency(1), String("descr"))
+
+    _date = date(2022, 12, 5)
+
+    sub: Subscription = subscribe(subscription_repo, _date, client, activity)
+
+    create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(1), "method",
+                                           String("resp"), "descr", client)
+    register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+
+    create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(3), "method",
+                                           String("resp"), "descr", client)
+    register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+
+    # Checks
+    assert sub.charged_amount(2022, 12) == Currency(4)
