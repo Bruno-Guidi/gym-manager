@@ -161,6 +161,11 @@ def _insert_subscriptions(conn: Connection, subscription_repo: SubscriptionRepo,
     subscription_repo.add_all(gen)
 
 
+def _extract_year_month(raw_date: str) -> tuple[int, int]:
+    year, month, _ = raw_date.split("-")
+    return year, month
+
+
 def _register_subscription_charging(
         conn: Connection, subscription_repo: SubscriptionRepo, transaction_repo: TransactionRepo, since: date, to: date
 ):
@@ -180,7 +185,7 @@ def _register_subscription_charging(
 
     # Balance date is date.min to avoid parsed transactions to be included in the daily balance of the day when the
     # parsing is done.
-    sub_charges = ((raw[1], raw[0], raw[3],
+    sub_charges = ((*_extract_year_month(raw[1]), raw[0], raw[3],
                     transaction_repo.add_raw(("Cobro", raw[0], raw[1], raw[2], "Efectivo", raw[6],
                                               f"Cobro por '{raw[5]}' a cliente '{raw[4]}' en app vieja",
                                               date.min if raw[1] != to else None)))
