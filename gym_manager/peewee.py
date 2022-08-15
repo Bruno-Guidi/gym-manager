@@ -600,7 +600,8 @@ class SubscriptionTable(Model):
 
 class SubscriptionCharge(Model):
     id = IntegerField(primary_key=True)
-    when = DateField()
+    year = IntegerField()
+    month = IntegerField()
     client = ForeignKeyField(ClientTable, backref="subscriptions_charges", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="subscriptions_charges", on_delete="CASCADE")
     transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions")
