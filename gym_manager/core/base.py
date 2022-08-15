@@ -42,6 +42,12 @@ def from_month_to_month(subscription_when: date, year: int, reference_date: date
     return from_, to
 
 
+def year_month_iterator(start_date: date, reference_date: date) -> Iterable[int, int]:
+    for year in range(start_date.year, reference_date.year + 1):
+        for month in range(*from_month_to_month(start_date, year, reference_date)):
+            yield year, month
+
+
 def month_range(from_: date, to: date):
     from_m, from_y = from_.month, from_.year
     while from_ < to:
