@@ -462,7 +462,7 @@ class SqliteTransactionRepo(TransactionRepo):
     # noinspection PyProtectedMember
     def __init__(self, methods: Iterable[str] | None = None, cache_len: int = 50) -> None:
         super().__init__(methods)
-        DATABASE_PROXY.create_tables([TransactionTable])
+        DATABASE_PROXY.create_tables([TransactionTable, BalanceTable])
 
         self.cache = LRUCache(int, Transaction, max_len=cache_len)
         # In the worst case the cache can store as many clients views as transactions, supposing each transaction has
