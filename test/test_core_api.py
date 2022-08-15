@@ -344,10 +344,10 @@ def test_registerSubscriptionCharge_firstChargeOfMonth():
 
     create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(1), "method",
                                            String("resp"), "descr", client)
-    register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+    _, transaction = register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
 
     # Checks
-    assert sub.charged_amount(2022, 12) == Currency(1)
+    assert sub.charged_amount(2022, 12) == Currency(1) and transaction == sub.last_transaction(2022, 12)
 
 
 def test_registerSubscriptionCharge_secondChargeOfMonth():
@@ -374,7 +374,7 @@ def test_registerSubscriptionCharge_secondChargeOfMonth():
 
     create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(3), "method",
                                            String("resp"), "descr", client)
-    register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+    _, transaction = register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
 
     # Checks
-    assert sub.charged_amount(2022, 12) == Currency(4)
+    assert sub.charged_amount(2022, 12) == Currency(4) and transaction == sub.last_transaction(2022, 12)
