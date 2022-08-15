@@ -595,7 +595,7 @@ class DetailUI(QMainWindow):
         for row, (month, charge) in enumerate(subscription.transactions(year)):
             fill_cell(self.charges_table, row, 0, charge.responsible, data_type=str)
             fill_cell(self.charges_table, row, 1, f"{month}/{year}", data_type=bool)
-            fill_cell(self.charges_table, row, 2, charge.when, data_type=bool)
+            fill_cell(self.charges_table, row, 2, charge.when.strftime(utils.DATE_FORMAT), data_type=bool)
             fill_cell(self.charges_table, row, 3, Currency.fmt(charge.amount), data_type=int)
 
     def _setup_ui(self):
