@@ -135,6 +135,7 @@ class MainController:
         self._subscriptions.clear()
         self.main_ui.subscription_list.clear()
         self.main_ui.charge_table.setRowCount(0)
+        self._enable_subscribe()
 
         self.main_ui.page_index.total_len = self.client_repo.count(filters)
         for client in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
