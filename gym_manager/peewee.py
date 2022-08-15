@@ -631,7 +631,7 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
     def register_transaction(self, subscription: Subscription, year: int, month: int, transaction: Transaction):
         """Registers the charge for the subscription.
         """
-        SubscriptionCharge.create(when=date(year, month, 1), client_id=subscription.client.id,
+        SubscriptionCharge.create(year=year, month=month, client_id=subscription.client.id,
                                   activity_id=subscription.activity.id, transaction_id=transaction.id)
 
     def add_all(self, raw_subscriptions: Iterable[tuple]):
