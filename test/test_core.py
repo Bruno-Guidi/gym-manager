@@ -6,7 +6,7 @@ import pytest
 from gym_manager.core import api
 from gym_manager.core.base import (
     String, Currency, Client, Number, Transaction,
-    Subscription, discard_subscription, ValidationError, month_range)
+    Subscription, discard_subscription, ValidationError)
 
 
 def test_base_Number():
