@@ -59,8 +59,8 @@ def test_subscribe():
     activity = activity_repo.create(String("dummy_name"), Currency(0.0), String("dummy_descr"))
 
     # Feature being tested.
-    api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
-    assert activity_repo.n_subscribers(activity) == 1
+    sub = api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
+    assert activity_repo.n_subscribers(activity) == 1 and sub.charged_amount(2022, 2) == Currency(0)
 
 
 def test_subscribe_activityChargeOnce_raisesOperationalError():
