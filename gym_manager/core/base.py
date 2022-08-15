@@ -399,7 +399,6 @@ class Subscription:
     when: date
     client: Client
     activity: Activity
-    _transaction: Transaction | None = None
     _transactions: dict[tuple[int, int], list[Transaction]] = field(default_factory=defaultdict_list, compare=False,
                                                                     init=False)
 
