@@ -522,7 +522,7 @@ class ClientMainUI(QMainWindow):
         self.charge_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.charge_table)
         new_config_table(self.charge_table, width=500, min_rows_to_show=4, fix_width=True,
-                         columns={"Mes": (.2, int), "Fecha pago": (.35, bool), "Monto": (.45, int)})
+                         columns={"Mes": (.2, int), "Último pago": (.35, bool), "Total cobrado": (.45, int)})
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
