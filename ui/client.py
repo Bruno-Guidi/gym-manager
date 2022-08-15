@@ -626,7 +626,8 @@ class DetailUI(QMainWindow):
         self.layout.addWidget(self.charges_table)
 
         new_config_table(self.charges_table, width=800, min_rows_to_show=10,
-                         columns={"Responsable": (.5, str), "Fecha": (.2, bool), "Monto": (.3, int)})
+                         columns={"Responsable": (.4, str), "Mes": (.15, bool), "Fecha": (.2, bool),
+                                  "Monto": (.25, int)})
 
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
