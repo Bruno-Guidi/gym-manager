@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import (
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
 from gym_manager.core.base import (
-    String, TextLike, Client, Number, Activity, Subscription, Currency, from_month_to_month)
+    String, TextLike, Client, Number, Activity, Subscription, Currency, from_month_to_month, year_month_iterator)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
@@ -307,8 +307,8 @@ class MainController:
     def fill_unpaid_months(self):
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
-            fill_combobox(self.main_ui.month_combobox, sub.unpaid_months(date.today()),
-                          display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
+            fill_combobox(self.main_ui.month_combobox, year_month_iterator(sub.when, date.today()),
+                          display=lambda year_month: f"{year_month[0]}/{year_month[1]}")
         if self.main_ui.subscription_list.currentItem() is None:
             self.main_ui.month_combobox.clear()
 
