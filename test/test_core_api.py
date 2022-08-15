@@ -75,31 +75,6 @@ def test_subscribe_activityChargeOnce_raisesOperationalError():
                                    "'charge_once' activity.")
 
 
-def test_subscribe_invalidClients_raisesOperationalError():
-    log_responsible.config(MockSecurityHandler())
-
-    client = Client(1, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1))
-    other = Client(2, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1))
-    activity = Activity(0, String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
-    # noinspection PyTypeChecker
-    transaction = Transaction(1, type=None, when=None, amount=None, method=None, responsible=None, description=None,
-                              client=client)
-
-    with pytest.raises(OperationalError) as op_error:
-        # noinspection PyTypeChecker
-        api.subscribe(None, date(2022, 2, 2), other, activity, transaction)
-    assert str(op_error.value) == "The subscribed [client.id=2] is not the charged [client.id=1]."
-
-    # Swaps client's positions.
-    # noinspection PyTypeChecker
-    transaction = Transaction(1, type=None, when=None, amount=None, method=None, responsible=None, description=None,
-                              client=other)
-    with pytest.raises(OperationalError) as op_error:
-        # noinspection PyTypeChecker
-        api.subscribe(None, date(2022, 2, 2), client, activity, transaction)
-    assert str(op_error.value) == "The subscribed [client.id=1] is not the charged [client.id=2]."
-
-
 def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
     log_responsible.config(MockSecurityHandler())
 

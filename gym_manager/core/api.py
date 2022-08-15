@@ -20,10 +20,7 @@ def _subscribe_description(subscription: Subscription) -> str:
 
 
 @log_responsible(action_tag="subscribe", to_str=_subscribe_description)
-def subscribe(
-        subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity,
-        transaction: Transaction | None = None
-) -> Subscription:
+def subscribe(subscription_repo: SubscriptionRepo, when: date, client: Client, activity: Activity) -> Subscription:
     """Subscribes *client* to *activity* and registers the charging for the subscription, if *transaction* is given.
 
     Args:
@@ -31,7 +28,6 @@ def subscribe(
         when: date when the subscription is registered.
         client: client to subscribe.
         activity: activity to which the subscription is registered.
-        transaction: charging for the subscription. It is optional.
 
     Returns:
         The created subscription.
@@ -46,18 +42,14 @@ def subscribe(
     if client.admission > when:
         raise InvalidDate(f"[subscription_date={when}] cannot be lesser than [admission_date={client.admission}] of "
                           f"the client")
-    if transaction is not None and transaction.client != client:
-        raise OperationalError(f"The subscribed [client.id={client.id}] is not the charged [client.id="
-                               f"{transaction.client.id}].")
 
-    subscription = Subscription(when, client, activity, transaction)
+    subscription = Subscription(when, client, activity)
     subscription_repo.add(subscription)
     client.add(subscription)
 
     # noinspection PyUnresolvedReferences
     logger.getChild(__name__).info(
-        f"Client [client.id={client.id}] subscribed to activity [activity_name={activity.name}], with [payment="
-        f"{'None' if transaction is None else transaction.id}]."
+        f"Client [client.id={client.id}] subscribed to activity [activity_name={activity.name}]."
     )
 
     return subscription
