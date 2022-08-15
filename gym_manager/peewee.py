@@ -174,7 +174,7 @@ class SqliteClientRepo(ClientRepo):
             subs[sub_record.activity_id] = Subscription(sub_record.when, client,
                                                         self.activity_repo.get(sub_record.activity_id))
         for sub_charge in subscriptions_charges:
-            year, month = sub_charge.when.year, sub_charge.when.month
+            year, month = sub_charge.year, sub_charge.month
             trans_record = sub_charge.transaction
             subs[sub_charge.activity_id].add_transaction(
                 year, month, self.transaction_repo.from_data(
@@ -462,7 +462,7 @@ class SqliteTransactionRepo(TransactionRepo):
     # noinspection PyProtectedMember
     def __init__(self, methods: Iterable[str] | None = None, cache_len: int = 50) -> None:
         super().__init__(methods)
-        DATABASE_PROXY.create_tables([TransactionTable])
+        DATABASE_PROXY.create_tables([TransactionTable, BalanceTable])
 
         self.cache = LRUCache(int, Transaction, max_len=cache_len)
         # In the worst case the cache can store as many clients views as transactions, supposing each transaction has
@@ -599,14 +599,15 @@ class SubscriptionTable(Model):
 
 
 class SubscriptionCharge(Model):
-    when = DateField()
+    id = IntegerField(primary_key=True)
+    year = IntegerField()
+    month = IntegerField()
     client = ForeignKeyField(ClientTable, backref="subscriptions_charges", on_delete="CASCADE")
     activity = ForeignKeyField(ActivityTable, backref="subscriptions_charges", on_delete="CASCADE")
     transaction = ForeignKeyField(TransactionTable, backref="subscriptions_transactions")
 
     class Meta:
         database = DATABASE_PROXY
-        primary_key = CompositeKey("when", "client", "activity")
 
 
 class SqliteSubscriptionRepo(SubscriptionRepo):
@@ -630,7 +631,7 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
     def register_transaction(self, subscription: Subscription, year: int, month: int, transaction: Transaction):
         """Registers the charge for the subscription.
         """
-        SubscriptionCharge.create(when=date(year, month, 1), client_id=subscription.client.id,
+        SubscriptionCharge.create(year=year, month=month, client_id=subscription.client.id,
                                   activity_id=subscription.activity.id, transaction_id=transaction.id)
 
     def add_all(self, raw_subscriptions: Iterable[tuple]):
@@ -647,7 +648,8 @@ class SqliteSubscriptionRepo(SubscriptionRepo):
         """
         with DATABASE_PROXY.atomic():
             for batch in chunked(raw_charges, 1024):
-                SubscriptionCharge.insert_many(batch, fields=[SubscriptionCharge.when, SubscriptionCharge.client_id,
+                SubscriptionCharge.insert_many(batch, fields=[SubscriptionCharge.year, SubscriptionCharge.month,
+                                                              SubscriptionCharge.client_id,
                                                               SubscriptionCharge.activity_id,
                                                               SubscriptionCharge.transaction_id]).execute()
 

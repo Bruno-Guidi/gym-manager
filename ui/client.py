@@ -11,12 +11,12 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QLabel, QPushButton,
     QVBoxLayout, QSpacerItem, QSizePolicy, QDialog, QGridLayout, QTableWidget, QComboBox,
     QDateEdit, QListWidget, QListWidgetItem, QAction, QMenu, QButtonGroup, QRadioButton,
-    QSpinBox, QDesktopWidget)
+    QSpinBox, QDesktopWidget, QLineEdit)
 
 from gym_manager.contact.core import ContactRepo, create_contact, remove_contact_by_client
 from gym_manager.core import api
 from gym_manager.core.base import (
-    String, TextLike, Client, Number, Activity, Subscription, Currency, from_month_to_month)
+    String, TextLike, Client, Number, Activity, Subscription, Currency, from_month_to_month, year_month_iterator)
 from gym_manager.core.persistence import FilterValuePair, ClientRepo, SubscriptionRepo, TransactionRepo
 from gym_manager.core.security import SecurityHandler, SecurityError
 from ui import utils
@@ -82,7 +82,7 @@ class MainController:
         # noinspection PyUnresolvedReferences
         self.main_ui.subscription_list.currentItemChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
-        self.main_ui.subscription_list.itemPressed.connect(self.fill_unpaid_months)
+        self.main_ui.subscription_list.itemPressed.connect(self.fill_months_to_charge)
         # noinspection PyUnresolvedReferences
         self.main_ui.year_spinbox.valueChanged.connect(self.fill_charge_table)
         # noinspection PyUnresolvedReferences
@@ -93,6 +93,8 @@ class MainController:
         self.main_ui.charge_table.itemSelectionChanged.connect(self.set_unpaid_month)
         # noinspection PyUnresolvedReferences
         self.main_ui.charge_btn.clicked.connect(self.charge_subscription)
+        # noinspection PyUnresolvedReferences
+        self.main_ui.detail_btn.clicked.connect(self.see_charges_detail)
 
     def _enable_subscribe(self):
         client_selected = self.main_ui.client_table.currentRow() != -1
@@ -108,6 +110,7 @@ class MainController:
         self.main_ui.all_charges.setEnabled(sub_selected)
         self.main_ui.only_paid_charges.setEnabled(sub_selected)
         self.main_ui.only_unpaid_charges.setEnabled(sub_selected)
+        self.main_ui.detail_btn.setEnabled(sub_selected)
 
         self.main_ui.method_combobox.setEnabled(client_selected)
         self.main_ui.amount_line.setEnabled(client_selected)
@@ -132,6 +135,10 @@ class MainController:
     def fill_client_table(self, filters: list[FilterValuePair]):
         self.main_ui.client_table.setRowCount(0)
         self._clients.clear()
+        self._subscriptions.clear()
+        self.main_ui.subscription_list.clear()
+        self.main_ui.charge_table.setRowCount(0)
+        self._enable_subscribe()
 
         self.main_ui.page_index.total_len = self.client_repo.count(filters)
         for client in self.client_repo.all(self.main_ui.page_index.page, self.main_ui.page_index.page_len, filters):
@@ -266,7 +273,7 @@ class MainController:
                 self.main_ui.subscription_list.takeItem(self.main_ui.subscription_list.currentRow())
                 self.main_ui.subscribe_combobox.addItem(activity.name.as_primitive(), activity)
 
-                self.fill_unpaid_months()
+                self.fill_months_to_charge()
 
                 self.main_ui.responsible_field.setStyleSheet("")
                 Dialog.info("Éxito", f"El cliente '{client_name}' fue eliminado de la actividad {activity_name}.")
@@ -283,8 +290,6 @@ class MainController:
             year = self.main_ui.year_spinbox.value()
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
 
-            self.main_ui.amount_line.setText(Currency.fmt(sub.activity.price, symbol=""))
-
             # Filters months according to which radio button is checked.
             month_it = (month for month in range(*from_month_to_month(sub.when, year, date.today())))
             if self.main_ui.only_paid_charges.isChecked():
@@ -297,17 +302,17 @@ class MainController:
                 fill_cell(self.main_ui.charge_table, row, 0, f"{month}/{year}", int)
                 transaction_when, transaction_amount = "-", "-"
                 if sub.is_charged(year, month):
-                    transaction_when = sub.transaction(year, month).when.strftime(utils.DATE_FORMAT)
-                    transaction_amount = Currency.fmt(sub.transaction(year, month).amount)
+                    transaction_when = sub.last_transaction(year, month).when.strftime(utils.DATE_FORMAT)
+                    transaction_amount = Currency.fmt(sub.charged_amount(year, month))
                 fill_cell(self.main_ui.charge_table, row, 1, transaction_when, bool, increase_row_count=False)
                 fill_cell(self.main_ui.charge_table, row, 2, transaction_amount, int, increase_row_count=False)
 
         self._enable_subscribe()
 
-    def fill_unpaid_months(self):
+    def fill_months_to_charge(self):
         if self.main_ui.client_table.currentRow() != -1 and self.main_ui.subscription_list.currentItem() is not None:
             sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
-            fill_combobox(self.main_ui.month_combobox, sub.unpaid_months(date.today()),
+            fill_combobox(self.main_ui.month_combobox, year_month_iterator(sub.when, date.today()),
                           display=lambda year_month: f"{year_month[1]}/{year_month[0]}")
         if self.main_ui.subscription_list.currentItem() is None:
             self.main_ui.month_combobox.clear()
@@ -315,13 +320,10 @@ class MainController:
     def set_unpaid_month(self):
         if self.main_ui.charge_table.currentRow() != -1:
             month_year_str = self.main_ui.charge_table.item(self.main_ui.charge_table.currentRow(), 0).text()
-            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
-            month, year = month_year_str.split("/")
-            if not sub.is_charged(int(year), int(month)):
-                for i in range(len(self.main_ui.month_combobox)):
-                    if self.main_ui.month_combobox.itemText(i) == month_year_str:
-                        self.main_ui.month_combobox.setCurrentIndex(i)
-                        break
+            for i in range(len(self.main_ui.month_combobox)):
+                if self.main_ui.month_combobox.itemText(i) == month_year_str:
+                    self.main_ui.month_combobox.setCurrentIndex(i)
+                    break
 
     def charge_subscription(self):
         if len(self.main_ui.subscription_list) == 0:
@@ -330,16 +332,17 @@ class MainController:
         if self.main_ui.subscription_list.currentRow() == -1:
             Dialog.info("Error", "Seleccione una actividad en la lista.")
             return
-        if self.main_ui.month_combobox.currentIndex() == -1:
-            Dialog.info("Error", f"El cliente tiene la actividad "
-                                 f"'{self.main_ui.subscription_list.currentItem().text()}' al día.")
+
+        sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+        year, month = self.main_ui.month_combobox.currentData(Qt.UserRole)
+        if sub.is_charged(year, month) and not Dialog.confirm(f"Ya hay al menos un cobro registrado por la actividad "
+                                                              f"{self.main_ui.subscription_list.currentItem().text()}."
+                                                              f" ¿Desea continuar?"):
             return
 
         if not self.main_ui.amount_line.valid_value():
             Dialog.info("Error", f"El monto ingresado no es válido.")
         else:
-            sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
-            year, month = self.main_ui.month_combobox.currentData(Qt.UserRole)
             try:
                 self.security_handler.current_responsible = self.main_ui.responsible_field.value()
 
@@ -356,11 +359,27 @@ class MainController:
 
                 # Updates the ui.
                 self.fill_charge_table()
-                self.fill_unpaid_months()
+                self.fill_months_to_charge()
 
             except SecurityError as sec_err:
                 self.main_ui.responsible_field.setStyleSheet("border: 1px solid red")
                 Dialog.info("Error", MESSAGE.get(sec_err.code, str(sec_err)))
+
+    def see_charges_detail(self):
+        if len(self.main_ui.subscription_list) == 0:
+            Dialog.info("Error", "El cliente no esta inscripto en ninguna actividad.")
+            return
+        if self.main_ui.subscription_list.currentRow() == -1:
+            Dialog.info("Error", "Seleccione una actividad en la lista.")
+            return
+
+        sub = self._subscriptions[self.main_ui.subscription_list.currentItem().text()]
+        year = self.main_ui.year_spinbox.value()
+
+        # noinspection PyAttributeOutsideInit
+        self._detail_ui = DetailUI(sub, year)
+        self._detail_ui.setWindowModality(Qt.ApplicationModal)
+        self._detail_ui.show()
 
 
 class ClientMainUI(QMainWindow):
@@ -497,6 +516,10 @@ class ClientMainUI(QMainWindow):
         self.year_spinbox.setMaximum(9999)
         self.year_spinbox.setValue(date.today().year)
 
+        self.detail_btn = QPushButton(self.widget)
+        self.charges_info_layout.addWidget(self.detail_btn)
+        config_btn(self.detail_btn, "Ver detalle")
+
         # Charges filtering.
         self.charge_filter_layout = QHBoxLayout()
         self.right_layout.addLayout(self.charge_filter_layout)
@@ -522,7 +545,7 @@ class ClientMainUI(QMainWindow):
         self.charge_table = QTableWidget(self.widget)
         self.right_layout.addWidget(self.charge_table)
         new_config_table(self.charge_table, width=500, min_rows_to_show=4, fix_width=True,
-                         columns={"Mes": (.2, int), "Fecha pago": (.35, bool), "Monto": (.45, int)})
+                         columns={"Mes": (.2, int), "Último pago": (.35, bool), "Total cobrado": (.45, int)})
 
         self.right_layout.addWidget(Separator(vertical=False, parent=self.widget))  # Horizontal line.
 
@@ -556,6 +579,76 @@ class ClientMainUI(QMainWindow):
         config_btn(self.charge_btn, "Cobrar", icon_path=r"ui/resources/tick.png", icon_size=24)
 
         self.setFixedSize(self.minimumSizeHint())
+        self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
+                  int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
+
+
+class DetailUI(QMainWindow):
+    def __init__(self, subscription: Subscription, year: int):
+        super().__init__()
+        self._setup_ui()
+
+        self.client_line.setText(subscription.client.name.as_primitive())
+        self.activity_line.setText(subscription.activity.name.as_primitive())
+        self.year_line.setText(str(year))
+
+        for row, (month, charge) in enumerate(subscription.transactions(year)):
+            fill_cell(self.charges_table, row, 0, charge.responsible, data_type=str)
+            fill_cell(self.charges_table, row, 1, f"{month}/{year}", data_type=bool)
+            fill_cell(self.charges_table, row, 2, charge.when.strftime(utils.DATE_FORMAT), data_type=bool)
+            fill_cell(self.charges_table, row, 3, Currency.fmt(charge.amount), data_type=int)
+
+    def _setup_ui(self):
+        self.setWindowTitle("Detalle cobros")
+        self.widget = QWidget()
+        self.setCentralWidget(self.widget)
+        self.layout = QVBoxLayout(self.widget)
+
+        self.charges_lbl = QLabel(self.widget)
+        self.layout.addWidget(self.charges_lbl)
+        config_lbl(self.charges_lbl, "Cobros", font_size=16)
+
+        self.header_layout = QHBoxLayout()
+        self.layout.addLayout(self.header_layout)
+        self.header_layout.setAlignment(Qt.AlignLeft)
+
+        # Client.
+        self.client_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.client_lbl)
+        config_lbl(self.client_lbl, "Cliente")
+
+        self.client_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.client_line)
+        config_line(self.client_line, read_only=True)
+
+        # Activity.
+        self.activity_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.activity_lbl)
+        config_lbl(self.activity_lbl, "Actividad")
+
+        self.activity_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.activity_line)
+        config_line(self.activity_line, read_only=True)
+
+        # Year.
+        self.year_lbl = QLabel(self.widget)
+        self.header_layout.addWidget(self.year_lbl)
+        config_lbl(self.year_lbl, "Año")
+
+        self.year_line = QLineEdit(self.widget)
+        self.header_layout.addWidget(self.year_line)
+        config_line(self.year_line, enabled=False, fixed_width=80)
+
+        # Charges.
+        self.charges_table = QTableWidget(self.widget)
+        self.layout.addWidget(self.charges_table)
+
+        new_config_table(self.charges_table, width=800, min_rows_to_show=10,
+                         columns={"Responsable": (.4, str), "Mes": (.15, bool), "Fecha": (.2, bool),
+                                  "Monto": (.25, int)})
+
+        self.setFixedSize(self.sizeHint())
+
         self.move(int(QDesktopWidget().geometry().center().x() - self.sizeHint().width() / 2),
                   int(QDesktopWidget().geometry().center().y() - self.sizeHint().height() / 2))
 

@@ -4,6 +4,7 @@ import abc
 import decimal
 import functools
 import logging
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
@@ -41,16 +42,10 @@ def from_month_to_month(subscription_when: date, year: int, reference_date: date
     return from_, to
 
 
-def month_range(from_: date, to: date):
-    from_m, from_y = from_.month, from_.year
-    while from_ < to:
-        yield from_.month, from_.year
-
-        if from_m == 12:
-            from_m, from_y = 0, from_y + 1
-        from_m += 1
-
-        from_ = date(from_y, from_m, from_.day)
+def year_month_iterator(start_date: date, reference_date: date) -> Iterable[int, int]:
+    for year in range(start_date.year, reference_date.year + 1):
+        for month in range(*from_month_to_month(start_date, year, reference_date)):
+            yield year, month
 
 
 class OperationalError(Exception):
@@ -387,6 +382,9 @@ class Activity:
     removed: bool = field(compare=False, default=False)
 
 
+defaultdict_list = functools.partial(defaultdict, list)
+
+
 @dataclass
 class Subscription:
     """Stores information about a client's subscription in an activity.
@@ -395,29 +393,31 @@ class Subscription:
     when: date
     client: Client
     activity: Activity
-    _transaction: Transaction | None = None
-    _transactions: dict[tuple[int, int], Transaction] = field(default_factory=dict, compare=False, init=False)
+    _transactions: dict[tuple[int, int], list[Transaction]] = field(default_factory=defaultdict_list, compare=False,
+                                                                    init=False)
 
-    def transactions(self):
-        for year_month, transaction in self._transactions:
-            yield *year_month, transaction
-
-    def transaction(self, year: int, month: int) -> Transaction:
-        return self._transactions.get((year, month), None)
+    def transactions(self, year: int):
+        for month in range(1, 12):
+            for transaction in self._transactions[(year, month)]:
+                yield month, transaction
 
     def add_transaction(self, year: int, month: int, transaction: Transaction):
-        self._transactions[(year, month)] = transaction
+        self._transactions[(year, month)].append(transaction)
+
+    def charged_amount(self, year: int, month: int) -> Currency:
+        amount = Currency(0)
+        for transaction in self._transactions[(year, month)]:
+            amount.increase(transaction.amount)
+        return amount
+
+    def last_transaction(self, year: int, month: int) -> Transaction:
+        _transactions = sorted(self._transactions[(year, month)], key=lambda transaction: transaction.id)
+        return _transactions[-1]
 
     def is_charged(self, year: int, month: int):
         """Checks if the subscription has a registered charge in the *month* and *year*.
         """
-        return (year, month) in self._transactions
-
-    def unpaid_months(self, reference_date: date) -> Iterable[int, int]:
-        for year in range(self.when.year, reference_date.year + 1):
-            for month in range(*from_month_to_month(self.when, year, reference_date)):
-                if not self.is_charged(year, month):
-                    yield year, month
+        return len(self._transactions[year, month]) > 0
 
 
 @dataclass

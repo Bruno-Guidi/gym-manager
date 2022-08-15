@@ -6,7 +6,7 @@ import pytest
 from gym_manager.core import api
 from gym_manager.core.base import (
     String, Currency, Client, Number, Transaction,
-    Subscription, discard_subscription, ValidationError, month_range)
+    Subscription, discard_subscription, ValidationError)
 
 
 def test_base_Number():
@@ -94,16 +94,4 @@ def test_base_Client_age():
     client = Client(1, String("dummy_name"), date(2022, 2, 2), date(1998, 7, 11), is_active=True)
 
     assert client.age(reference_date=date(2022, 7, 11)) == 24
-
-
-def test_base_monthRange():
-    expected = [(12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022), (8, 2022),
-                (9, 2022), (10, 2022), (11, 2022), ]
-    assert expected == [month_year for month_year in month_range(date(2021, 12, 1), date(2022, 12, 1))]
-
-    expected = [(11, 2021), (12, 2021), (1, 2022), (2, 2022), (3, 2022), (4, 2022), (5, 2022), (6, 2022), (7, 2022),
-                (8, 2022), (9, 2022), (10, 2022)]
-    assert expected == [month_year for month_year in month_range(date(2021, 11, 1), date(2022, 11, 1))]
-
-    assert [] == [month_year for month_year in month_range(date(2021, 11, 1), date(2021, 11, 1))]
 

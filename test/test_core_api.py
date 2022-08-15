@@ -6,7 +6,7 @@ import pytest
 
 from gym_manager import peewee
 from gym_manager.core import api
-from gym_manager.core.api import close_balance, generate_balance
+from gym_manager.core.api import close_balance, generate_balance, subscribe, register_subscription_charge
 from gym_manager.core.base import (
     Client, Number, String, Activity, Currency, Subscription, OperationalError,
     Transaction, InvalidDate)
@@ -59,8 +59,8 @@ def test_subscribe():
     activity = activity_repo.create(String("dummy_name"), Currency(0.0), String("dummy_descr"))
 
     # Feature being tested.
-    api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
-    assert activity_repo.n_subscribers(activity) == 1
+    sub = api.subscribe(subscription_repo, date(2022, 2, 2), client, activity)
+    assert activity_repo.n_subscribers(activity) == 1 and sub.charged_amount(2022, 2) == Currency(0)
 
 
 def test_subscribe_activityChargeOnce_raisesOperationalError():
@@ -73,31 +73,6 @@ def test_subscribe_activityChargeOnce_raisesOperationalError():
         api.subscribe(None, date(2022, 2, 2), client, activity)
     assert str(op_error.value) == ("Subscriptions to [activity=dummy_name] are not allowed because it is a "
                                    "'charge_once' activity.")
-
-
-def test_subscribe_invalidClients_raisesOperationalError():
-    log_responsible.config(MockSecurityHandler())
-
-    client = Client(1, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1))
-    other = Client(2, String("dummy_name"), date(2022, 2, 1), date(2022, 2, 1))
-    activity = Activity(0, String("dummy_name"), Currency(0.0), String("dummy_descr"), charge_once=False, locked=True)
-    # noinspection PyTypeChecker
-    transaction = Transaction(1, type=None, when=None, amount=None, method=None, responsible=None, description=None,
-                              client=client)
-
-    with pytest.raises(OperationalError) as op_error:
-        # noinspection PyTypeChecker
-        api.subscribe(None, date(2022, 2, 2), other, activity, transaction)
-    assert str(op_error.value) == "The subscribed [client.id=2] is not the charged [client.id=1]."
-
-    # Swaps client's positions.
-    # noinspection PyTypeChecker
-    transaction = Transaction(1, type=None, when=None, amount=None, method=None, responsible=None, description=None,
-                              client=other)
-    with pytest.raises(OperationalError) as op_error:
-        # noinspection PyTypeChecker
-        api.subscribe(None, date(2022, 2, 2), client, activity, transaction)
-    assert str(op_error.value) == "The subscribed [client.id=1] is not the charged [client.id=2]."
 
 
 def test_subscribe_invalidSubscriptionDate_raisesInvalidDate():
@@ -347,3 +322,59 @@ def test_closeBalance_withCreateExtractionFn():
     # Then assert that all transactions included in the balance have their balance_date correctly set.
     transactions.sort(key=lambda transaction: transaction.id, reverse=True)
     assert transactions == [t for t in transaction_repo.all(without_balance=False, balance_date=date(2022, 5, 5))]
+
+
+def test_registerSubscriptionCharge_firstChargeOfMonth():
+    # Repos setup.
+    log_responsible.config(MockSecurityHandler())
+    peewee.create_database(":memory:")
+
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # Data setup.
+    client = client_repo.create(String("name"), date(2020, 1, 1), date(1990, 1, 1), Number(1))
+    activity = activity_repo.create(String("activity"), Currency(1), String("descr"))
+
+    _date = date(2022, 12, 5)
+
+    sub: Subscription = subscribe(subscription_repo, _date, client, activity)
+
+    create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(1), "method",
+                                           String("resp"), "descr", client)
+    _, transaction = register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+
+    # Checks
+    assert sub.charged_amount(2022, 12) == Currency(1) and transaction == sub.last_transaction(2022, 12)
+
+
+def test_registerSubscriptionCharge_secondChargeOfMonth():
+    # Repos setup.
+    log_responsible.config(MockSecurityHandler())
+    peewee.create_database(":memory:")
+
+    activity_repo = peewee.SqliteActivityRepo()
+    transaction_repo = peewee.SqliteTransactionRepo()
+    client_repo = peewee.SqliteClientRepo(activity_repo, transaction_repo)
+    subscription_repo = peewee.SqliteSubscriptionRepo()
+
+    # Data setup.
+    client = client_repo.create(String("name"), date(2020, 1, 1), date(1990, 1, 1), Number(1))
+    activity = activity_repo.create(String("activity"), Currency(1), String("descr"))
+
+    _date = date(2022, 12, 5)
+
+    sub: Subscription = subscribe(subscription_repo, _date, client, activity)
+
+    create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(1), "method",
+                                           String("resp"), "descr", client)
+    register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+
+    create_transaction = functools.partial(transaction_repo.create, "Cobro", _date, Currency(3), "method",
+                                           String("resp"), "descr", client)
+    _, transaction = register_subscription_charge(subscription_repo, sub, 2022, 12, create_transaction)
+
+    # Checks
+    assert sub.charged_amount(2022, 12) == Currency(4) and transaction == sub.last_transaction(2022, 12)
