@@ -80,7 +80,6 @@ class MainController:
         if col in self._bookings and row in self._bookings[col]:
             self.booking_system.update_prices(self.activity_repo)
             booking = self._bookings[col][row]
-            self.main_ui.amount_line.setText(Currency.fmt(self.booking_system.amount_to_charge(booking), symbol=""))
             self.main_ui.charge_btn.setEnabled(True)
             self.main_ui.cancel_btn.setEnabled(True)
         else:
